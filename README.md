@@ -5,8 +5,6 @@ Piattaforma web che mette in contatto clienti e personal trainer.
 Questo README spiega come installare il progetto sul tuo computer, **partendo da zero**.
 Segui i passi **nell'ordine**, uno alla volta. Se un passo non dà il risultato descritto, **fermati** e segnalalo: meglio correggere subito che accumulare problemi.
 
-
-
 ---
 
 ## Indice
@@ -29,13 +27,13 @@ Segui i passi **nell'ordine**, uno alla volta. Se un passo non dà il risultato 
 
 ## 1. Cosa installeremo
 
-| Strumento | A cosa serve | Versione |
-|---|---|---|
-| **Git** | Scaricare il codice e salvare le modifiche su GitHub | Ultima |
-| **VS Code** | L'editor in cui scriviamo il codice | Ultima |
-| **Laravel Herd** | Installa PHP, Composer e Laravel; fa girare il sito sul tuo PC | Ultima |
-| **Node.js** | Serve a compilare la parte React (frontend) | **22 LTS** |
-| **PostgreSQL** | Il database | **18** |
+| Strumento        | A cosa serve                                                   | Versione   |
+| ---------------- | -------------------------------------------------------------- | ---------- |
+| **Git**          | Scaricare il codice e salvare le modifiche su GitHub           | Ultima     |
+| **VS Code**      | L'editor in cui scriviamo il codice                            | Ultima     |
+| **Laravel Herd** | Installa PHP, Composer e Laravel; fa girare il sito sul tuo PC | Ultima     |
+| **Node.js**      | Serve a compilare la parte React (frontend)                    | **22 LTS** |
+| **PostgreSQL**   | Il database                                                    | **18**     |
 
 Usiamo **le stesse versioni** sui due computer. Se le versioni sono diverse, prima o poi qualcosa funzionerà su un PC e non sull'altro.
 
@@ -57,10 +55,10 @@ Scrivi un comando alla volta e premi **Invio** dopo ciascuno.
 1. Vai su **git-scm.com** e scarica la versione per Windows.
 2. Installa lasciando **tutte le opzioni predefinite**.
 3. Apri un nuovo PowerShell e verifica:
-   ```
-   git --version
-   ```
-   Deve rispondere con qualcosa come `git version 2.54.0.windows.1`.
+    ```
+    git --version
+    ```
+    Deve rispondere con qualcosa come `git version 2.54.0.windows.1`.
 
 ### Configura il tuo nome e la tua email
 
@@ -71,7 +69,7 @@ git config --global user.name "Il tuo nome"
 git config --global user.email "la-tua-email@esempio.com"
 ```
 
-> Se vuoi tenere privata la tua email, su GitHub vai in **Settings → Emails**, attiva *Keep my email addresses private* e usa l'indirizzo `...@users.noreply.github.com` che ti propone.
+> Se vuoi tenere privata la tua email, su GitHub vai in **Settings → Emails**, attiva _Keep my email addresses private_ e usa l'indirizzo `...@users.noreply.github.com` che ti propone.
 
 ---
 
@@ -102,11 +100,11 @@ Devono rispondere tutti e tre con un numero di versione. PHP deve essere **8.4**
 
 1. Installa **Node.js 22 LTS** (dal sito **nodejs.org** oppure dal terminale di VS Code, come preferisci).
 2. Chiudi e riapri il terminale, poi verifica:
-   ```
-   node -v
-   npm -v
-   ```
-   `node -v` deve rispondere con `v22.` seguito da altri numeri.
+    ```
+    node -v
+    npm -v
+    ```
+    `node -v` deve rispondere con `v22.` seguito da altri numeri.
 
 Deve esserci **una sola installazione** di Node sul PC.
 
@@ -123,14 +121,14 @@ Deve esserci **una sola installazione** di Node sul PC.
 
 Avvia il file scaricato e segui le schermate:
 
-| Schermata | Cosa fare |
-|---|---|
-| Installation Directory | Lascia il percorso proposto |
-| Select Components | Lascia **PostgreSQL Server** e **Command Line Tools**. Togli **Stack Builder**. pgAdmin è facoltativo |
-| Data Directory | Lascia il percorso proposto |
-| **Password** | Scegli la password dell'amministratore `postgres`. **Salvala subito** in un posto sicuro. Mai scriverla in chat o in file del progetto |
-| Port | Lascia `5432` |
-| Locale | Lascia *Default locale* |
+| Schermata              | Cosa fare                                                                                                                              |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Installation Directory | Lascia il percorso proposto                                                                                                            |
+| Select Components      | Lascia **PostgreSQL Server** e **Command Line Tools**. Togli **Stack Builder**. pgAdmin è facoltativo                                  |
+| Data Directory         | Lascia il percorso proposto                                                                                                            |
+| **Password**           | Scegli la password dell'amministratore `postgres`. **Salvala subito** in un posto sicuro. Mai scriverla in chat o in file del progetto |
+| Port                   | Lascia `5432`                                                                                                                          |
+| Locale                 | Lascia _Default locale_                                                                                                                |
 
 Alla fine, se c'è la spunta per avviare Stack Builder, toglila e clicca **Finish**.
 
@@ -139,7 +137,7 @@ Alla fine, se c'è la spunta per avviare Stack Builder, toglila e clicca **Finis
 PostgreSQL gira in background come **servizio di Windows**.
 
 1. Premi **Windows + R**, scrivi `services.msc`, premi Invio.
-2. Cerca **postgresql-x64-18**: nella colonna **Stato** deve esserci *In esecuzione*.
+2. Cerca **postgresql-x64-18**: nella colonna **Stato** deve esserci _In esecuzione_.
 
 ### Rendere raggiungibile il comando `psql`
 
@@ -149,9 +147,9 @@ PostgreSQL gira in background come **servizio di Windows**.
 2. Scegli **Modifica le variabili d'ambiente relative al tuo account**.
 3. Nella parte **in alto** ("Variabili utente per..."), clicca **una volta** sulla riga **Path** e poi su **Modifica...**
 4. Clicca **Nuovo** e incolla:
-   ```
-   C:\Program Files\PostgreSQL\18\bin
-   ```
+    ```
+    C:\Program Files\PostgreSQL\18\bin
+    ```
 5. Clicca **OK** e di nuovo **OK**.
 
 > ⚠️ Usa **Modifica...**, non **Nuova...**. Creare una nuova variabile `Path` sostituirebbe quella esistente, dove Herd ha salvato il percorso di PHP: `php` smetterebbe di funzionare.
@@ -181,13 +179,13 @@ npm -v
 psql --version
 ```
 
-Tutti devono rispondere con un numero di versione. Se uno risponde *"is not recognized"*, guarda la sezione [Problemi comuni](#12-problemi-comuni).
+Tutti devono rispondere con un numero di versione. Se uno risponde _"is not recognized"_, guarda la sezione [Problemi comuni](#12-problemi-comuni).
 
 ---
 
 ## 7. Creare il database del progetto
 
-Ognuno di noi ha il **proprio database sul proprio PC**. Non condividiamo un database: condividiamo le **istruzioni per costruirlo** (le *migration*, file nel repository).
+Ognuno di noi ha il **proprio database sul proprio PC**. Non condividiamo un database: condividiamo le **istruzioni per costruirlo** (le _migration_, file nel repository).
 
 Creiamo un database `miopersonal` e un utente dedicato `miopersonal`. L'app non usa l'amministratore `postgres`: ha solo i permessi sul proprio database.
 
@@ -199,7 +197,7 @@ psql -U postgres
 
 Inserisci la password di `postgres`. **Mentre la scrivi non compare nulla**, nemmeno gli asterischi: è normale.
 
-Se compare un avviso sulla *"console code page"*, ignoralo. Quando sei dentro, il prompt diventa `postgres=#`.
+Se compare un avviso sulla _"console code page"_, ignoralo. Quando sei dentro, il prompt diventa `postgres=#`.
 
 ### Creare utente e database
 
@@ -325,7 +323,7 @@ Salva con **Ctrl + S**.
 php artisan migrate
 ```
 
-Esegue le *migration*, cioè crea le tabelle nel tuo database. Devi vedere un elenco di righe con **DONE**.
+Esegue le _migration_, cioè crea le tabelle nel tuo database. Devi vedere un elenco di righe con **DONE**.
 
 ### 9.6 Avviare il frontend
 
@@ -392,11 +390,11 @@ git pull
 
 Scarica le modifiche fatte dall'altro. Poi, **se sono cambiate** queste cose:
 
-| Cosa è cambiato | Comando da lanciare |
-|---|---|
+| Cosa è cambiato                                          | Comando da lanciare   |
+| -------------------------------------------------------- | --------------------- |
 | File in `database/migrations/` (nuove tabelle o colonne) | `php artisan migrate` |
-| `composer.json` o `composer.lock` (nuove librerie PHP) | `composer install` |
-| `package.json` o `package-lock.json` (nuove librerie JS) | `npm install` |
+| `composer.json` o `composer.lock` (nuove librerie PHP)   | `composer install`    |
+| `package.json` o `package-lock.json` (nuove librerie JS) | `npm install`         |
 
 Nel dubbio, lanciali tutti e tre: se non c'è niente di nuovo finiscono subito e non fanno danni.
 
@@ -435,28 +433,28 @@ Su GitHub, accanto al tuo commit, compare prima un pallino giallo e poi:
 
 ### Comandi utili
 
-| Comando | A cosa serve |
-|---|---|
-| `php artisan test` | Lancia i test automatici (Pest) |
-| `vendor/bin/pint` | Sistema la formattazione del codice PHP |
-| `php artisan migrate` | Applica le nuove migration al tuo database |
-| `php artisan route:list` | Mostra tutte le pagine (rotte) dell'app |
+| Comando                  | A cosa serve                               |
+| ------------------------ | ------------------------------------------ |
+| `php artisan test`       | Lancia i test automatici (Pest)            |
+| `vendor/bin/pint`        | Sistema la formattazione del codice PHP    |
+| `php artisan migrate`    | Applica le nuove migration al tuo database |
+| `php artisan route:list` | Mostra tutte le pagine (rotte) dell'app    |
 
 ---
 
 ## 12. Problemi comuni
 
-| Problema | Causa probabile | Soluzione |
-|---|---|---|
-| `... is not recognized as the name of a cmdlet` | Il terminale è stato aperto prima dell'installazione, oppure il programma non è nel PATH | Chiudi e riapri il terminale. Per `psql`, rifai il passo 5 "Rendere raggiungibile il comando psql" |
-| `php` non funziona più dopo aver toccato il PATH | È stata creata una nuova variabile `Path` invece di modificare quella esistente | Nelle variabili d'ambiente, riaggiungi il percorso di Herd o reinstalla Herd |
-| `password authentication failed` | Password sbagliata (nel `.env` o nel terminale) | Controlla di usare la password di `miopersonal` e non quella di `postgres`. Nel terminale la password non si vede mentre la scrivi |
-| `database "miopersonal" does not exist` | Il database non è stato creato | Rifai il passo 7 |
-| `Vite manifest not found` | Il frontend non è stato compilato | Lancia `npm run dev` e lascialo acceso |
-| `miopersonal.test` non si apre | Il progetto non è dentro la cartella di Herd, o la cartella ha un altro nome | Il percorso deve essere `...\Herd\miopersonal` |
-| Avvisi `LF will be replaced by CRLF` | Differenza tra Windows e Linux nel modo di andare a capo | Innocui, puoi ignorarli |
-| Il prompt di `psql` diventa `postgres-#` | Manca il punto e virgola | Scrivi `;` e premi Invio |
-| Un percorso "spezzato" tipo `C:\Users\Nome` in un errore | Spazi nel nome della cartella utente | Segnalalo: si risolve spostando il progetto in una cartella senza spazi |
+| Problema                                                 | Causa probabile                                                                          | Soluzione                                                                                                                          |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `... is not recognized as the name of a cmdlet`          | Il terminale è stato aperto prima dell'installazione, oppure il programma non è nel PATH | Chiudi e riapri il terminale. Per `psql`, rifai il passo 5 "Rendere raggiungibile il comando psql"                                 |
+| `php` non funziona più dopo aver toccato il PATH         | È stata creata una nuova variabile `Path` invece di modificare quella esistente          | Nelle variabili d'ambiente, riaggiungi il percorso di Herd o reinstalla Herd                                                       |
+| `password authentication failed`                         | Password sbagliata (nel `.env` o nel terminale)                                          | Controlla di usare la password di `miopersonal` e non quella di `postgres`. Nel terminale la password non si vede mentre la scrivi |
+| `database "miopersonal" does not exist`                  | Il database non è stato creato                                                           | Rifai il passo 7                                                                                                                   |
+| `Vite manifest not found`                                | Il frontend non è stato compilato                                                        | Lancia `npm run dev` e lascialo acceso                                                                                             |
+| `miopersonal.test` non si apre                           | Il progetto non è dentro la cartella di Herd, o la cartella ha un altro nome             | Il percorso deve essere `...\Herd\miopersonal`                                                                                     |
+| Avvisi `LF will be replaced by CRLF`                     | Differenza tra Windows e Linux nel modo di andare a capo                                 | Innocui, puoi ignorarli                                                                                                            |
+| Il prompt di `psql` diventa `postgres-#`                 | Manca il punto e virgola                                                                 | Scrivi `;` e premi Invio                                                                                                           |
+| Un percorso "spezzato" tipo `C:\Users\Nome` in un errore | Spazi nel nome della cartella utente                                                     | Segnalalo: si risolve spostando il progetto in una cartella senza spazi                                                            |
 
 Se un errore non è in tabella: **copia il messaggio completo** e chiedi. Quasi sempre la causa è scritta nel testo dell'errore.
 
