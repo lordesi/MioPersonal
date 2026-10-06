@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Dashboard trainer — clienti, mobile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ds{--background:#ffffff;--foreground:#0a0a0a;--card:#ffffff;--primary:#171717;--primary-foreground:#fafafa;--secondary:#f5f5f5;--muted:#f5f5f5;--muted-foreground:#737373;--accent:#f5f5f5;--border:#e5e5e5;--input:#e5e5e5;--ring:#a3a3a3;font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--foreground);background:var(--background);-webkit-font-smoothing:antialiased}
+.ds.dark{--background:#0a0a0a;--foreground:#fafafa;--card:#171717;--primary:#e5e5e5;--primary-foreground:#171717;--secondary:#262626;--muted:#262626;--muted-foreground:#a3a3a3;--accent:#262626;--border:rgba(255,255,255,0.1);--input:rgba(255,255,255,0.15);--ring:#737373}
+.ds button{font-family:inherit}
+.tnum{font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}a:hover{text-decoration:underline}
+.ds :focus-visible{outline:2px solid var(--foreground);outline-offset:2px}
+html{scroll-padding-bottom:96px}
+.ds input,.ds textarea,.ds select{font-family:inherit}
+</style>
+</helmet>
+<div class="ds {{theme}}" style="width: 390px; min-height: 2300px; display: flex; flex-direction: column; background: var(--secondary)">
+
+<header style="display: flex; align-items: center; gap: 8px; height: 60px; padding: 0 8px 0 16px; border-bottom: 1px solid var(--border); background: var(--background)">
+<a href="Home-mobile.dc.html" aria-label="MioPersonal, torna alla home" style="display: flex; align-items: center"><svg width="33" height="20" viewBox="0 0 420 254" aria-hidden="true" style="display: block"><path fill="currentColor" d="M41.1 253.3C3.5 246.1 -12.8 200.2 11.8 171.3C42.3 135.5 100.5 156.7 100.7 203.5C100.8 235.3 72.1 259.2 41.1 253.3ZM206 253.5C190.2 252.1 175.5 243 167.3 229.7C164.2 224.5 153.4 205.9 147.3 195C141.5 184.9 129.3 163.6 121.3 150C119.6 147.1 113.6 136.8 108 127C102.4 117.2 96.4 106.7 94.5 103.5C74.4 69 72.4 64.7 71.7 53.2C69.5 19.5 101.3 -6.9 133.8 1.7C150.2 6.1 159.9 15.3 172.7 39.2C174.1 41.7 175.8 44.7 176.5 45.8C177.2 46.8 179.6 50.9 181.8 54.8C184 58.6 188.9 67.2 192.7 73.8C196.5 80.3 201.4 88.8 203.5 92.5C205.6 96.2 208.3 100.7 209.3 102.5C210.4 104.3 214.9 111.9 219.3 119.5C223.6 127.1 229.1 136.6 231.5 140.8C233.9 144.9 237.6 151.3 239.8 155C246 165.8 245.7 165.8 251 154.8C257.3 141.8 261 128.4 261 118.6C261 115.3 260.9 115.1 256.7 107.8C254.3 103.6 250.7 97.3 248.6 93.8C246.6 90.2 243.8 85.4 242.5 83.2C235.7 72 232.9 64.7 231.9 56.6C226.6 9.7 281.9 -17.7 316.2 15C320.9 19.5 322 21 330.5 35.8C334.1 42.1 338.2 49.1 339.5 51.2C340.8 53.4 344.2 59.3 347 64.2C349.8 69.2 354 76.4 356.3 80.2C358.5 84.1 363.3 92.4 367 98.8C370.6 105.1 374.7 112.1 376 114.2C377.3 116.4 382.5 125.4 387.5 134.2C392.5 143.1 398.1 152.6 399.8 155.5C417.7 185.6 420 191.2 420 204.2C420 239.8 383.1 264.2 350.6 250.1C338.2 244.7 331.5 237.7 321.3 219.9C317.7 213.5 311.3 202.5 307.3 195.5C303.2 188.5 298.7 180.7 297.3 178.2C291.9 168.9 292.1 168.9 288.4 178C272.4 217.7 244.3 247.9 218.7 253C213.6 254.1 212.8 254.1 206 253.5Z"></path></svg></a>
+<span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 9999px; border: 1px solid var(--border); font-size: 12px; line-height: 16px; font-weight: 500">Area trainer</span>
+<button type="button" aria-label="Notifiche, {{pendingN}} da leggere" style="margin-left: auto; position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 9999px; background: transparent; color: var(--foreground); cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg><sc-if value="{{hasPending}}" hint-placeholder-val="{{true}}"><span class="tnum" style="position: absolute; top: 6px; right: 6px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: var(--primary); color: var(--primary-foreground); font-size: 10px; font-weight: 700">{{pendingN}}</span></sc-if></button>
+<span role="img" aria-label="Giulia Rossi" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: var(--muted); font-size: 12px; font-weight: 600">GR</span>
+</header>
+
+<main style="flex-grow: 1; display: flex; flex-direction: column; gap: 20px; padding: 20px 16px 28px">
+
+<sc-if value="{{vHome}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 2px"><h1 style="margin: 0; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.025em">Buongiorno Giulia</h1><p class="tnum" style="margin: 0; font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Prossima seduta alle {{nextTime}} con {{nextWho}}</p></div>
+<sc-if value="{{notifOff}}" hint-placeholder-val="{{true}}"><div style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1.5px dashed var(--foreground); border-radius: 14px; background: var(--background)"><span style="font-size: 15px; line-height: 20px; font-weight: 600">Ricevi le prenotazioni come notifica</span><span style="font-size: 13px; line-height: 18px; color: var(--muted-foreground)">Su iPhone: tocca Condividi e poi «Aggiungi alla schermata Home», quindi apri MioPersonal da lì.</span><button type="button" onClick="{{enableNotif}}" style="height: 44px; border: 0; border-radius: 10px; background: var(--primary); color: var(--primary-foreground); font-size: 15px; font-weight: 600; cursor: pointer">Attiva le notifiche</button></div></sc-if>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px"><sc-for list="{{kpis}}" as="k" hint-placeholder-count="4"><div style="display: flex; flex-direction: column; gap: 2px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card)"><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">{{k.label}}</span><span class="tnum" style="font-size: 24px; line-height: 30px; font-weight: 700; letter-spacing: -0.025em">{{k.value}}</span><span class="tnum" style="font-size: 11px; line-height: 14px; color: var(--muted-foreground)">{{k.delta}}</span></div></sc-for></div>
+<section aria-labelledby="hm-oggi" style="display: flex; flex-direction: column; gap: 8px"><h2 id="hm-oggi" style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600">Oggi</h2>
+<sc-for list="{{today}}" as="t" hint-placeholder-count="4"><article style="{{t.rowStyle}}"><span class="tnum" style="flex: none; width: 48px; font-size: 15px; line-height: 22px; font-weight: 700">{{t.time}}</span><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; line-height: 20px; font-weight: 600">{{t.who}}</span><span style="font-size: 12px; line-height: 16px; opacity: 0.7">{{t.what}} · {{t.where}}</span><sc-if value="{{t.needsMark}}" hint-placeholder-val="{{false}}"><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding-top: 8px"><button type="button" onClick="{{t.markOk}}" style="height: 40px; border: 0; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-size: 13px; font-weight: 500; cursor: pointer">Svolta</button><button type="button" onClick="{{t.markNo}}" style="height: 40px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 13px; font-weight: 500; cursor: pointer">Assente</button></div></sc-if><sc-if value="{{t.markedOk}}" hint-placeholder-val="{{false}}"><span style="padding-top: 4px; font-size: 12px">Svolta · <button type="button" onClick="{{t.unmark}}" style="padding: 0; border: 0; background: transparent; color: inherit; font-size: 12px; text-decoration: underline; cursor: pointer">annulla</button></span></sc-if><sc-if value="{{t.markedNo}}" hint-placeholder-val="{{false}}"><span style="padding-top: 4px; font-size: 12px">Assenza registrata · <button type="button" onClick="{{t.unmark}}" style="padding: 0; border: 0; background: transparent; color: inherit; font-size: 12px; text-decoration: underline; cursor: pointer">annulla</button></span></sc-if></div></article></sc-for>
+</section>
+<section id="prenotazioni" aria-labelledby="hm-pren" style="display: flex; flex-direction: column; gap: 8px"><h2 id="hm-pren" class="tnum" style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600">{{pendTitle}}</h2>
+<sc-for list="{{pendList}}" as="p" hint-placeholder-count="3"><article aria-label="Prenotazione di {{p.who}}" style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--card)"><div style="display: flex; align-items: center; gap: 10px"><span style="flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: var(--muted); font-size: 12px; font-weight: 600">{{p.ini}}</span><div style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 15px; line-height: 20px; font-weight: 600">{{p.who}}</span><span class="tnum" style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">{{p.when}}</span></div><sc-if value="{{p.isPending}}" hint-placeholder-val="{{true}}"><span class="tnum" style="{{p.expStyle}}">{{p.exp}}</span></sc-if><sc-if value="{{p.isOk}}" hint-placeholder-val="{{false}}"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 9999px; background: var(--primary); color: var(--primary-foreground); font-size: 11px; font-weight: 600">Confermata</span></sc-if><sc-if value="{{p.isNo}}" hint-placeholder-val="{{false}}"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 9999px; background: var(--muted); color: var(--muted-foreground); font-size: 11px; font-weight: 600">Rifiutata</span></sc-if></div><span style="font-size: 13px; line-height: 18px; color: var(--muted-foreground)">{{p.what}} · {{p.where}}</span><sc-if value="{{p.isPending}}" hint-placeholder-val="{{true}}"><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px"><button type="button" onClick="{{p.decline}}" style="height: 44px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 14px; font-weight: 500; cursor: pointer">Rifiuta</button><button type="button" onClick="{{p.confirm}}" style="height: 44px; border: 0; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-size: 14px; font-weight: 500; cursor: pointer">Conferma</button></div><button type="button" style="height: 36px; border: 0; background: transparent; color: var(--foreground); font-size: 13px; font-weight: 500; text-decoration: underline; cursor: pointer">Proponi un altro orario</button></sc-if><sc-if value="{{p.isOk}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; line-height: 16px">Il cliente ha ricevuto i tuoi contatti. <button type="button" onClick="{{p.undo}}" style="padding: 0; border: 0; background: transparent; color: inherit; font-size: 12px; text-decoration: underline; cursor: pointer">Annulla</button></span></sc-if><sc-if value="{{p.isNo}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Lo slot torna libero. <button type="button" onClick="{{p.undo}}" style="padding: 0; border: 0; background: transparent; color: var(--foreground); font-size: 12px; text-decoration: underline; cursor: pointer">Annulla</button></span></sc-if></article></sc-for>
+</section>
+<section aria-labelledby="hm-todo" style="display: flex; flex-direction: column; gap: 8px"><h2 id="hm-todo" class="tnum" style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600">Da fare · {{todoN}}</h2><ul style="margin: 0; padding: 0; list-style: none; border: 1px solid var(--border); border-radius: 14px; background: var(--card); overflow: hidden"><sc-for list="{{todo}}" as="t" hint-placeholder-count="5"><li style="display: flex; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid var(--border)"><span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; line-height: 19px; font-weight: 600">{{t.label}}</span><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">{{t.hint}}</span></span><a href="{{t.anchor}}" onClick="{{t.act}}" style="flex: none; display: inline-flex; align-items: center; height: 36px; padding: 0 10px; border: 1px solid var(--input); border-radius: 8px; font-size: 13px; font-weight: 500; text-decoration: none">{{t.cta}}</a></li></sc-for></ul></section>
+</sc-if>
+
+<sc-if value="{{vCal}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px"><h1 style="margin: 0; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.025em">Calendario</h1><div role="group" aria-label="Vista" style="display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--muted)"><button type="button" aria-pressed="{{isWeek}}" onClick="{{toWeek}}" style="{{weekBtn}}">Giorno</button><button type="button" aria-pressed="{{isMonth}}" onClick="{{toMonth}}" style="{{monthBtn}}">Mese</button></div></div>
+<sc-if value="{{isWeek}}" hint-placeholder-val="{{true}}">
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px"><sc-for list="{{mDays}}" as="d" hint-placeholder-count="7"><button type="button" aria-pressed="{{d.pressed}}" onClick="{{d.pick}}" style="{{d.style}}"><span style="font-size: 11px; line-height: 14px">{{d.dow}}</span><span class="tnum" style="font-size: 17px; line-height: 22px; font-weight: 700">{{d.num}}</span><span class="tnum" style="font-size: 11px; line-height: 14px; opacity: 0.7">{{d.count}}</span></button></sc-for></div>
+<span style="font-size: 15px; line-height: 20px; font-weight: 600">{{mDayLabel}}</span>
+<sc-if value="{{agendaHas}}" hint-placeholder-val="{{true}}"><div style="display: flex; flex-direction: column; gap: 6px"><sc-for list="{{agenda}}" as="a" hint-placeholder-count="3"><div style="{{a.style}}"><span class="tnum" style="flex: none; width: 92px; font-size: 13px; line-height: 18px; font-weight: 600">{{a.time}}</span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; line-height: 19px; font-weight: 600">{{a.who}}</span><span style="font-size: 12px; line-height: 16px; opacity: 0.75">{{a.meta}}</span><sc-if value="{{a.hasTag}}" hint-placeholder-val="{{false}}"><span style="font-size: 11px; line-height: 14px; font-weight: 600; padding-top: 2px">{{a.tag}}</span></sc-if></span></div></sc-for></div></sc-if>
+<sc-if value="{{agendaEmpty}}" hint-placeholder-val="{{false}}"><p style="margin: 0; padding: 16px; border-radius: 12px; background: var(--muted); font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Giornata libera: nessuna seduta e nessun impegno.</p></sc-if>
+<button type="button" style="height: 44px; border: 1px dashed var(--input); border-radius: 10px; background: transparent; color: var(--foreground); font-size: 14px; font-weight: 500; cursor: pointer">+ Blocca un orario</button>
+</sc-if>
+<sc-if value="{{isMonth}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--card)">
+<div style="display: flex; align-items: center; justify-content: space-between"><button type="button" onClick="{{prevMonth}}" aria-label="Mese precedente" style="width: 44px; height: 44px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); cursor: pointer">‹</button><span class="tnum" style="font-size: 15px; font-weight: 600; text-transform: capitalize">{{monthLabel}}</span><button type="button" onClick="{{nextMonth}}" aria-label="Mese successivo" style="width: 44px; height: 44px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); cursor: pointer">›</button></div>
+<div aria-hidden="true" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; font-size: 11px; color: var(--muted-foreground); text-align: center"><span>L</span><span>M</span><span>M</span><span>G</span><span>V</span><span>S</span><span>D</span></div>
+<div role="group" aria-label="Giorni del mese" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px"><sc-for list="{{mcells}}" as="c" hint-placeholder-count="35"><sc-if value="{{c.blank}}" hint-placeholder-val="{{false}}"><span aria-hidden="true"></span></sc-if><sc-if value="{{c.isDay}}" hint-placeholder-val="{{true}}"><button type="button" aria-label="{{c.aria}}" aria-pressed="{{c.pressed}}" onClick="{{c.pick}}" style="{{c.style}}"><span class="tnum" style="font-size: 12px; line-height: 14px; font-weight: 600">{{c.num}}</span><span class="tnum" style="align-self: flex-end; font-size: 10px; line-height: 12px; font-weight: 700">{{c.count}}</span></button></sc-if></sc-for></div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 11px; color: var(--muted-foreground)"><span>Meno</span><sc-for list="{{legend}}" as="l" hint-placeholder-count="7"><span style="{{l.style}}"></span></sc-for><span>Più</span></div>
+<span class="tnum" style="font-size: 14px; font-weight: 600">{{selDayLabel}} · {{selDayCount}}</span>
+</div>
+</sc-if>
+<section aria-label="Calendari collegati" style="display: flex; flex-direction: column; gap: 8px"><sc-for list="{{syncs}}" as="s" hint-placeholder-count="2"><div style="{{s.rowStyle}}"><span style="{{s.dotStyle}}"></span><span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 14px; font-weight: 600">{{s.name}}</span><span style="font-size: 12px; color: var(--muted-foreground)">{{s.status}}</span></span><button type="button" aria-pressed="{{s.pressed}}" onClick="{{s.toggle}}" style="{{s.btnStyle}}">{{s.btn}}</button></div></sc-for></section>
+</sc-if>
+
+<sc-if value="{{vClients}}" hint-placeholder-val="{{false}}">
+<h1 style="margin: 0; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.025em">Clienti</h1>
+<label style="display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; border: 1px solid var(--input); border-radius: 10px; background: var(--background)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg><span style="position: absolute; width: 1px; height: 1px; overflow: hidden">Cerca un cliente</span><input type="search" placeholder="Cerca per nome" style="flex: 1; min-width: 0; border: 0; background: transparent; color: var(--foreground); font-size: 16px"></label>
+<ul style="margin: 0; padding: 0; list-style: none; border: 1px solid var(--border); border-radius: 14px; background: var(--card); overflow: hidden"><sc-for list="{{clients}}" as="c" hint-placeholder-count="6"><li style="border-bottom: 1px solid var(--border)"><button type="button" onClick="{{c.pick}}" style="display: flex; align-items: center; gap: 10px; width: 100%; min-height: 60px; padding: 10px 12px; border: 0; background: transparent; color: var(--foreground); text-align: left; cursor: pointer; font-family: inherit"><span style="flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: var(--muted); font-size: 12px; font-weight: 600">{{c.ini}}</span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 600">{{c.name}}</span><span class="tnum" style="font-size: 12px; color: var(--muted-foreground)">Prossima: {{c.next}}</span></span><span class="tnum" style="font-size: 12px; color: var(--muted-foreground)">{{c.packLabel}}</span></button></li></sc-for></ul>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--card)"><span style="font-size: 16px; font-weight: 700">{{sc.name}}</span><span class="tnum" style="font-size: 13px; color: var(--muted-foreground)">{{sc.sessLabel}} · {{sc.packLabel}}</span><sc-if value="{{sc.low}}" hint-placeholder-val="{{true}}"><button type="button" style="height: 44px; border: 0; border-radius: 10px; background: var(--primary); color: var(--primary-foreground); font-size: 14px; font-weight: 500; cursor: pointer">Proponi il rinnovo del pacchetto</button></sc-if><label for="clm-note" style="font-size: 13px; font-weight: 500">Note pratiche</label><textarea id="clm-note" rows="3" style="padding: 8px 10px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 22px">{{sc.note}}</textarea><span style="font-size: 12px; color: var(--muted-foreground)">Niente dati sulla salute.</span></div>
+</sc-if>
+
+<sc-if value="{{vRules}}" hint-placeholder-val="{{false}}">
+<h1 style="margin: 0; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.025em">Disponibilità</h1>
+<section style="display: flex; flex-direction: column; padding: 4px 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--card)"><sc-for list="{{weekRules}}" as="w" hint-placeholder-count="7"><div style="display: flex; align-items: center; gap: 10px; min-height: 56px; border-bottom: 1px solid var(--border)"><span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">{{w.day}}</span><span class="tnum" style="font-size: 12px; color: var(--muted-foreground)">{{w.ranges}}</span></span><button type="button" role="switch" aria-checked="{{w.pressed}}" aria-label="{{w.day}}" onClick="{{w.toggle}}" style="{{w.sw}}"><span style="width: 20px; height: 20px; border-radius: 9999px; background: var(--background); box-shadow: 0 1px 2px rgba(0,0,0,0.2)"></span></button></div></sc-for></section>
+<div style="display: flex; align-items: center; gap: 10px; padding: 14px; border-radius: 14px; background: var(--card); border: 1px solid var(--border)"><span style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">Conferma automatica</span><span style="font-size: 12px; color: var(--muted-foreground)">{{autoLabel}}</span></span><button type="button" role="switch" aria-checked="{{autoPressed}}" aria-label="Conferma automatica" onClick="{{toggleAuto}}" style="{{autoSw}}"><span style="width: 20px; height: 20px; border-radius: 9999px; background: var(--background); box-shadow: 0 1px 2px rgba(0,0,0,0.2)"></span></button></div>
+<section style="display: flex; flex-direction: column; padding: 4px 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--card)"><sc-for list="{{rules}}" as="r" hint-placeholder-count="7"><button type="button" style="display: flex; align-items: center; gap: 10px; min-height: 56px; border: 0; border-bottom: 1px solid var(--border); background: transparent; color: var(--foreground); text-align: left; cursor: pointer; font-family: inherit"><span style="flex: 1; font-size: 14px; font-weight: 500">{{r.label}}</span><span class="tnum" style="font-size: 14px; color: var(--muted-foreground)">{{r.value}}</span><span aria-hidden="true" style="color: var(--muted-foreground)">›</span></button></sc-for></section>
+</sc-if>
+
+<sc-if value="{{vReviews}}" hint-placeholder-val="{{false}}">
+<h1 style="margin: 0; font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: -0.025em">Recensioni</h1>
+<span class="tnum" style="font-size: 14px; color: var(--muted-foreground)">4,9 di media · 23 recensioni</span>
+<article style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--card)"><span style="font-size: 15px; font-weight: 600">Marta · ★★★★★</span><p style="margin: 0; font-size: 14px; line-height: 21px">Puntuale e preparatissima. In un mese il mal di schiena è migliorato.</p><sc-if value="{{replyIdle}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{openReply}}" style="height: 44px; border: 0; border-radius: 10px; background: var(--primary); color: var(--primary-foreground); font-size: 14px; font-weight: 500; cursor: pointer">Rispondi</button></sc-if><sc-if value="{{replyOpen}}" hint-placeholder-val="{{false}}"><label for="rvm" style="font-size: 13px; font-weight: 500">La tua risposta pubblica</label><textarea id="rvm" rows="3" style="padding: 8px 10px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px">Grazie Marta, ci vediamo mercoledì!</textarea><button type="button" onClick="{{sendReply}}" style="height: 44px; border: 0; border-radius: 10px; background: var(--primary); color: var(--primary-foreground); font-size: 14px; font-weight: 500; cursor: pointer">Pubblica risposta</button></sc-if><sc-if value="{{replied}}" hint-placeholder-val="{{false}}"><div style="padding: 10px; border-left: 3px solid var(--foreground); background: var(--muted); font-size: 13px"><strong>La tua risposta:</strong> Grazie Marta, ci vediamo mercoledì!</div></sc-if></article>
+</sc-if>
+
+</main>
+
+<nav aria-label="Area trainer" style="position: sticky; bottom: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px 4px 10px; border-top: 1px solid var(--border); background: var(--background)">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="5"><button type="button" aria-current="{{n.current}}" onClick="{{n.go}}" style="{{n.style}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.icon}}"></path></svg>{{n.label}}<sc-if value="{{n.hasBadge}}" hint-placeholder-val="{{false}}"><span class="tnum" style="position: absolute; top: 4px; right: 18px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: var(--primary); color: var(--primary-foreground); font-size: 10px; font-weight: 700">{{n.badge}}</span></sc-if></button></sc-for>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Chiaro","Scuro"],"default":"Chiaro"},"$preview":{"width":390,"height":2300}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { view: 'clients', calMode: 'week', mDay: 0, month: 0, selDay: 8, pend: { f: 'pending', m: 'pending', s: 'pending' }, attend: null, blocks: {}, google: true, apple: false, selClient: 0, replyOpen: false, replied: false, notif: false, auto: false, durs: { 1: true, 2: true }, week: { 1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 0: false } };
+  }
+  set(k, v) { var o = {}; o[k] = v; this.setState(o); }
+  renderVals() {
+    var self = this, st = this.state, dark = this.props.tema === 'Scuro';
+    var DOW = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'], DOWL = ['lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica'];
+    var hh = function (h) { var m = Math.round((h % 1) * 60); return (Math.floor(h) < 10 ? '0' : '') + Math.floor(h) + ':' + (m ? m : '00'); };
+    // ---- dati della settimana 5–11 ottobre 2026
+    var BASE = [
+      { d: 0, s: 7.5, e: 8.5, who: 'Anna B.', what: 'Seduta singola', where: 'Parco Lambro', kind: 'ok' },
+      { d: 0, s: 12, e: 13, who: 'Roberto C.', what: 'Pacchetto 10 · 7ª seduta', where: 'Studio', kind: 'ok' },
+      { d: 0, s: 18, e: 19, who: 'Luca M.', what: 'Valutazione iniziale', where: 'Studio', kind: 'ok' },
+      { d: 0, s: 19.5, e: 20.5, who: 'Paolo R.', what: 'Seduta online', where: 'Videochiamata', kind: 'ok' },
+      { d: 1, s: 7, e: 8, who: 'Anna B.', what: 'Seduta singola', where: 'Parco Lambro', kind: 'ok' },
+      { d: 1, s: 13, e: 14, who: 'Impegno personale', what: 'Da Google Calendar', where: '', kind: 'busy', src: 'google' },
+      { d: 2, s: 9, e: 10, who: 'Marta S.', what: 'Seduta singola', where: 'A domicilio · Città Studi', kind: 'ok' },
+      { d: 2, s: 18, e: 20, who: 'Stefano V.', what: 'Seduta singola · 2 ore', where: 'Parco Lambro', kind: 'ok' },
+      { d: 3, s: 12, e: 13, who: 'Roberto C.', what: 'Pacchetto 10 · 8ª seduta', where: 'Studio', kind: 'ok' },
+      { d: 3, s: 9, e: 10, who: 'Dentista', what: 'Da Calendario Apple', where: '', kind: 'busy', src: 'apple' },
+      { d: 4, s: 7.5, e: 8.5, who: 'Anna B.', what: 'Seduta singola', where: 'Parco Lambro', kind: 'ok' },
+      { d: 4, s: 18, e: 19, who: 'Ilaria P.', what: 'Seduta online', where: 'Videochiamata', kind: 'ok' },
+      { d: 5, s: 9, e: 10, who: 'Marta S.', what: 'Seduta singola', where: 'A domicilio · Città Studi', kind: 'ok' }
+    ];
+    var PEND = [
+      { id: 'f', d: 1, s: 18, e: 19, who: 'Francesca D.', ini: 'FD', what: 'Seduta singola · 1 ora', where: 'Al parco · Parco Lambro', note: 'Prima volta con un trainer, vorrei lavorare sulla postura.', exp: 'Scade tra 5 h', expHard: true },
+      { id: 'm', d: 3, s: 7, e: 9, who: 'Marco P.', ini: 'MP', what: 'Seduta singola · 2 ore', where: 'A domicilio · Lambrate', note: 'Preparazione per una mezza maratona a novembre.', exp: 'Scade tra 22 h', expHard: false },
+      { id: 's', d: 5, s: 10, e: 11, who: 'Sofia L.', ini: 'SL', what: 'Seduta online · 1 ora', where: 'Videochiamata', note: '', exp: 'Scade tra 1 giorno', expHard: false }
+    ];
+    var pendList = PEND.map(function (p) {
+      var stt = st.pend[p.id];
+      return Object.assign({}, p, {
+        when: DOW[p.d] + ' ' + (5 + p.d) + ' ott · ' + hh(p.s) + '–' + hh(p.e),
+        isPending: stt === 'pending', isOk: stt === 'ok', isNo: stt === 'no', hasNote: !!p.note,
+        expStyle: 'display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 9999px; font-size: 12px; line-height: 16px; font-weight: 600; ' + (p.expHard ? 'background: var(--primary); color: var(--primary-foreground)' : 'border: 1px dashed var(--input)'),
+        confirm: function () { var o = Object.assign({}, self.state.pend); o[p.id] = 'ok'; self.setState({ pend: o }); },
+        decline: function () { var o = Object.assign({}, self.state.pend); o[p.id] = 'no'; self.setState({ pend: o }); },
+        undo: function () { var o = Object.assign({}, self.state.pend); o[p.id] = 'pending'; self.setState({ pend: o }); }
+      });
+    });
+    var pendingN = pendList.filter(function (p) { return p.isPending; }).length;
+    var events = BASE.filter(function (e) { return e.kind !== 'busy' || (e.src === 'google' ? st.google : st.apple); }).slice();
+    pendList.forEach(function (p) { if (!p.isNo) events.push({ d: p.d, s: p.s, e: p.e, who: p.who, what: p.what, where: p.where, kind: p.isOk ? 'ok' : 'pend' }); });
+    Object.keys(st.blocks).forEach(function (k) { if (st.blocks[k]) { var a = k.split('-'); events.push({ d: +a[0], s: +a[1], e: +a[1] + 1, who: 'Bloccato', what: 'Non prenotabile', where: '', kind: 'block', key: k }); } });
+    var H0 = 7, H1 = 21, RH = 40;
+    var evStyle = function (e) {
+      var base = 'position: absolute; left: 3px; right: 3px; top: ' + ((e.s - H0) * RH + 1) + 'px; height: ' + ((e.e - e.s) * RH - 3) + 'px; padding: 4px 6px; border-radius: 6px; overflow: hidden; box-sizing: border-box; font-size: 11px; line-height: 14px; text-align: left; z-index: 1; ';
+      if (e.kind === 'ok') return base + 'background: var(--primary); color: var(--primary-foreground)';
+      if (e.kind === 'pend') return base + 'background: var(--background); color: var(--foreground); border: 1.5px dashed var(--foreground)';
+      if (e.kind === 'block') return base + 'background: repeating-linear-gradient(135deg, var(--muted) 0 6px, var(--background) 6px 12px); color: var(--muted-foreground); border: 1px solid var(--border)';
+      return base + 'background: var(--muted); color: var(--muted-foreground); border: 1px solid var(--border)';
+    };
+    var weekDays = DOW.map(function (n, i) {
+      var evs = events.filter(function (e) { return e.d === i; }).sort(function (a, b) { return a.s - b.s; });
+      var taken = {}; evs.forEach(function (e) { for (var h = Math.floor(e.s); h < Math.ceil(e.e); h++) taken[h] = true; });
+      var cells = []; for (var h = H0; h < H1; h++) { (function (h) {
+        var key = i + '-' + h, blocked = !!st.blocks[key];
+        cells.push({ free: !taken[h] || blocked, aria: (blocked ? 'Sblocca ' : 'Blocca ') + DOWL[i] + ' ' + (5 + i) + ' ottobre alle ' + hh(h), style: 'position: absolute; left: 0; right: 0; top: ' + ((h - H0) * RH) + 'px; height: ' + RH + 'px; border: 0; background: transparent; cursor: pointer; padding: 0',
+          pick: function () { var b = Object.assign({}, self.state.blocks); b[key] = !b[key]; self.setState({ blocks: b }); } });
+      })(h); }
+      var n = evs.filter(function (e) { return e.kind === 'ok'; }).length;
+      return {
+        label: n + ' ' + (n === 1 ? 'seduta' : 'sedute'), name: n, dow: n, head: DOW[i] + ' ' + (5 + i), isToday: i === 0,
+        headStyle: 'display: flex; flex-direction: column; align-items: center; padding: 8px 0; font-size: 12px; line-height: 16px; ' + (i === 0 ? 'font-weight: 700; color: var(--foreground)' : 'color: var(--muted-foreground)'),
+        count: n + (n === 1 ? ' seduta' : ' sedute'),
+        events: evs.map(function (e) { return { style: evStyle(e), who: e.who, meta: hh(e.s) + ' · ' + e.what, aria: e.who + ', ' + DOWL[i] + ' ' + hh(e.s) + '–' + hh(e.e) + ', ' + (e.kind === 'pend' ? 'da confermare' : e.kind === 'busy' ? 'impegno dal calendario' : e.kind === 'block' ? 'orario bloccato' : 'confermata') }; }),
+        cells: cells.filter(function (c) { return c.free; })
+      };
+    });
+    var hours = []; for (var h = H0; h < H1; h++) hours.push({ label: hh(h), style: 'height: ' + RH + 'px; box-sizing: border-box; padding-right: 8px; text-align: right; font-size: 11px; line-height: 11px; color: var(--muted-foreground); transform: translateY(-5px)' });
+    var gridBg = 'position: relative; height: ' + ((H1 - H0) * RH) + 'px; background-image: repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px ' + RH + 'px)';
+    // ---- oggi
+    var TODAY = events.filter(function (e) { return e.d === 0 && e.kind === 'ok'; }).sort(function (a, b) { return a.s - b.s; });
+    var att = st.attend;
+    var today = TODAY.map(function (e, i) {
+      var past = e.s < 10, next = i === 1;
+      return { time: hh(e.s), end: hh(e.e), who: e.who, what: e.what, where: e.where, isPast: past, isNext: next, isLater: !past && !next, online: e.where === 'Videochiamata',
+        rowStyle: 'display: flex; gap: 14px; padding: 14px 16px; border-radius: 12px; ' + (next ? 'background: var(--primary); color: var(--primary-foreground)' : 'border: 1px solid var(--border); background: var(--card)'),
+        needsMark: past && att == null, markedOk: past && att === 'ok', markedNo: past && att === 'no',
+        markOk: function () { self.setState({ attend: 'ok' }); }, markNo: function () { self.setState({ attend: 'no' }); }, unmark: function () { self.setState({ attend: null }); } };
+    });
+    today = today.filter(function (t) { return t.isNext; }).concat(today.filter(function (t) { return t.isLater; }), today.filter(function (t) { return t.isPast; }));
+    var nextS = today.filter(function (t) { return t.isNext; })[0];
+    // ---- da fare
+    var todo = [];
+    if (pendingN) todo.push({ label: pendingN === 1 ? '1 prenotazione da confermare' : pendingN + ' prenotazioni da confermare', hint: 'Lo slot resta bloccato finché non rispondi', cta: 'Vedi', go: 'home', anchor: '#prenotazioni' });
+    if (att == null) todo.push({ label: 'Segna la seduta delle 07:30 con Anna B.', hint: 'Svolta o cliente non presentato', cta: 'Segna', go: 'home', anchor: '#oggi' });
+    if (!st.replied) todo.push({ label: 'Rispondi alla recensione di Marta', hint: '5 stelle · 2 giorni fa', cta: 'Rispondi', go: 'reviews', anchor: '' });
+    todo.push({ label: 'Il pacchetto di Roberto C. sta per finire', hint: 'Restano 3 sedute su 10', cta: 'Apri cliente', go: 'clients', anchor: '' });
+    todo.push({ label: 'Completa il profilo: aggiungi altre foto', hint: 'Profilo completo all\u201985%', cta: 'Completa', go: 'home', anchor: '' });
+    todo = todo.map(function (t) { return Object.assign(t, { act: function () { if (t.go !== 'home') self.setState({ view: t.go }); } }); });
+    // ---- KPI
+    var confirmedWeek = events.filter(function (e) { return e.kind === 'ok'; }).length;
+    var kpis = [
+      { label: 'Richieste da confermare', value: String(pendingN), delta: pendingN ? (pendingN === 1 ? 'Scade tra 5 h' : 'La prima scade tra 5 h') : 'Tutte gestite', up: false },
+      { label: 'Sedute questa settimana', value: String(confirmedWeek), delta: '+' + (confirmedWeek - 9) + ' rispetto alla scorsa', up: true },
+      { label: 'Dal profilo alla prenotazione', value: '5,8%', delta: '312 visite · 18 prenotazioni', up: false }
+    ];
+    // ---- mese (intensità)
+    var mDate = new Date(2026, 9 + (st.month || 0), 1), mY = mDate.getFullYear(), mM = mDate.getMonth(), daysIn = new Date(mY, mM + 1, 0).getDate();
+    var MON = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+    var countOf = function (d) { if (mM === 9 && d >= 5 && d <= 11) return weekDays[d - 5].events.filter(function (e) { return e.style.indexOf('var(--primary);') > 0; }).length; var dow = new Date(mY, mM, d).getDay(); if (dow === 0) return 0; if (dow === 6) return d % 3; return (d * 5 + mM * 3) % 7; };
+    var HEAT = dark ? ['#0a0a0a', '#1f1f1f', '#333333', '#525252', '#8a8a8a', '#c4c4c4', '#f5f5f5'] : ['#ffffff', '#ebebeb', '#d4d4d4', '#a3a3a3', '#737373', '#404040', '#171717'];
+    var ink = function (c) { return (c >= 4) !== dark ? '#fafafa' : '#0a0a0a'; };
+    var lead = (new Date(mY, mM, 1).getDay() + 6) % 7, mcells = [], mtot = 0, sel = st.selDay;
+    for (var b = 0; b < lead; b++) mcells.push({ blank: true, isDay: false });
+    for (var d = 1; d <= daysIn; d++) { (function (d) { var c = Math.min(countOf(d), 6); mtot += c; var on = d === sel; var today0 = mM === 9 && d === 5;
+      mcells.push({ blank: false, isDay: true, num: d, count: c, pressed: on ? 'true' : 'false', aria: d + ' ' + MON[mM] + ': ' + (c === 0 ? 'nessuna seduta' : c === 1 ? '1 seduta' : c + ' sedute'),
+        style: 'display: flex; flex-direction: column; justify-content: space-between; padding: 5px 7px; height: 44px; border-radius: 8px; box-sizing: border-box; cursor: pointer; text-align: left; font-family: inherit; background: ' + HEAT[c] + '; color: ' + ink(c) + '; border: ' + (on ? '2px solid var(--foreground)' : (c === 0 ? '1px solid var(--border)' : '1px solid transparent')) + (today0 ? '; outline: 2px dashed var(--muted-foreground); outline-offset: 2px' : ''),
+        pick: function () { self.setState({ selDay: d }); } }); })(d); }
+    while (mcells.length % 7) mcells.push({ blank: true, isDay: false });
+    var legend = HEAT.map(function (c) { return { style: 'width: 14px; height: 14px; border-radius: 4px; background: ' + c + '; border: 1px solid var(--border)' }; });
+    // ---- sync
+    var SYNC = 'display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--card)';
+    var syncs = [['google', 'Google Calendar', 'Aggiornato 2 min fa · nessun conflitto'], ['apple', 'Calendario Apple', 'Tramite link iCloud']].map(function (s) {
+      var on = !!st[s[0]];
+      return { name: s[1], status: on ? s[2] : 'Non collegato', on: on, off: !on, rowStyle: SYNC, btn: on ? 'Scollega' : 'Collega', pressed: on ? 'true' : 'false',
+        btnStyle: 'margin-left: auto; height: 36px; padding: 0 14px; border-radius: 8px; font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer; ' + (on ? 'border: 1px solid var(--input); background: var(--background); color: var(--foreground)' : 'border: 0; background: var(--primary); color: var(--primary-foreground)'),
+        dotStyle: 'flex: none; width: 10px; height: 10px; border-radius: 9999px; ' + (on ? 'background: var(--foreground)' : 'border: 1.5px solid var(--muted-foreground)'),
+        toggle: function () { self.set(s[0], !self.state[s[0]]); } };
+    });
+    var conflict = st.apple && st.pend.m === 'pending';
+    // ---- clienti
+    var CL = [
+      { name: 'Roberto C.', ini: 'RC', sessions: 7, last: 'Oggi', next: 'Gio 8 ott, 12:00', pack: 'Pacchetto 10', left: 3, of: 10, note: 'Preferisce lo studio, arriva sempre 10 minuti prima.' },
+      { name: 'Anna B.', ini: 'AB', sessions: 23, last: 'Oggi', next: 'Mar 6 ott, 07:00', pack: '', left: 0, of: 0, note: 'Allenamento al parco anche con la pioggia leggera.' },
+      { name: 'Marta S.', ini: 'MS', sessions: 9, last: 'Sab 3 ott', next: 'Mer 7 ott, 09:00', pack: '', left: 0, of: 0, note: 'Citofono «Studio 3B».' },
+      { name: 'Stefano V.', ini: 'SV', sessions: 12, last: 'Mer 30 set', next: 'Mer 7 ott, 18:00', pack: 'Pacchetto 10', left: 6, of: 10, note: '' },
+      { name: 'Paolo R.', ini: 'PR', sessions: 4, last: 'Ven 2 ott', next: 'Oggi, 19:30', pack: '', left: 0, of: 0, note: 'Solo online, link Meet nel calendario.' },
+      { name: 'Ilaria P.', ini: 'IP', sessions: 6, last: 'Ven 2 ott', next: 'Ven 9 ott, 18:00', pack: '', left: 0, of: 0, note: '' }
+    ];
+    var clients = CL.map(function (c, i) { var on = i === st.selClient; return Object.assign({}, c, { hasPack: !!c.pack, low: c.pack && c.left <= 3, packLabel: c.pack ? c.left + ' su ' + c.of + ' rimaste' : 'Sedute singole', sessLabel: c.sessions + ' sedute',
+      rowStyle: 'display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1.4fr); gap: 12px; align-items: center; width: 100%; padding: 12px 14px; border: 0; border-radius: 10px; text-align: left; cursor: pointer; font-family: inherit; color: var(--foreground); ' + (on ? 'background: var(--secondary)' : 'background: transparent'),
+      pick: function () { self.setState({ selClient: i }); },
+      barStyle: 'display: block; height: 100%; border-radius: 9999px; background: var(--primary); width: ' + (c.of ? Math.round((c.of - c.left) / c.of * 100) : 0) + '%' }); });
+    var sc = clients[st.selClient];
+    // ---- regole
+    var WK = [[1, 'Lunedì', '07:00–12:00 · 18:00–21:00'], [2, 'Martedì', '12:00–21:00'], [3, 'Mercoledì', '07:00–12:00 · 18:00–21:00'], [4, 'Giovedì', '12:00–21:00'], [5, 'Venerdì', '07:00–13:00'], [6, 'Sabato', '08:00–14:00'], [0, 'Domenica', 'Riposo']];
+    var weekRules = WK.map(function (w) { var on = !!st.week[w[0]]; return { day: w[1], ranges: on ? w[2] : 'Non disponibile', on: on, pressed: on ? 'true' : 'false',
+      sw: 'flex: none; width: 40px; height: 24px; padding: 2px; border: 0; border-radius: 9999px; cursor: pointer; display: flex; ' + (on ? 'background: var(--primary); justify-content: flex-end' : 'background: var(--input); justify-content: flex-start'),
+      toggle: function () { var o = Object.assign({}, self.state.week); o[w[0]] = !o[w[0]]; self.setState({ week: o }); } }; });
+    var SW = function (on) { return 'flex: none; width: 40px; height: 24px; padding: 2px; border: 0; border-radius: 9999px; cursor: pointer; display: flex; ' + (on ? 'background: var(--primary); justify-content: flex-end' : 'background: var(--input); justify-content: flex-start'); };
+    var durOpts = [[1, '1 ora'], [2, '2 ore']].map(function (o) { var on = !!st.durs[o[0]]; return { label: o[1], pressed: on ? 'true' : 'false', style: 'height: 36px; padding: 0 14px; border-radius: 9999px; font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer; ' + (on ? 'border: 1px solid var(--primary); background: var(--primary); color: var(--primary-foreground)' : 'border: 1px solid var(--input); background: var(--background); color: var(--foreground)'), toggle: function () { var d = Object.assign({}, self.state.durs); d[o[0]] = !d[o[0]]; self.setState({ durs: d }); } }; });
+    var rules = [
+      ['Preavviso minimo', '12 ore', 'Nessuno può prenotare uno slot che inizia tra meno di 12 ore.'],
+      ['Si può prenotare fino a', '60 giorni', 'Oltre questa data il calendario risulta chiuso.'],
+      ['Pausa tra due sedute', '15 minuti', 'Aggiunta dopo ogni seduta.'],
+      ['Spostamento per il domicilio', '30 minuti', 'Prima e dopo le sedute a domicilio.'],
+      ['Massimo sedute al giorno', '6', 'Raggiunto il limite, il giorno risulta pieno.'],
+      ['Tempo per confermare', '24 ore', 'Poi la prenotazione decade e lo slot torna libero.'],
+      ['Cancellazione gratuita', 'Fino a 24 ore prima', 'Mostrata sul profilo e nelle email.']
+    ].map(function (r) { return { label: r[0], value: r[1], hint: r[2] }; });
+    // ---- viste
+    var V = st.view;
+    var NAV = [['home', 'Oggi', 'M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'], ['cal', 'Calendario', 'M8 2v4 M16 2v4 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M3 10h18'], ['clients', 'Clienti', 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0 M22 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75'], ['rules', 'Disponibilità', 'M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0 M12 6v6l4 2'], ['reviews', 'Recensioni', 'M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z']];
+    var nav = NAV.map(function (n) { var on = V === n[0]; return { label: n[1], icon: n[2], current: on ? 'page' : 'false', badge: n[0] === 'home' && pendingN ? String(pendingN) : '', hasBadge: n[0] === 'home' && pendingN > 0,
+      style: 'position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; padding: 0; border: 0; border-radius: 10px; background: transparent; font-size: 11px; line-height: 14px; font-weight: 500; cursor: pointer; font-family: inherit; ' + (on ? 'color: var(--foreground)' : 'color: var(--muted-foreground)'), go: function () { self.setState({ view: n[0] }); } }; });
+    var CM = 'height: 32px; padding: 0 12px; border: 0; border-radius: 8px; font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer; ';
+    var mDays = DOW.map(function (n, i) { var on = i === st.mDay; var c = weekDays[i].events.filter(function (e) { return e.style.indexOf('var(--primary);') > 0; }).length;
+      return { dow: n, num: 5 + i, count: c ? c + '' : '–', pressed: on ? 'true' : 'false', style: 'display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0; border-radius: 10px; cursor: pointer; font-family: inherit; ' + (on ? 'border: 0; background: var(--primary); color: var(--primary-foreground)' : 'border: 1px solid var(--border); background: var(--card); color: var(--foreground)'), pick: function () { self.setState({ mDay: i }); } }; });
+    var agenda = events.filter(function (e) { return e.d === st.mDay; }).sort(function (a, b) { return a.s - b.s; }).map(function (e) {
+      return { time: hh(e.s) + '–' + hh(e.e), who: e.who, meta: e.what + (e.where ? ' · ' + e.where : ''), tag: e.kind === 'pend' ? 'Da confermare' : e.kind === 'busy' ? 'Dal calendario' : e.kind === 'block' ? 'Bloccato' : '', hasTag: e.kind !== 'ok',
+        style: 'display: flex; gap: 12px; padding: 12px; border-radius: 12px; ' + (e.kind === 'ok' ? 'background: var(--primary); color: var(--primary-foreground)' : e.kind === 'pend' ? 'border: 1.5px dashed var(--foreground)' : 'border: 1px solid var(--border); background: var(--muted); color: var(--muted-foreground)') }; });
+    return {
+      vHome: V === 'home', vCal: V === 'cal', vClients: V === 'clients', vRules: V === 'rules', vReviews: V === 'reviews', nav: nav,
+      pendList: pendList, pendingN: pendingN, hasPending: pendingN > 0, noPending: pendingN === 0,
+      pendTitle: pendingN === 0 ? 'Nessuna prenotazione da confermare' : (pendingN === 1 ? '1 prenotazione da confermare' : pendingN + ' prenotazioni da confermare'),
+      today: today, nextWho: nextS ? nextS.who : '', nextTime: nextS ? nextS.time : '', todo: todo, todoN: todo.length, kpis: kpis,
+      weekDays: weekDays, hours: hours, gridBg: gridBg,
+      isWeek: st.calMode === 'week', isMonth: st.calMode === 'month',
+      weekBtn: CM + (st.calMode === 'week' ? 'background: var(--background); color: var(--foreground); box-shadow: 0 1px 3px rgba(0,0,0,0.1)' : 'background: transparent; color: var(--muted-foreground)'),
+      monthBtn: CM + (st.calMode === 'month' ? 'background: var(--background); color: var(--foreground); box-shadow: 0 1px 3px rgba(0,0,0,0.1)' : 'background: transparent; color: var(--muted-foreground)'),
+      toWeek: function () { self.setState({ calMode: 'week' }); }, toMonth: function () { self.setState({ calMode: 'month' }); },
+      monthLabel: MON[mM] + ' ' + mY, mcells: mcells, legend: legend, monthTotal: mtot + ' sedute nel mese',
+      prevMonth: function () { if ((self.state.month || 0) > 0) self.setState({ month: self.state.month - 1, selDay: 1 }); },
+      nextMonth: function () { if ((self.state.month || 0) < 2) self.setState({ month: (self.state.month || 0) + 1, selDay: 1 }); },
+      selDayLabel: sel + ' ' + MON[mM], selDayCount: (function (c) { return c === 0 ? 'Nessuna seduta' : c === 1 ? '1 seduta' : c + ' sedute'; })(Math.min(countOf(sel), 6)),
+      syncs: syncs, conflict: conflict, noConflict: !conflict,
+      clients: clients, sc: sc, clientsN: clients.length,
+      weekRules: weekRules, durOpts: durOpts, rules: rules, autoSw: SW(st.auto), autoPressed: st.auto ? 'true' : 'false', autoLabel: st.auto ? 'Attiva: le prenotazioni sono confermate subito' : 'Disattivata: confermi tu ogni prenotazione', toggleAuto: function () { self.set('auto', !self.state.auto); },
+      replyOpen: st.replyOpen && !st.replied, replyIdle: !st.replyOpen && !st.replied, replied: st.replied,
+      openReply: function () { self.set('replyOpen', true); }, sendReply: function () { self.setState({ replied: true, replyOpen: false }); },
+      notifOn: st.notif, notifOff: !st.notif, enableNotif: function () { self.set('notif', true); },
+      mDays: mDays, agenda: agenda, agendaEmpty: agenda.length === 0, agendaHas: agenda.length > 0, mDayLabel: DOWL[st.mDay].charAt(0).toUpperCase() + DOWL[st.mDay].slice(1) + ' ' + (5 + st.mDay) + ' ottobre',
+      theme: dark ? 'dark' : 'light'
+    };
+  }
+}
+</script>
+</body>
+</html>

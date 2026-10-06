@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Registrazione cliente — desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ds{--background:#ffffff;--foreground:#0a0a0a;--card:#ffffff;--primary:#171717;--primary-foreground:#fafafa;--secondary:#f5f5f5;--muted:#f5f5f5;--muted-foreground:#737373;--accent:#f5f5f5;--border:#e5e5e5;--input:#e5e5e5;--ring:#a3a3a3;font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--foreground);background:var(--background);-webkit-font-smoothing:antialiased}
+.ds.dark{--background:#0a0a0a;--foreground:#fafafa;--card:#171717;--primary:#e5e5e5;--primary-foreground:#171717;--secondary:#262626;--muted:#262626;--muted-foreground:#a3a3a3;--accent:#262626;--border:rgba(255,255,255,0.1);--input:rgba(255,255,255,0.15);--ring:#737373}
+.ds button,.ds input{font-family:inherit}
+.tnum{font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}a:hover{text-decoration:underline}
+.ds :focus-visible{outline:2px solid var(--foreground);outline-offset:2px}
+.ds textarea{font-family:inherit}
+</style>
+</helmet>
+<div class="ds {{theme}}" style="min-height: 1300px; display: flex; flex-direction: column; background: var(--secondary)">
+
+<header style="border-bottom: 1px solid var(--border); background: var(--background)">
+<div style="max-width: 1120px; margin: 0 auto; padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; gap: 16px">
+<a href="Main.dc.html" aria-label="MioPersonal, torna alla home" style="display: flex; align-items: center; gap: 10px">
+<svg width="33" height="20" viewBox="0 0 420 254" aria-hidden="true" style="display: block"><path fill="currentColor" d="M41.1 253.3C3.5 246.1 -12.8 200.2 11.8 171.3C42.3 135.5 100.5 156.7 100.7 203.5C100.8 235.3 72.1 259.2 41.1 253.3ZM206 253.5C190.2 252.1 175.5 243 167.3 229.7C164.2 224.5 153.4 205.9 147.3 195C141.5 184.9 129.3 163.6 121.3 150C119.6 147.1 113.6 136.8 108 127C102.4 117.2 96.4 106.7 94.5 103.5C74.4 69 72.4 64.7 71.7 53.2C69.5 19.5 101.3 -6.9 133.8 1.7C150.2 6.1 159.9 15.3 172.7 39.2C174.1 41.7 175.8 44.7 176.5 45.8C177.2 46.8 179.6 50.9 181.8 54.8C184 58.6 188.9 67.2 192.7 73.8C196.5 80.3 201.4 88.8 203.5 92.5C205.6 96.2 208.3 100.7 209.3 102.5C210.4 104.3 214.9 111.9 219.3 119.5C223.6 127.1 229.1 136.6 231.5 140.8C233.9 144.9 237.6 151.3 239.8 155C246 165.8 245.7 165.8 251 154.8C257.3 141.8 261 128.4 261 118.6C261 115.3 260.9 115.1 256.7 107.8C254.3 103.6 250.7 97.3 248.6 93.8C246.6 90.2 243.8 85.4 242.5 83.2C235.7 72 232.9 64.7 231.9 56.6C226.6 9.7 281.9 -17.7 316.2 15C320.9 19.5 322 21 330.5 35.8C334.1 42.1 338.2 49.1 339.5 51.2C340.8 53.4 344.2 59.3 347 64.2C349.8 69.2 354 76.4 356.3 80.2C358.5 84.1 363.3 92.4 367 98.8C370.6 105.1 374.7 112.1 376 114.2C377.3 116.4 382.5 125.4 387.5 134.2C392.5 143.1 398.1 152.6 399.8 155.5C417.7 185.6 420 191.2 420 204.2C420 239.8 383.1 264.2 350.6 250.1C338.2 244.7 331.5 237.7 321.3 219.9C317.7 213.5 311.3 202.5 307.3 195.5C303.2 188.5 298.7 180.7 297.3 178.2C291.9 168.9 292.1 168.9 288.4 178C272.4 217.7 244.3 247.9 218.7 253C213.6 254.1 212.8 254.1 206 253.5Z"></path></svg>
+<span style="font-size: 18px; line-height: 28px; font-weight: 600; letter-spacing: -0.025em">MioPersonal</span>
+</a>
+<span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Hai già un account? <a href="Login.dc.html" style="color: var(--foreground); font-weight: 500; text-decoration: underline">Accedi</a></span>
+</div>
+</header>
+
+<main style="max-width: 1120px; width: 100%; margin: 0 auto; padding: 48px 32px 80px; box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
+
+<form aria-labelledby="rc-title" style="flex: 999 1 480px; display: flex; flex-direction: column; gap: 20px; padding: 32px; border: 1px solid var(--border); border-radius: 14px; background: var(--card)">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h1 id="rc-title" style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.025em">{{title}}</h1>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: var(--muted-foreground)">{{subtitle}}</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px"><a href="#" style="display: flex; align-items: center; justify-content: center; gap: 10px; height: 44px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.35 11.1H12v2.98h5.35c-.23 1.4-1.66 4.1-5.35 4.1-3.22 0-5.85-2.67-5.85-5.96S8.78 6.26 12 6.26c1.84 0 3.07.78 3.77 1.45l2.57-2.48C16.69 3.7 14.56 2.8 12 2.8 6.92 2.8 2.8 6.92 2.8 12s4.12 9.2 9.2 9.2c5.31 0 8.83-3.73 8.83-8.99 0-.6-.07-1.06-.15-1.51z"></path></svg>Registrati con Google</a><a href="#" style="display: flex; align-items: center; justify-content: center; gap: 10px; height: 44px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.27-1.6 2.78-.41 6.89 1.15 9.14.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.24-.02 2.02-1.12 2.77-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.39-.92-2.41-3.66zM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.02.61-2.67 1.37-.58.67-1.09 1.76-.96 2.8 1.02.08 2.05-.52 2.69-1.28z"></path></svg>Registrati con Apple</a></div><div style="display: flex; align-items: center; gap: 12px; font-size: 12px; line-height: 16px; color: var(--muted-foreground)"><span style="flex: 1; height: 1px; background: var(--border)"></span>oppure con email e password<span style="flex: 1; height: 1px; background: var(--border)"></span></div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="rc-nome" style="font-size: 14px; line-height: 20px; font-weight: 500">Nome</label>
+<input id="rc-nome" type="text" autocomplete="given-name" style="height: 44px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05)">
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="rc-cognome" style="font-size: 14px; line-height: 20px; font-weight: 500">Cognome</label>
+<input id="rc-cognome" type="text" autocomplete="family-name" style="height: 44px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05)">
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="rc-email" style="font-size: 14px; line-height: 20px; font-weight: 500">Email</label>
+<input id="rc-email" type="email" autocomplete="email" placeholder="nome@esempio.it" aria-describedby="rc-email-h" style="height: 44px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05)">
+<span id="rc-email-h" style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Ti mandiamo un link per verificarla.</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="rc-tel" style="font-size: 14px; line-height: 20px; font-weight: 500">Telefono</label>
+<input id="rc-tel" type="tel" autocomplete="tel" placeholder="+39" aria-describedby="rc-tel-h" style="height: 44px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05)">
+<span id="rc-tel-h" style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Il trainer lo vede solo dopo aver accettato la tua richiesta.</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="rc-pass" style="font-size: 14px; line-height: 20px; font-weight: 500">Password</label>
+<div style="position: relative; display: flex">
+<input id="rc-pass" type="{{passType}}" autocomplete="new-password" aria-describedby="rc-pass-h" style="flex: 1; height: 44px; padding: 0 84px 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05)">
+<button type="button" onClick="{{togglePass}}" aria-pressed="{{passShown}}" style="position: absolute; right: 4px; top: 4px; height: 36px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer">{{passLabel}}</button>
+</div>
+<span id="rc-pass-h" style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Almeno 8 caratteri.</span>
+</div>
+<fieldset style="margin: 0; padding: 16px 0 0; border: 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px">
+<legend style="position: absolute; width: 1px; height: 1px; overflow: hidden">Consensi</legend>
+<label style="display: flex; gap: 10px; font-size: 14px; line-height: 20px; cursor: pointer"><input type="checkbox" required="" style="flex: none; width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--primary)"><span>Ho almeno 18 anni e accetto i <a href="#" style="text-decoration: underline">Termini</a> e l'<a href="#" style="text-decoration: underline">Informativa privacy</a>. <span style="color: var(--muted-foreground)">(obbligatorio)</span></span></label>
+<label style="display: flex; gap: 10px; font-size: 14px; line-height: 20px; cursor: pointer"><input type="checkbox" style="flex: none; width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--primary)"><span>Voglio ricevere novità sulla piattaforma via email. <span style="color: var(--muted-foreground)">(facoltativo)</span></span></label>
+</fieldset>
+<a href="{{ctaHref}}" style="display: flex; align-items: center; justify-content: center; height: 44px; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none">{{ctaLabel}}</a>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: var(--muted-foreground); text-align: center">Sei un personal trainer? <a href="Registrazione-trainer.dc.html" style="color: var(--foreground); font-weight: 500; text-decoration: underline">Crea il tuo profilo</a></p>
+</form>
+
+<sc-if value="{{withRequest}}" hint-placeholder-val="{{true}}">
+<aside aria-labelledby="rc-sum" style="flex: 1 1 320px; display: flex; flex-direction: column; gap: 16px; padding: 24px; border: 1px solid var(--border); border-radius: 14px; background: var(--card)">
+<h2 id="rc-sum" style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 500; color: var(--muted-foreground)">IL TUO SLOT È RISERVATO</h2>
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="flex: none; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--muted); font-size: 16px; line-height: 24px; font-weight: 700; color: var(--muted-foreground)">GR</span>
+<span style="display: flex; flex-direction: column"><span style="font-size: 16px; line-height: 24px; font-weight: 600">Giulia Rossi</span><span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Functional e Pilates · Città Studi</span></span>
+</div>
+<dl class="tnum" style="margin: 0; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 20px">
+<div style="display: flex; justify-content: space-between; gap: 12px"><dt style="color: var(--muted-foreground)">Servizio</dt><dd style="margin: 0; text-align: right; font-weight: 500">Seduta singola · 1 ora</dd></div>
+<div style="display: flex; justify-content: space-between; gap: 12px"><dt style="color: var(--muted-foreground)">Quando</dt><dd style="margin: 0; text-align: right; font-weight: 500">Gio 8 ottobre, 18:00–19:00</dd></div>
+<div style="display: flex; justify-content: space-between; gap: 12px"><dt style="color: var(--muted-foreground)">Cancellazione</dt><dd style="margin: 0; text-align: right; font-weight: 500">Gratis fino a 24 ore prima</dd></div>
+<div style="display: flex; justify-content: space-between; gap: 12px"><dt style="color: var(--muted-foreground)">Prezzo indicativo</dt><dd style="margin: 0; font-weight: 600">45 €</dd></div>
+</dl>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="rc-msg" style="font-size: 14px; line-height: 20px; font-weight: 500">Messaggio per Giulia <span style="font-weight: 400; color: var(--muted-foreground)">(facoltativo)</span></label><textarea id="rc-msg" rows="3" style="padding: 8px 10px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 15px; line-height: 22px">Vorrei riprendere ad allenarmi dopo l'estate.</textarea></div>
+<p class="tnum" style="margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--muted); font-size: 13px; line-height: 18px">Lo teniamo bloccato per te ancora <strong>14:52</strong> minuti mentre crei l'account.</p>
+<p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--muted-foreground)">Giulia conferma entro 24 ore. Nessun pagamento online.</p>
+</aside>
+</sc-if>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Chiaro","Scuro"],"default":"Chiaro"},"daRichiesta":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { show: false }; }
+  renderVals() {
+    var self = this, s = this.state.show;
+    var withRequest = this.props.daRichiesta !== false;
+    return {
+      withRequest: withRequest,
+      title: withRequest ? 'Crea l\'account per prenotare' : 'Crea il tuo account',
+      subtitle: withRequest ? 'Ci vuole un minuto. Ti chiediamo solo quello che serve al trainer per confermare.' : 'Per inviare richieste ai trainer e seguire le tue sedute.',
+      ctaLabel: withRequest ? 'Crea account e prenota' : 'Crea account',
+      ctaHref: 'Completa-profilo.dc.html',
+      passType: s ? 'text' : 'password', passLabel: s ? 'Nascondi' : 'Mostra', passShown: s ? 'true' : 'false',
+      togglePass: function () { self.setState({ show: !self.state.show }); },
+      theme: this.props.tema === 'Scuro' ? 'dark' : 'light'
+    };
+  }
+}
+</script>
+</body>
+</html>

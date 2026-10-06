@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Registrazione trainer — passo 7, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ds{--background:#ffffff;--foreground:#0a0a0a;--card:#ffffff;--primary:#171717;--primary-foreground:#fafafa;--secondary:#f5f5f5;--muted:#f5f5f5;--muted-foreground:#737373;--accent:#f5f5f5;--border:#e5e5e5;--input:#e5e5e5;--ring:#a3a3a3;font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--foreground);background:var(--background);-webkit-font-smoothing:antialiased}
+.ds.dark{--background:#0a0a0a;--foreground:#fafafa;--card:#171717;--primary:#e5e5e5;--primary-foreground:#171717;--secondary:#262626;--muted:#262626;--muted-foreground:#a3a3a3;--accent:#262626;--border:rgba(255,255,255,0.1);--input:rgba(255,255,255,0.15);--ring:#737373}
+.ds button,.ds input,.ds textarea{font-family:inherit}
+.ds input,.ds textarea{box-sizing:border-box}
+.tnum{font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}a:hover{text-decoration:underline}
+.ds :focus-visible{outline:2px solid var(--foreground);outline-offset:2px}
+</style>
+</helmet>
+<div class="ds {{theme}}" style="min-height: 1300px; display: flex; flex-direction: column; background: var(--secondary)">
+
+<header style="border-bottom: 1px solid var(--border); background: var(--background)">
+<div style="max-width: 1200px; margin: 0 auto; padding: 14px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px">
+<a href="Main.dc.html" aria-label="MioPersonal, torna alla home" style="display: flex; align-items: center; gap: 10px">
+<svg width="33" height="20" viewBox="0 0 420 254" aria-hidden="true" style="display: block"><path fill="currentColor" d="M41.1 253.3C3.5 246.1 -12.8 200.2 11.8 171.3C42.3 135.5 100.5 156.7 100.7 203.5C100.8 235.3 72.1 259.2 41.1 253.3ZM206 253.5C190.2 252.1 175.5 243 167.3 229.7C164.2 224.5 153.4 205.9 147.3 195C141.5 184.9 129.3 163.6 121.3 150C119.6 147.1 113.6 136.8 108 127C102.4 117.2 96.4 106.7 94.5 103.5C74.4 69 72.4 64.7 71.7 53.2C69.5 19.5 101.3 -6.9 133.8 1.7C150.2 6.1 159.9 15.3 172.7 39.2C174.1 41.7 175.8 44.7 176.5 45.8C177.2 46.8 179.6 50.9 181.8 54.8C184 58.6 188.9 67.2 192.7 73.8C196.5 80.3 201.4 88.8 203.5 92.5C205.6 96.2 208.3 100.7 209.3 102.5C210.4 104.3 214.9 111.9 219.3 119.5C223.6 127.1 229.1 136.6 231.5 140.8C233.9 144.9 237.6 151.3 239.8 155C246 165.8 245.7 165.8 251 154.8C257.3 141.8 261 128.4 261 118.6C261 115.3 260.9 115.1 256.7 107.8C254.3 103.6 250.7 97.3 248.6 93.8C246.6 90.2 243.8 85.4 242.5 83.2C235.7 72 232.9 64.7 231.9 56.6C226.6 9.7 281.9 -17.7 316.2 15C320.9 19.5 322 21 330.5 35.8C334.1 42.1 338.2 49.1 339.5 51.2C340.8 53.4 344.2 59.3 347 64.2C349.8 69.2 354 76.4 356.3 80.2C358.5 84.1 363.3 92.4 367 98.8C370.6 105.1 374.7 112.1 376 114.2C377.3 116.4 382.5 125.4 387.5 134.2C392.5 143.1 398.1 152.6 399.8 155.5C417.7 185.6 420 191.2 420 204.2C420 239.8 383.1 264.2 350.6 250.1C338.2 244.7 331.5 237.7 321.3 219.9C317.7 213.5 311.3 202.5 307.3 195.5C303.2 188.5 298.7 180.7 297.3 178.2C291.9 168.9 292.1 168.9 288.4 178C272.4 217.7 244.3 247.9 218.7 253C213.6 254.1 212.8 254.1 206 253.5Z"></path></svg>
+<span style="font-size: 18px; line-height: 28px; font-weight: 600; letter-spacing: -0.025em">MioPersonal</span>
+</a>
+<span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 9999px; border: 1px solid var(--border); font-size: 12px; line-height: 16px; font-weight: 500">Per i trainer</span>
+<span style="margin-left: auto; font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Hai già un account? <a href="Login.dc.html" style="color: var(--foreground); font-weight: 500; text-decoration: underline">Accedi</a></span>
+</div>
+</header>
+
+<div style="max-width: 1200px; width: 100%; margin: 0 auto; padding: 40px 32px 80px; box-sizing: border-box; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; flex-grow: 1">
+
+<sc-if value="{{notDone}}" hint-placeholder-val="{{true}}">
+<nav aria-label="Passi della registrazione" style="flex: 1 1 220px; max-width: 260px; display: flex; flex-direction: column; gap: 4px">
+<span class="tnum" style="padding: 0 12px 12px; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--muted-foreground)">PASSO {{stepNum}} DI 7</span>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="7">
+<button type="button" onClick="{{s.pick}}" aria-current="{{s.current}}" style="{{s.style}}"><span style="{{s.dotStyle}}">{{s.mark}}</span><span style="text-align: left">{{s.label}}</span></button>
+</sc-for>
+</nav>
+</sc-if>
+
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: 14px; background: var(--card)">
+
+<div style="padding: 32px; display: flex; flex-direction: column; gap: 24px">
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 6px"><h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.025em">Crea il tuo account trainer</h1><p style="margin: 0; font-size: 16px; line-height: 24px; color: var(--muted-foreground)">Servono circa 10 minuti. Puoi salvare e finire più tardi.</p></div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="t-nome" style="font-size: 14px; line-height: 20px; font-weight: 500">Nome</label><input id="t-nome" type="text" autocomplete="given-name" value="Giulia" style="height: 44px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="t-cognome" style="font-size: 14px; line-height: 20px; font-weight: 500">Cognome</label><input id="t-cognome" type="text" autocomplete="family-name" value="Rossi" style="height: 44px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px"></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="t-email" style="font-size: 14px; line-height: 20px; font-weight: 500">Email</label><input id="t-email" type="email" autocomplete="email" placeholder="nome@esempio.it" aria-describedby="t-email-h" style="height: 44px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px"><span id="t-email-h" style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Qui ricevi le richieste dei clienti. Ti mandiamo un link per verificarla.</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="t-tel" style="font-size: 14px; line-height: 20px; font-weight: 500">Telefono</label><input id="t-tel" type="tel" autocomplete="tel" placeholder="+39" aria-describedby="t-tel-h" style="height: 44px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px"><span id="t-tel-h" style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Non è pubblico: lo vede solo il cliente di cui accetti la richiesta.</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="t-pass" style="font-size: 14px; line-height: 20px; font-weight: 500">Password</label><input id="t-pass" type="password" autocomplete="new-password" aria-describedby="t-pass-h" style="height: 44px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px"><span id="t-pass-h" style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Almeno 8 caratteri.</span></div>
+<label style="display: flex; gap: 10px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 14px; line-height: 20px; cursor: pointer"><input type="checkbox" required style="flex: none; width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--primary)"><span>Accetto i <a href="#" style="text-decoration: underline">Termini per i trainer</a> e l'<a href="#" style="text-decoration: underline">Informativa privacy</a>.</span></label>
+</sc-if>
+
+<sc-if value="{{s2}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 6px"><h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.025em">Il tuo profilo pubblico</h1><p style="margin: 0; font-size: 16px; line-height: 24px; color: var(--muted-foreground)">È la prima cosa che vedono i clienti, anche da Google.</p></div>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center">
+<div style="width: 128px; height: 128px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 1px dashed var(--input); border-radius: 14px; background: var(--muted); color: var(--muted-foreground)"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg><span style="font-size: 12px; line-height: 16px; font-weight: 500">Foto profilo</span></div>
+<div style="flex: 1 1 240px; display: flex; flex-direction: column; gap: 8px">
+<button type="button" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>Carica una foto</button>
+<span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">JPG o PNG, almeno 400 × 400 px. Viso ben visibile, luce naturale. I profili con foto ricevono più fiducia.</span>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="t-head" style="font-size: 14px; line-height: 20px; font-weight: 500">Titolo del profilo</label><input id="t-head" type="text" maxlength="60" value="Personal trainer · Functional e Pilates" aria-describedby="t-head-h" style="height: 44px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px"><span id="t-head-h" style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Una riga, al massimo 60 caratteri. Compare sotto il tuo nome.</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="t-bio" style="font-size: 14px; line-height: 20px; font-weight: 500">Chi sei e come lavori</label><textarea id="t-bio" rows="6" maxlength="800" aria-describedby="t-bio-h" placeholder="Chi alleni di solito, che metodo usi, cosa succede nella prima seduta…" style="padding: 10px 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px; resize: vertical"></textarea><span id="t-bio-h" class="tnum" style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Da 150 a 800 caratteri. Non inserire contatti: arrivano al cliente dopo l'accettazione.</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="t-exp" style="font-size: 14px; line-height: 20px; font-weight: 500">Anni di esperienza</label><button id="t-exp" type="button" style="max-width: 240px; height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px; cursor: pointer">Da 5 a 10 anni<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></div>
+</sc-if>
+
+<sc-if value="{{s3}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 6px"><h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.025em">Discipline, luoghi e zone</h1><p style="margin: 0; font-size: 16px; line-height: 24px; color: var(--muted-foreground)">Servono a farti trovare dai clienti giusti nella ricerca.</p></div>
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 10px">
+<legend class="tnum" style="padding: 0 0 10px; font-size: 14px; line-height: 20px; font-weight: 500">Discipline <span style="font-weight: 400; color: var(--muted-foreground)">· {{discCount}} di 5 al massimo</span></legend>
+<div style="display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{discs}}" as="d" hint-placeholder-count="10"><button type="button" aria-pressed="{{d.pressed}}" onClick="{{d.pick}}" style="{{d.style}}">{{d.label}}</button></sc-for></div>
+</fieldset>
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 10px">
+<legend style="padding: 0 0 10px; font-size: 14px; line-height: 20px; font-weight: 500">Dove alleni</legend>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); gap: 8px"><sc-for list="{{places}}" as="p" hint-placeholder-count="4"><button type="button" aria-pressed="{{p.pressed}}" onClick="{{p.pick}}" style="{{p.style}}"><span style="font-size: 14px; line-height: 20px; font-weight: 600">{{p.label}}</span><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">{{p.hint}}</span></button></sc-for></div>
+</fieldset>
+<sc-if value="{{hasStudio}}" hint-placeholder-val="{{true}}"><fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 12px"><legend style="padding: 0 0 10px; font-size: 14px; line-height: 20px; font-weight: 500">Dove alleni in presenza <span style="font-weight: 400; color: var(--muted-foreground)">· studi, palestre o centri sportivi</span></legend><sc-for list="{{addrs}}" as="a" hint-placeholder-count="1"><div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) 44px; gap: 10px; align-items: end"><div style="display: flex; flex-direction: column; gap: 6px"><label for="{{a.idN}}" style="font-size: 12px; line-height: 16px; font-weight: 500">Nome del luogo</label><input id="{{a.idN}}" type="text" value="{{a.name}}" placeholder="Es. Palestra FitLab" style="height: 44px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px"></div><div style="display: flex; flex-direction: column; gap: 6px"><label for="{{a.idA}}" style="font-size: 12px; line-height: 16px; font-weight: 500">Indirizzo</label><input id="{{a.idA}}" type="text" autocomplete="street-address" value="{{a.addr}}" placeholder="Via, numero civico, città" style="height: 44px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px"></div><button type="button" onClick="{{a.remove}}" aria-label="{{a.removeLabel}}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: transparent; color: var(--muted-foreground); cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button></div></sc-for><button type="button" onClick="{{addAddr}}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border: 1px dashed var(--input); border-radius: 8px; background: transparent; color: var(--foreground); font-size: 14px; font-weight: 500; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Aggiungi indirizzo</button><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Sul profilo mostriamo solo la zona di ogni luogo. L’indirizzo esatto lo riceve il cliente con la conferma.</span></fieldset></sc-if>
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 10px">
+<legend class="tnum" style="padding: 0 0 10px; font-size: 14px; line-height: 20px; font-weight: 500">Zone in cui ti sposti <span style="font-weight: 400; color: var(--muted-foreground)">· {{zoneCount}} selezionate</span></legend>
+<div style="display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{zones}}" as="z" hint-placeholder-count="14"><button type="button" aria-pressed="{{z.pressed}}" onClick="{{z.pick}}" style="{{z.style}}">{{z.label}}</button></sc-for></div>
+</fieldset>
+</sc-if>
+
+<sc-if value="{{s4}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 6px"><h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.025em">Servizi e prezzi</h1><p style="margin: 0; font-size: 16px; line-height: 24px; color: var(--muted-foreground)">Almeno un servizio. I prezzi sono indicativi: il pagamento lo concordi tu con il cliente.</p></div>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{services}}" as="v" hint-placeholder-count="2">
+<div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) 44px; gap: 10px; align-items: end; padding: 16px; border: 1px solid var(--border); border-radius: 14px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="{{v.idName}}" style="font-size: 12px; line-height: 16px; font-weight: 500">Nome del servizio</label><input id="{{v.idName}}" type="text" value="{{v.name}}" style="height: 40px; padding: 0 10px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="{{v.idDur}}" style="font-size: 12px; line-height: 16px; font-weight: 500">Durata</label><button id="{{v.idDur}}" type="button" class="tnum" style="height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px; cursor: pointer">{{v.dur}}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="{{v.idPrice}}" style="font-size: 12px; line-height: 16px; font-weight: 500">Prezzo (€)</label><input id="{{v.idPrice}}" type="number" inputmode="numeric" min="0" value="{{v.price}}" class="tnum" style="height: 40px; padding: 0 10px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px"></div>
+<button type="button" onClick="{{v.remove}}" aria-label="{{v.removeLabel}}" style="width: 44px; height: 40px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: transparent; color: var(--muted-foreground); cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button>
+</div>
+</sc-for>
+<button type="button" onClick="{{addService}}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border: 1px dashed var(--input); border-radius: 8px; background: transparent; color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Aggiungi un servizio</button>
+</div>
+</sc-if>
+
+<sc-if value="{{s5}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 6px"><h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.025em">I tuoi orari di lavoro</h1><p style="margin: 0; font-size: 16px; line-height: 24px; color: var(--muted-foreground)">Da qui nascono gli slot prenotabili sul tuo profilo. Tocca le fasce in cui lavori; gli orari esatti li rifinisci dalla tua area.</p></div>
+<div style="display: flex; flex-direction: column; gap: 14px"><div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span style="font-size: 14px; line-height: 20px; font-weight: 500; margin-right: 4px">Ai giorni selezionati:</span><sc-for list="{{groups}}" as="g" hint-placeholder-count="5"><button type="button" onClick="{{g.pick}}" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid var(--input); border-radius: 9999px; background: var(--background); color: var(--foreground); font-size: 14px; font-weight: 500; cursor: pointer">{{g.label}}<span class="tnum" style="font-weight: 400; color: var(--muted-foreground)">{{g.range}}</span></button></sc-for></div><div style="overflow-x: auto"><div role="grid" aria-label="Orari di lavoro della settimana" style="min-width: 640px; display: grid; grid-template-columns: 60px repeat(7, minmax(0, 1fr)); gap: 4px"><span></span><sc-for list="{{dayHeads}}" as="d" hint-placeholder-count="7"><button type="button" aria-pressed="{{d.pressed}}" onClick="{{d.pick}}" style="{{d.style}}"><span style="font-size: 13px; font-weight: 600">{{d.label}}</span><span class="tnum" style="font-size: 11px; opacity: 0.75">{{d.count}}</span></button></sc-for><sc-for list="{{hourRows}}" as="r" hint-placeholder-count="14"><span class="tnum" style="display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; font-size: 12px; color: var(--muted-foreground)">{{r.label}}</span><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="7"><button type="button" aria-pressed="{{c.pressed}}" aria-label="{{c.aria}}" onClick="{{c.pick}}" style="{{c.style}}"></button></sc-for></sc-for></div></div><p class="tnum" style="margin: 0; font-size: 14px; line-height: 20px; color: var(--muted-foreground)"><strong style="color: var(--foreground)">{{hoursLabel}}.</strong> Tocca un giorno in alto per selezionarlo, poi aggiungi un gruppo di ore; oppure tocca le singole ore. Sono gli stessi slot da un’ora che i clienti vedono sul tuo profilo.</p></div>
+<div style="display: flex; flex-direction: column; gap: 16px; padding-top: 20px; border-top: 1px solid var(--border)"><div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 18px; line-height: 26px; font-weight: 600">Regole di prenotazione</span><span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Puoi cambiarle quando vuoi dalla tua area.</span></div><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 16px"><div style="display: flex; flex-direction: column; gap: 6px"><label for="r5-0" style="font-size: 14px; line-height: 20px; font-weight: 500">Preavviso minimo</label><button id="r5-0" type="button" class="tnum" style="height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 15px; cursor: pointer">12 ore<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Niente prenotazioni all’ultimo minuto.</span></div><div style="display: flex; flex-direction: column; gap: 6px"><label for="r5-1" style="font-size: 14px; line-height: 20px; font-weight: 500">Prenotabile fino a</label><button id="r5-1" type="button" class="tnum" style="height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 15px; cursor: pointer">60 giorni<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Oltre, il calendario è chiuso.</span></div><div style="display: flex; flex-direction: column; gap: 6px"><label for="r5-2" style="font-size: 14px; line-height: 20px; font-weight: 500">Pausa tra due sedute</label><button id="r5-2" type="button" class="tnum" style="height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 15px; cursor: pointer">15 minuti<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Per rifiatare e preparare.</span></div><div style="display: flex; flex-direction: column; gap: 6px"><label for="r5-3" style="font-size: 14px; line-height: 20px; font-weight: 500">Spostamento per il domicilio</label><button id="r5-3" type="button" class="tnum" style="height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 15px; cursor: pointer">30 minuti<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Prima e dopo le sedute a casa del cliente.</span></div><div style="display: flex; flex-direction: column; gap: 6px"><label for="r5-4" style="font-size: 14px; line-height: 20px; font-weight: 500">Massimo sedute al giorno</label><button id="r5-4" type="button" class="tnum" style="height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 15px; cursor: pointer">6<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Poi il giorno risulta pieno.</span></div><div style="display: flex; flex-direction: column; gap: 6px"><label for="r5-5" style="font-size: 14px; line-height: 20px; font-weight: 500">Cancellazione gratuita</label><button id="r5-5" type="button" class="tnum" style="height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 15px; cursor: pointer">Fino a 24 ore prima<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">La vedono i clienti prima di prenotare.</span></div></div><fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 4px"><legend style="padding: 0 0 6px; font-size: 14px; font-weight: 500">Durate prenotabili</legend><div style="display: flex; flex-wrap: wrap; gap: 4px 20px"><label style="display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px; cursor: pointer"><input type="checkbox" checked style="width: 18px; height: 18px; margin: 0; accent-color: var(--primary)">1 ora</label><label style="display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px; cursor: pointer"><input type="checkbox" checked style="width: 18px; height: 18px; margin: 0; accent-color: var(--primary)">2 ore</label></div></fieldset><label style="display: flex; gap: 12px; padding: 12px; border-radius: 10px; background: var(--muted); cursor: pointer"><input type="checkbox" style="flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--primary)"><span style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 600">Conferma automatica</span><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">Se attiva, le prenotazioni sono confermate subito. Se no, hai 24 ore per rispondere.</span></span></label></div>
+</sc-if>
+
+<sc-if value="{{s6}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 6px"><h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.025em">Formazione e certificazioni</h1><p style="margin: 0; font-size: 16px; line-height: 24px; color: var(--muted-foreground)">Compaiono sul profilo. Gli attestati li vede solo il nostro team, per l'approvazione.</p></div>
+<sc-for list="{{certs}}" as="c" hint-placeholder-count="1">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 10px; padding: 16px; border: 1px solid var(--border); border-radius: 14px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="{{c.idT}}" style="font-size: 12px; line-height: 16px; font-weight: 500">Titolo</label><input id="{{c.idT}}" type="text" placeholder="Es. Laurea in Scienze Motorie" style="height: 40px; padding: 0 10px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="{{c.idE}}" style="font-size: 12px; line-height: 16px; font-weight: 500">Ente o scuola</label><input id="{{c.idE}}" type="text" style="height: 40px; padding: 0 10px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="{{c.idY}}" style="font-size: 12px; line-height: 16px; font-weight: 500">Anno</label><input id="{{c.idY}}" type="text" inputmode="numeric" placeholder="AAAA" style="height: 40px; padding: 0 10px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; line-height: 24px"></div>
+<button type="button" style="align-self: end; height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>Allega attestato</button>
+</div>
+</sc-for>
+<button type="button" onClick="{{addCert}}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border: 1px dashed var(--input); border-radius: 8px; background: transparent; color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Aggiungi una certificazione</button>
+</sc-if>
+
+<sc-if value="{{s7}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 6px"><h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.025em">Controlla e invia</h1><p style="margin: 0; font-size: 16px; line-height: 24px; color: var(--muted-foreground)">Il nostro team controlla ogni profilo prima di pubblicarlo.</p></div>
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<ul style="flex: 1 1 260px; margin: 0; padding: 0; list-style: none; border: 1px solid var(--border); border-radius: 14px; overflow: hidden">
+<sc-for list="{{review}}" as="w" hint-placeholder-count="6"><li style="{{w.style}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M20 6 9 17l-5-5"></path></svg><span style="flex: 1; display: flex; flex-direction: column; min-width: 0"><span style="font-size: 14px; line-height: 20px; font-weight: 600">{{w.label}}</span><span class="tnum" style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">{{w.value}}</span></span><button type="button" onClick="{{w.edit}}" style="height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: underline; cursor: pointer">Modifica</button></li></sc-for>
+</ul>
+<div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 12px; line-height: 16px; font-weight: 500; color: var(--muted-foreground)">ANTEPRIMA NELLA RICERCA</span>
+<div style="border: 1px solid var(--border); border-radius: 14px; background: var(--card); overflow: hidden">
+<div style="aspect-ratio: 4 / 3; background: var(--muted); display: flex; align-items: center; justify-content: center"><span style="font-size: 40px; line-height: 44px; font-weight: 700; letter-spacing: -0.025em; color: var(--muted-foreground)">GR</span></div>
+<div style="padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; gap: 8px"><span style="font-size: 18px; line-height: 28px; font-weight: 600">Giulia Rossi</span><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 9999px; border: 1px solid var(--border); font-size: 12px; line-height: 16px; font-weight: 500">Nuovo</span></div>
+<span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">{{previewZone}}</span>
+<div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{previewDiscs}}" as="d" hint-placeholder-count="2"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 9999px; background: var(--secondary); font-size: 12px; line-height: 16px; font-weight: 500">{{d}}</span></sc-for></div>
+<span class="tnum" style="display: flex; align-items: baseline; gap: 4px; padding-top: 10px; border-top: 1px solid var(--border)"><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">da</span><span style="font-size: 20px; line-height: 28px; font-weight: 700">{{minPrice}}</span><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">/ seduta</span></span>
+</div>
+</div>
+</div>
+</div>
+<label style="display: flex; gap: 10px; font-size: 14px; line-height: 20px; cursor: pointer"><input type="checkbox" required style="flex: none; width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--primary)"><span>Confermo che le informazioni e le certificazioni sono vere.</span></label>
+</sc-if>
+
+<sc-if value="{{done}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; padding: 32px 0">
+<span style="width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: var(--primary); color: var(--primary-foreground)"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span>
+<h1 style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 700; letter-spacing: -0.025em">Profilo inviato</h1>
+<p style="margin: 0; max-width: 480px; font-size: 16px; line-height: 24px; color: var(--muted-foreground)">Lo controlliamo prima di pubblicarlo e ti scriviamo appena è online. Intanto conferma la tua email: ti abbiamo mandato un link.</p>
+<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding-top: 8px">
+<a href="Dashboard-trainer.dc.html" style="display: inline-flex; align-items: center; height: 44px; padding: 0 20px; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none">Vai alla tua area</a>
+<a href="Profilo.dc.html" style="display: inline-flex; align-items: center; height: 44px; padding: 0 20px; border: 1px solid var(--input); border-radius: 8px; font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none">Vedi l'anteprima del profilo</a>
+</div>
+</div>
+</sc-if>
+
+</div>
+
+<sc-if value="{{notDone}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 16px 32px; border-top: 1px solid var(--border)">
+<sc-if value="{{canBack}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{back}}" style="height: 44px; padding: 0 16px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer">Indietro</button></sc-if>
+<button type="button" style="height: 44px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--muted-foreground); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer">Salva e continua dopo</button>
+<button type="button" onClick="{{next}}" style="margin-left: auto; display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 24px; border: 0; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer">{{nextLabel}}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+</div>
+</sc-if>
+
+</main>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Chiaro","Scuro"],"default":"Chiaro"},"passo":{"editor":"enum","options":["1 Account","2 Profilo","3 Discipline e zone","4 Servizi","5 Disponibilità","6 Certificazioni","7 Riepilogo","Inviato"],"default":"7 Riepilogo"},"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      step: this.stepFromProp(props.passo),
+      discs: ['Functional', 'Pilates'], places: ['studio', 'domicilio', 'parco', 'online'],
+      zones: ['Città Studi', 'Lambrate', 'Porta Venezia'],
+      services: [{ name: 'Seduta singola', dur: '60 min', price: '45' }, { name: 'Valutazione iniziale', dur: '45 min', price: '30' }],
+      certs: 1,
+      avail: { m: [1, 0, 1, 0, 1, 1, 0], p: [0, 1, 0, 1, 0, 1, 0], s: [1, 1, 1, 1, 0, 0, 0] },
+      hrs: { 0: [7, 8, 9, 10, 11, 18, 19, 20], 1: [12, 13, 14, 15, 16, 17, 18, 19, 20], 2: [7, 8, 9, 10, 11, 18, 19, 20], 3: [12, 13, 14, 15, 16, 17, 18, 19, 20], 4: [7, 8, 9, 10, 11, 12], 5: [8, 9, 10, 11, 12, 13], 6: [] },
+      selDays: [0, 1, 2, 3, 4], editDay: 0,
+      addrs: [{ name: 'Studio Città Studi', addr: '' }, { name: 'Palestra FitLab', addr: '' }]
+    };
+  }
+  stepFromProp(p) {
+    if (!p) return 7;
+    if (p === 'Inviato') return 8;
+    var n = parseInt(p, 10);
+    return n >= 1 && n <= 7 ? n : 1;
+  }
+  componentDidUpdate(prev) {
+    if (prev.passo !== this.props.passo) this.setState({ step: this.stepFromProp(this.props.passo) });
+  }
+  toggle(key, val, max) {
+    var arr = this.state[key].slice();
+    var i = arr.indexOf(val);
+    if (i >= 0) arr.splice(i, 1); else if (!max || arr.length < max) arr.push(val);
+    var o = {}; o[key] = arr; this.setState(o);
+  }
+  renderVals() {
+    var self = this, st = this.state, step = st.step;
+    var LABELS = ['Account', 'Profilo pubblico', 'Discipline e zone', 'Servizi e prezzi', 'Orari e regole', 'Certificazioni', 'Riepilogo'];
+    var steps = LABELS.map(function (l, i) {
+      var n = i + 1, cur = n === step, done = n < step;
+      return {
+        label: l, current: cur ? 'step' : 'false', mark: done ? '✓' : String(n),
+        style: 'display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border: 0; border-radius: 8px; font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer; ' + (cur ? 'background: var(--background); color: var(--foreground); box-shadow: 0 1px 2px rgba(0,0,0,0.05)' : 'background: transparent; color: ' + (done ? 'var(--foreground)' : 'var(--muted-foreground)')),
+        dotStyle: 'flex: none; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; font-size: 12px; line-height: 16px; font-weight: 600; box-sizing: border-box; ' + (cur || done ? 'background: var(--primary); color: var(--primary-foreground)' : 'border: 1px solid var(--input)'),
+        pick: function () { self.setState({ step: n }); }
+      };
+    });
+    var CHIP = function (on) { return 'display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 9999px; font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer; ' + (on ? 'border: 1px solid var(--primary); background: var(--primary); color: var(--primary-foreground)' : 'border: 1px solid var(--border); background: var(--background); color: var(--foreground)'); };
+    var discs = ['Functional', 'Pesi e bodybuilding', 'Pilates', 'Yoga', 'Crossfit', 'Preparazione atletica', 'Boxe', 'Calisthenics', 'Postura', 'Running'].map(function (d) {
+      var on = st.discs.indexOf(d) >= 0;
+      return { label: d, pressed: on ? 'true' : 'false', style: CHIP(on), pick: function () { self.toggle('discs', d, 5); } };
+    });
+    var zones = ['Centro', 'Brera', 'Isola', 'Porta Venezia', 'Città Studi', 'Lambrate', 'Navigli', 'Porta Romana', 'CityLife', 'San Siro', 'Bicocca', 'Monza', 'Sesto San Giovanni', 'Rho'].map(function (z) {
+      var on = st.zones.indexOf(z) >= 0;
+      return { label: z, pressed: on ? 'true' : 'false', style: CHIP(on), pick: function () { self.toggle('zones', z); } };
+    });
+    var places = [['studio', 'Studio o palestra', 'Uno o più indirizzi'], ['domicilio', 'A domicilio', 'Vai tu dal cliente'], ['parco', 'Al parco', 'All\u2019aperto'], ['online', 'Online', 'In videochiamata']].map(function (p) {
+      var on = st.places.indexOf(p[0]) >= 0;
+      return { label: p[1], hint: p[2], pressed: on ? 'true' : 'false', pick: function () { self.toggle('places', p[0]); },
+        style: 'display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px; border-radius: 10px; background: var(--background); color: var(--foreground); cursor: pointer; text-align: left; ' + (on ? 'border: 2px solid var(--primary)' : 'border: 1px solid var(--border)') };
+    });
+    var services = st.services.map(function (s, i) {
+      return { name: s.name, dur: s.dur, price: s.price, idName: 'sv-n-' + i, idDur: 'sv-d-' + i, idPrice: 'sv-p-' + i, removeLabel: 'Rimuovi ' + s.name,
+        remove: function () { if (self.state.services.length > 1) { var a = self.state.services.slice(); a.splice(i, 1); self.setState({ services: a }); } } };
+    });
+    var certs = []; for (var c = 0; c < st.certs; c++) certs.push({ idT: 'ct-t-' + c, idE: 'ct-e-' + c, idY: 'ct-y-' + c });
+    var dayNames = ['lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica'];
+    var rowsDef = [['m', 'Mattina', '7–12'], ['p', 'Pomeriggio', '12–18'], ['s', 'Sera', '18–21']];
+    var availCount = 0;
+    var grid = rowsDef.map(function (r) {
+      return { label: r[1], hours: r[2], cells: st.avail[r[0]].map(function (v, i) {
+        if (v) availCount++;
+        return { pressed: v ? 'true' : 'false', mark: v ? '✓' : '', aria: dayNames[i] + ' ' + r[1].toLowerCase(),
+          style: 'width: 100%; height: 44px; border-radius: 8px; font-size: 16px; cursor: pointer; ' + (v ? 'border: 0; background: var(--primary); color: var(--primary-foreground)' : 'border: 1px dashed var(--input); background: var(--background); color: var(--muted-foreground)'),
+          pick: function () { var a = JSON.parse(JSON.stringify(self.state.avail)); a[r[0]][i] = a[r[0]][i] ? 0 : 1; self.setState({ avail: a }); } };
+      }) };
+    });
+    var DN = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'], DL = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
+    var HRS = st.hrs, HALL = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+    var hh2 = function (h) { return (h < 10 ? '0' : '') + h + ':00'; };
+    var setHrs = function (d, list) { var o = {}; for (var k in self.state.hrs) o[k] = self.state.hrs[k].slice(); o[d] = list.slice().sort(function (a, b) { return a - b; }); return o; };
+    var hoursTot = 0; for (var dd = 0; dd < 7; dd++) hoursTot += HRS[dd].length;
+    var sel = st.selDays;
+    var dayHeads = DN.map(function (n, d) { var on = sel.indexOf(d) >= 0; return { label: n, count: HRS[d].length ? HRS[d].length + ' h' : 'riposo', pressed: on ? 'true' : 'false',
+      style: 'display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0; border-radius: 8px; cursor: pointer; font-family: inherit; ' + (on ? 'border: 2px solid var(--foreground); background: var(--secondary); color: var(--foreground)' : 'border: 1px solid var(--border); background: var(--background); color: var(--muted-foreground)'),
+      pick: function () { var s = self.state.selDays.slice(), i = s.indexOf(d); if (i >= 0) s.splice(i, 1); else s.push(d); self.setState({ selDays: s }); } }; });
+    var hourRows = HALL.map(function (h) { return { label: hh2(h), cells: DN.map(function (n, d) { var on = HRS[d].indexOf(h) >= 0; return { pressed: on ? 'true' : 'false', aria: DL[d] + ' ' + hh2(h) + (on ? ', disponibile' : ', non disponibile'),
+      style: 'height: 30px; border-radius: 6px; cursor: pointer; ' + (on ? 'border: 0; background: var(--primary)' : 'border: 1px dashed var(--input); background: var(--background)'),
+      pick: function () { var l = self.state.hrs[d].slice(), i = l.indexOf(h); if (i >= 0) l.splice(i, 1); else l.push(h); self.setState({ hrs: setHrs(d, l) }); } }; }) }; });
+    var GR = [['Mattina', '7–12', [7, 8, 9, 10, 11]], ['Pomeriggio', '12–18', [12, 13, 14, 15, 16, 17]], ['Sera', '18–21', [18, 19, 20]], ['Tutto il giorno', '7–21', HALL], ['Svuota', '', []]];
+    var targets = self.isMobile ? [st.editDay] : sel;
+    var groups = GR.map(function (g) { return { label: g[0], range: g[1], pick: function () { var o = {}; for (var k in self.state.hrs) o[k] = self.state.hrs[k].slice();
+      targets.forEach(function (d) { if (!g[2].length) { o[d] = []; return; } var cur = o[d], all = g[2].every(function (h) { return cur.indexOf(h) >= 0; });
+        o[d] = all ? cur.filter(function (h) { return g[2].indexOf(h) < 0; }) : cur.concat(g[2].filter(function (h) { return cur.indexOf(h) < 0; })).sort(function (a, b) { return a - b; }); });
+      self.setState({ hrs: o }); } }; });
+    var ED = st.editDay;
+    var editDays = DN.map(function (n, d) { var on = d === ED; return { label: n.charAt(0), count: HRS[d].length ? HRS[d].length + 'h' : '–', pressed: on ? 'true' : 'false', style: 'display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0; border-radius: 10px; cursor: pointer; font-family: inherit; ' + (on ? 'border: 0; background: var(--primary); color: var(--primary-foreground)' : 'border: 1px solid var(--border); background: var(--background); color: var(--foreground)'), pick: function () { self.setState({ editDay: d }); } }; });
+    var editChips = HALL.map(function (h) { var on = HRS[ED].indexOf(h) >= 0; return { label: hh2(h), pressed: on ? 'true' : 'false', style: 'height: 44px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; ' + (on ? 'border: 0; background: var(--primary); color: var(--primary-foreground)' : 'border: 1px dashed var(--input); background: var(--background); color: var(--foreground)'), pick: function () { var l = self.state.hrs[ED].slice(), i = l.indexOf(h); if (i >= 0) l.splice(i, 1); else l.push(h); self.setState({ hrs: setHrs(ED, l) }); } }; });
+    var hoursVals = { dayHeads: dayHeads, hourRows: hourRows, groups: groups, editDays: editDays, editChips: editChips, editDayLabel: DL[ED] + (HRS[ED].length ? ' · ' + HRS[ED].length + ' ore' : ' · riposo'),
+      copyWeekdays: function () { var o = {}; for (var k in self.state.hrs) o[k] = self.state.hrs[k].slice(); for (var d = 0; d < 5; d++) o[d] = o[ED].slice(); self.setState({ hrs: o }); },
+      hoursLabel: hoursTot + ' ore a settimana' };
+    availCount = hoursTot;
+    var addrs = st.addrs.map(function (a, i) { return { name: a.name, addr: a.addr, idN: 'ad-n-' + i, idA: 'ad-a-' + i, removeLabel: 'Rimuovi ' + (a.name || 'indirizzo'),
+      remove: function () { if (self.state.addrs.length > 1) { var l = self.state.addrs.slice(); l.splice(i, 1); self.setState({ addrs: l }); } } }; });
+    var prices = st.services.map(function (s) { return parseInt(s.price, 10) || 0; }).filter(function (n) { return n > 0; });
+    var minPrice = prices.length ? Math.min.apply(null, prices) + ' €' : '—';
+    var placeNames = { studio: 'Studio', domicilio: 'Domicilio', parco: 'Parco', online: 'Online' };
+    var RV = 'display: flex; align-items: center; gap: 12px; padding: 12px 14px';
+    var review = [
+      ['Account', 'Giulia Rossi', 1], ['Profilo pubblico', 'Personal trainer · Functional e Pilates', 2],
+      ['Discipline e zone', st.discs.join(', ') + ' · ' + st.zones.length + ' zone · ' + st.places.map(function (p) { return placeNames[p]; }).join(', '), 3],
+      ['Servizi e prezzi', st.services.length + (st.services.length === 1 ? ' servizio' : ' servizi') + ' · da ' + minPrice, 4],
+      ['Orari e regole', availCount + ' ore a settimana · preavviso 12 ore', 5], ['Certificazioni', st.certs + (st.certs === 1 ? ' certificazione' : ' certificazioni'), 6]
+    ].map(function (r, i) { return { label: r[0], value: r[1], style: RV + (i > 0 ? '; border-top: 1px solid var(--border)' : ''), edit: function () { self.setState({ step: r[2] }); } }; });
+    return Object.assign(hoursVals, {
+      steps: steps, stepNum: Math.min(step, 7), stepLabel: LABELS[Math.min(step, 7) - 1],
+      progressStyle: 'display: block; height: 100%; border-radius: 9999px; background: var(--primary); width: ' + Math.round(Math.min(step, 7) / 7 * 100) + '%',
+      s1: step === 1, s2: step === 2, s3: step === 3, s4: step === 4, s5: step === 5, s6: step === 6, s7: step === 7, done: step === 8, notDone: step < 8,
+      canBack: step > 1 && step < 8,
+      nextLabel: step === 7 ? 'Invia per approvazione' : 'Continua',
+      next: function () { self.setState({ step: Math.min(self.state.step + 1, 8) }); },
+      back: function () { self.setState({ step: Math.max(self.state.step - 1, 1) }); },
+      discs: discs, discCount: st.discs.length, zones: zones, zoneCount: st.zones.length, places: places, hasStudio: st.places.indexOf('studio') >= 0,
+      addrs: addrs, addAddr: function () { self.setState({ addrs: self.state.addrs.concat([{ name: '', addr: '' }]) }); },
+      services: services, addService: function () { self.setState({ services: self.state.services.concat([{ name: 'Nuovo servizio', dur: '60 min', price: '' }]) }); },
+      certs: certs, addCert: function () { self.setState({ certs: self.state.certs + 1 }); },
+      days: ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'], grid: grid, availCount: availCount,
+      review: review, previewDiscs: st.discs.slice(0, 3), previewZone: st.zones.length ? st.zones[0] + (st.zones.length > 1 ? ' e altre ' + (st.zones.length - 1) + ' zone' : '') : (st.places.indexOf('online') >= 0 ? 'Solo online' : 'Nessuna zona'), minPrice: minPrice,
+      theme: this.props.tema === 'Scuro' ? 'dark' : 'light'
+    });
+  }
+}
+</script>
+</body>
+</html>

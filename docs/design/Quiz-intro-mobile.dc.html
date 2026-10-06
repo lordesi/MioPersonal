@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Quiz — introduzione, mobile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ds{--background:#ffffff;--foreground:#0a0a0a;--card:#ffffff;--primary:#171717;--primary-foreground:#fafafa;--secondary:#f5f5f5;--muted:#f5f5f5;--muted-foreground:#737373;--accent:#f5f5f5;--border:#e5e5e5;--input:#e5e5e5;--ring:#a3a3a3;font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--foreground);background:var(--background);-webkit-font-smoothing:antialiased}
+.ds.dark{--background:#0a0a0a;--foreground:#fafafa;--card:#171717;--primary:#e5e5e5;--primary-foreground:#171717;--secondary:#262626;--muted:#262626;--muted-foreground:#a3a3a3;--accent:#262626;--border:rgba(255,255,255,0.1);--input:rgba(255,255,255,0.15);--ring:#737373}
+.ds button{font-family:inherit}
+.tnum{font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}a:hover{text-decoration:underline}
+.ds :focus-visible{outline:2px solid var(--foreground);outline-offset:2px}
+.ds input{font-family:inherit}
+</style>
+</helmet>
+<div class="ds {{theme}}" style="width: 390px; min-height: 1100px; display: flex; flex-direction: column; background: var(--background)">
+
+<header style="display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 8px 0 16px; background: var(--primary); color: var(--primary-foreground)">
+<a href="Home-mobile.dc.html" aria-label="MioPersonal, torna alla home" style="display: flex; align-items: center; gap: 10px"><svg width="33" height="20" viewBox="0 0 420 254" aria-hidden="true" style="display: block"><path fill="currentColor" d="M41.1 253.3C3.5 246.1 -12.8 200.2 11.8 171.3C42.3 135.5 100.5 156.7 100.7 203.5C100.8 235.3 72.1 259.2 41.1 253.3ZM206 253.5C190.2 252.1 175.5 243 167.3 229.7C164.2 224.5 153.4 205.9 147.3 195C141.5 184.9 129.3 163.6 121.3 150C119.6 147.1 113.6 136.8 108 127C102.4 117.2 96.4 106.7 94.5 103.5C74.4 69 72.4 64.7 71.7 53.2C69.5 19.5 101.3 -6.9 133.8 1.7C150.2 6.1 159.9 15.3 172.7 39.2C174.1 41.7 175.8 44.7 176.5 45.8C177.2 46.8 179.6 50.9 181.8 54.8C184 58.6 188.9 67.2 192.7 73.8C196.5 80.3 201.4 88.8 203.5 92.5C205.6 96.2 208.3 100.7 209.3 102.5C210.4 104.3 214.9 111.9 219.3 119.5C223.6 127.1 229.1 136.6 231.5 140.8C233.9 144.9 237.6 151.3 239.8 155C246 165.8 245.7 165.8 251 154.8C257.3 141.8 261 128.4 261 118.6C261 115.3 260.9 115.1 256.7 107.8C254.3 103.6 250.7 97.3 248.6 93.8C246.6 90.2 243.8 85.4 242.5 83.2C235.7 72 232.9 64.7 231.9 56.6C226.6 9.7 281.9 -17.7 316.2 15C320.9 19.5 322 21 330.5 35.8C334.1 42.1 338.2 49.1 339.5 51.2C340.8 53.4 344.2 59.3 347 64.2C349.8 69.2 354 76.4 356.3 80.2C358.5 84.1 363.3 92.4 367 98.8C370.6 105.1 374.7 112.1 376 114.2C377.3 116.4 382.5 125.4 387.5 134.2C392.5 143.1 398.1 152.6 399.8 155.5C417.7 185.6 420 191.2 420 204.2C420 239.8 383.1 264.2 350.6 250.1C338.2 244.7 331.5 237.7 321.3 219.9C317.7 213.5 311.3 202.5 307.3 195.5C303.2 188.5 298.7 180.7 297.3 178.2C291.9 168.9 292.1 168.9 288.4 178C272.4 217.7 244.3 247.9 218.7 253C213.6 254.1 212.8 254.1 206 253.5Z"></path></svg><span style="font-size: 17px; line-height: 24px; font-weight: 600; letter-spacing: -0.025em">MioPersonal</span></a>
+<a href="Ricerca-mobile.dc.html" aria-label="Esci dal quiz" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></a>
+</header>
+
+<sc-if value="{{isIntro}}" hint-placeholder-val="{{true}}">
+<section aria-labelledby="qm-intro" style="display: flex; flex-direction: column; gap: 18px; padding: 28px 16px 32px; background: var(--primary); color: var(--primary-foreground)">
+<span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.08em; opacity: 0.6">QUIZ · TROVA IL TUO TRAINER</span>
+<h1 id="qm-intro" style="margin: 0; font-size: 44px; line-height: 44px; font-weight: 700; letter-spacing: -0.035em">Il trainer giusto, in un minuto.</h1>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<span style="display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 9999px; border: 1px solid currentColor; font-size: 12px; line-height: 16px; font-weight: 500; opacity: 0.85">7 domande</span>
+<span style="display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 9999px; border: 1px solid currentColor; font-size: 12px; line-height: 16px; font-weight: 500; opacity: 0.85">1 minuto</span>
+<span style="display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 9999px; border: 1px solid currentColor; font-size: 12px; line-height: 16px; font-weight: 500; opacity: 0.85">Senza registrarti</span>
+</div>
+</section>
+<main style="flex-grow: 1; display: flex; flex-direction: column; gap: 14px; padding: 24px 16px 24px">
+<h2 style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600">Cosa ti chiediamo</h2>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{catCards}}" as="c" hint-placeholder-count="7">
+<li style="display: flex; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px"><span style="flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"></path></svg></span><span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 15px; line-height: 20px; font-weight: 600">{{c.cat}}</span><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{c.ex}}</span></span><span class="tnum" style="margin-left: auto; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--muted-foreground)">{{c.num}}</span></li>
+</sc-for>
+</ol>
+<p style="margin: 4px 0 0; font-size: 12px; line-height: 18px; color: var(--muted-foreground)">Non ti chiediamo dati sulla salute.</p>
+</main>
+<div style="position: sticky; bottom: 0; display: flex; flex-direction: column; gap: 6px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--background)">
+<button type="button" onClick="{{start}}" style="display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; border: 0; border-radius: 10px; background: var(--primary); color: var(--primary-foreground); font-size: 17px; line-height: 24px; font-weight: 600; cursor: pointer">Inizia il quiz<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+<a href="Ricerca-mobile.dc.html" style="display: flex; align-items: center; justify-content: center; min-height: 40px; font-size: 14px; line-height: 20px; font-weight: 500">Preferisco cercare da solo</a>
+</div>
+</sc-if>
+
+<sc-if value="{{isQ}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 16px 16px 20px; background: var(--primary); color: var(--primary-foreground)">
+<div role="progressbar" aria-label="Avanzamento del quiz" aria-valuemin="1" aria-valuemax="7" aria-valuenow="{{qNum}}" style="display: flex; gap: 4px"><sc-for list="{{segs}}" as="g" hint-placeholder-count="7"><span style="{{g.style}}; opacity: 1"></span></sc-for></div>
+<div class="tnum" style="display: flex; align-items: baseline; gap: 10px"><span style="font-size: 64px; line-height: 60px; font-weight: 700; letter-spacing: -0.05em">{{qNumPad}}</span><span style="font-size: 20px; line-height: 24px; font-weight: 600; opacity: 0.4">/ 07</span><span style="margin-left: auto; font-size: 15px; line-height: 20px; font-weight: 600">{{qCat}}</span></div>
+</div>
+<main style="flex-grow: 1; padding: 20px 16px 24px">
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 16px">
+<legend style="padding: 0"><span style="display: block; font-size: 28px; line-height: 32px; font-weight: 700; letter-spacing: -0.03em">{{qTitle}}</span><span style="display: block; padding-top: 8px; font-size: 14px; line-height: 20px; color: var(--muted-foreground)">{{qHelp}}<sc-if value="{{showMulti}}" hint-placeholder-val="{{false}}"> · {{multiLabel}}</sc-if></span></legend>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{options}}" as="o" hint-placeholder-count="5">
+<button type="button" aria-pressed="{{o.pressed}}" onClick="{{o.pick}}" style="{{o.style}}">
+<span style="{{o.tileStyle}}"><sc-if value="{{o.isIcon}}" hint-placeholder-val="{{true}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{o.icon}}"></path></svg></sc-if><sc-if value="{{o.isGlyph}}" hint-placeholder-val="{{false}}">{{o.glyph}}</sc-if></span>
+<span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 16px; line-height: 22px; font-weight: 600">{{o.label}}</span><span style="{{o.hintStyle}}">{{o.hint}}</span></span>
+<span style="{{o.markStyle}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span>
+</button>
+</sc-for>
+</div>
+<sc-if value="{{isSearch}}" hint-placeholder-val="{{false}}"><div style="display: flex; flex-direction: column; gap: 14px"><label for="qz-zona" style="font-size: 14px; line-height: 20px; font-weight: 500">Quartiere, via o CAP</label><div style="display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 16px; border: 1.5px solid var(--foreground); border-radius: 14px; background: var(--card)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg><input id="qz-zona" type="search" autocomplete="street-address" placeholder="Es. Città Studi, via Pacini, 20131" style="flex: 1; min-width: 0; border: 0; background: transparent; color: var(--foreground); font-size: 17px; font-family: inherit"></div><button type="button" onClick="{{useLocation}}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--foreground); font-size: 14px; font-weight: 500; text-decoration: underline; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>Usa la mia posizione attuale</button><span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.08em; color: var(--muted-foreground)">SUGGERIMENTI</span><div role="listbox" aria-label="Zone suggerite" style="display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 14px; background: var(--card); overflow: hidden"><sc-for list="{{zoneSugs}}" as="z" hint-placeholder-count="5"><button type="button" role="option" aria-selected="{{z.pressed}}" onClick="{{z.pick}}" style="{{z.style}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; text-align: left"><span style="font-size: 15px; line-height: 20px; font-weight: 600">{{z.label}}</span><span style="font-size: 12px; line-height: 16px; opacity: 0.7">{{z.sub}}</span></span><span style="{{z.markStyle}}">✓</span></button></sc-for></div><div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span style="font-size: 14px; font-weight: 500; margin-right: 4px">Distanza massima</span><sc-for list="{{radii}}" as="r" hint-placeholder-count="3"><button type="button" aria-pressed="{{r.pressed}}" onClick="{{r.pick}}" style="{{r.style}}">{{r.label}}</button></sc-for></div><button type="button" aria-pressed="{{onlyOnline}}" onClick="{{toggleOnline}}" style="{{onlineStyle}}"><span style="{{onlineMark}}">✓</span>Mi alleno solo online: la zona non conta</button></div></sc-if>
+</fieldset>
+</main>
+<div style="position: sticky; bottom: 0; display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--background)">
+<button type="button" onClick="{{back}}" aria-label="Domanda precedente" style="flex: none; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--input); border-radius: 10px; background: var(--background); color: var(--foreground); cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></button>
+<button type="button" onClick="{{skip}}" style="flex: none; height: 52px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: var(--muted-foreground); font-size: 15px; line-height: 20px; font-weight: 500; cursor: pointer">Salta</button>
+<button type="button" onClick="{{next}}" aria-disabled="{{nextDisabled}}" style="{{nextStyle}}; flex: 1">{{nextLabel}}</button>
+</div>
+</sc-if>
+
+<sc-if value="{{isResult}}" hint-placeholder-val="{{false}}">
+<main style="flex-grow: 1; display: flex; flex-direction: column; gap: 16px; padding: 24px 16px 32px">
+<h1 style="margin: 0; font-size: 32px; line-height: 36px; font-weight: 700; letter-spacing: -0.03em">I tuoi 3 trainer</h1>
+<div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px"><sc-for list="{{chips}}" as="c" hint-placeholder-count="5"><span style="flex: none; display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 9999px; background: var(--secondary); font-size: 12px; line-height: 16px; font-weight: 500; white-space: nowrap">{{c}}</span></sc-for></div>
+<article style="display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 18px; background: var(--primary); color: var(--primary-foreground)">
+<div style="display: flex; align-items: center; gap: 14px">
+<div style="position: relative; flex: none; width: 84px; height: 84px">
+<span style="position: absolute; inset: 8px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: rgba(127,127,127,0.25); font-size: 22px; line-height: 28px; font-weight: 700">{{top.initials}}</span>
+<svg width="84" height="84" viewBox="0 0 64 64" aria-hidden="true" style="position: absolute; inset: 0"><circle cx="32" cy="32" r="28" fill="none" stroke-width="4" style="stroke: rgba(127,127,127,0.35)"></circle><circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="{{top.dash}}" transform="rotate(-90 32 32)"></circle></svg>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="align-self: flex-start; display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 9999px; background: var(--primary-foreground); color: var(--primary); font-size: 11px; line-height: 14px; font-weight: 600">Il più adatto</span><span style="font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.02em">{{top.name}}</span><span class="tnum" style="font-size: 13px; line-height: 18px; opacity: 0.75">{{top.pct}}% compatibile · da {{top.price}}</span></div>
+</div>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{top.reasons}}" as="w" hint-placeholder-count="3"><li style="display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 9999px; border: 1px solid rgba(127,127,127,0.5); font-size: 12px; line-height: 16px; font-weight: 500">{{w}}</li></sc-for></ul>
+<a href="{{top.href}}" style="display: flex; align-items: center; justify-content: center; height: 48px; border-radius: 10px; background: var(--primary-foreground); color: var(--primary); font-size: 15px; line-height: 20px; font-weight: 600; text-decoration: none">Prenota · {{top.next}}</a>
+</article>
+<sc-for list="{{others}}" as="r" hint-placeholder-count="2">
+<article style="display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 18px">
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="position: relative; flex: none; width: 56px; height: 56px">
+<span style="position: absolute; inset: 6px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: var(--muted); color: var(--muted-foreground); font-size: 14px; line-height: 18px; font-weight: 700">{{r.initials}}</span>
+<svg width="56" height="56" viewBox="0 0 64 64" aria-hidden="true" style="position: absolute; inset: 0"><circle cx="32" cy="32" r="28" fill="none" stroke-width="5" style="stroke: var(--muted)"></circle><circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-dasharray="{{r.dash}}" transform="rotate(-90 32 32)"></circle></svg>
+</div>
+<div style="display: flex; flex-direction: column; min-width: 0"><span class="tnum" style="font-size: 12px; line-height: 16px; font-weight: 600; color: var(--muted-foreground)">{{r.rank}} · {{r.pct}}% compatibile</span><span style="font-size: 17px; line-height: 24px; font-weight: 700">{{r.name}}</span><span class="tnum" style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">{{r.zone}} · da {{r.price}}</span></div>
+</div>
+<a href="{{r.href}}" style="display: flex; align-items: center; justify-content: center; height: 44px; border: 1px solid var(--input); border-radius: 10px; font-size: 14px; line-height: 20px; font-weight: 600; text-decoration: none">Prenota · primo slot {{r.next}}</a>
+</article>
+</sc-for>
+<section aria-label="Ricevi i risultati" style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--card)"><sc-if value="{{emailIdle}}" hint-placeholder-val="{{true}}"><label for="qz-mail" style="font-size: 15px; font-weight: 600">Ti mandiamo i risultati via email?</label><div style="display: flex; flex-wrap: wrap; gap: 8px"><input id="qz-mail" type="email" autocomplete="email" placeholder="nome@esempio.it" style="flex: 1 1 100%; height: 44px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 16px; font-family: inherit"><button type="button" onClick="{{sendResults}}" style="height: 44px; padding: 0 18px; border: 0; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-size: 14px; font-weight: 600; cursor: pointer">Inviameli</button></div><span style="font-size: 12px; color: var(--muted-foreground)">Solo i risultati del quiz, niente newsletter.</span></sc-if><sc-if value="{{emailSent}}" hint-placeholder-val="{{false}}"><span role="status" style="font-size: 14px">Fatto: controlla la tua casella di posta.</span></sc-if></section>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<button type="button" onClick="{{edit}}" style="height: 44px; border: 1px solid var(--input); border-radius: 10px; background: var(--background); color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer">Modifica risposte</button>
+<button type="button" onClick="{{restart}}" style="height: 44px; border: 0; border-radius: 10px; background: transparent; color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer">Rifai il quiz</button>
+</div>
+</main>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Chiaro","Scuro"],"default":"Chiaro"},"$preview":{"width":390,"height":1100}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { screen: 0, ans: {} };
+  }
+  renderVals() {
+    var self = this, st = this.state, scr = st.screen, ans = st.ans;
+    var IC = {
+      activity: 'M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2',
+      dumbbell: 'M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z M2.5 21.5l1.4-1.4 M20.1 3.9l1.4-1.4 M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z M9.6 14.4l4.8-4.8',
+      posture: 'M11 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0 M9 20l3-6 3 6 M6 8l6 2 6-2 M12 10v4',
+      trophy: 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6 M18 9h1.5a2.5 2.5 0 0 0 0-5H18 M4 22h16 M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22 M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22 M18 2H6v7a6 6 0 0 0 12 0V2Z',
+      leaf: 'M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12',
+      building: 'M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z M9 22v-4h6v4 M8 6h.01 M16 6h.01 M12 6h.01 M12 10h.01 M12 14h.01 M16 10h.01 M16 14h.01 M8 10h.01 M8 14h.01',
+      home: 'M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8 M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      trees: 'M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z M7 16v6 M13 19v3 M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5',
+      video: 'M16 13l5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5 M4 6h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z',
+      pin: 'M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0 M9 10a3 3 0 1 0 6 0a3 3 0 1 0 -6 0',
+      globe: 'M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0 M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20 M2 12h20',
+      sunrise: 'M12 2v8 M4.93 10.93l1.41 1.41 M2 18h2 M20 18h2 M19.07 10.93l-1.41 1.41 M22 22H2 M8 6l4-4 4 4 M16 18a4 4 0 0 0-8 0',
+      sun: 'M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0 M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M2 12h2 M20 12h2 M6.34 17.66l-1.41 1.41 M19.07 4.93l-1.41 1.41',
+      coffee: 'M10 2v2 M14 2v2 M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1 M6 2v2',
+      clock: 'M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0 M12 6v6h4.5',
+      moon: 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',
+      calendar: 'M8 2v4 M16 2v4 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M3 10h18',
+      sig1: 'M2 20h.01 M7 20v-4', sig2: 'M2 20h.01 M7 20v-4 M12 20v-8', sig3: 'M2 20h.01 M7 20v-4 M12 20v-8 M17 20V8',
+      sparkles: 'M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z',
+      target: 'M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0 M6 12a6 6 0 1 0 12 0a6 6 0 1 0 -12 0 M10 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0',
+      wallet: 'M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1 M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4'
+    };
+    var Q = [
+      { key: 'obiettivo', cat: 'Obiettivo', icon: 'target', multi: false, title: 'Qual è il tuo obiettivo principale?', help: 'Scegline uno: aiuta il trainer a capire da dove partire.', opts: [['Rimettermi in forma', 'Dopo una pausa o per iniziare', 'activity'], ['Diventare più forte', 'Forza e massa muscolare', 'dumbbell'], ['Migliorare postura e mobilità', 'Schiena, spalle, flessibilità', 'posture'], ['Prepararmi a una gara o a uno sport', 'Corsa, calcio, sci, altro', 'trophy'], ['Stare meglio e scaricare lo stress', 'Muovermi con regolarità', 'leaf']] },
+      { key: 'discipline', cat: 'Discipline', icon: 'dumbbell', multi: true, title: 'Quali discipline ti incuriosiscono?', help: 'Anche più di una.', opts: [['Functional', 'Movimenti completi', 'Fu'], ['Pesi', 'Sala e bilanciere', 'Pe'], ['Pilates', 'Controllo e core', 'Pi'], ['Yoga', 'Respiro e mobilità', 'Yo'], ['Crossfit', 'Alta intensità', 'Cf'], ['Boxe', 'Tecnica e cardio', 'Bx'], ['Calisthenics', 'A corpo libero', 'Ca'], ['Consigliami tu', 'Non ho preferenze', 'sparkles']] },
+      { key: 'luoghi', cat: 'Luoghi', icon: 'pin', multi: true, title: 'Dove ti piacerebbe allenarti?', help: 'Anche più di uno.', opts: [['In uno studio', 'Lo spazio del trainer', 'building'], ['A casa mia', 'Il trainer viene da te', 'home'], ['Al parco', 'All\u2019aperto', 'trees'], ['Online', 'In videochiamata', 'video']] },
+      { key: 'zona', cat: 'Zona', icon: 'pin', multi: false, search: true, title: 'Dove vuoi allenarti?', help: 'Cerca il quartiere, la via o il CAP: ti mostriamo i trainer più vicini.', opts: [] },
+      { key: 'orari', cat: 'Orari', icon: 'clock', multi: true, title: 'Quando riesci ad allenarti?', help: 'Tutte le fasce che vanno bene.', opts: [['Mattina presto', '7–9', 'sunrise'], ['In mattinata', '9–12', 'sun'], ['Pausa pranzo', '12–14', 'coffee'], ['Pomeriggio', '14–18', 'clock'], ['Sera', 'Dopo le 18', 'moon'], ['Weekend', 'Sabato e domenica', 'calendar']] },
+      { key: 'budget', cat: 'Budget', icon: 'wallet', multi: false, title: 'Quanto vuoi spendere a seduta?', help: 'Prezzo indicativo: il pagamento si concorda con il trainer.', opts: [['Fino a 35 €', '', '€'], ['35–45 €', '', '€€'], ['45–60 €', '', '€€€'], ['Più di 60 €', '', '€€€€'], ['Non ho preferenze', '', 'sparkles']] },
+      { key: 'livello', cat: 'Livello', icon: 'sig2', multi: false, title: 'Qual è il tuo punto di partenza?', help: 'Ultima domanda: aiuta il trainer a calibrare la prima seduta.', opts: [['Parto da zero', 'O quasi', 'sig1'], ['Mi alleno ogni tanto', 'Una volta a settimana o meno', 'sig2'], ['Mi alleno con regolarità', 'Due o più volte a settimana', 'sig3']] }
+    ];
+    var total = Q.length;
+    var q = scr >= 1 && scr <= total ? Q[scr - 1] : null;
+    var cur = q ? ans[q.key] : null;
+    var answered = q && q.search ? !!ans.zona : q ? (q.multi ? (cur && cur.length > 0) : !!cur) : false;
+    var mob = true;
+    var CARD = 'position: relative; display: flex; align-items: center; gap: 14px; width: 100%; min-height: ' + (mob ? '68px' : '84px') + '; padding: ' + (mob ? '12px 14px' : '16px 18px') + '; border-radius: 14px; text-align: left; cursor: pointer; box-sizing: border-box; transition: background 150ms ease, color 150ms ease; ';
+    var options = q ? q.opts.map(function (o) {
+      var on = q.multi ? (cur || []).indexOf(o[0]) >= 0 : cur === o[0];
+      var isIcon = !!IC[o[2]];
+      return {
+        label: o[0], hint: o[1], pressed: on ? 'true' : 'false', isIcon: isIcon, isGlyph: !isIcon, icon: isIcon ? IC[o[2]] : '', glyph: isIcon ? '' : o[2],
+        style: CARD + (on ? 'border: 1px solid var(--primary); background: var(--primary); color: var(--primary-foreground)' : 'border: 1px solid var(--border); background: var(--card); color: var(--foreground)'),
+        tileStyle: 'flex: none; width: ' + (mob ? '40px' : '48px') + '; height: ' + (mob ? '40px' : '48px') + '; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 15px; line-height: 1; font-weight: 700; letter-spacing: -0.02em; ' + (on ? 'background: var(--primary-foreground); color: var(--primary)' : 'background: var(--muted); color: var(--foreground)'),
+        hintStyle: 'font-size: 13px; line-height: 18px; ' + (on ? 'opacity: 0.7' : 'color: var(--muted-foreground)'),
+        markStyle: 'flex: none; margin-left: auto; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; border-radius: ' + (q.multi ? '6px' : '9999px') + '; ' + (on ? 'background: var(--primary-foreground); color: var(--primary)' : 'border: 1.5px solid var(--input); color: transparent'),
+        pick: function () {
+          var a = Object.assign({}, self.state.ans);
+          if (q.multi) { var arr = (a[q.key] || []).slice(); var i = arr.indexOf(o[0]); if (i >= 0) arr.splice(i, 1); else arr.push(o[0]); a[q.key] = arr; }
+          else a[q.key] = o[0];
+          self.setState({ ans: a });
+        }
+      };
+    }) : [];
+    var ZS = [['Città Studi, Milano', 'Piola, viale Romagna · 20133', 'Città Studi e Lambrate'], ['Lambrate, Milano', 'Ortica, Rubattino · 20134', 'Città Studi e Lambrate'], ['Porta Romana, Milano', 'Lodi, Crocetta · 20135', 'Navigli e Porta Romana'], ['Isola, Milano', 'Garibaldi, Zara · 20159', 'Isola e Bicocca'], ['Monza', 'Provincia di Monza e Brianza', 'Provincia']];
+    var ZROW = 'display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 10px 14px; border: 0; border-bottom: 1px solid var(--border); cursor: pointer; font-family: inherit; ';
+    var zoneSugs = ZS.map(function (z) { var on = ans.zonaLabel === z[0]; return { label: z[0], sub: z[1], pressed: on ? 'true' : 'false', style: ZROW + (on ? 'background: var(--primary); color: var(--primary-foreground)' : 'background: transparent; color: var(--foreground)'), markStyle: 'margin-left: auto; font-weight: 700; ' + (on ? 'opacity: 1' : 'opacity: 0'), pick: function () { var a = Object.assign({}, self.state.ans, { zona: z[2], zonaLabel: z[0] }); self.setState({ ans: a }); } }; });
+    var RCH = 'height: 36px; padding: 0 14px; border-radius: 9999px; font-size: 14px; font-weight: 500; cursor: pointer; ';
+    var radii = ['2 km', '5 km', '10 km'].map(function (r) { var on = (ans.raggio || '5 km') === r; return { label: 'Entro ' + r, pressed: on ? 'true' : 'false', style: RCH + (on ? 'border: 1px solid var(--primary); background: var(--primary); color: var(--primary-foreground)' : 'border: 1px solid var(--input); background: var(--background); color: var(--foreground)'), pick: function () { self.setState({ ans: Object.assign({}, self.state.ans, { raggio: r }) }); } }; });
+    var onlyOnline = ans.zona === 'Solo online';
+    var fmt = function (k) { if (k === 'zona' && ans.zonaLabel && ans.zona !== 'Solo online') return ans.zonaLabel + ' · entro ' + (ans.raggio || '5 km'); var v = ans[k]; if (!v || (v.length === 0)) return ''; return Array.isArray(v) ? v.join(', ') : v; };
+    var stepsList = Q.map(function (x, i) {
+      var n = i + 1, curStep = n === scr, val = fmt(x.key), done = !!val && !curStep;
+      return {
+        label: x.cat, value: val || (curStep ? 'In corso' : '—'), num: n < 10 ? '0' + n : String(n), current: curStep ? 'step' : 'false',
+        rowStyle: 'display: flex; align-items: center; gap: 12px; padding: 8px 0; ' + (curStep ? 'opacity: 1' : (done ? 'opacity: 0.85' : 'opacity: 0.45')),
+        dotStyle: 'flex: none; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; box-sizing: border-box; font-size: 12px; line-height: 1; font-weight: 600; ' + (curStep ? 'background: var(--primary-foreground); color: var(--primary)' : (done ? 'border: 1.5px solid currentColor' : 'border: 1.5px dashed currentColor')),
+        mark: done ? '✓' : (n < 10 ? '0' + n : String(n)),
+        jump: function () { self.setState({ screen: n }); }
+      };
+    });
+    var segs = Q.map(function (x, i) { return { style: 'flex: 1; height: 4px; border-radius: 9999px; background: ' + (i < scr ? 'var(--primary)' : 'var(--muted)') }; });
+    var T = [
+      { name: 'Giulia Rossi', initials: 'GR', zone: 'Città Studi', zg: 'Città Studi e Lambrate', d: ['Functional', 'Pilates'], l: ['In uno studio', 'A casa mia', 'Al parco', 'Online'], o: ['Sera', 'In mattinata', 'Pomeriggio'], price: 45, goals: ['Rimettermi in forma', 'Migliorare postura e mobilità'], href: 'Profilo-mobile.dc.html', rating: '4,9' },
+      { name: 'Sara Colombo', initials: 'SC', zone: 'Solo online', zg: 'Solo online', d: ['Yoga', 'Pilates'], l: ['Online'], o: ['Mattina presto', 'Pausa pranzo', 'Sera'], price: 30, goals: ['Stare meglio e scaricare lo stress', 'Migliorare postura e mobilità'], href: '#', rating: '5,0' },
+      { name: 'Andrea Conti', initials: 'AC', zone: 'Lambrate', zg: 'Città Studi e Lambrate', d: ['Calisthenics', 'Pesi', 'Functional'], l: ['Al parco', 'Online'], o: ['Mattina presto', 'Sera', 'Weekend'], price: 40, goals: ['Diventare più forte', 'Rimettermi in forma'], href: '#', rating: '4,6' },
+      { name: 'Marco Bianchi', initials: 'MB', zone: 'Navigli', zg: 'Navigli e Porta Romana', d: ['Pesi'], l: ['In uno studio'], o: ['Pausa pranzo', 'Pomeriggio', 'Sera'], price: 50, goals: ['Diventare più forte', 'Prepararmi a una gara o a uno sport'], href: '#', rating: '4,8' },
+      { name: 'Chiara Galli', initials: 'CG', zone: 'CityLife', zg: 'CityLife e San Siro', d: ['Yoga'], l: ['Al parco', 'Online'], o: ['In mattinata', 'Weekend'], price: 38, goals: ['Stare meglio e scaricare lo stress'], href: '#', rating: '4,8' },
+      { name: 'Luca Ferrari', initials: 'LF', zone: 'Porta Romana', zg: 'Navigli e Porta Romana', d: ['Crossfit', 'Functional'], l: ['In uno studio', 'Al parco'], o: ['Mattina presto', 'Sera'], price: 45, goals: ['Prepararmi a una gara o a uno sport', 'Rimettermi in forma'], href: '#', rating: '4,7' },
+      { name: 'Davide Greco', initials: 'DG', zone: 'Sesto San Giovanni', zg: 'Provincia', d: ['Boxe', 'Functional'], l: ['In uno studio', 'A casa mia'], o: ['Pomeriggio', 'Sera', 'Weekend'], price: 35, goals: ['Stare meglio e scaricare lo stress', 'Rimettermi in forma'], href: '#', rating: '4,9' }
+    ];
+    var inBudget = function (p) { var b = ans.budget; if (!b || b === 'Non ho preferenze') return true; if (b === 'Fino a 35 €') return p <= 35; if (b === '35–45 €') return p >= 35 && p <= 45; if (b === '45–60 €') return p >= 45 && p <= 60; return p > 60; };
+    var inter = function (a, b) { return (a || []).filter(function (x) { return b.indexOf(x) >= 0; }); };
+    var scored = T.map(function (t) {
+      var s = 0, why = [];
+      var dd = (ans.discipline || []).indexOf('Consigliami tu') >= 0 ? t.d : inter(ans.discipline, t.d);
+      if (dd.length) { s += 3; why.push(dd.slice(0, 2).join(' e ')); }
+      if (ans.obiettivo && t.goals.indexOf(ans.obiettivo) >= 0) { s += 2; why.push('Ideale per ' + ans.obiettivo.charAt(0).toLowerCase() + ans.obiettivo.slice(1)); }
+      var ll = inter(ans.luoghi, t.l);
+      var zoneOk = ans.zona === t.zg || (ans.zona === 'Solo online' && t.l.indexOf('Online') >= 0) || ll.indexOf('Online') >= 0;
+      if (zoneOk) { s += 2; why.push(ans.zona === 'Solo online' || t.zg === 'Solo online' ? 'Lavora online' : 'Nella tua zona'); }
+      if (ll.length) s += 1;
+      var oo = inter(ans.orari, t.o);
+      if (oo.length) { s += 1; why.push('Libero di ' + oo[0].toLowerCase()); }
+      if (inBudget(t.price)) { s += 1; why.push('Nel tuo budget'); }
+      return { t: t, s: s, why: why.slice(0, 3) };
+    }).sort(function (a, b) { return b.s - a.s; });
+    var C = 175.93;
+    var results = scored.slice(0, 3).map(function (r, i) {
+      var pct = Math.min(97, Math.max(35, Math.round(r.s / 10 * 100)));
+      return { next: { 'Giulia Rossi': 'domani 18:00', 'Sara Colombo': 'oggi 19:30', 'Andrea Conti': 'oggi 19:00', 'Marco Bianchi': 'mer 7, 13:00', 'Chiara Galli': 'gio 8, 09:00', 'Luca Ferrari': 'ven 9, 07:00', 'Davide Greco': 'oggi 20:00' }[r.t.name] || 'questa settimana', name: r.t.name, initials: r.t.initials, zone: r.t.zone, price: r.t.price + ' €', rating: r.t.rating, href: r.t.href, pct: pct, dash: (pct / 100 * C).toFixed(1) + ' ' + C, rank: '#' + (i + 1), reasons: r.why.length ? r.why : ['Profilo approvato dal nostro team'] };
+    });
+    var top = results[0], others = results.slice(1);
+    var summary = Q.map(function (x) { return { cat: x.cat, val: fmt(x.key) || '—', has: !!fmt(x.key) }; });
+    var chips = summary.filter(function (s) { return s.has; }).map(function (s) { return s.val; });
+    var catCards = Q.map(function (x, i) { return { cat: x.cat, icon: IC[x.icon], num: '0' + (i + 1), ex: x.search ? 'Quartiere, via o CAP' : x.opts.slice(0, 2).map(function (o) { return o[0]; }).join(' · ') }; });
+    return {
+      isIntro: scr === 0, isQ: !!q, isResult: scr === total + 1,
+      qNum: scr, qNumPad: scr < 10 ? '0' + scr : String(scr), qTotal: total, qCat: q ? q.cat : '', qTitle: q ? q.title : '', qHelp: q ? q.help : '', multiLabel: 'Scelta multipla', showMulti: !!(q && q.multi), isSearch: !!(q && q.search), zoneSugs: zoneSugs, radii: radii, onlyOnline: onlyOnline ? 'true' : 'false', onlineStyle: 'display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 12px 14px; border-radius: 12px; font-size: 15px; font-weight: 500; text-align: left; cursor: pointer; font-family: inherit; ' + (onlyOnline ? 'border: 1px solid var(--primary); background: var(--primary); color: var(--primary-foreground)' : 'border: 1px solid var(--border); background: var(--card); color: var(--foreground)'), onlineMark: 'flex: none; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 13px; ' + (onlyOnline ? 'background: var(--primary-foreground); color: var(--primary)' : 'border: 1.5px solid var(--input); color: transparent'), toggleOnline: function () { var a = Object.assign({}, self.state.ans); if (a.zona === 'Solo online') { delete a.zona; delete a.zonaLabel; } else { a.zona = 'Solo online'; a.zonaLabel = 'Solo online'; } self.setState({ ans: a }); }, useLocation: function () { self.setState({ ans: Object.assign({}, self.state.ans, { zona: 'Città Studi e Lambrate', zonaLabel: 'Posizione attuale (Città Studi)' }) }); },
+      options: options, stepsList: stepsList, segs: segs, catCards: catCards,
+      nextStyle: 'display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 28px; border: 0; border-radius: 10px; font-size: 16px; line-height: 24px; font-weight: 600; ' + (answered ? 'background: var(--primary); color: var(--primary-foreground); cursor: pointer' : 'background: var(--muted); color: var(--muted-foreground); cursor: not-allowed'),
+      nextDisabled: answered ? 'false' : 'true', nextLabel: scr === total ? 'Vedi i risultati' : 'Avanti',
+      start: function () { self.setState({ screen: 1 }); },
+      next: function () { if (answered) self.setState({ screen: self.state.screen + 1 }); },
+      skip: function () { self.setState({ screen: self.state.screen + 1 }); },
+      back: function () { self.setState({ screen: Math.max(0, self.state.screen - 1) }); },
+      restart: function () { self.setState({ screen: 0, ans: {} }); },
+      edit: function () { self.setState({ screen: 1 }); },
+      top: top, others: others, summary: summary, chips: chips,
+      emailIdle: !self.state.sent, emailSent: !!self.state.sent, sendResults: function () { self.setState({ sent: true }); },
+      theme: this.props.tema === 'Scuro' ? 'dark' : 'light'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Home — desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ds{--background:#ffffff;--foreground:#0a0a0a;--card:#ffffff;--primary:#171717;--primary-foreground:#fafafa;--secondary:#f5f5f5;--muted:#f5f5f5;--muted-foreground:#737373;--accent:#f5f5f5;--border:#e5e5e5;--input:#e5e5e5;--ring:#a3a3a3;font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--foreground);background:var(--background);-webkit-font-smoothing:antialiased}
+.ds.dark{--background:#0a0a0a;--foreground:#fafafa;--card:#171717;--primary:#e5e5e5;--primary-foreground:#171717;--secondary:#262626;--muted:#262626;--muted-foreground:#a3a3a3;--accent:#262626;--border:rgba(255,255,255,0.1);--input:rgba(255,255,255,0.15);--ring:#737373}
+.ds button{font-family:inherit}
+.tnum{font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}a:hover{text-decoration:underline}
+.ds :focus-visible{outline:2px solid var(--foreground);outline-offset:2px}
+</style>
+</helmet>
+<div class="ds {{theme}}" style="display: flex; flex-direction: column; min-height: 2950px">
+
+<header style="border-bottom: 1px solid var(--border); background: var(--background)">
+<div style="max-width: 1280px; margin: 0 auto; padding: 14px 32px; min-height: 44px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px">
+<a href="Main.dc.html" aria-label="MioPersonal, torna alla home" style="display: flex; align-items: center; gap: 10px; color: var(--foreground); text-decoration: none">
+<svg width="33" height="20" viewBox="0 0 420 254" aria-hidden="true" style="display: block"><path fill="currentColor" d="M41.1 253.3C3.5 246.1 -12.8 200.2 11.8 171.3C42.3 135.5 100.5 156.7 100.7 203.5C100.8 235.3 72.1 259.2 41.1 253.3ZM206 253.5C190.2 252.1 175.5 243 167.3 229.7C164.2 224.5 153.4 205.9 147.3 195C141.5 184.9 129.3 163.6 121.3 150C119.6 147.1 113.6 136.8 108 127C102.4 117.2 96.4 106.7 94.5 103.5C74.4 69 72.4 64.7 71.7 53.2C69.5 19.5 101.3 -6.9 133.8 1.7C150.2 6.1 159.9 15.3 172.7 39.2C174.1 41.7 175.8 44.7 176.5 45.8C177.2 46.8 179.6 50.9 181.8 54.8C184 58.6 188.9 67.2 192.7 73.8C196.5 80.3 201.4 88.8 203.5 92.5C205.6 96.2 208.3 100.7 209.3 102.5C210.4 104.3 214.9 111.9 219.3 119.5C223.6 127.1 229.1 136.6 231.5 140.8C233.9 144.9 237.6 151.3 239.8 155C246 165.8 245.7 165.8 251 154.8C257.3 141.8 261 128.4 261 118.6C261 115.3 260.9 115.1 256.7 107.8C254.3 103.6 250.7 97.3 248.6 93.8C246.6 90.2 243.8 85.4 242.5 83.2C235.7 72 232.9 64.7 231.9 56.6C226.6 9.7 281.9 -17.7 316.2 15C320.9 19.5 322 21 330.5 35.8C334.1 42.1 338.2 49.1 339.5 51.2C340.8 53.4 344.2 59.3 347 64.2C349.8 69.2 354 76.4 356.3 80.2C358.5 84.1 363.3 92.4 367 98.8C370.6 105.1 374.7 112.1 376 114.2C377.3 116.4 382.5 125.4 387.5 134.2C392.5 143.1 398.1 152.6 399.8 155.5C417.7 185.6 420 191.2 420 204.2C420 239.8 383.1 264.2 350.6 250.1C338.2 244.7 331.5 237.7 321.3 219.9C317.7 213.5 311.3 202.5 307.3 195.5C303.2 188.5 298.7 180.7 297.3 178.2C291.9 168.9 292.1 168.9 288.4 178C272.4 217.7 244.3 247.9 218.7 253C213.6 254.1 212.8 254.1 206 253.5Z"></path></svg>
+<span style="font-size: 18px; line-height: 28px; font-weight: 600; letter-spacing: -0.025em">MioPersonal</span>
+</a>
+<nav aria-label="Principale" style="display: flex; flex-wrap: wrap; gap: 24px; font-size: 14px; line-height: 20px; font-weight: 500; color: var(--muted-foreground)"><a href="Ricerca.dc.html">Cerca trainer</a><a href="#come-funziona">Come funziona</a><a href="#per-i-trainer">Per i trainer</a></nav>
+<div style="margin-left: auto; display: flex; gap: 8px">
+<a href="#" style="display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 8px; color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none">Accedi</a>
+<a href="#" style="display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none">Registrati</a>
+</div>
+</div>
+</header>
+
+<main style="display: flex; flex-direction: column">
+
+<section style="max-width: 1280px; width: 100%; margin: 0 auto; padding: 80px 32px 0; box-sizing: border-box; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 64px; align-items: center">
+<div style="display: flex; flex-direction: column; gap: 24px">
+
+<h1 style="margin: 0; font-size: 48px; line-height: 52px; font-weight: 700; letter-spacing: -0.025em">Trova il personal trainer giusto, vicino a te.</h1>
+<p style="margin: 0; max-width: 520px; font-size: 18px; line-height: 28px; color: var(--muted-foreground)">Cerca per disciplina e zona, confronta profili e prezzi indicativi, richiedi una seduta in pochi minuti. Gratis.</p>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 20px">
+<li style="display: flex; align-items: center; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Gratis per chi cerca un trainer</li>
+<li style="display: flex; align-items: center; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Ogni profilo è approvato dal nostro team</li>
+<li style="display: flex; align-items: center; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Recensioni solo da sedute svolte davvero</li>
+</ul>
+</div>
+
+<form role="search" aria-label="Cerca un personal trainer" style="display: flex; flex-direction: column; gap: 16px; padding: 24px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)">
+<h2 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; letter-spacing: -0.025em">Trova il trainer perfetto per te!</h2>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="hd-disc" style="font-size: 14px; line-height: 20px; font-weight: 500">Disciplina</label>
+<button id="hd-disc" type="button" style="height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--muted-foreground); font-size: 16px; line-height: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer">Tutte le discipline<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="hd-zona" style="font-size: 14px; line-height: 20px; font-weight: 500">Zona</label>
+<button id="hd-zona" type="button" style="height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--muted-foreground); font-size: 16px; line-height: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer">Tutta Milano e provincia<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span id="hd-mod" style="font-size: 14px; line-height: 20px; font-weight: 500">Modalità</span>
+<div role="group" aria-labelledby="hd-mod" style="display: flex; gap: 2px; height: 40px; padding: 3px; border-radius: 10px; background: var(--muted); box-sizing: border-box">
+<sc-for list="{{modes}}" as="m" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{m.pressed}}" onClick="{{m.pick}}" style="{{m.style}}">{{m.label}}</button>
+</sc-for>
+</div>
+</div>
+<a href="Ricerca.dc.html" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 24px; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>Cerca trainer</a>
+<p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--muted-foreground); text-align: center">Per guardare i profili non serve registrarsi.</p>
+</form>
+</section>
+
+<section aria-labelledby="ev-title" style="max-width: 1280px; width: 100%; margin: 0 auto; padding: 80px 32px; box-sizing: border-box; display: flex; flex-direction: column; gap: 32px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+<h2 id="ev-title" style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.025em">Trainer in evidenza</h2>
+<a href="Ricerca.dc.html" style="display: inline-flex; align-items: center; gap: 6px; font-size: 14px; line-height: 20px; font-weight: 500">Vedi tutti<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 24px">
+<sc-for list="{{featured}}" as="t" hint-placeholder-count="3">
+<a href="Profilo.dc.html" aria-label="{{t.aria}}" style="display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 14px; background: var(--card); overflow: hidden; color: var(--foreground); text-decoration: none">
+<div style="position: relative; aspect-ratio: 4 / 3; background: var(--muted); display: flex; align-items: center; justify-content: center">
+<span style="font-size: 40px; line-height: 44px; font-weight: 700; letter-spacing: -0.025em; color: var(--muted-foreground)">{{t.initials}}</span>
+<sc-if value="{{t.online}}" hint-placeholder-val="{{true}}">
+<span style="position: absolute; top: 12px; left: 12px; display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 9999px; background: var(--background); border: 1px solid var(--border); font-size: 12px; line-height: 16px; font-weight: 500"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path><rect x="2" y="6" width="14" height="12" rx="2"></rect></svg>{{t.onlineLabel}}</span>
+</sc-if>
+</div>
+<div style="padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 18px; line-height: 28px; font-weight: 600">{{t.name}}</span>
+<span style="display: flex; align-items: center; gap: 4px; font-size: 14px; line-height: 20px; color: var(--muted-foreground)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>{{t.zone}}</span>
+</div>
+<sc-if value="{{t.hasRating}}" hint-placeholder-val="{{true}}">
+<span class="tnum" style="flex: none; display: flex; align-items: center; gap: 4px; font-size: 14px; line-height: 20px; font-weight: 600"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"></path></svg>{{t.rating}}<span style="font-weight: 400; color: var(--muted-foreground)">{{t.reviews}}</span></span>
+</sc-if>
+<sc-if value="{{t.isNew}}" hint-placeholder-val="{{false}}">
+<span style="flex: none; display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 9999px; border: 1px solid var(--border); font-size: 12px; line-height: 16px; font-weight: 500">Nuovo</span>
+</sc-if>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{t.disciplines}}" as="d" hint-placeholder-count="2">
+<span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 9999px; background: var(--secondary); font-size: 12px; line-height: 16px; font-weight: 500">{{d}}</span>
+</sc-for>
+</div>
+<span class="tnum" style="display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 18px; font-weight: 600"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>Primo slot libero: {{t.next}}</span>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border)">
+<span class="tnum" style="display: flex; align-items: baseline; gap: 4px"><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">da</span><span style="font-size: 20px; line-height: 28px; font-weight: 700; letter-spacing: -0.025em">{{t.price}}</span><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">/ seduta</span></span>
+<span style="display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--input); background: var(--background); font-size: 14px; line-height: 20px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.05)">Vedi profilo</span>
+</div>
+</div>
+</a>
+</sc-for>
+</div>
+</section>
+
+<section aria-labelledby="quiz-t" style="max-width: 1280px; width: 100%; margin: 0 auto; padding: 0 32px 80px; box-sizing: border-box"><div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; padding: 32px 40px; border-radius: 18px; background: var(--primary); color: var(--primary-foreground)"><div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.08em; opacity: 0.7">NON SAI DA CHI PARTIRE?</span><h2 id="quiz-t" style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 700; letter-spacing: -0.025em">7 domande, 3 trainer adatti a te.</h2><p style="margin: 0; font-size: 16px; line-height: 24px; opacity: 0.8">Ti diciamo in un minuto chi fa per te.</p></div><a href="Quiz-intro.dc.html" style="display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 28px; border-radius: 10px; background: var(--primary-foreground); color: var(--primary); font-size: 16px; font-weight: 600; text-decoration: none">Fai il quiz<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a></div></section>
+
+
+
+<section id="come-funziona" aria-labelledby="cf-title" style="background: var(--secondary)">
+<div style="max-width: 1280px; margin: 0 auto; padding: 80px 32px; display: flex; flex-direction: column; gap: 32px">
+<h2 id="cf-title" style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.025em">Come funziona</h2>
+<ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 24px">
+<li style="display: flex; flex-direction: column; gap: 12px; padding: 24px; border: 1px solid var(--border); border-radius: 14px; background: var(--card)">
+<span style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--primary); color: var(--primary-foreground)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></span>
+<span class="tnum" style="font-size: 12px; line-height: 16px; font-weight: 500; color: var(--muted-foreground)">PASSO 1</span>
+<h3 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; letter-spacing: -0.025em">Cerca</h3>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Filtra per disciplina, zona e modalità. Guardi profili, servizi e prezzi indicativi senza registrarti.</p>
+</li>
+<li style="display: flex; flex-direction: column; gap: 12px; padding: 24px; border: 1px solid var(--border); border-radius: 14px; background: var(--card)">
+<span style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--primary); color: var(--primary-foreground)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"></path><path d="m21.854 2.147-10.94 10.939"></path></svg></span>
+<span class="tnum" style="font-size: 12px; line-height: 16px; font-weight: 500; color: var(--muted-foreground)">PASSO 2</span>
+<h3 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; letter-spacing: -0.025em">Richiedi una seduta</h3>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Scegli il servizio e proponi uno o due giorni con la fascia oraria. Ti registri solo in questo momento.</p>
+</li>
+<li style="display: flex; flex-direction: column; gap: 12px; padding: 24px; border: 1px solid var(--border); border-radius: 14px; background: var(--card)">
+<span style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--primary); color: var(--primary-foreground)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z"></path><path d="m2.5 21.5 1.4-1.4"></path><path d="m20.1 3.9 1.4-1.4"></path><path d="M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z"></path><path d="m9.6 14.4 4.8-4.8"></path></svg></span>
+<span class="tnum" style="font-size: 12px; line-height: 16px; font-weight: 500; color: var(--muted-foreground)">PASSO 3</span>
+<h3 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; letter-spacing: -0.025em">Allenati</h3>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Il trainer conferma e vi scambiate i contatti. Dopo la seduta puoi lasciare una recensione.</p>
+</li>
+</ol>
+</div>
+</section>
+
+<section aria-labelledby="ver-t" style="max-width: 1280px; width: 100%; margin: 0 auto; padding: 80px 32px; box-sizing: border-box; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 40px; align-items: start"><div style="display: flex; flex-direction: column; gap: 10px"><h2 id="ver-t" style="margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.025em">Come verifichiamo i trainer</h2><p style="margin: 0; font-size: 16px; line-height: 24px; color: var(--muted-foreground)">Ogni trainer viene approvato dal nostro team prima di comparire nelle ricerce.</p></div><ul style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 20px"><li style="display: flex; gap: 12px"><span style="flex: none; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: var(--primary); color: var(--primary-foreground)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span><span style="display: flex; flex-direction: column"><span style="font-size: 15px; line-height: 22px; font-weight: 600">Identità verificata</span><span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Controlliamo un documento prima di pubblicare il profilo.</span></span></li><li style="display: flex; gap: 12px"><span style="flex: none; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: var(--primary); color: var(--primary-foreground)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span><span style="display: flex; flex-direction: column"><span style="font-size: 15px; line-height: 22px; font-weight: 600">Certificazioni controllate</span><span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Il nostro team guarda gli attestati caricati, che restano privati.</span></span></li><li style="display: flex; gap: 12px"><span style="flex: none; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: var(--primary); color: var(--primary-foreground)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span><span style="display: flex; flex-direction: column"><span style="font-size: 15px; line-height: 22px; font-weight: 600">Recensioni vere</span><span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Le lascia solo chi ha svolto una seduta con quel trainer.</span></span></li><li style="display: flex; gap: 12px"><span style="flex: none; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: var(--primary); color: var(--primary-foreground)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span><span style="display: flex; flex-direction: column"><span style="font-size: 15px; line-height: 22px; font-weight: 600">Profilo segnalabile</span><span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Se qualcosa non torna, ce lo dici con un clic e lo verifichiamo.</span></span></li></ul></section>
+
+<section id="per-i-trainer" aria-labelledby="pt-title" style="max-width: 1280px; width: 100%; margin: 0 auto; padding: 0 32px 80px; box-sizing: border-box">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 40px; align-items: center; padding: 48px; border-radius: 14px; background: var(--primary); color: var(--primary-foreground)">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<span style="font-size: 12px; line-height: 16px; font-weight: 500; opacity: 0.7">PER I PERSONAL TRAINER</span>
+<h2 id="pt-title" style="margin: 0; font-size: 36px; line-height: 40px; font-weight: 700; letter-spacing: -0.025em">Nuovi clienti nella tua zona, senza costi.</h2>
+<p style="margin: 0; font-size: 18px; line-height: 28px; opacity: 0.8">Crea il tuo profilo, indica discipline, zone e servizi, e ricevi le richieste di seduta.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 20px">
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 14px; line-height: 20px">
+<li style="display: flex; align-items: center; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Profilo pubblico, trovabile anche su Google</li>
+<li style="display: flex; align-items: center; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Accetti o rifiuti ogni richiesta, decidi tu</li>
+<li style="display: flex; align-items: center; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Nessuna commissione sulle sedute</li>
+</ul>
+<div style="display: flex; flex-wrap: wrap; gap: 12px">
+<a href="#" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 24px; border-radius: 8px; background: var(--primary-foreground); color: var(--primary); font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none">Crea il tuo profilo gratis<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+<a href="#" style="display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 24px; border-radius: 8px; border: 1px solid currentColor; color: var(--primary-foreground); font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none">Scopri di più</a>
+</div>
+</div>
+</div>
+</section>
+
+</main>
+
+<footer style="flex-grow: 1; border-top: 1px solid var(--border); background: var(--background)">
+<div style="max-width: 1280px; margin: 0 auto; padding: 48px 32px; display: flex; flex-wrap: wrap; gap: 48px; justify-content: space-between">
+<div style="display: flex; flex-direction: column; gap: 12px; max-width: 320px">
+<span style="display: flex; align-items: center; gap: 10px"><svg width="33" height="20" viewBox="0 0 420 254" aria-hidden="true" style="display: block"><path fill="currentColor" d="M41.1 253.3C3.5 246.1 -12.8 200.2 11.8 171.3C42.3 135.5 100.5 156.7 100.7 203.5C100.8 235.3 72.1 259.2 41.1 253.3ZM206 253.5C190.2 252.1 175.5 243 167.3 229.7C164.2 224.5 153.4 205.9 147.3 195C141.5 184.9 129.3 163.6 121.3 150C119.6 147.1 113.6 136.8 108 127C102.4 117.2 96.4 106.7 94.5 103.5C74.4 69 72.4 64.7 71.7 53.2C69.5 19.5 101.3 -6.9 133.8 1.7C150.2 6.1 159.9 15.3 172.7 39.2C174.1 41.7 175.8 44.7 176.5 45.8C177.2 46.8 179.6 50.9 181.8 54.8C184 58.6 188.9 67.2 192.7 73.8C196.5 80.3 201.4 88.8 203.5 92.5C205.6 96.2 208.3 100.7 209.3 102.5C210.4 104.3 214.9 111.9 219.3 119.5C223.6 127.1 229.1 136.6 231.5 140.8C233.9 144.9 237.6 151.3 239.8 155C246 165.8 245.7 165.8 251 154.8C257.3 141.8 261 128.4 261 118.6C261 115.3 260.9 115.1 256.7 107.8C254.3 103.6 250.7 97.3 248.6 93.8C246.6 90.2 243.8 85.4 242.5 83.2C235.7 72 232.9 64.7 231.9 56.6C226.6 9.7 281.9 -17.7 316.2 15C320.9 19.5 322 21 330.5 35.8C334.1 42.1 338.2 49.1 339.5 51.2C340.8 53.4 344.2 59.3 347 64.2C349.8 69.2 354 76.4 356.3 80.2C358.5 84.1 363.3 92.4 367 98.8C370.6 105.1 374.7 112.1 376 114.2C377.3 116.4 382.5 125.4 387.5 134.2C392.5 143.1 398.1 152.6 399.8 155.5C417.7 185.6 420 191.2 420 204.2C420 239.8 383.1 264.2 350.6 250.1C338.2 244.7 331.5 237.7 321.3 219.9C317.7 213.5 311.3 202.5 307.3 195.5C303.2 188.5 298.7 180.7 297.3 178.2C291.9 168.9 292.1 168.9 288.4 178C272.4 217.7 244.3 247.9 218.7 253C213.6 254.1 212.8 254.1 206 253.5Z"></path></svg><span style="font-size: 18px; line-height: 28px; font-weight: 600; letter-spacing: -0.025em">MioPersonal</span></span>
+<p style="margin: 0; font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Personal trainer a Milano e provincia, in presenza e online.</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 64px">
+<nav aria-label="Piattaforma" style="display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 20px">
+<span style="font-weight: 600">Piattaforma</span>
+<a href="Ricerca.dc.html" style="color: var(--muted-foreground)">Cerca trainer</a>
+<a href="#per-i-trainer" style="color: var(--muted-foreground)">Per i trainer</a>
+<a href="#come-funziona" style="color: var(--muted-foreground)">Come funziona</a>
+<a href="#" style="color: var(--muted-foreground)">FAQ</a>
+</nav>
+<nav aria-label="Informazioni legali" style="display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 20px">
+<span style="font-weight: 600">Legale</span>
+<a href="#" style="color: var(--muted-foreground)">Privacy policy</a>
+<a href="#" style="color: var(--muted-foreground)">Cookie policy</a>
+<a href="#" style="color: var(--muted-foreground)">Termini e condizioni</a>
+<a href="#" style="color: var(--muted-foreground)">Contatti</a>
+</nav>
+</div>
+</div>
+<div style="max-width: 1280px; margin: 0 auto; padding: 0 32px 32px">
+<p style="margin: 0; padding-top: 24px; border-top: 1px solid var(--border); font-size: 12px; line-height: 16px; color: var(--muted-foreground)">© 2026 MioPersonal</p>
+</div>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Chiaro","Scuro"],"default":"Chiaro"},"$preview":{"width":1440,"height":2950}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { mode: 'tutte' };
+  }
+  renderVals() {
+    var self = this;
+    var ON = 'flex: 1; height: 34px; padding: 0 12px; border: 0; border-radius: 8px; background: var(--background); color: var(--foreground); box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer';
+    var OFF = 'flex: 1; height: 34px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--muted-foreground); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer';
+    var modes = [['tutte', 'Tutte'], ['presenza', 'In presenza'], ['online', 'Online']].map(function (m) {
+      var on = self.state.mode === m[0];
+      return { label: m[1], style: on ? ON : OFF, pressed: on ? 'true' : 'false', pick: function () { self.setState({ mode: m[0] }); } };
+    });
+    var data = [
+      { name: 'Giulia Rossi', initials: 'GR', zone: 'Città Studi, Milano', disciplines: ['Functional', 'Pilates'], price: '45 €', rating: '4,9', reviews: '(23)', online: true, onlineLabel: 'Anche online' },
+      { name: 'Marco Bianchi', initials: 'MB', zone: 'Navigli, Milano', disciplines: ['Pesi', 'Preparazione atletica'], price: '50 €', rating: '4,8', reviews: '(31)', online: false, onlineLabel: '' },
+      { name: 'Elena Ricci', initials: 'ER', zone: 'Monza', disciplines: ['Pilates', 'Yoga'], price: '40 €', rating: null, reviews: '', online: true, onlineLabel: 'Anche online' }
+    ];
+    var featured = data.map(function (t) {
+      return Object.assign({}, t, { next: { 'Giulia Rossi': 'domani 18:00', 'Marco Bianchi': 'mer 7, 13:00', 'Elena Ricci': 'domani 09:00' }[t.name] || 'questa settimana', hasRating: !!t.rating, isNew: !t.rating, aria: t.name + ', ' + t.zone + ', da ' + t.price + ' a seduta' });
+    });
+    return { modes: modes, featured: featured, theme: this.props.tema === 'Scuro' ? 'dark' : 'light' };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Profilo trainer — desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ds{--background:#ffffff;--foreground:#0a0a0a;--card:#ffffff;--primary:#171717;--primary-foreground:#fafafa;--secondary:#f5f5f5;--muted:#f5f5f5;--muted-foreground:#737373;--accent:#f5f5f5;--border:#e5e5e5;--input:#e5e5e5;--ring:#a3a3a3;font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:var(--foreground);background:var(--background);-webkit-font-smoothing:antialiased}
+.ds.dark{--background:#0a0a0a;--foreground:#fafafa;--card:#171717;--primary:#e5e5e5;--primary-foreground:#171717;--secondary:#262626;--muted:#262626;--muted-foreground:#a3a3a3;--accent:#262626;--border:rgba(255,255,255,0.1);--input:rgba(255,255,255,0.15);--ring:#737373}
+.ds button{font-family:inherit}
+.tnum{font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}a:hover{text-decoration:underline}
+.ds :focus-visible{outline:2px solid var(--foreground);outline-offset:2px}
+</style>
+</helmet>
+<div class="ds {{theme}}" style="display: flex; flex-direction: column; min-height: 4300px">
+
+<header style="border-bottom: 1px solid var(--border); background: var(--background)">
+<div style="max-width: 1280px; margin: 0 auto; padding: 14px 32px; min-height: 44px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px">
+<a href="Main.dc.html" aria-label="MioPersonal, torna alla home" style="display: flex; align-items: center; gap: 10px; color: var(--foreground); text-decoration: none">
+<svg width="33" height="20" viewBox="0 0 420 254" aria-hidden="true" style="display: block"><path fill="currentColor" d="M41.1 253.3C3.5 246.1 -12.8 200.2 11.8 171.3C42.3 135.5 100.5 156.7 100.7 203.5C100.8 235.3 72.1 259.2 41.1 253.3ZM206 253.5C190.2 252.1 175.5 243 167.3 229.7C164.2 224.5 153.4 205.9 147.3 195C141.5 184.9 129.3 163.6 121.3 150C119.6 147.1 113.6 136.8 108 127C102.4 117.2 96.4 106.7 94.5 103.5C74.4 69 72.4 64.7 71.7 53.2C69.5 19.5 101.3 -6.9 133.8 1.7C150.2 6.1 159.9 15.3 172.7 39.2C174.1 41.7 175.8 44.7 176.5 45.8C177.2 46.8 179.6 50.9 181.8 54.8C184 58.6 188.9 67.2 192.7 73.8C196.5 80.3 201.4 88.8 203.5 92.5C205.6 96.2 208.3 100.7 209.3 102.5C210.4 104.3 214.9 111.9 219.3 119.5C223.6 127.1 229.1 136.6 231.5 140.8C233.9 144.9 237.6 151.3 239.8 155C246 165.8 245.7 165.8 251 154.8C257.3 141.8 261 128.4 261 118.6C261 115.3 260.9 115.1 256.7 107.8C254.3 103.6 250.7 97.3 248.6 93.8C246.6 90.2 243.8 85.4 242.5 83.2C235.7 72 232.9 64.7 231.9 56.6C226.6 9.7 281.9 -17.7 316.2 15C320.9 19.5 322 21 330.5 35.8C334.1 42.1 338.2 49.1 339.5 51.2C340.8 53.4 344.2 59.3 347 64.2C349.8 69.2 354 76.4 356.3 80.2C358.5 84.1 363.3 92.4 367 98.8C370.6 105.1 374.7 112.1 376 114.2C377.3 116.4 382.5 125.4 387.5 134.2C392.5 143.1 398.1 152.6 399.8 155.5C417.7 185.6 420 191.2 420 204.2C420 239.8 383.1 264.2 350.6 250.1C338.2 244.7 331.5 237.7 321.3 219.9C317.7 213.5 311.3 202.5 307.3 195.5C303.2 188.5 298.7 180.7 297.3 178.2C291.9 168.9 292.1 168.9 288.4 178C272.4 217.7 244.3 247.9 218.7 253C213.6 254.1 212.8 254.1 206 253.5Z"></path></svg>
+<span style="font-size: 18px; line-height: 28px; font-weight: 600; letter-spacing: -0.025em">MioPersonal</span>
+</a>
+<nav aria-label="Principale" style="display: flex; flex-wrap: wrap; gap: 24px; font-size: 14px; line-height: 20px; font-weight: 500; color: var(--muted-foreground)">
+<a href="Ricerca.dc.html">Cerca trainer</a>
+<a href="Main.dc.html#come-funziona">Come funziona</a>
+<a href="Main.dc.html#per-i-trainer">Per i trainer</a>
+</nav>
+<div style="margin-left: auto; display: flex; gap: 8px">
+<a href="#" style="display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 8px; color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none">Accedi</a>
+<a href="#" style="display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none">Registrati</a>
+</div>
+</div>
+</header>
+
+<main style="max-width: 1280px; width: 100%; margin: 0 auto; padding: 32px 32px 80px; box-sizing: border-box; display: flex; flex-direction: column; gap: 32px">
+
+<nav aria-label="Percorso" style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px">
+<li><a href="Main.dc.html">Home</a></li>
+<li aria-hidden="true">/</li>
+<li><a href="Ricerca.dc.html">Personal trainer a Milano</a></li>
+<li aria-hidden="true">/</li>
+<li aria-current="page" style="color: var(--foreground)">Giulia Rossi</li>
+</ol>
+</nav>
+
+<section aria-roledescription="carousel" aria-label="Foto di Giulia Rossi" style="display: flex; flex-direction: column; gap: 12px">
+<div style="position: relative; aspect-ratio: 21 / 9; border-radius: 14px; overflow: hidden; background: var(--muted)">
+<div aria-live="polite" style="{{trackStyle}}">
+<sc-for list="{{slides}}" as="p" hint-placeholder-count="6">
+<div role="group" aria-roledescription="slide" aria-label="{{p.aria}}" style="flex: 0 0 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background-color: var(--muted); background-image: repeating-linear-gradient(135deg, transparent 0 22px, rgba(127,127,127,0.06) 22px 44px); color: var(--muted-foreground)">
+<sc-if value="{{p.isPortrait}}" hint-placeholder-val="{{true}}"><span style="font-size: 96px; line-height: 96px; font-weight: 700; letter-spacing: -0.025em">GR</span></sc-if>
+<sc-if value="{{p.isPhoto}}" hint-placeholder-val="{{false}}"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg></sc-if>
+<span style="font-size: 14px; line-height: 20px; font-weight: 500">{{p.label}}</span>
+</div>
+</sc-for>
+</div>
+<button type="button" onClick="{{prevPhoto}}" aria-label="Foto precedente" style="position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 9999px; background: var(--background); color: var(--foreground); box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1); cursor: pointer; left: 16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></button>
+<button type="button" onClick="{{nextPhoto}}" aria-label="Foto successiva" style="position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 9999px; background: var(--background); color: var(--foreground); box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1); cursor: pointer; right: 16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button>
+<span style="position: absolute; left: 16px; bottom: 16px; display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 9999px; background: var(--background); color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500">{{photoCaption}}</span>
+<span class="tnum" style="position: absolute; right: 16px; bottom: 16px; display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 9999px; background: var(--primary); color: var(--primary-foreground); font-size: 14px; line-height: 20px; font-weight: 500">{{photoNum}} / {{photoTotal}}</span>
+</div>
+<div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px">
+<sc-for list="{{thumbs}}" as="t" hint-placeholder-count="6">
+<button type="button" onClick="{{t.pick}}" aria-label="{{t.aria}}" aria-current="{{t.current}}" style="{{t.style}}">{{t.short}}</button>
+</sc-for>
+</div>
+</section>
+
+<section aria-labelledby="p-name" style="display: flex; flex-wrap: wrap; gap: 32px; align-items: center">
+<span style="flex: none; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: var(--muted); font-size: 48px; line-height: 48px; font-weight: 700; letter-spacing: -0.025em; color: var(--muted-foreground)" role="img" aria-label="Foto profilo di Giulia Rossi">GR</span>
+<div style="flex: 1 1 400px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px"><h1 id="p-name" style="margin: 0; display: flex; align-items: center; gap: 12px; font-size: 36px; line-height: 40px; font-weight: 700; letter-spacing: -0.025em">Giulia Rossi<span role="img" aria-label="Profilo approvato" title="Profilo approvato" style="flex: none; display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: 9999px; background: var(--primary); color: var(--primary-foreground)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg></span></h1><div style="display: flex; gap: 8px"><button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 14px; font-weight: 500; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" x2="12" y1="2" y2="15"></line></svg>Condividi</button><button type="button" aria-pressed="{{favPressed}}" onClick="{{toggleFav}}" style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 14px; font-weight: 500; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="{{favFill}}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>{{favLabel}}</button></div></div>
+
+<div class="tnum" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; font-size: 14px; line-height: 20px">
+<span style="display: flex; align-items: center; gap: 6px; color: var(--muted-foreground)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle></svg>8 anni di esperienza</span>
+<a href="#recensioni" style="display: flex; align-items: center; gap: 6px; font-weight: 600"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"></path></svg>4,9 <span style="font-weight: 400; color: var(--muted-foreground)">· 23 recensioni</span></a>
+<span style="display: flex; align-items: center; gap: 6px; color: var(--muted-foreground)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>Città Studi, Lambrate, Porta Venezia</span>
+<span style="display: flex; align-items: center; gap: 6px; color: var(--muted-foreground)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path><rect x="2" y="6" width="14" height="12" rx="2"></rect></svg>Anche online</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 9999px; background: var(--secondary); font-size: 12px; line-height: 16px; font-weight: 500">Functional</span>
+<span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 9999px; background: var(--secondary); font-size: 12px; line-height: 16px; font-weight: 500">Pilates</span>
+<span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 9999px; background: var(--secondary); font-size: 12px; line-height: 16px; font-weight: 500">Postura</span>
+</div>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start">
+
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 32px">
+
+<section aria-labelledby="s-bio" style="display: flex; flex-direction: column; gap: 12px">
+<h2 id="s-bio" style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.025em">Chi sono</h2>
+<p style="margin: 0; font-size: 16px; line-height: 26px">Laureata in Scienze Motorie, alleno da otto anni persone che vogliono tornare in forma dopo una pausa, migliorare la postura o prepararsi a una gara amatoriale.</p>
+<p style="margin: 0; font-size: 16px; line-height: 26px">Nella prima seduta facciamo una valutazione insieme e fissiamo un obiettivo realistico. Poi ti preparo un programma su misura, da seguire con me o in autonomia tra una seduta e l'altra.</p>
+</section>
+
+<section id="prenota" aria-labelledby="prenota-t" style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 4px"><h2 id="prenota-t" style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.025em">Scegli giorno e orario</h2><span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Orari aggiornati dal calendario di Giulia.</span></div>
+
+</div>
+<div style="display: flex; flex-direction: column; gap: 16px; padding: 20px; border: 1px solid var(--border); border-radius: 14px; background: var(--card)">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<button type="button" onClick="{{prevWeek}}" aria-label="Settimana precedente" style="{{prevStyle}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></button>
+<span class="tnum" style="font-size: 16px; line-height: 24px; font-weight: 600">{{weekLabel}}</span>
+<button type="button" onClick="{{nextWeek}}" aria-label="Settimana successiva" style="{{nextStyle}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{bdays}}" as="d" hint-placeholder-count="7"><button type="button" aria-pressed="{{d.pressed}}" aria-label="{{d.aria}}" onClick="{{d.pick}}" style="{{d.style}}"><span style="font-size: 12px; line-height: 16px; font-weight: 500">{{d.dow}}</span><span class="tnum" style="font-size: 20px; line-height: 28px; font-weight: 700">{{d.num}}</span><span class="tnum" style="font-size: 11px; line-height: 14px; opacity: 0.75">{{d.freeLabel}}</span></button></sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px; padding-top: 16px; border-top: 1px solid var(--border)">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px"><span style="font-size: 16px; line-height: 24px; font-weight: 600">{{dayLabel}}</span><span class="tnum" style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">{{slotCount}}</span></div>
+<sc-if value="{{hasSlots}}" hint-placeholder-val="{{true}}">
+<div role="group" aria-label="Orari liberi" class="tnum" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{bslots}}" as="s" hint-placeholder-count="6"><button type="button" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="{{s.style}}">{{s.label}}</button></sc-for>
+</div>
+</sc-if>
+<sc-if value="{{noSlots}}" hint-placeholder-val="{{false}}"><p style="margin: 0; padding: 16px; border-radius: 10px; background: var(--muted); font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Nessun orario libero da {{durLabel}} in questo giorno. Prova un altro giorno o la durata da 1 ora.</p></sc-if>
+</div>
+</div>
+<p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--muted-foreground)">Giulia riceve la prenotazione e la conferma via email. Puoi annullarla dalla tua area.</p>
+</section>
+
+<h2 id="s-luoghi" style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.025em">Dove ci alleniamo</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px">
+<div style="display: flex; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 14px">
+<span style="flex: none; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--secondary)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; line-height: 20px; font-weight: 600">Studio</span><span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Città Studi, via [indirizzo]</span></span>
+</div>
+<div style="display: flex; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 14px">
+<span style="flex: none; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--secondary)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; line-height: 20px; font-weight: 600">A domicilio</span><span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Città Studi, Lambrate, Porta Venezia</span></span>
+</div>
+<div style="display: flex; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 14px">
+<span style="flex: none; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--secondary)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"></path><path d="M7 16v6"></path><path d="M13 19v3"></path><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; line-height: 20px; font-weight: 600">Al parco</span><span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">Parco Lambro</span></span>
+</div>
+<div style="display: flex; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 14px">
+<span style="flex: none; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--secondary)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path><rect x="2" y="6" width="14" height="12" rx="2"></rect></svg></span>
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; line-height: 20px; font-weight: 600">Online</span><span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">In videochiamata</span></span>
+</div>
+</div><section aria-labelledby="s-cert" style="display: flex; flex-direction: column; gap: 16px">
+<h2 id="s-cert" style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.025em">Certificazioni</h2>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px">
+<li style="display: flex; gap: 12px; align-items: flex-start"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle></svg><span style="display: flex; flex-direction: column"><span style="font-size: 16px; line-height: 24px; font-weight: 600">Laurea in Scienze Motorie</span><span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">[Università] · [anno]</span></span></li>
+<li style="display: flex; gap: 12px; align-items: flex-start"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle></svg><span style="display: flex; flex-direction: column"><span style="font-size: 16px; line-height: 24px; font-weight: 600">Istruttrice di Pilates Matwork</span><span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">[Ente certificatore] · [anno]</span></span></li>
+<li style="display: flex; gap: 12px; align-items: flex-start"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle></svg><span style="display: flex; flex-direction: column"><span style="font-size: 16px; line-height: 24px; font-weight: 600">Primo soccorso BLSD</span><span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">[Ente certificatore] · [anno]</span></span></li>
+</ul>
+</section>
+
+<section aria-labelledby="s-zona" style="display: flex; flex-direction: column; gap: 12px"><h2 id="s-zona" style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.025em">Zona</h2><div role="img" aria-label="Mappa con la zona approssimativa: Città Studi, Milano" style="position: relative; height: 240px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background-color: var(--muted); background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 32px 32px"><span style="position: absolute; left: 50%; top: 50%; width: 140px; height: 140px; transform: translate(-50%, -50%); border-radius: 9999px; background: rgba(127,127,127,0.18); border: 2px solid var(--foreground)"></span><span style="position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 9999px; background: var(--background); border: 1px solid var(--border); font-size: 13px; font-weight: 600; white-space: nowrap">Città Studi, Milano</span></div><p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--muted-foreground)">Zona approssimativa. L’indirizzo esatto dello studio arriva con la conferma.</p></section>
+
+<section id="recensioni" aria-labelledby="s-rec" style="display: flex; flex-direction: column; gap: 20px">
+<h2 id="s-rec" style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.025em">Recensioni</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 32px; align-items: center; padding: 24px; border: 1px solid var(--border); border-radius: 14px">
+<div class="tnum" style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 48px; line-height: 48px; font-weight: 700; letter-spacing: -0.025em">4,9</span>
+<span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">23 recensioni</span>
+</div>
+<div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{dist}}" as="b" hint-placeholder-count="5">
+<div class="tnum" style="display: flex; align-items: center; gap: 10px; font-size: 12px; line-height: 16px; font-weight: 500">
+<span style="width: 20px; color: var(--muted-foreground)">{{b.stars}}★</span>
+<span style="flex: 1; height: 8px; border-radius: 9999px; background: var(--muted); overflow: hidden"><span style="{{b.barStyle}}"></span></span>
+<span style="width: 20px; text-align: right; color: var(--muted-foreground)">{{b.count}}</span>
+</div>
+</sc-for>
+</div>
+<p style="margin: 0; flex-basis: 100%; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--muted-foreground)">Le recensioni arrivano solo da clienti che hanno svolto una seduta con questo trainer.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{reviews}}" as="v" hint-placeholder-count="3">
+<article style="display: flex; flex-direction: column; gap: 10px; padding: 20px; border: 1px solid var(--border); border-radius: 14px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: var(--muted); font-size: 12px; line-height: 16px; font-weight: 600">{{v.initials}}</span>
+<span style="display: flex; flex-direction: column"><span style="font-size: 14px; line-height: 20px; font-weight: 600">{{v.name}}</span><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">{{v.meta}}</span></span>
+<span aria-label="{{v.aria}}" style="margin-left: auto; display: flex; gap: 2px">
+<sc-for list="{{v.stars}}" as="st" hint-placeholder-count="5"><svg width="14" height="14" viewBox="0 0 24 24" fill="{{st.fill}}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"></path></svg></sc-for>
+</span>
+</div>
+<p style="margin: 0; font-size: 14px; line-height: 22px">{{v.text}}</p>
+<sc-if value="{{v.hasReply}}" hint-placeholder-val="{{false}}"><div style="padding: 10px 12px; border-left: 3px solid var(--foreground); border-radius: 0 10px 10px 0; background: var(--muted); font-size: 13px; line-height: 19px"><strong style="font-weight: 600">Risposta di Giulia:</strong> {{v.reply}}</div></sc-if>
+</article>
+</sc-for>
+</div>
+<button type="button" style="align-self: flex-start; display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border: 1px solid var(--input); border-radius: 8px; background: var(--background); color: var(--foreground); font-size: 14px; line-height: 20px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer">Mostra tutte le 23 recensioni</button>
+</section>
+
+</div>
+
+<aside aria-label="Prenota una seduta" style="flex: 1 1 340px; display: flex; flex-direction: column; gap: 16px; padding: 24px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)">
+<div class="tnum" style="display: flex; align-items: baseline; gap: 6px">
+<span style="font-size: 30px; line-height: 36px; font-weight: 700; letter-spacing: -0.025em">{{selPrice}}</span>
+<span style="font-size: 14px; line-height: 20px; color: var(--muted-foreground)">{{selDuration}} · indicativo</span>
+</div>
+<fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px">
+<legend style="padding: 0 0 8px; font-size: 14px; line-height: 20px; font-weight: 500">Scegli il servizio</legend>
+<sc-for list="{{services}}" as="s" hint-placeholder-count="4">
+<button type="button" role="radio" aria-checked="{{s.checked}}" onClick="{{s.pick}}" style="{{s.optStyle}}">
+<span style="{{s.dotStyle}}"></span>
+<span style="flex: 1; text-align: left; display: flex; flex-direction: column"><span style="font-size: 14px; line-height: 20px; font-weight: 500">{{s.name}}</span><span style="font-size: 12px; line-height: 16px; color: var(--muted-foreground)">{{s.duration}}</span></span>
+<span class="tnum" style="font-size: 14px; line-height: 20px; font-weight: 600">{{s.price}}</span>
+</button>
+</sc-for>
+</fieldset>
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 10px; background: var(--muted)"><span style="font-size: 12px; line-height: 16px; font-weight: 500; color: var(--muted-foreground)">IL TUO SLOT</span><sc-if value="{{hasSlot}}" hint-placeholder-val="{{true}}"><span class="tnum" style="font-size: 16px; line-height: 24px; font-weight: 600">{{slotLabel}}</span></sc-if><sc-if value="{{noSlot}}" hint-placeholder-val="{{false}}"><a href="#prenota" style="font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: underline">Scegli giorno e orario</a></sc-if></div>
+<a href="{{ctaHref}}" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 24px; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none">{{ctaLabel}}</a>
+<ul style="margin: 0; padding: 16px 0 0; border-top: 1px solid var(--border); list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 20px; color: var(--muted-foreground)">
+<li style="display: flex; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M20 6 9 17l-5-5"></path></svg>Scegli tu giorno, orario e durata</li>
+<li style="display: flex; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M20 6 9 17l-5-5"></path></svg>Ti registri solo quando prenoti</li>
+<li style="display: flex; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M20 6 9 17l-5-5"></path></svg>Contatti visibili dopo la conferma</li>
+<li style="display: flex; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M20 6 9 17l-5-5"></path></svg>Nessun pagamento online</li>
+</ul>
+</aside>
+
+</div>
+<section aria-labelledby="sim-t" style="display: flex; flex-direction: column; gap: 12px"><h2 id="sim-t" style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.025em">Trainer simili</h2><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 12px"><a href="#" style="display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); text-decoration: none"><span style="flex: none; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--muted); font-size: 16px; font-weight: 700; color: var(--muted-foreground)">AC</span><span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 15px; font-weight: 600">Andrea Conti</span><span style="font-size: 12px; color: var(--muted-foreground)">Lambrate · Calisthenics, Pesi</span><span class="tnum" style="font-size: 12px; font-weight: 600">da 40 € · primo slot oggi 19:00</span></span></a><a href="#" style="display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); text-decoration: none"><span style="flex: none; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--muted); font-size: 16px; font-weight: 700; color: var(--muted-foreground)">ER</span><span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 15px; font-weight: 600">Elena Ricci</span><span style="font-size: 12px; color: var(--muted-foreground)">Monza · Pilates, Yoga</span><span class="tnum" style="font-size: 12px; font-weight: 600">da 40 € · primo slot domani 09:00</span></span></a><a href="#" style="display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); text-decoration: none"><span style="flex: none; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--muted); font-size: 16px; font-weight: 700; color: var(--muted-foreground)">LF</span><span style="display: flex; flex-direction: column; min-width: 0"><span style="font-size: 15px; font-weight: 600">Luca Ferrari</span><span style="font-size: 12px; color: var(--muted-foreground)">Porta Romana · Crossfit</span><span class="tnum" style="font-size: 12px; font-weight: 600">da 45 € · primo slot ven 9, 07:00</span></span></a></div><a href="#" style="align-self: flex-start; min-height: 32px; display: inline-flex; align-items: center; font-size: 13px; color: var(--muted-foreground); text-decoration: underline">Segnala questo profilo</a></section>
+</main>
+
+<footer style="flex-grow: 1; border-top: 1px solid var(--border); background: var(--background); height: 440px">
+<div style="max-width: 1280px; margin: 0 auto; padding: 32px; display: flex; flex-wrap: wrap; gap: 16px 32px; justify-content: space-between; font-size: 14px; line-height: 20px; color: var(--muted-foreground)">
+<span>© 2026 MioPersonal · Versione beta</span>
+<nav aria-label="Informazioni legali" style="display: flex; flex-wrap: wrap; gap: 24px"><a href="#">Privacy policy</a><a href="#">Cookie policy</a><a href="#">Termini</a><a href="#">Contatti</a></nav>
+</div>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Chiaro","Scuro"],"default":"Chiaro"},"$preview":{"width":1440,"height":4300}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { svc: 0, photo: 0, dur: 1, week: 0, day: 2, slot: 18, fav: false };
+  }
+  renderVals() {
+    var self = this;
+    var SV = [
+      { name: 'Seduta singola', duration: '1 o 2 ore', note: 'in studio, a domicilio o al parco', price: '45 €/ora', rate: 45, perHour: true },
+      { name: 'Seduta online', duration: '1 o 2 ore', note: 'in videochiamata', price: '35 €/ora', rate: 35, perHour: true },
+      { name: 'Valutazione iniziale', duration: '1 ora', note: 'test di partenza e obiettivi', price: '30 €', rate: 30, perHour: false, fixed1: true },
+      { name: 'Pacchetto 10 sedute', duration: '10 × 1 ora', note: 'prenoti qui la prima, da usare entro 3 mesi', price: '400 €', rate: 400, perHour: false, fixed1: true }
+    ];
+    var ROW = 'display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px';
+    var OPT = 'display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 12px; border-radius: 10px; color: var(--foreground); background: var(--background); cursor: pointer; ';
+    var services = SV.map(function (s, i) {
+      var on = self.state.svc === i;
+      return Object.assign({}, s, {
+        rowStyle: ROW + (i > 0 ? '; border-top: 1px solid var(--border)' : ''),
+        checked: on ? 'true' : 'false',
+        optStyle: OPT + (on ? 'border: 2px solid var(--primary)' : 'border: 1px solid var(--border)'),
+        dotStyle: 'flex: none; width: 16px; height: 16px; border-radius: 9999px; box-sizing: border-box; ' + (on ? 'border: 5px solid var(--primary)' : 'border: 1px solid var(--input)'),
+        pick: function () { self.setState({ svc: i }); }
+      });
+    });
+    var sel = SV[this.state.svc];
+    var grid = { Mattina: [1, 0, 1, 0, 1, 1, 0], Pomeriggio: [0, 1, 0, 1, 0, 1, 0], Sera: [1, 1, 1, 1, 0, 0, 0] };
+    var hours = { Mattina: '7–12', Pomeriggio: '12–18', Sera: '18–21' };
+    var dayNames = ['lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica'];
+    var ON = 'height: 40px; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); text-align: center; font-size: 14px';
+    var OFF = 'height: 40px; border-radius: 8px; background: var(--muted); color: var(--muted-foreground); text-align: center; font-size: 14px';
+    var avail = Object.keys(grid).map(function (k) {
+      return { label: k, hours: hours[k], cells: grid[k].map(function (v, i) {
+        return { style: v ? ON : OFF, mark: v ? '✓' : '–', aria: dayNames[i] + ' ' + k.toLowerCase() + ': ' + (v ? 'di solito disponibile' : 'non disponibile') };
+      }) };
+    });
+    var mkStars = function (n) { var a = []; for (var i = 0; i < 5; i++) a.push({ fill: i < n ? 'currentColor' : 'none' }); return a; };
+    var reviews = [
+      { name: 'Marta', initials: 'M', meta: 'Seduta singola · settembre 2026', n: 5, text: 'Puntuale e preparatissima. In un mese il mal di schiena è migliorato e ho finalmente una routine che riesco a seguire.' },
+      { name: 'Stefano', initials: 'S', meta: 'Pacchetto 10 sedute · agosto 2026', n: 5, text: 'Allenamenti al parco sempre diversi. Ottima per chi riparte da zero.' },
+      { name: 'Ilaria', initials: 'I', meta: 'Seduta online · luglio 2026', n: 4, text: 'Le sedute online funzionano bene, servirebbe solo un po\u2019 più di materiale da seguire tra una seduta e l\u2019altra.' }
+    ].map(function (r) { return Object.assign({}, r, { stars: mkStars(r.n), aria: r.n + ' stelle su 5' }); });
+    var REPLIES = { 'Ilaria': 'Grazie del consiglio: da settembre mando una scheda dopo ogni seduta.', 'Stefano': 'Grazie Stefano, ci vediamo al parco per la prossima!' };
+    reviews = reviews.map(function (r) { return Object.assign(r, { reply: REPLIES[r.name] || '', hasReply: !!REPLIES[r.name] }); });
+    var D = [[5, 20], [4, 3], [3, 0], [2, 0], [1, 0]];
+    var dist = D.map(function (d) { return { stars: d[0], count: d[1], barStyle: 'display: block; height: 100%; border-radius: 9999px; background: var(--primary); width: ' + Math.round(d[1] / 23 * 100) + '%' }; });
+    var PH = [['Ritratto', true], ['In studio', false], ['Al parco Lambro', false], ['Seduta di Pilates', false], ['Allenamento funzionale', false], ['Lo studio', false]];
+    var pi = this.state.photo || 0, pn = PH.length;
+    var slides = PH.map(function (p, i) { return { label: p[0], isPortrait: p[1], isPhoto: !p[1], aria: (i + 1) + ' di ' + pn + ': ' + p[0] }; });
+    var thumbs = PH.map(function (p, i) {
+      var on = i === pi;
+      return {
+        short: p[0], aria: 'Mostra foto ' + (i + 1) + ': ' + p[0], current: on ? 'true' : 'false',
+        pick: function () { self.setState({ photo: i }); },
+        style: 'flex: none; width: 120px; height: 76px; padding: 6px; display: flex; align-items: flex-end; border-radius: 10px; background-color: var(--muted); background-image: repeating-linear-gradient(135deg, transparent 0 12px, rgba(127,127,127,0.06) 12px 24px); color: var(--muted-foreground); font-size: 12px; line-height: 16px; font-weight: 500; text-align: left; cursor: pointer; box-sizing: border-box; ' + (on ? 'border: 2px solid var(--primary); color: var(--foreground)' : 'border: 1px solid var(--border); opacity: 0.7'),
+        dot: 'display: block; border-radius: 9999px; ' + (on ? 'width: 18px; height: 6px; background: var(--primary)' : 'width: 6px; height: 6px; background: var(--input)')
+      };
+    });
+    var MONTHS = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+    var MON3 = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+    var DOWS = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+    var DOWL = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
+    var WORK = { 0: [], 1: [7, 8, 9, 10, 11, 18, 19, 20], 2: [12, 13, 14, 15, 16, 17, 18, 19, 20], 3: [7, 8, 9, 10, 11, 18, 19, 20], 4: [12, 13, 14, 15, 16, 17, 18, 19, 20], 5: [7, 8, 9, 10, 11, 12], 6: [8, 9, 10, 11, 12, 13] };
+    var isBooked = function (di, h) { return ((di * 7 + h * 13) % 10) < 3; };
+    var dateOf = function (di) { return new Date(2026, 9, 6 + di); };
+    var bsv = SV[this.state.svc];
+    var dur = bsv.fixed1 ? 1 : (this.state.dur || 1);
+    var freeStarts = function (di, d) {
+      var w = WORK[dateOf(di).getDay()];
+      return w.filter(function (h) { for (var k = 0; k < d; k++) { if (w.indexOf(h + k) < 0 || isBooked(di, h + k)) return false; } return true; });
+    };
+    var firstFree = function (wk, d) { for (var i = 0; i < 7; i++) { if (freeStarts(wk * 7 + i, d).length) return wk * 7 + i; } return wk * 7; };
+    var week = this.state.week || 0;
+    var dayIdx = this.state.day == null ? firstFree(week, dur) : this.state.day;
+    var starts = freeStarts(dayIdx, dur);
+    var slot = this.state.slot != null && starts.indexOf(this.state.slot) >= 0 ? this.state.slot : null;
+    var hh = function (h) { return (h < 10 ? '0' : '') + h + ':00'; };
+    var DAY = 'display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; border-radius: 10px; box-sizing: border-box; ';
+    var bdays = [];
+    for (var i = 0; i < 7; i++) {
+      (function (di) {
+        var dt = dateOf(di), n = freeStarts(di, dur).length, on = di === dayIdx;
+        bdays.push({
+          dow: DOWS[dt.getDay()], num: dt.getDate(), pressed: on ? 'true' : 'false',
+          aria: DOWL[dt.getDay()] + ' ' + dt.getDate() + ' ' + MONTHS[dt.getMonth()] + ': ' + (n ? n + (n === 1 ? ' orario libero' : ' orari liberi') : 'nessun orario libero'),
+          freeLabel: n ? n + ' liberi' : 'pieno',
+          style: DAY + (on ? 'border: 2px solid var(--primary); background: var(--primary); color: var(--primary-foreground); cursor: pointer' : (n ? 'border: 1px solid var(--border); background: var(--background); color: var(--foreground); cursor: pointer' : 'border: 1px solid transparent; background: var(--muted); color: var(--muted-foreground); cursor: not-allowed')),
+          pick: function () { if (n) self.setState({ day: di, slot: null }); }
+        });
+      })(week * 7 + i);
+    }
+    var SLOT = 'height: 44px; padding: 0 8px; border-radius: 8px; font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer; ';
+    var bslots = starts.map(function (h) {
+      var on = h === slot;
+      return { label: hh(h) + '–' + hh(h + dur), pressed: on ? 'true' : 'false', style: SLOT + (on ? 'border: 2px solid var(--primary); background: var(--primary); color: var(--primary-foreground)' : 'border: 1px solid var(--input); background: var(--background); color: var(--foreground)'), pick: function () { self.setState({ day: dayIdx, slot: h }); } };
+    });
+    var DUR = 'height: 34px; padding: 0 14px; border: 0; border-radius: 8px; font-size: 14px; line-height: 20px; font-weight: 500; ';
+    var durs = [[1, '1 ora'], [2, '2 ore']].map(function (d) {
+      var on = dur === d[0], off = bsv.fixed1 && d[0] === 2;
+      return { label: d[1], checked: on ? 'true' : 'false', disabled: off ? 'true' : 'false',
+        style: DUR + (on ? 'background: var(--background); color: var(--foreground); box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1); cursor: pointer' : (off ? 'background: transparent; color: var(--muted-foreground); opacity: 0.5; cursor: not-allowed' : 'background: transparent; color: var(--muted-foreground); cursor: pointer')),
+        pick: function () { if (!off) self.setState({ dur: d[0], slot: null }); } };
+    });
+    var d0 = dateOf(week * 7), d6 = dateOf(week * 7 + 6);
+    var weekLabel = d0.getMonth() === d6.getMonth() ? d0.getDate() + ' – ' + d6.getDate() + ' ' + MONTHS[d6.getMonth()] : d0.getDate() + ' ' + MONTHS[d0.getMonth()] + ' – ' + d6.getDate() + ' ' + MONTHS[d6.getMonth()];
+    var NAV = 'width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--input); border-radius: 9999px; background: var(--background); color: var(--foreground); ';
+    var sd = dateOf(dayIdx);
+    var durLabel = dur === 1 ? '1 ora' : '2 ore';
+    var total = bsv.perHour ? bsv.rate * dur : bsv.rate;
+    var slotLabel = slot != null ? DOWS[sd.getDay()] + ' ' + sd.getDate() + ' ' + MON3[sd.getMonth()] + ' · ' + hh(slot) + '–' + hh(slot + dur) : '';
+    var bookVals = {
+      durs: durs, bdays: bdays, bslots: bslots, weekLabel: weekLabel,
+      prevStyle: NAV + (week > 0 ? 'cursor: pointer' : 'opacity: 0.4; cursor: not-allowed'),
+      nextStyle: NAV + (week < 2 ? 'cursor: pointer' : 'opacity: 0.4; cursor: not-allowed'),
+      prevWeek: function () { if (week > 0) self.setState({ week: week - 1, day: firstFree(week - 1, dur), slot: null }); },
+      nextWeek: function () { if (week < 2) self.setState({ week: week + 1, day: firstFree(week + 1, dur), slot: null }); },
+      dayLabel: DOWL[sd.getDay()].charAt(0).toUpperCase() + DOWL[sd.getDay()].slice(1) + ' ' + sd.getDate() + ' ' + MONTHS[sd.getMonth()],
+      slotCount: starts.length ? (starts.length === 1 ? '1 orario libero da ' : starts.length + ' orari liberi da ') + durLabel : 'nessun orario libero da ' + durLabel,
+      hasSlots: starts.length > 0, noSlots: starts.length === 0, durLabel: durLabel,
+      hasSlot: slot != null, noSlot: slot == null, slotLabel: slotLabel,
+      selPrice: total + ' €', selDuration: bsv.perHour ? durLabel + ' · ' + bsv.name.toLowerCase() : bsv.duration + ' · ' + bsv.name.toLowerCase(),
+      barLabel: slot != null ? slotLabel : 'Scegli giorno e orario',
+      ctaLabel: slot != null ? 'Prenota questo slot' : 'Scegli giorno e orario',
+      ctaShort: slot != null ? 'Prenota' : 'Scegli orario',
+      ctaHref: slot != null ? 'Registrazione-cliente.dc.html' : '#prenota'
+    };
+    var photoVals = {
+      slides: slides, thumbs: thumbs, photoNum: pi + 1, photoTotal: pn, photoCaption: PH[pi][0],
+      trackStyle: 'display: flex; height: 100%; transition: transform 300ms ease; transform: translateX(-' + (pi * 100) + '%)',
+      prevPhoto: function () { self.setState({ photo: ((self.state.photo || 0) - 1 + pn) % pn }); },
+      nextPhoto: function () { self.setState({ photo: ((self.state.photo || 0) + 1) % pn }); }
+    };
+    return Object.assign(photoVals, bookVals, {
+      favFill: this.state.fav ? 'currentColor' : 'none', favPressed: this.state.fav ? 'true' : 'false', favLabel: this.state.fav ? 'Salvato' : 'Salva', toggleFav: function () { self.setState({ fav: !self.state.fav }); },
+      services: services,
+      reviews: reviews, dist: dist,
+      theme: this.props.tema === 'Scuro' ? 'dark' : 'light'
+    });
+  }
+}
+</script>
+</body>
+</html>
