@@ -62,7 +62,7 @@
     --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* Colors from docs/design/tokens.css. Values not in the design
+/* Colors of the original design (tokens.css, commit 0895b19). Values not in the design
    (destructive, charts, radius) are the starter kit defaults. */
 :root {
     --background: #ffffff;
