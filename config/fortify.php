@@ -75,6 +75,11 @@ return [
 
     'home' => '/dashboard',
 
+    // New clients first see the optional "Completa il tuo profilo" page.
+    'redirects' => [
+        'register' => '/completa-profilo',
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Fortify Routes Prefix / Subdomain

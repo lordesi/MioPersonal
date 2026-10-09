@@ -115,4 +115,11 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    | Where the messages of the Contatti page arrive. The same address is
+    | shown on the page ("Preferisci l'email?").
+    */
+
+    'contact_address' => env('MAIL_CONTACT_ADDRESS', 'info@miopersonal.it'),
+
 ];

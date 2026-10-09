@@ -1,120 +1,112 @@
-import { Form, Head } from '@inertiajs/react';
-import InputError from '@/components/input-error';
-import PasswordInput from '@/components/password-input';
-import TextLink from '@/components/text-link';
+import { Form, Head, Link } from '@inertiajs/react';
+import AccountFields from '@/components/auth/account-fields';
+import ConsentCheckbox from '@/components/auth/consent-checkbox';
+import SocialSignIn from '@/components/auth/social-sign-in';
+import MinimalHeader from '@/components/layout/minimal-header';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
+import { privacy, terms } from '@/routes/legal';
 import { store } from '@/routes/register';
+import { register as trainerRegister } from '@/routes/trainer';
 
-type Props = {
-    passwordRules: string;
-};
+const TERMS_HREF = terms.url();
+const PRIVACY_HREF = privacy.url();
 
-export default function Register({ passwordRules }: Props) {
+export default function Register() {
     return (
-        <>
-            <Head title="Register" />
-            <Form
-                {...store.form()}
-                resetOnSuccess={['password', 'password_confirmation']}
-                disableWhileProcessing
-                className="flex flex-col gap-6"
-            >
-                {({ processing, errors }) => (
-                    <>
-                        <div className="grid gap-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
-                                <Input
-                                    id="name"
-                                    type="text"
-                                    required
-                                    autoFocus
-                                    tabIndex={1}
-                                    autoComplete="name"
-                                    name="name"
-                                    placeholder="Full name"
-                                />
-                                <InputError
-                                    message={errors.name}
-                                    className="mt-2"
-                                />
+        <div className="flex min-h-screen flex-col bg-secondary">
+            <Head title="Crea il tuo account" />
+
+            <MinimalHeader>
+                Hai già un account?
+                <Link
+                    href={login()}
+                    className="font-medium text-foreground underline"
+                >
+                    Accedi
+                </Link>
+            </MinimalHeader>
+
+            <main className="mx-auto w-full max-w-xl px-4 pt-5 pb-10 md:px-8 md:pt-12 md:pb-20">
+                <Form
+                    {...store.form()}
+                    resetOnSuccess={['password']}
+                    disableWhileProcessing
+                    aria-labelledby="register-title"
+                    className="flex flex-col gap-5 rounded-xl border bg-card p-4 md:p-8"
+                >
+                    {({ processing, errors }) => (
+                        <>
+                            <div className="flex flex-col gap-1.5">
+                                <h1
+                                    id="register-title"
+                                    className="text-[28px] leading-8.5 font-semibold tracking-tight md:text-3xl"
+                                >
+                                    Crea il tuo account
+                                </h1>
+                                <p className="text-sm text-muted-foreground">
+                                    Per inviare richieste ai trainer e seguire
+                                    le tue sedute.
+                                </p>
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="email"
-                                    name="email"
-                                    placeholder="email@example.com"
-                                />
-                                <InputError message={errors.email} />
-                            </div>
+                            <SocialSignIn verb="Registrati con" />
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="password">Password</Label>
-                                <PasswordInput
-                                    id="password"
-                                    required
-                                    tabIndex={3}
-                                    autoComplete="new-password"
-                                    name="password"
-                                    placeholder="Password"
-                                    passwordrules={passwordRules}
-                                />
-                                <InputError message={errors.password} />
-                            </div>
+                            <AccountFields
+                                errors={errors}
+                                emailHint="Ti mandiamo un link per verificarla."
+                            />
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
-                                    Confirm password
-                                </Label>
-                                <PasswordInput
-                                    id="password_confirmation"
+                            <fieldset className="flex flex-col gap-3 border-t pt-4">
+                                <legend className="sr-only">Consensi</legend>
+                                <ConsentCheckbox
+                                    name="terms"
                                     required
-                                    tabIndex={4}
-                                    autoComplete="new-password"
-                                    name="password_confirmation"
-                                    placeholder="Confirm password"
-                                    passwordrules={passwordRules}
-                                />
-                                <InputError
-                                    message={errors.password_confirmation}
-                                />
-                            </div>
+                                    error={errors.terms}
+                                >
+                                    Ho almeno 18 anni e accetto i{' '}
+                                    <a href={TERMS_HREF} className="underline">
+                                        Termini
+                                    </a>{' '}
+                                    e l'
+                                    <a
+                                        href={PRIVACY_HREF}
+                                        className="underline"
+                                    >
+                                        Informativa privacy
+                                    </a>
+                                    .{' '}
+                                    <span className="text-muted-foreground">
+                                        (obbligatorio)
+                                    </span>
+                                </ConsentCheckbox>
+                                {/* TODO: "Voglio ricevere novità…" (facoltativo) needs a
+                                    marketing consent column: add it with that migration. */}
+                            </fieldset>
 
                             <Button
                                 type="submit"
-                                className="mt-2 w-full"
-                                tabIndex={5}
-                                data-test="register-user-button"
+                                className="h-11"
+                                disabled={processing}
                             >
                                 {processing && <Spinner />}
-                                Create account
+                                Crea account
                             </Button>
-                        </div>
 
-                        <div className="text-center text-sm text-muted-foreground">
-                            Already have an account?{' '}
-                            <TextLink href={login()} tabIndex={6}>
-                                Log in
-                            </TextLink>
-                        </div>
-                    </>
-                )}
-            </Form>
-        </>
+                            <p className="text-center text-sm text-muted-foreground">
+                                Sei un personal trainer?{' '}
+                                <Link
+                                    href={trainerRegister()}
+                                    className="font-medium text-foreground underline"
+                                >
+                                    Crea il tuo profilo
+                                </Link>
+                            </p>
+                        </>
+                    )}
+                </Form>
+            </main>
+        </div>
     );
 }
-
-Register.layout = {
-    title: 'Create an account',
-    description: 'Enter your details below to create your account',
-};

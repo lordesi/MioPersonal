@@ -4,7 +4,7 @@ import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
-import { bunny } from 'laravel-vite-plugin/fonts';
+import { local } from 'laravel-vite-plugin/fonts';
 import { defineConfig, lazyPlugins } from 'vite-plus';
 
 export default defineConfig({
@@ -13,8 +13,25 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
             refresh: true,
             fonts: [
-                bunny('Instrument Sans', {
-                    weights: [400, 500, 600],
+                local('Geist', {
+                    variants: [
+                        {
+                            src: 'resources/fonts/geist/Geist-Regular.woff2',
+                            weight: 400,
+                        },
+                        {
+                            src: 'resources/fonts/geist/Geist-Medium.woff2',
+                            weight: 500,
+                        },
+                        {
+                            src: 'resources/fonts/geist/Geist-SemiBold.woff2',
+                            weight: 600,
+                        },
+                        {
+                            src: 'resources/fonts/geist/Geist-Bold.woff2',
+                            weight: 700,
+                        },
+                    ],
                 }),
             ],
         }),
@@ -66,6 +83,7 @@ export default defineConfig({
         ignorePatterns: [
             '.github/**',
             'composer.json',
+            'docs/design/**',
             'resources/js/components/ui/*',
             'resources/views/mail/*',
         ],
