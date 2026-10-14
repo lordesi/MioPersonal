@@ -325,6 +325,18 @@ php artisan migrate
 
 Esegue le _migration_, cioè crea le tabelle nel tuo database. Devi vedere un elenco di righe con **DONE**.
 
+Poi riempi le tabelle e collega la cartella delle foto:
+
+```
+php artisan db:seed
+php artisan storage:link
+```
+
+- `db:seed` carica città e discipline e, solo in locale, i trainer d'esempio (email
+  `…@demo.miopersonal.test`, password `password`).
+- `storage:link` rende visibili nel browser le foto dei profili trainer (cartella
+  `storage/app/public`). Va fatto una volta sola.
+
 ### 9.6 Avviare il frontend
 
 ```
@@ -375,6 +387,32 @@ psql -U miopersonal -d miopersonal -h localhost -c "update users set email_verif
 La risposta `UPDATE 1` conferma. Ricarica la pagina nel browser.
 
 > Questa scorciatoia va bene **solo in locale** con utenti di prova.
+
+### Provare «Password dimenticata?»
+
+1. Dalla pagina **Accedi** clicca **Password dimenticata?**, scrivi l'email dell'utente di prova e premi **Inviami il link**.
+2. Come per la verifica, l'email finisce in `storage/logs/laravel.log`: cerca `reset-password` e apri il link.
+3. Scegli la nuova password: torni su **Accedi** con il messaggio «Password aggiornata».
+
+### Accesso con Google (facoltativo)
+
+Finché nel `.env` non c'è `GOOGLE_CLIENT_ID`, il pulsante **Continua con Google** non compare. Per attivarlo:
+
+1. Apri [console.cloud.google.com](https://console.cloud.google.com), crea un progetto e vai su **API e servizi → Schermata consenso OAuth** (tipo **Esterno**, aggiungi la tua email tra gli utenti di test).
+2. Vai su **Credenziali → Crea credenziali → ID client OAuth**, tipo **Applicazione web**.
+3. In **URI di reindirizzamento autorizzati** aggiungi `http://localhost:8000/auth/google/callback`.
+   Google non accetta i domini `.test`: in locale va provato su `localhost`.
+4. Copia ID e secret nel `.env`:
+
+    ```
+    GOOGLE_CLIENT_ID=il-tuo-id.apps.googleusercontent.com
+    GOOGLE_CLIENT_SECRET=il-tuo-secret
+    GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+    ```
+
+5. Avvia `php artisan serve` (oltre a `npm run dev`) e apri `http://localhost:8000/login`.
+
+In produzione si aggiunge in Google l'indirizzo vero, es. `https://miopersonal.it/auth/google/callback`.
 
 ---
 

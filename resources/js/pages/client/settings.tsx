@@ -1,12 +1,10 @@
 import { Head, Link } from '@inertiajs/react';
 import AccessSection from '@/components/account/access-section';
 import DeleteAccountSection from '@/components/account/delete-account-section';
-import NotificationsSection from '@/components/account/notifications-section';
 import PersonalDataSection from '@/components/account/personal-data-section';
-import PrivacySection from '@/components/account/privacy-section';
 import SettingsNav from '@/components/account/settings-nav';
 import { completeProfile } from '@/routes/client';
-import type { AccountSettings, NotificationSetting } from '@/types';
+import type { AccountSettings } from '@/types';
 
 type SettingsProps = {
     account: AccountSettings;
@@ -16,36 +14,7 @@ type SettingsProps = {
 const sections = [
     { id: 'dati', title: 'Dati personali' },
     { id: 'accesso', title: 'Accesso e sicurezza' },
-    { id: 'notifiche', title: 'Notifiche' },
-    { id: 'privacy', title: 'Privacy e dati' },
     { id: 'elimina', title: 'Elimina account' },
-];
-
-const notifications: NotificationSetting[] = [
-    {
-        key: 'reminder',
-        label: 'Promemoria il giorno prima',
-        hint: 'Email per ogni seduta confermata',
-        defaultOn: true,
-    },
-    {
-        key: 'push',
-        label: 'Notifiche sul telefono',
-        hint: 'Conferme e cambi di orario in tempo reale',
-        defaultOn: false,
-    },
-    {
-        key: 'favorites',
-        label: 'Orari liberi dei preferiti',
-        hint: 'Quando un trainer salvato ha nuovi slot',
-        defaultOn: true,
-    },
-    {
-        key: 'news',
-        label: 'Novità e consigli',
-        hint: 'Al massimo una email al mese',
-        defaultOn: false,
-    },
 ];
 
 export default function Settings({
@@ -80,14 +49,16 @@ export default function Settings({
                         <PersonalDataSection
                             firstName={account.firstName}
                             lastName={account.lastName}
+                            phone={account.phone}
+                            description="Il trainer vede nome e cognome quando gli invii una richiesta; il telefono solo dopo che l’ha confermata."
+                            phoneHint="Il trainer lo vede solo dopo aver confermato la tua prenotazione."
                         />
                         <AccessSection
                             email={account.email}
+                            hasPassword={account.hasPassword}
+                            passwordChangedAt={account.passwordChangedAt}
                             providers={account.providers}
-                            devices={account.devices}
                         />
-                        <NotificationsSection settings={notifications} />
-                        <PrivacySection />
                         <DeleteAccountSection
                             pendingBookingTrainers={pendingBookingTrainers}
                         />

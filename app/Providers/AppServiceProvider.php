@@ -37,14 +37,12 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
-        );
+        // The criteria listed under the password field (password-requirements.tsx):
+        // the same everywhere. In production also refused if found in a data leak.
+        Password::defaults(function (): Password {
+            $rule = Password::min(8)->mixedCase()->numbers();
+
+            return app()->isProduction() ? $rule->uncompromised() : $rule;
+        });
     }
 }

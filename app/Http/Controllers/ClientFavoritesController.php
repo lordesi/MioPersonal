@@ -2,25 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Enums\TrainerProfileStatus;
+use App\Models\User;
+use App\Support\TrainerCard;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/** "Preferiti": the trainers the client saved with the heart, last saved first. */
 class ClientFavoritesController extends Controller
 {
-    use BuildsPlaceholderData;
-
-    /** The trainers saved in the design, in its order. */
-    private const SLUGS = ['giulia-rossi', 'andrea-conti', 'chiara-galli'];
-
-    public function __invoke(): Response
+    public function __invoke(Request $request): Response
     {
-        // TODO: load the logged-in client's favorite trainers from the database.
-        $trainers = collect($this->placeholderTrainers())->keyBy('slug');
+        /** @var User $client */
+        $client = $request->user();
 
         return Inertia::render('client/favorites', [
-            'trainers' => collect(self::SLUGS)
-                ->map(fn (string $slug) => $this->trainerCard($trainers[$slug]))
+            // A profile the team takes back for review disappears from here too.
+            'trainers' => $client->favoriteTrainers()
+                ->where('trainer_profiles.status', TrainerProfileStatus::Approved)
+                ->with(TrainerCard::RELATIONS)
+                ->get()
+                ->map(TrainerCard::from(...))
                 ->values()
                 ->all(),
         ]);

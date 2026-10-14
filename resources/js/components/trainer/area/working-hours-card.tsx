@@ -2,7 +2,8 @@ import { useId } from 'react';
 import ChoiceChips from '@/components/shared/choice-chips';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { formatDayRange } from '@/lib/format';
+import { SESSION_MINUTES } from '@/lib/booking';
+import { formatDayRange, formatDuration } from '@/lib/format';
 import type { WorkingDay } from '@/types';
 
 export type Holiday = { id: number; from: string; to: string };
@@ -16,10 +17,11 @@ type WorkingHoursCardProps = {
     onRemoveHoliday: (id: number) => void;
 };
 
-const durationOptions = [
-    { value: '1', label: '1 ora' },
-    { value: '2', label: '2 ore' },
-];
+/** From 30 minutes to 3 hours; the values are minutes as text. */
+const durationOptions = SESSION_MINUTES.map((minutes) => ({
+    value: String(minutes),
+    label: formatDuration(minutes),
+}));
 
 /** Weekly hours, bookable durations and holidays of the trainer. */
 export default function WorkingHoursCard({

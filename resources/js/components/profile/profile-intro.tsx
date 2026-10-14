@@ -17,7 +17,8 @@ import type { TrainerProfile } from '@/types';
 
 type ProfileIntroProps = {
     trainer: TrainerProfile;
-    favorite: boolean;
+    /** Saved by the client; null hides "Salva" (trainers and admins). */
+    favorite: boolean | null;
     onFavoriteChange: (favorite: boolean) => void;
     onShare: () => void;
 };
@@ -80,12 +81,14 @@ export default function ProfileIntro({
                                 <Share />
                                 Condividi
                             </Button>
-                            <FavoriteButton
-                                variant="labeled"
-                                trainerName={trainer.name}
-                                pressed={favorite}
-                                onPressedChange={onFavoriteChange}
-                            />
+                            {favorite !== null && (
+                                <FavoriteButton
+                                    variant="labeled"
+                                    trainerName={trainer.name}
+                                    pressed={favorite}
+                                    onPressedChange={onFavoriteChange}
+                                />
+                            )}
                         </div>
                     </div>
 
@@ -132,7 +135,7 @@ export default function ProfileIntro({
                         )}
                         <span className="flex items-center gap-1.5 text-muted-foreground">
                             <MapPin aria-hidden="true" className="size-4" />
-                            {trainer.zones.join(', ')}
+                            {trainer.cities.join(', ')}
                         </span>
                         {onlineLabel && (
                             <span className="flex items-center gap-1.5 text-muted-foreground">
@@ -176,17 +179,19 @@ export default function ProfileIntro({
             </div>
             <span className="flex items-center gap-1.5 text-sm text-muted-foreground md:hidden">
                 <MapPin aria-hidden="true" className="size-3.5" />
-                {trainer.zones.join(', ')}
+                {trainer.cities.join(', ')}
             </span>
             <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] leading-5 tabular-nums md:hidden">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                     <Award aria-hidden="true" className="size-3.5" />
                     {trainer.experienceLabel}
                 </span>
-                <span className="flex items-center gap-1.5">
-                    <MessageCircle aria-hidden="true" className="size-4" />
-                    {trainer.responseTimeLabel}
-                </span>
+                {trainer.responseTimeLabel && (
+                    <span className="flex items-center gap-1.5">
+                        <MessageCircle aria-hidden="true" className="size-4" />
+                        {trainer.responseTimeLabel}
+                    </span>
+                )}
                 <span className="flex items-center gap-1.5">
                     <RotateCcw aria-hidden="true" className="size-4" />
                     {trainer.cancellationLabel}

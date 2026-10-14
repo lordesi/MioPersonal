@@ -72,7 +72,7 @@ export default function VerificationQueue({
                                     </span>
                                     <span className="text-xs text-muted-foreground">
                                         {trainer.disciplines.join(', ')} ·{' '}
-                                        {trainer.zone}
+                                        {trainer.city}
                                     </span>
                                     <span className="flex flex-wrap gap-1 pt-1">
                                         <AdminBadge variant={status.variant}>

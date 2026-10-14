@@ -5,12 +5,14 @@ import { useFieldValidation } from '@/hooks/use-field-validation';
 
 type FormFieldProps = {
     label: string;
-    /** Short help under the field, e.g. "Almeno 8 caratteri." */
-    hint?: string;
+    /** Short help under the field, e.g. the password criteria. */
+    hint?: ReactNode;
     /** From the server; wins over the message of the browser check. */
     error?: string;
     /** Something on the right of the label, e.g. "Password dimenticata?". */
     labelAside?: ReactNode;
+    /** Fields with a character limit: "42/60" under the field, on the right. */
+    counter?: { length: number; max: number };
     /** Receives the ids to put on the input. */
     children: (ids: { id: string; describedBy?: string }) => ReactNode;
 };
@@ -25,6 +27,7 @@ export default function FormField({
     hint,
     error: serverError,
     labelAside,
+    counter,
     children,
 }: FormFieldProps) {
     const id = useId();
@@ -43,10 +46,25 @@ export default function FormField({
                 {labelAside}
             </div>
             {children({ id, describedBy })}
-            {hint && (
-                <span id={hintId} className="text-xs text-muted-foreground">
-                    {hint}
-                </span>
+            {(hint || counter) && (
+                <div className="flex items-start justify-between gap-3">
+                    {hint ? (
+                        <div
+                            id={hintId}
+                            className="text-xs text-muted-foreground"
+                        >
+                            {hint}
+                        </div>
+                    ) : (
+                        <span />
+                    )}
+                    {counter && (
+                        // Not a live region: screen readers would read it at every key.
+                        <span className="flex-none text-xs text-muted-foreground tabular-nums">
+                            {counter.length}/{counter.max}
+                        </span>
+                    )}
+                </div>
             )}
             {error && (
                 <p id={errorId} className="text-sm text-destructive">

@@ -60,9 +60,6 @@ export default function LegalPage({
                 </nav>
 
                 <div className="flex flex-col gap-2.5">
-                    <span className="flex h-6 items-center self-start rounded-full border border-dashed border-foreground px-2.5 text-xs font-semibold">
-                        Bozza da far verificare a un legale
-                    </span>
                     <h1 className="text-3xl leading-9 font-bold tracking-tighter md:text-[44px] md:leading-12">
                         {title}
                     </h1>

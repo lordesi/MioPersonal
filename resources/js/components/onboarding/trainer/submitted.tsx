@@ -2,13 +2,14 @@ import { Link, usePage } from '@inertiajs/react';
 import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { today } from '@/routes/trainer';
-import { show } from '@/routes/trainers';
 
-// TODO: link to the new trainer's own profile preview once profiles are stored.
-const PREVIEW_HREF = show('giulia-rossi');
+type SubmittedProps = {
+    /** The trainer's own profile, visible only to them until it is approved. */
+    previewHref: string | null;
+};
 
 /** Shown after sending the registration: the profile waits for approval. */
-export default function Submitted() {
+export default function Submitted({ previewHref }: SubmittedProps) {
     // A client who became a trainer already verified the email: no new link.
     const emailVerified = !!usePage().props.auth?.user?.email_verified_at;
 
@@ -30,15 +31,17 @@ export default function Submitted() {
                 <Button asChild className="h-11 flex-[1_1_180px]">
                     <Link href={today()}>Vai alla tua area</Link>
                 </Button>
-                <Button
-                    asChild
-                    variant="outline"
-                    className="h-11 flex-[1_1_180px]"
-                >
-                    <Link href={PREVIEW_HREF}>
-                        Vedi l'anteprima del profilo
-                    </Link>
-                </Button>
+                {previewHref && (
+                    <Button
+                        asChild
+                        variant="outline"
+                        className="h-11 flex-[1_1_180px]"
+                    >
+                        <Link href={previewHref}>
+                            Vedi l'anteprima del profilo
+                        </Link>
+                    </Button>
+                )}
             </div>
         </div>
     );

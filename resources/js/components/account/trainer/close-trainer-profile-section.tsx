@@ -1,4 +1,6 @@
+import { router } from '@inertiajs/react';
 import { useState } from 'react';
+import TrainerProfileSettingsController from '@/actions/App/Http/Controllers/TrainerProfileSettingsController';
 import AcknowledgeCheckbox from '@/components/account/acknowledge-checkbox';
 import SettingsSection from '@/components/account/settings-section';
 import { Button } from '@/components/ui/button';
@@ -11,14 +13,26 @@ type CloseTrainerProfileSectionProps = {
 };
 
 /**
- * The trainer stops working on MioPersonal but stays a client.
- * TODO: close the profile on the server; for now it only lives in the page.
+ * The trainer stops working on MioPersonal but stays a client: the server
+ * deletes the profile and opens the client settings.
+ * TODO (step 5): the message goes to the clients whose bookings are cancelled.
  */
 export default function CloseTrainerProfileSection({
     upcoming,
 }: CloseTrainerProfileSectionProps) {
-    const [step, setStep] = useState<'idle' | 'confirm' | 'done'>('idle');
+    const [step, setStep] = useState<'idle' | 'confirm'>('idle');
     const [acknowledged, setAcknowledged] = useState(false);
+    const [message, setMessage] = useState(
+        'Mi dispiace, smetto di allenare su MioPersonal. Grazie a tutti!',
+    );
+    const [processing, setProcessing] = useState(false);
+
+    const close = () =>
+        router.delete(TrainerProfileSettingsController.close.url(), {
+            data: { acknowledged, message },
+            onStart: () => setProcessing(true),
+            onFinish: () => setProcessing(false),
+        });
 
     const requests =
         upcoming.requests === 1
@@ -65,7 +79,8 @@ export default function CloseTrainerProfileSection({
                     <Textarea
                         aria-label="Messaggio per i clienti"
                         rows={2}
-                        defaultValue="Mi dispiace, smetto di allenare su MioPersonal. Grazie a tutti!"
+                        value={message}
+                        onChange={(event) => setMessage(event.target.value)}
                         className="bg-background text-[15px] md:text-[15px]"
                     />
                     <AcknowledgeCheckbox
@@ -78,9 +93,9 @@ export default function CloseTrainerProfileSection({
                     <div className="flex flex-wrap gap-2">
                         <Button
                             type="button"
-                            disabled={!acknowledged}
+                            disabled={!acknowledged || processing}
                             className="h-10 font-semibold"
-                            onClick={() => setStep('done')}
+                            onClick={close}
                         >
                             Chiudi definitivamente
                         </Button>
@@ -97,14 +112,6 @@ export default function CloseTrainerProfileSection({
                         </Button>
                     </div>
                 </div>
-            )}
-
-            {step === 'done' && (
-                <span role="status" className="text-sm">
-                    Profilo chiuso, clienti avvisati. Resti iscritto come
-                    cliente: puoi eliminare anche l’account da «Elimina
-                    account».
-                </span>
             )}
         </SettingsSection>
     );

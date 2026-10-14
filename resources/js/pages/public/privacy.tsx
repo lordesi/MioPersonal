@@ -32,7 +32,7 @@ const sections: LegalSection[] = [
                 <LegalList
                     items={[
                         'Dati dell’account: nome, cognome, email, telefono e password (salvata in forma cifrata).',
-                        'Profilo cliente, se lo completi: foto, zona in cui ti alleni, obiettivo, discipline, orari preferiti e budget indicativo.',
+                        'Profilo cliente, se lo completi: foto, città in cui ti alleni, obiettivo, discipline, orari preferiti e budget indicativo.',
                         'Profilo trainer: foto, presentazione, anni di esperienza, discipline, zone, indirizzi dei luoghi in cui alleni, servizi e prezzi, orari di lavoro, certificazioni e relativi attestati.',
                         'Prenotazioni: trainer scelto, servizio, data, orario, luogo e l’eventuale messaggio.',
                         'Recensioni e risposte pubblicate sulla piattaforma.',
@@ -72,7 +72,7 @@ const sections: LegalSection[] = [
                     items={[
                         'Il trainer che prenoti vede nome, servizio, orario e messaggio; email e telefono solo dopo aver confermato.',
                         'Il cliente vede i contatti del trainer e l’indirizzo esatto solo dopo la conferma.',
-                        'Sul profilo pubblico del trainer compaiono solo le informazioni che sceglie di pubblicare; dei luoghi mostriamo la zona, non l’indirizzo.',
+                        'Sul profilo pubblico del trainer compaiono solo le informazioni che sceglie di pubblicare; dei luoghi mostriamo la città, non l’indirizzo.',
                         'I fornitori che ci aiutano a far funzionare il servizio, nominati responsabili del trattamento: hosting [nome del fornitore] e invio email [nome del fornitore].',
                     ]}
                 />

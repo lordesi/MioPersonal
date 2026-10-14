@@ -2,151 +2,213 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\CarbonImmutable;
+use App\Enums\PlaceType;
+use App\Models\Service;
+use App\Models\TrainerDocument;
+use App\Models\TrainerPhoto;
+use App\Models\TrainerPlace;
+use App\Models\TrainerProfile;
+use App\Support\TrainerCard;
+use App\Support\TrainerSlots;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * The public profile /trainer/{slug}. Before the team approves it, only its
+ * trainer (preview) and the team can open it; for everybody else it is a 404.
+ */
 class TrainerProfileController extends Controller
 {
-    private const TIMEZONE = 'Europe/Rome';
-
+    /** Days of free slots shown in the calendar. */
     private const AVAILABILITY_DAYS = 21;
 
-    public function __invoke(string $slug): Response
+    private const SIMILAR = 3;
+
+    public function __invoke(Request $request, string $slug): Response
     {
-        // TODO: load the approved trainer from the database by slug. A profile still
-        // waiting for the team's approval is visible only to its trainer (preview) and to admins.
-        abort_unless($slug === 'giulia-rossi', 404);
+        $profile = TrainerProfile::where('slug', $slug)
+            ->with(['user', 'city', 'otherCities', 'disciplines', 'places.city', 'services', 'photos', 'documents', 'workingHours'])
+            ->first();
+
+        abort_if($profile === null || ! $profile->isViewableBy($request->user()), 404);
 
         return Inertia::render('public/profile', [
-            'trainer' => $this->placeholderTrainer(),
+            'trainer' => [
+                ...$this->profile($profile),
+                // "Salva": full heart when the client already saved this trainer.
+                'favorite' => in_array($profile->id, TrainerCard::favoriteIds($request->user()), true),
+            ],
+            // Not approved yet: the trainer (or the team) is looking at a preview.
+            'preview' => ! $profile->isApproved(),
         ]);
     }
 
     /**
-     * Placeholder profile taken from docs/design until the trainers table exists.
-     *
      * @return array<string, mixed>
      */
-    private function placeholderTrainer(): array
+    private function profile(TrainerProfile $profile): array
     {
+        $cities = array_values(array_filter([$profile->city?->name, ...$profile->otherCities->pluck('name')->all()]));
+
         return [
-            'slug' => 'giulia-rossi',
-            'name' => 'Giulia Rossi',
-            'headline' => 'Functional training e Pilates',
-            'verified' => true,
-            'bio' => [
-                'Laureata in Scienze Motorie, alleno da otto anni persone che vogliono tornare in forma dopo una pausa, migliorare la postura o prepararsi a una gara amatoriale.',
-                "Nella prima seduta facciamo una valutazione insieme e fissiamo un obiettivo realistico. Poi ti preparo un programma su misura, da seguire con me o in autonomia tra una seduta e l'altra.",
-            ],
-            'experienceLabel' => '8 anni di esperienza',
-            'responseTimeLabel' => 'Risponde di solito in 2 ore',
-            'cancellationLabel' => 'Cancellazione gratuita fino a 24 ore prima',
-            'rating' => 4.9,
-            'reviewCount' => 23,
-            'zones' => ['Città Studi', 'Lambrate', 'Porta Venezia'],
-            'areaLabel' => 'Città Studi, Milano',
-            'online' => 'also',
-            'disciplines' => ['Functional', 'Pilates', 'Postura'],
-            'photos' => [
-                ['caption' => 'Ritratto', 'isPortrait' => true],
-                ['caption' => 'In studio', 'isPortrait' => false],
-                ['caption' => 'Al parco Lambro', 'isPortrait' => false],
-                ['caption' => 'Seduta di Pilates', 'isPortrait' => false],
-                ['caption' => 'Allenamento funzionale', 'isPortrait' => false],
-                ['caption' => 'Lo studio', 'isPortrait' => false],
-            ],
-            'services' => [
-                ['id' => 1, 'name' => 'Seduta singola', 'durationLabel' => '1 o 2 ore', 'note' => 'in studio, a domicilio o al parco', 'priceCents' => 4500, 'perHour' => true, 'fixedDuration' => false],
-                ['id' => 2, 'name' => 'Seduta online', 'durationLabel' => '1 o 2 ore', 'note' => 'in videochiamata', 'priceCents' => 3500, 'perHour' => true, 'fixedDuration' => false],
-                ['id' => 3, 'name' => 'Valutazione iniziale', 'durationLabel' => '1 ora', 'note' => 'test di partenza e obiettivi', 'priceCents' => 3000, 'perHour' => false, 'fixedDuration' => true],
-                ['id' => 4, 'name' => 'Pacchetto 10 sedute', 'durationLabel' => '10 × 1 ora', 'note' => 'prenoti qui la prima, da usare entro 3 mesi', 'priceCents' => 40000, 'perHour' => false, 'fixedDuration' => true],
-            ],
-            'places' => [
-                ['type' => 'studio', 'title' => 'Studio', 'detail' => 'Città Studi, via [indirizzo]'],
-                ['type' => 'home', 'title' => 'A domicilio', 'detail' => 'Città Studi, Lambrate, Porta Venezia'],
-                ['type' => 'park', 'title' => 'Al parco', 'detail' => 'Parco Lambro'],
-                ['type' => 'online', 'title' => 'Online', 'detail' => 'In videochiamata'],
-            ],
-            'certifications' => [
-                ['title' => 'Laurea in Scienze Motorie', 'issuer' => '[Università] · [anno]'],
-                ['title' => 'Istruttrice di Pilates Matwork', 'issuer' => '[Ente certificatore] · [anno]'],
-                ['title' => 'Primo soccorso BLSD', 'issuer' => '[Ente certificatore] · [anno]'],
-            ],
-            'ratingDistribution' => [
-                ['stars' => 5, 'count' => 20],
-                ['stars' => 4, 'count' => 3],
-                ['stars' => 3, 'count' => 0],
-                ['stars' => 2, 'count' => 0],
-                ['stars' => 1, 'count' => 0],
-            ],
-            'reviews' => [
-                ['id' => 1, 'authorName' => 'Marta', 'meta' => 'Seduta singola · settembre 2026', 'rating' => 5, 'text' => 'Puntuale e preparatissima. In un mese il mal di schiena è migliorato e ho finalmente una routine che riesco a seguire.', 'reply' => null],
-                ['id' => 2, 'authorName' => 'Stefano', 'meta' => 'Pacchetto 10 sedute · agosto 2026', 'rating' => 5, 'text' => 'Allenamenti al parco sempre diversi. Ottima per chi riparte da zero.', 'reply' => 'Grazie Stefano, ci vediamo al parco per la prossima!'],
-                ['id' => 3, 'authorName' => 'Ilaria', 'meta' => 'Seduta online · luglio 2026', 'rating' => 4, 'text' => 'Le sedute online funzionano bene, servirebbe solo un po’ più di materiale da seguire tra una seduta e l’altra.', 'reply' => 'Grazie del consiglio: da settembre mando una scheda dopo ogni seduta.'],
-            ],
-            'availability' => $this->placeholderAvailability(),
-            'similarTrainers' => [
-                ['name' => 'Andrea Conti', 'href' => route('trainers.show', 'andrea-conti', false), 'subtitle' => 'Lambrate · Calisthenics, Pesi', 'detail' => 'da 40 € · primo slot oggi 19:00'],
-                ['name' => 'Elena Ricci', 'href' => route('trainers.show', 'elena-ricci', false), 'subtitle' => 'Monza · Pilates, Yoga', 'detail' => 'da 40 € · primo slot domani 09:00'],
-                ['name' => 'Luca Ferrari', 'href' => route('trainers.show', 'luca-ferrari', false), 'subtitle' => 'Porta Romana · Crossfit', 'detail' => 'da 45 € · primo slot ven 9, 07:00'],
-            ],
+            'slug' => $profile->slug,
+            'name' => $profile->user->name,
+            'headline' => $profile->headline,
+            // Checked by the team: approved profiles only.
+            'verified' => $profile->isApproved(),
+            // Paragraphs split at the empty lines.
+            'bio' => array_values(array_filter(array_map(trim(...), preg_split('/\R\s*\R/', $profile->bio) ?: []))),
+            'experienceLabel' => $profile->experience->profileLabel(),
+            // TODO (step 5): computed from the answers to the bookings.
+            'responseTimeLabel' => null,
+            'cancellationLabel' => "Cancellazione gratuita fino a {$profile->free_cancellation_hours} ore prima",
+            'rating' => $profile->rating(),
+            'reviewCount' => $profile->rating_count,
+            'city' => $profile->city === null ? null : ['slug' => $profile->city->slug, 'name' => $profile->city->name],
+            'cities' => $cities ?: ['Solo online'],
+            'areaLabel' => $profile->city->name ?? 'Online',
+            'online' => TrainerCard::online($profile),
+            'disciplines' => $profile->disciplines->pluck('name')->all(),
+            'photos' => $this->photos($profile),
+            'services' => $profile->services->where('is_active', true)->map(fn (Service $service) => [
+                'id' => $service->id,
+                'name' => $service->name,
+                'minutes' => $service->minutes,
+                'durationLabel' => $this->durationLabel($service, $profile->session_minutes),
+                'note' => $service->note ?? '',
+                'priceCents' => $service->price_cents,
+                'perHour' => $service->price_per_hour,
+                'fixedDuration' => $service->fixed_duration,
+            ])->values()->all(),
+            'places' => $profile->places->map(fn (TrainerPlace $place) => $this->place($place, $cities))->all(),
+            'certifications' => $profile->documents->where('type', 'certificate')->map(fn (TrainerDocument $document) => [
+                'title' => $document->title,
+                'issuer' => $document->issuerLabel(),
+            ])->values()->all(),
+            // TODO (step 6): the real reviews and their distribution.
+            'ratingDistribution' => [],
+            'reviews' => [],
+            // "Durate prenotabili", in minutes, shortest first.
+            'sessionMinutes' => $profile->session_minutes,
+            'availability' => TrainerSlots::days($profile, self::AVAILABILITY_DAYS),
+            'similarTrainers' => $this->similar($profile),
         ];
     }
 
     /**
-     * Free start times for the next weeks, computed in Europe/Rome and sent as UTC.
-     * maxHours is 2 when the following hour is free too.
+     * The saved photos; without any, a placeholder with the initials.
      *
-     * @return list<array{date: string, slots: list<array{start: string, maxHours: int}>}>
+     * @return list<array{caption: string, isPortrait: bool, url: string|null}>
      */
-    private function placeholderAvailability(): array
+    private function photos(TrainerProfile $profile): array
     {
-        // Working hours by day of week (0 = Sunday), as in docs/design.
-        $workingHours = [
-            0 => [],
-            1 => [7, 8, 9, 10, 11, 18, 19, 20],
-            2 => [12, 13, 14, 15, 16, 17, 18, 19, 20],
-            3 => [7, 8, 9, 10, 11, 18, 19, 20],
-            4 => [12, 13, 14, 15, 16, 17, 18, 19, 20],
-            5 => [7, 8, 9, 10, 11, 12],
-            6 => [8, 9, 10, 11, 12, 13],
-        ];
+        $photos = array_values($profile->photos
+            ->sortByDesc('is_portrait')
+            ->map(fn (TrainerPhoto $photo) => [
+                'caption' => $photo->caption ?? '',
+                'isPortrait' => $photo->is_portrait,
+                'url' => $photo->url(),
+            ])->all());
 
-        $now = CarbonImmutable::now(self::TIMEZONE);
-        $days = [];
-
-        for ($index = 0; $index < self::AVAILABILITY_DAYS; $index++) {
-            $date = $now->startOfDay()->addDays($index);
-            $free = array_values(array_filter(
-                $workingHours[$date->dayOfWeek],
-                fn (int $hour) => ! $this->isBooked($index, $hour),
-            ));
-
-            $slots = [];
-
-            foreach ($free as $hour) {
-                $start = $date->setTime($hour, 0);
-
-                if ($start->lessThanOrEqualTo($now)) {
-                    continue;
-                }
-
-                $slots[] = [
-                    'start' => $start->utc()->format('Y-m-d\TH:i:s\Z'),
-                    'maxHours' => in_array($hour + 1, $free, true) ? 2 : 1,
-                ];
-            }
-
-            $days[] = ['date' => $date->toDateString(), 'slots' => $slots];
-        }
-
-        return $days;
+        return $photos ?: [['caption' => 'Ritratto', 'isPortrait' => true, 'url' => null]];
     }
 
-    /** Same fake "already booked" rule as the design demo. */
-    private function isBooked(int $dayIndex, int $hour): bool
+    /**
+     * "1 ora", "1 ora e mezza", "45 min", "10 × 1 ora"; an hourly service that
+     * follows the trainer's durations: "da 30 min a 2 ore".
+     *
+     * @param  list<int>  $sessionMinutes
+     */
+    private function durationLabel(Service $service, array $sessionMinutes): string
     {
-        return ($dayIndex * 7 + $hour * 13) % 10 < 3;
+        $one = self::minutesLabel($service->minutes);
+
+        if ($service->package_sessions !== null) {
+            return "{$service->package_sessions} × {$one}";
+        }
+
+        if ($service->price_per_hour && ! $service->fixed_duration && $sessionMinutes !== []) {
+            $shortest = min($sessionMinutes);
+            $longest = max($sessionMinutes);
+
+            return $shortest === $longest
+                ? self::minutesLabel($shortest)
+                : 'da '.self::minutesLabel($shortest).' a '.self::minutesLabel($longest);
+        }
+
+        return $one;
+    }
+
+    /** 30 → "30 min", 60 → "1 ora", 90 → "1 ora e mezza", 120 → "2 ore". Same as formatDuration() in format.ts. */
+    private static function minutesLabel(int $minutes): string
+    {
+        $hours = intdiv($minutes, 60);
+        $rest = $minutes % 60;
+
+        if ($hours === 0) {
+            return "{$minutes} min";
+        }
+
+        $label = $hours === 1 ? '1 ora' : "{$hours} ore";
+
+        return match ($rest) {
+            0 => $label,
+            30 => "{$label} e mezza",
+            default => "{$label} e {$rest} min",
+        };
+    }
+
+    /**
+     * @param  list<string>  $cities
+     * @return array{type: string, title: string, detail: string}
+     */
+    private function place(TrainerPlace $place, array $cities): array
+    {
+        return [
+            'type' => $place->type->value,
+            'title' => $place->type === PlaceType::Studio ? ($place->name ?? 'Studio') : $place->type->label(),
+            'detail' => match ($place->type) {
+                PlaceType::Studio => implode(', ', array_filter([$place->city?->name, $place->address])),
+                PlaceType::Online => 'In videochiamata',
+                default => implode(', ', $cities),
+            },
+        ];
+    }
+
+    /**
+     * Other published trainers of the same city with a discipline in common.
+     *
+     * @return list<array{name: string, href: string, subtitle: string, detail: string}>
+     */
+    private function similar(TrainerProfile $profile): array
+    {
+        if ($profile->city_id === null) {
+            return [];
+        }
+
+        $others = TrainerProfile::query()
+            ->published()
+            ->whereKeyNot($profile->id)
+            ->where('city_id', $profile->city_id)
+            ->whereHas('disciplines', fn ($query) => $query->whereKey($profile->disciplines->modelKeys()))
+            ->with(TrainerCard::RELATIONS)
+            ->orderByDesc('rating_count')
+            ->limit(self::SIMILAR)
+            ->get();
+
+        return array_values($others->map(function (TrainerProfile $other) {
+            $slot = TrainerCard::slotLabel($other->next_free_slot_at);
+            $cents = $other->price_from_cents ?? 0;
+            // "da 45 €", or "da 45,50 €" with cents.
+            $price = 'da '.number_format($cents / 100, $cents % 100 === 0 ? 0 : 2, ',', '.').' €';
+
+            return [
+                'name' => $other->user->name,
+                'href' => route('trainers.show', $other->slug, false),
+                'subtitle' => TrainerCard::cityLabel($other).' · '.$other->disciplines->pluck('name')->take(2)->implode(', '),
+                'detail' => $slot === null ? $price : "{$price} · primo slot {$slot}",
+            ];
+        })->all());
     }
 }

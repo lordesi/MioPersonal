@@ -13,7 +13,7 @@ enum UserRole: string
     public function homeRoute(): string
     {
         return match ($this) {
-            self::Client => 'client.bookings',
+            self::Client => 'client.home',
             self::Trainer => 'trainer.today',
             self::Admin => 'admin.overview',
         };

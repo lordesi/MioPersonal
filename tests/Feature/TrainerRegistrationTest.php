@@ -1,0 +1,386 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Enums\PlaceType;
+use App\Enums\TrainerProfileStatus;
+use App\Enums\TrainerReviewDecision;
+use App\Enums\UserRole;
+use App\Models\TrainerProfile;
+use App\Models\User;
+use Database\Seeders\CatalogSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
+
+/** "Diventa trainer": the whole registration (steps 2–7) is saved. */
+class TrainerRegistrationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(CatalogSeeder::class);
+        Storage::fake('public');
+        Storage::fake('local');
+    }
+
+    /**
+     * Steps 2–7 as the page sends them (toPayload in draft.ts).
+     *
+     * @param  array<string, mixed>  $changes
+     * @return array<string, mixed>
+     */
+    private function profile(array $changes = []): array
+    {
+        return [
+            'headline' => 'Functional training e Pilates',
+            'bio' => str_repeat('Alleno persone che vogliono tornare in forma. ', 5),
+            'experience' => '5to10',
+            // Required for a new profile.
+            'photo' => UploadedFile::fake()->image('ritratto.jpg', 600, 600),
+            'disciplines' => ['pilates', 'functional'],
+            'places' => ['studio', 'home', 'online'],
+            'studios' => [['name' => 'Studio Città Studi', 'address' => 'Via Pascoli 10']],
+            'city' => 'milano',
+            'other_cities' => ['monza'],
+            // "Servizi e prezzi": hourly price and a first session.
+            'hourly_price_cents' => '4500',
+            'single_note' => 'in studio o a domicilio',
+            'first_session' => ['name' => 'Valutazione', 'minutes' => '60', 'price_cents' => '3000', 'note' => ''],
+            'packages' => [],
+            // Monday 7–12 and 18–21, Saturday 9–11.
+            'hours' => [0 => [7, 8, 9, 10, 11, 18, 19, 20], 5 => [9, 10]],
+            // As text, like the page sends them with files (FormData).
+            'notice_hours' => '12',
+            'booking_window_days' => '60',
+            'break_minutes' => '15',
+            'max_sessions_per_day' => '6',
+            'free_cancellation_hours' => '24',
+            'session_minutes' => ['60', '90'],
+            'auto_confirm' => '0',
+            'certifications' => [
+                ['title' => 'Laurea in Scienze Motorie', 'issuer' => 'Università di Milano', 'year' => '2016', 'file' => UploadedFile::fake()->create('laurea.pdf', 200, 'application/pdf')],
+            ],
+            ...$changes,
+        ];
+    }
+
+    public function test_a_guest_creates_the_account_and_the_whole_profile()
+    {
+        $this->post(route('trainer.register.store'), [
+            'first_name' => 'Giulia',
+            'last_name' => 'Rossi',
+            'email' => 'giulia@example.com',
+            'phone_prefix' => '+39',
+            'phone' => '333 000 0000',
+            'password' => 'Password1',
+            'terms' => '1',
+            ...$this->profile(['photo' => UploadedFile::fake()->image('giulia.jpg', 600, 600)]),
+        ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('trainer.register', absolute: false));
+
+        $this->assertAuthenticated();
+        $user = User::where('email', 'giulia@example.com')->firstOrFail();
+        $this->assertSame(UserRole::Trainer, $user->role);
+        $this->assertSame('+393330000000', $user->phone);
+
+        $profile = $user->trainerProfile;
+        $this->assertNotNull($profile);
+        $this->assertSame('giulia-rossi', $profile->slug);
+        $this->assertSame(TrainerProfileStatus::Review, $profile->status);
+        $this->assertSame('milano', $profile->city?->slug);
+        $this->assertSame(['pilates', 'functional'], $profile->disciplines->pluck('slug')->all());
+        $this->assertSame(['monza'], $profile->otherCities->pluck('slug')->all());
+        $this->assertSame([PlaceType::Studio, PlaceType::Home, PlaceType::Online], $profile->places->pluck('type')->all());
+        $this->assertSame('Via Pascoli 10', $profile->places->first()?->address);
+        $this->assertTrue($profile->trains_online);
+        $this->assertTrue($profile->trains_in_person);
+        // "da 45 €": the hourly price, not the one-off first session.
+        $this->assertSame(4500, $profile->price_from_cents);
+        $this->assertSame([60, 90], $profile->session_minutes);
+        $this->assertSame(6, $profile->max_sessions_per_day);
+
+        // Consecutive hours become one range; 0 = Monday → weekday 1.
+        $this->assertSame(
+            [[1, '07:00', '12:00'], [1, '18:00', '21:00'], [6, '09:00', '11:00']],
+            $profile->workingHours->map(fn ($range) => [$range->weekday, substr($range->starts_at, 0, 5), substr($range->ends_at, 0, 5)])->all(),
+        );
+        $this->assertNotNull($profile->next_free_slot_at);
+
+        $photo = $profile->portrait;
+        $this->assertNotNull($photo);
+        Storage::disk('public')->assertExists($photo->path);
+
+        $certificate = $profile->documents->first();
+        $this->assertSame('Laurea in Scienze Motorie', $certificate?->title);
+        $this->assertSame(2016, $certificate?->year);
+        Storage::disk('local')->assertExists((string) $certificate?->path);
+
+        $this->get(route('trainer.register'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('submitted', true)
+                ->where('previewHref', route('trainers.show', 'giulia-rossi', false))
+            );
+    }
+
+    public function test_a_client_becomes_a_trainer_with_the_same_account()
+    {
+        $client = User::factory()->create(['name' => 'Luca Moretti']);
+
+        $this->actingAs($client)
+            ->post(route('trainer.register.store'), ['terms' => '1', ...$this->profile()])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('trainer.register', absolute: false));
+
+        $this->assertSame(UserRole::Trainer, $client->refresh()->role);
+        $this->assertSame(1, User::count());
+        $this->assertSame('luca-moretti', $client->trainerProfile?->slug);
+    }
+
+    public function test_every_step_is_checked_and_nothing_is_saved_on_errors()
+    {
+        $client = User::factory()->create();
+
+        $this->actingAs($client)
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile([
+                    'bio' => 'Troppo corta',
+                    'disciplines' => ['pilates', 'yoga', 'boxe', 'running', 'crossfit', 'functional'],
+                    'studios' => [],
+                    'city' => '',
+                    'hourly_price_cents' => '',
+                    'hours' => [0 => [5]],
+                    'session_minutes' => [],
+                ]),
+            ])
+            ->assertSessionHasErrors([
+                'bio', 'disciplines', 'studios', 'city', 'hourly_price_cents', 'hours.0.0', 'session_minutes',
+            ]);
+
+        $this->assertSame(UserRole::Client, $client->refresh()->role);
+        $this->assertSame(0, TrainerProfile::count());
+    }
+
+    public function test_a_new_profile_needs_photo_title_bio_and_experience()
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile(['photo' => null, 'headline' => '', 'bio' => '', 'experience' => '']),
+            ])
+            ->assertSessionHasErrors(['photo', 'headline', 'bio', 'experience']);
+
+        $this->assertSame(0, TrainerProfile::count());
+    }
+
+    public function test_the_limits_of_places_cities_and_certifications()
+    {
+        $certification = fn (string $title) => ['title' => $title, 'issuer' => '', 'year' => '2020'];
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile([
+                    'studios' => array_fill(0, 4, ['name' => 'Studio', 'address' => 'Via Roma 1']),
+                    'other_cities' => ['monza', 'bergamo', 'como'],
+                    'certifications' => [$certification('A'), $certification('B'), $certification('C'), $certification('D')],
+                ]),
+            ])
+            ->assertSessionHasErrors(['studios', 'other_cities', 'certifications']);
+    }
+
+    public function test_the_certification_year_must_be_real()
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile(['certifications' => [['title' => 'Corso', 'issuer' => '', 'year' => '6500']]]),
+            ])
+            ->assertSessionHasErrors('certifications.0.year');
+    }
+
+    public function test_hours_go_from_6_to_24_and_sessions_can_have_no_limit()
+    {
+        $client = User::factory()->create();
+
+        $this->actingAs($client)
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                // As the page sends "Nessun limite": an empty value.
+                ...$this->profile(['hours' => [0 => [6, 7, 22, 23]], 'max_sessions_per_day' => '']),
+            ])
+            ->assertSessionHasNoErrors();
+
+        $profile = $client->refresh()->trainerProfile;
+        $this->assertNull($profile?->max_sessions_per_day);
+        $this->assertSame(
+            [['06:00', '08:00'], ['22:00', '24:00']],
+            $profile?->workingHours->map(fn ($range) => [substr($range->starts_at, 0, 5), substr($range->ends_at, 0, 5)])->all(),
+        );
+    }
+
+    public function test_services_and_prices_become_the_services_of_the_profile()
+    {
+        $client = User::factory()->create();
+
+        $this->actingAs($client)
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile([
+                    'online_price_cents' => '3500',
+                    'online_note' => 'in videochiamata',
+                    'first_session' => ['name' => 'Prova', 'minutes' => '30', 'price_cents' => '0', 'note' => 'per conoscerci'],
+                    'packages' => [['sessions' => '10', 'minutes' => '90', 'price_cents' => '55000', 'note' => '']],
+                ]),
+            ])
+            ->assertSessionHasNoErrors();
+
+        $profile = $client->refresh()->trainerProfile;
+        $this->assertNotNull($profile);
+        $this->assertSame(
+            [
+                ['Seduta singola', 'session', 60, 4500, true, false, false, null, 'in studio o a domicilio'],
+                ['Seduta online', 'session', 60, 3500, true, false, true, null, 'in videochiamata'],
+                ['Prova', 'session', 30, 0, false, true, false, null, 'per conoscerci'],
+                ['Pacchetto 10 sedute', 'package', 90, 55000, false, true, false, 10, null],
+            ],
+            $profile->services->sortBy('sort')->map(fn ($service) => [
+                $service->name, $service->kind, $service->minutes, $service->price_cents, $service->price_per_hour,
+                $service->fixed_duration, $service->online_only, $service->package_sessions, $service->note,
+            ])->values()->all(),
+        );
+        // The lowest hourly price: online.
+        $this->assertSame(3500, $profile->price_from_cents);
+
+        // Opened again to fix it, the page gets the same answers back.
+        $profile->forceFill(['status' => TrainerProfileStatus::Changes])->save();
+        $this->get(route('trainer.register'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('draft.pricing.hourlyCents', 4500)
+                ->where('draft.pricing.onlineSamePrice', false)
+                ->where('draft.pricing.onlineHourlyCents', 3500)
+                ->where('draft.pricing.firstSession.enabled', true)
+                ->where('draft.pricing.firstSession.priceCents', 0)
+                ->where('draft.pricing.packages.0.sessions', 10)
+                ->where('draft.pricing.packages.0.minutes', 90)
+            );
+    }
+
+    public function test_the_online_price_counts_only_with_online_and_in_person()
+    {
+        $client = User::factory()->create();
+
+        // No "Online" in the places: the online price is ignored.
+        $this->actingAs($client)
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile(['places' => ['home'], 'studios' => [], 'online_price_cents' => '2000']),
+            ])
+            ->assertSessionHasNoErrors();
+
+        $profile = $client->refresh()->trainerProfile;
+        $this->assertSame(['Seduta singola', 'Valutazione'], $profile?->services->sortBy('sort')->pluck('name')->values()->all());
+        $this->assertSame(4500, $profile?->price_from_cents);
+    }
+
+    public function test_prices_and_packages_are_checked()
+    {
+        $package = ['sessions' => '10', 'minutes' => '60', 'price_cents' => '40000', 'note' => ''];
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile([
+                    'hourly_price_cents' => '50',
+                    'first_session' => ['name' => '', 'minutes' => '45', 'price_cents' => '-1'],
+                    'packages' => [$package, $package, $package, $package],
+                ]),
+            ])
+            ->assertSessionHasErrors([
+                'hourly_price_cents', 'first_session.name', 'first_session.minutes', 'first_session.price_cents', 'packages',
+            ]);
+
+        $this->assertSame(0, TrainerProfile::count());
+    }
+
+    public function test_an_online_only_trainer_needs_no_city()
+    {
+        $client = User::factory()->create();
+
+        $this->actingAs($client)
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile(['places' => ['online'], 'city' => '', 'other_cities' => [], 'studios' => []]),
+            ])
+            ->assertSessionHasNoErrors();
+
+        $profile = $client->refresh()->trainerProfile;
+        $this->assertNull($profile?->city_id);
+        $this->assertFalse($profile?->trains_in_person);
+    }
+
+    public function test_after_changes_the_trainer_sends_the_profile_again()
+    {
+        $client = User::factory()->create();
+        $this->actingAs($client)->post(route('trainer.register.store'), ['terms' => '1', ...$this->profile()]);
+
+        $profile = $client->refresh()->trainerProfile;
+        $this->assertNotNull($profile);
+        $oldFile = (string) $profile->documents->first()?->path;
+        $profile->forceFill(['status' => TrainerProfileStatus::Changes])->save();
+        $profile->decisions()->create([
+            'decision' => TrainerReviewDecision::Changes,
+            'reasons' => ['Bio con contatti o link'],
+            'message_to_trainer' => 'Togli il numero dalla bio.',
+        ]);
+
+        // The page opens on step 2 with what was sent and the team's request.
+        $this->get(route('trainer.register'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('editing', true)
+                ->where('draft.headline', 'Functional training e Pilates')
+                ->where('draft.city', 'milano')
+                ->where('draft.hours.0', [7, 8, 9, 10, 11, 18, 19, 20])
+                ->where('draft.certifications.0.hasFile', true)
+                ->where('changeRequest', ['reasons' => ['Bio con contatti o link'], 'message' => 'Togli il numero dalla bio.'])
+            );
+
+        // Sent again without a new file: the certificate keeps its file.
+        $certificationId = $profile->documents->first()?->id;
+        $this->post(route('trainer.register.store'), $this->profile([
+            'headline' => 'Pilates e postura',
+            'certifications' => [['id' => $certificationId, 'title' => 'Laurea in Scienze Motorie', 'issuer' => '', 'year' => '']],
+        ]))->assertSessionHasNoErrors();
+
+        $profile->refresh();
+        $this->assertSame(TrainerProfileStatus::Review, $profile->status);
+        $this->assertSame('Pilates e postura', $profile->headline);
+        $this->assertSame($oldFile, $profile->documents()->first()?->path);
+        Storage::disk('local')->assertExists($oldFile);
+
+        // "Profilo inviato" once, then it waits for the team again.
+        $this->get(route('trainer.register'))->assertInertia(fn (Assert $page) => $page->where('submitted', true));
+        $this->get(route('trainer.register'))->assertRedirect(route('trainer.today'));
+    }
+
+    public function test_a_trainer_made_by_the_team_can_complete_the_profile()
+    {
+        $trainer = User::factory()->trainer()->create();
+
+        $this->actingAs($trainer)
+            ->get(route('trainer.register'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('editing', true)->where('draft', null));
+
+        $this->post(route('trainer.register.store'), $this->profile())->assertSessionHasNoErrors();
+        $this->assertNotNull($trainer->refresh()->trainerProfile);
+    }
+}

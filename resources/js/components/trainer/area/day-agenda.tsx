@@ -11,7 +11,6 @@ import { cn } from '@/lib/utils';
 
 const tags: Partial<Record<CalendarItem['kind'], string>> = {
     pending: 'Da confermare',
-    busy: 'Dal calendario',
     block: 'Bloccato',
 };
 

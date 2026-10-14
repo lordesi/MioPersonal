@@ -71,9 +71,20 @@ export default function BookingSent({ booking }: BookingSentProps) {
                         {formatTime(booking.start)} – {formatTime(end)}
                     </h1>
                     <p className="max-w-115 opacity-80">
-                        {trainer.firstName} conferma entro{' '}
-                        {booking.confirmWithinHours} ore. Se non risponde, lo
-                        slot si libera e ti avvisiamo subito.
+                        {/* Trainers with automatic confirmation: already confirmed. */}
+                        {booking.status === 'confirmed' ? (
+                            <>
+                                {trainer.firstName} conferma le prenotazioni in
+                                automatico: la seduta è già confermata.
+                            </>
+                        ) : (
+                            <>
+                                {trainer.firstName} conferma entro{' '}
+                                {booking.confirmWithinHours} ore. Se non
+                                risponde, lo slot si libera e ti avvisiamo
+                                subito.
+                            </>
+                        )}
                     </p>
                 </section>
 
@@ -130,10 +141,7 @@ export default function BookingSent({ booking }: BookingSentProps) {
                         },
                     ]}
                 >
-                    {/* TODO: open the reschedule and cancel flows of this booking. */}
-                    <Button asChild variant="outline" className="h-10 px-3.5">
-                        <Link href={bookings()}>Sposta</Link>
-                    </Button>
+                    {/* Bookings can't be moved, only cancelled: the dialog is in "Le mie prenotazioni". */}
                     <Button
                         asChild
                         variant="ghost"

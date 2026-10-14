@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Booking;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -13,6 +14,7 @@ class RoleAccessTest extends TestCase
 
     /** @var list<string> */
     private const CLIENT_PAGES = [
+        'client.home',
         'client.bookings',
         'client.favorites',
         'account.settings',
@@ -38,7 +40,7 @@ class RoleAccessTest extends TestCase
         }
 
         foreach (self::TRAINER_PAGES as $route) {
-            $this->get(route($route))->assertRedirect(route('client.bookings'));
+            $this->get(route($route))->assertRedirect(route('client.home'));
         }
     }
 
@@ -54,7 +56,7 @@ class RoleAccessTest extends TestCase
             $this->get(route($route))->assertRedirect(route('trainer.today'));
         }
 
-        $this->get(route('client.bookings.sent', 1))->assertRedirect(route('trainer.today'));
+        $this->get(route('client.bookings.sent', Booking::factory()->create()))->assertRedirect(route('trainer.today'));
     }
 
     public function test_admins_are_sent_to_the_admin_panel()
@@ -75,6 +77,7 @@ class RoleAccessTest extends TestCase
             ->patch(route('account.personal.update'), [
                 'first_name' => 'Giulia',
                 'last_name' => 'Rossi',
+                'phone' => '+39 333 000 0000',
             ])
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('trainer.settings'));

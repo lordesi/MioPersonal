@@ -20,6 +20,8 @@ export function BrandMark({ className }: { className?: string }) {
 type BrandLogoProps = {
     /** Wrap the logo in a link to the home page. */
     linkToHome?: boolean;
+    /** Where the link goes, e.g. the client area home. Defaults to the public home page. */
+    href?: string;
     /** Show only the mark on small screens (trainer area header). */
     hideNameOnMobile?: boolean;
     className?: string;
@@ -27,6 +29,7 @@ type BrandLogoProps = {
 
 export default function BrandLogo({
     linkToHome = true,
+    href,
     hideNameOnMobile = false,
     className,
 }: BrandLogoProps) {
@@ -52,7 +55,7 @@ export default function BrandLogo({
 
     return (
         <Link
-            href={home()}
+            href={href ?? home()}
             aria-label="MioPersonal, torna alla home"
             className={classes}
         >

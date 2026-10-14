@@ -68,27 +68,68 @@ class AdminTest extends TestCase
                 ->assertInertia(fn (Assert $page) => $page
                     ->component($component)
                     ->whereType('adminArea.verificationCount', 'integer')
-                    ->whereType('adminArea.unreadMessages', 'integer')
                     ->whereType('adminArea.flaggedReviews', 'integer')
+                    // "Messaggi" is in lavorazione: no badge.
+                    ->missing('adminArea.unreadMessages')
                 );
         }
     }
 
-    public function test_the_admin_team_lists_the_real_admins_and_their_two_factor_status()
+    public function test_settings_and_messages_have_no_content_for_now()
     {
-        $admin = User::factory()->admin()->withTwoFactor()->create(['name' => 'Alessandro']);
-        User::factory()->admin()->create(['name' => 'Socio']);
-        User::factory()->create(['name' => 'Cliente']);
+        $this->actingAs(User::factory()->admin()->create());
 
-        $this->actingAs($admin)
-            ->get(route('admin.settings'))
+        $this->get(route('admin.settings'))
             ->assertInertia(fn (Assert $page) => $page
-                ->has('team', 2)
-                ->where('team.0.name', 'Alessandro')
-                ->where('team.0.twoFactorEnabled', true)
-                ->where('team.1.name', 'Socio')
-                ->where('team.1.twoFactorEnabled', false)
+                ->missing('team')
+                ->missing('activity')
+                ->missing('defaults')
             );
+
+        $this->get(route('admin.messages'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->missing('messages')
+                ->where('contactEmail', config('mail.contact_address'))
+            );
+    }
+
+    public function test_active_trainers_are_the_ones_active_in_the_last_24_hours()
+    {
+        User::factory()->trainer()->create(['last_active_at' => now()->subHours(2)]);
+        User::factory()->trainer()->create(['last_active_at' => now()->subHours(23)]);
+        User::factory()->trainer()->create(['last_active_at' => now()->subHours(25)]);
+        User::factory()->trainer()->create(['last_active_at' => null]);
+        // A client is not a trainer, even if active.
+        User::factory()->create(['last_active_at' => now()]);
+
+        $this->actingAs(User::factory()->admin()->create())
+            ->get(route('admin.overview'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('stats.activeTrainers', 2)
+                ->where('todo.reportedCount', 0)
+                ->missing('todo.unreadMessages')
+                ->missing('bookingsPerDay')
+                ->missing('activity')
+            );
+    }
+
+    public function test_activity_is_saved_at_most_every_few_minutes()
+    {
+        $this->freezeSecond();
+        $user = User::factory()->create(['last_active_at' => null]);
+
+        $this->actingAs($user)->get(route('account.settings'));
+        $this->assertTrue($user->refresh()->last_active_at?->equalTo(now()));
+
+        // Two minutes later: not written again.
+        $this->travel(2)->minutes();
+        $this->get(route('account.settings'));
+        $this->assertTrue($user->refresh()->last_active_at?->equalTo(now()->subMinutes(2)));
+
+        // After five minutes: written again.
+        $this->travel(4)->minutes();
+        $this->get(route('account.settings'));
+        $this->assertTrue($user->refresh()->last_active_at?->equalTo(now()));
     }
 
     public function test_the_admin_grant_command_turns_a_user_into_an_admin()

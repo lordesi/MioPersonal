@@ -2,36 +2,46 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Enums\BookingStatus;
+use App\Models\Booking;
+use App\Models\User;
+use App\Support\TrainerCard;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /** "Prenotazione inviata": shown to the client right after sending a booking request. */
 class BookingSentController extends Controller
 {
-    use BuildsPlaceholderData;
-
-    public function __invoke(string $booking): Response
+    public function __invoke(Request $request, Booking $booking): Response
     {
-        // TODO: load the logged-in client's booking from the database (404 if it is someone else's).
-        abort_unless($booking === '1', 404);
+        /** @var User $client */
+        $client = $request->user();
+
+        // Someone else's booking: as if it didn't exist.
+        abort_unless($booking->client_id === $client->id, 404);
+
+        $booking->load(['trainerProfile.user', 'trainerProfile.city', 'trainerProfile.disciplines']);
+        $trainer = $booking->trainerProfile;
 
         return Inertia::render('client/booking-sent', [
             'booking' => [
-                'id' => 1,
-                'status' => 'pending',
-                'start' => $this->iso($this->at($this->romeNow(), 1, 18)),
-                'hours' => 1,
-                'serviceName' => 'Seduta singola',
-                'placeLabel' => 'Studio · Città Studi',
-                'priceCents' => 4500,
-                'confirmWithinHours' => 24,
-                'freeCancellationHours' => 24,
+                'id' => $booking->id,
+                // Already "confirmed" when the trainer confirms automatically.
+                'status' => $booking->status === BookingStatus::Confirmed ? 'confirmed' : 'pending',
+                'start' => $booking->starts_at->utc()->format('Y-m-d\TH:i:s\Z'),
+                'hours' => $booking->starts_at->diffInMinutes($booking->ends_at) / 60,
+                'serviceName' => $booking->service_name,
+                'placeLabel' => $booking->place_label,
+                'priceCents' => $booking->price_cents,
+                'confirmWithinHours' => $trainer->confirm_hours,
+                'freeCancellationHours' => $trainer->free_cancellation_hours,
                 'trainer' => [
-                    'name' => 'Giulia Rossi',
-                    'firstName' => 'Giulia',
-                    'href' => route('trainers.show', 'giulia-rossi', false),
-                    'subtitle' => 'Functional e Pilates · Città Studi',
+                    'name' => $trainer->user->name,
+                    'firstName' => $trainer->user->first_name,
+                    'href' => route('trainers.show', $trainer->slug, false),
+                    // "Functional e Pilates · Milano"
+                    'subtitle' => $trainer->disciplines->pluck('name')->take(2)->implode(' e ').' · '.TrainerCard::cityLabel($trainer),
                 ],
             ],
         ]);

@@ -15,6 +15,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Needed in production too: `php artisan db:seed --class=CatalogSeeder`.
+        $this->call(CatalogSeeder::class);
+
+        // Example trainers, never in production.
+        if (app()->isLocal()) {
+            $this->call(DemoTrainerSeeder::class);
+        }
+
         // User::factory(10)->create();
 
         User::factory()->create([

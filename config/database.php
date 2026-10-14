@@ -97,6 +97,9 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Dates are saved in UTC: without this, PostgreSQL reads them in the
+            // server's own timezone (e.g. Europe/Berlin) and moves them by 1–2 hours.
+            'timezone' => 'UTC',
         ],
 
         'sqlsrv' => [

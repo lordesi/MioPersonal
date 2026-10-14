@@ -21,7 +21,9 @@ void createInertiaApp({
             case name.startsWith('onboarding/'):
             case name === 'auth/login':
             case name === 'auth/register':
-            case name === 'public/quiz':
+            case name === 'auth/forgot-password':
+            case name === 'auth/reset-password':
+            case name === 'auth/google-sign-up':
             case name === 'client/booking-sent':
                 return null;
             case name.startsWith('public/'):

@@ -3,6 +3,7 @@ import { Heart } from 'lucide-react';
 import { useState } from 'react';
 import FavoriteTrainerCard from '@/components/client/favorite-trainer-card';
 import { Button } from '@/components/ui/button';
+import { saveFavorite } from '@/hooks/use-favorite';
 import { searchUrl } from '@/lib/search';
 import type { TrainerSummary } from '@/types';
 
@@ -11,7 +12,7 @@ type FavoritesProps = {
 };
 
 export default function Favorites({ trainers }: FavoritesProps) {
-    // TODO: save the removal on the server; for now it only lives in the page.
+    // Removed on this page: the card offers "Annulla" until the next visit.
     const [removed, setRemoved] = useState<string[]>([]);
 
     const kept = trainers.length - removed.length;
@@ -19,12 +20,18 @@ export default function Favorites({ trainers }: FavoritesProps) {
     const countLabel =
         kept === 1 ? '1 trainer salvato' : `${kept} trainer salvati`;
 
-    const setRemovedFor = (href: string, isRemoved: boolean) =>
+    const markRemoved = (slug: string, isRemoved: boolean) =>
         setRemoved((current) =>
             isRemoved
-                ? [...current, href]
-                : current.filter((item) => item !== href),
+                ? [...current, slug]
+                : current.filter((item) => item !== slug),
         );
+
+    const setRemovedFor = (slug: string, isRemoved: boolean) => {
+        markRemoved(slug, isRemoved);
+        // Removing deletes it on the server, "Annulla" saves it again.
+        saveFavorite(slug, !isRemoved, () => markRemoved(slug, !isRemoved));
+    };
 
     return (
         <>
@@ -35,7 +42,7 @@ export default function Favorites({ trainers }: FavoritesProps) {
                     Preferiti
                 </h1>
                 <p className="text-muted-foreground tabular-nums">
-                    {countLabel} · ti avvisiamo via email se si liberano orari.
+                    {countLabel}
                 </p>
             </div>
 
@@ -57,11 +64,11 @@ export default function Favorites({ trainers }: FavoritesProps) {
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-5">
                     {trainers.map((trainer) => (
                         <FavoriteTrainerCard
-                            key={trainer.href}
+                            key={trainer.slug}
                             trainer={trainer}
-                            removed={removed.includes(trainer.href)}
+                            removed={removed.includes(trainer.slug)}
                             onRemovedChange={(isRemoved) =>
-                                setRemovedFor(trainer.href, isRemoved)
+                                setRemovedFor(trainer.slug, isRemoved)
                             }
                         />
                     ))}

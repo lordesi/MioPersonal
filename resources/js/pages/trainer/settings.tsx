@@ -1,9 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import AccessSection from '@/components/account/access-section';
 import DeleteAccountSection from '@/components/account/delete-account-section';
-import NotificationsSection from '@/components/account/notifications-section';
 import PersonalDataSection from '@/components/account/personal-data-section';
-import PrivacySection from '@/components/account/privacy-section';
 import SettingsNav from '@/components/account/settings-nav';
 import SettingsSection from '@/components/account/settings-section';
 import ClientContactsSection from '@/components/account/trainer/client-contacts-section';
@@ -14,13 +12,15 @@ import { Button } from '@/components/ui/button';
 import { availability } from '@/routes/trainer';
 import type {
     AccountSettings,
-    NotificationSetting,
     TrainerContacts,
+    TrainerVisibility,
 } from '@/types';
 
 type TrainerSettingsProps = {
     account: AccountSettings;
-    contacts: TrainerContacts;
+    /** Null until the registration is sent: the section is hidden. */
+    contacts: TrainerContacts | null;
+    visibility: TrainerVisibility | null;
     upcoming: { sessions: number; requests: number };
 };
 
@@ -31,48 +31,14 @@ const sections = [
     { id: 'accesso', title: 'Accesso e sicurezza' },
     { id: 'visibilita', title: 'Visibilità del profilo' },
     { id: 'regole', title: 'Orari e regole' },
-    { id: 'notifiche', title: 'Notifiche' },
-    { id: 'privacy', title: 'Privacy e dati' },
     { id: 'chiudi', title: 'Chiudi il profilo' },
     { id: 'elimina', title: 'Elimina account' },
-];
-
-const notifications: NotificationSetting[] = [
-    {
-        key: 'push',
-        label: 'Nuove prenotazioni sul telefono',
-        hint: 'Notifica immediata, oltre all’email',
-        defaultOn: true,
-    },
-    {
-        key: 'expiry',
-        label: 'Prenotazioni in scadenza',
-        hint: 'Avviso 2 ore prima che una prenotazione decada',
-        defaultOn: true,
-    },
-    {
-        key: 'day',
-        label: 'Riepilogo della giornata',
-        hint: 'Ogni mattina alle 7 con le sedute di oggi',
-        defaultOn: true,
-    },
-    {
-        key: 'reviews',
-        label: 'Nuove recensioni',
-        hint: 'Per rispondere subito',
-        defaultOn: true,
-    },
-    {
-        key: 'tips',
-        label: 'Consigli per il profilo',
-        hint: 'Al massimo una email al mese',
-        defaultOn: false,
-    },
 ];
 
 export default function TrainerSettings({
     account,
     contacts,
+    visibility,
     upcoming,
 }: TrainerSettingsProps) {
     return (
@@ -81,7 +47,7 @@ export default function TrainerSettings({
 
             <PageHeading
                 title="Impostazioni account"
-                description="Profilo, visibilità e notifiche del tuo account da trainer."
+                description="Profilo e visibilità del tuo account da trainer."
             />
 
             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-8">
@@ -90,14 +56,18 @@ export default function TrainerSettings({
                     <PersonalDataSection
                         firstName={account.firstName}
                         lastName={account.lastName}
+                        phone={account.phone}
+                        description="Nome e cognome compaiono sul tuo profilo pubblico."
+                        phoneHint="I clienti lo vedono solo dopo che hai confermato la prenotazione."
                     />
-                    <ClientContactsSection {...contacts} />
+                    {contacts && <ClientContactsSection {...contacts} />}
                     <AccessSection
                         email={account.email}
+                        hasPassword={account.hasPassword}
+                        passwordChangedAt={account.passwordChangedAt}
                         providers={account.providers}
-                        devices={account.devices}
                     />
-                    <ProfileVisibilitySection />
+                    {visibility && <ProfileVisibilitySection {...visibility} />}
                     {/* No design of its own: the rules live in "Disponibilità". */}
                     <SettingsSection
                         id="regole"
@@ -112,8 +82,6 @@ export default function TrainerSettings({
                             </Button>
                         </div>
                     </SettingsSection>
-                    <NotificationsSection settings={notifications} />
-                    <PrivacySection />
                     <CloseTrainerProfileSection upcoming={upcoming} />
                     <DeleteAccountSection />
                 </div>

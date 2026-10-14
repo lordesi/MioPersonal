@@ -2,12 +2,11 @@ import { search } from '@/routes/trainers';
 
 /**
  * Filters of the search page. The names are in Italian because they appear
- * in the address bar, e.g. /personal-trainer/milano?disciplina=pilates.
+ * in the address bar, e.g. /personal-trainer/roma?disciplina=pilates.
  * The server checks them in TrainerSearchController.
  */
 export type SearchFilters = {
     disciplina?: string | null;
-    zona?: string | null;
     modalita?: 'presenza' | 'online' | null;
     disponibilita?: 'oggi' | '3-giorni' | 'settimana' | null;
     prezzo?: 'fino-35' | '35-45' | '45-60' | 'oltre-60' | null;
@@ -17,11 +16,19 @@ export type SearchFilters = {
     pagina?: number | null;
 };
 
-/** URL of the search page, keeping only the filters that are set. */
-export function searchUrl(filters: SearchFilters = {}): string {
+/**
+ * URL of the search page, keeping only the filters that are set.
+ * The city goes in the path (/personal-trainer/roma); without it, all of Italy.
+ */
+export function searchUrl(
+    filters: SearchFilters = {},
+    city?: string | null,
+): string {
     const query = Object.fromEntries(
         Object.entries(filters).filter(([, value]) => Boolean(value)),
     );
 
-    return search.url({ query });
+    return city
+        ? search.url({ city }, { query })
+        : search.url(undefined, { query });
 }

@@ -70,7 +70,7 @@ export default function FavoriteTrainerCard({
                             </span>
                             <span className="text-[13px] text-muted-foreground">
                                 {trainer.disciplines.join(' · ')} ·{' '}
-                                {trainer.zone}
+                                {trainer.city}
                             </span>
                             <span className="text-[13px] tabular-nums">
                                 {trainer.rating === null
@@ -82,7 +82,9 @@ export default function FavoriteTrainerCard({
                                 </strong>
                             </span>
                             <span className="text-[13px] font-semibold tabular-nums">
-                                Primo slot libero: {trainer.nextSlotLabel}
+                                {trainer.nextSlotLabel
+                                    ? `Primo slot libero: ${trainer.nextSlotLabel}`
+                                    : 'Nessuno slot libero'}
                             </span>
                         </span>
                     </Link>

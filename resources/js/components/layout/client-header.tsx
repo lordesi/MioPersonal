@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Calendar, Heart, Search, User } from 'lucide-react';
+import { Calendar, Heart, House, Search, User } from 'lucide-react';
 import AccountMenu from '@/components/layout/account-menu';
 import BrandLogo from '@/components/layout/brand-logo';
 import type { TabItem } from '@/components/layout/mobile-tab-bar';
@@ -7,11 +7,17 @@ import ThemeToggle from '@/components/shared/theme-toggle';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
 import { settings } from '@/routes/account';
-import { bookings, favorites } from '@/routes/client';
+import { bookings, favorites, home } from '@/routes/client';
 
-export type ClientSection = 'search' | 'bookings' | 'favorites' | 'account';
+export type ClientSection =
+    | 'home'
+    | 'search'
+    | 'bookings'
+    | 'favorites'
+    | 'account';
 
 const navItems: { section: ClientSection; title: string; href: string }[] = [
+    { section: 'home', title: 'Home', href: home.url() },
     { section: 'search', title: 'Cerca trainer', href: searchUrl() },
     { section: 'bookings', title: 'Le mie prenotazioni', href: bookings.url() },
 ];
@@ -22,6 +28,7 @@ const tabs: {
     icon: TabItem['icon'];
     href: string;
 }[] = [
+    { section: 'home', title: 'Home', icon: House, href: home.url() },
     { section: 'search', title: 'Cerca', icon: Search, href: searchUrl() },
     {
         section: 'bookings',
@@ -57,7 +64,7 @@ export default function ClientHeader({ userName, section }: ClientHeaderProps) {
     return (
         <header className="border-b bg-background">
             <div className="mx-auto flex h-15 max-w-7xl items-center gap-8 pr-3 pl-4 md:h-18 md:px-8">
-                <BrandLogo />
+                <BrandLogo href={home.url()} />
 
                 <nav
                     aria-label="Principale"

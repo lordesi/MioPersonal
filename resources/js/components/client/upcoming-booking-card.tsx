@@ -1,5 +1,7 @@
+import { Link } from '@inertiajs/react';
 import BookingStatusBadge from '@/components/booking/booking-status-badge';
-import { Button } from '@/components/ui/button';
+import CancelBookingDialog from '@/components/client/cancel-booking-dialog';
+import { useCancelBooking } from '@/hooks/use-cancel-booking';
 import {
     dateBlockParts,
     formatDayTimeLong,
@@ -11,13 +13,14 @@ type UpcomingBookingCardProps = {
     booking: ClientUpcomingBooking;
 };
 
-const outlineOnPrimary =
-    'h-10 flex-[1_1_120px] border border-current bg-transparent text-primary-foreground shadow-none hover:bg-primary-foreground/10';
-
-/** Dark card of a confirmed session, with the trainer's contacts. */
+/**
+ * Dark card of a confirmed session. It can only be cancelled: to change the
+ * time the client cancels and books again.
+ */
 export default function UpcomingBookingCard({
     booking,
 }: UpcomingBookingCardProps) {
+    const { cancelled, cancelBooking } = useCancelBooking(booking.id);
     const date = dateBlockParts(booking.start);
 
     return (
@@ -43,37 +46,35 @@ export default function UpcomingBookingCard({
                         {booking.placeLabel}
                     </span>
                 </span>
-                <BookingStatusBadge status={booking.status} onPrimary />
+                <BookingStatusBadge
+                    status={cancelled ? 'cancelled' : booking.status}
+                    onPrimary
+                />
             </div>
 
-            <div className="flex flex-wrap gap-2">
-                <Button asChild className={outlineOnPrimary}>
-                    <a href={`tel:${booking.trainerPhone}`}>Chiama</a>
-                </Button>
-                <Button asChild className={outlineOnPrimary}>
-                    <a href={`mailto:${booking.trainerEmail}`}>Email</a>
-                </Button>
-                {/* TODO: offer Google, Apple and .ics once calendar export exists. */}
-                <Button
-                    type="button"
-                    className="h-10 flex-[1_1_120px] bg-primary-foreground font-semibold text-primary hover:bg-primary-foreground/90"
-                >
-                    Aggiungi al calendario
-                </Button>
-            </div>
-
-            {/* TODO: wire "Sposta" and "Annulla" to the booking flow. */}
-            <span className="text-xs tabular-nums opacity-75">
-                Cancellazione gratuita fino a{' '}
-                {formatDayTimeLong(booking.freeCancellationUntil)} ·{' '}
-                <button type="button" className="underline">
-                    Sposta
-                </button>{' '}
-                ·{' '}
-                <button type="button" className="underline">
-                    Annulla
-                </button>
-            </span>
+            {cancelled ? (
+                <span role="status" className="text-sm">
+                    Prenotazione annullata. Abbiamo avvisato{' '}
+                    {booking.trainerFirstName}.{' '}
+                    <Link href={booking.trainerHref} className="underline">
+                        Prenota di nuovo
+                    </Link>
+                </span>
+            ) : (
+                <span className="text-xs tabular-nums opacity-75">
+                    Cancellazione gratuita fino a{' '}
+                    {formatDayTimeLong(booking.freeCancellationUntil)} ·{' '}
+                    <CancelBookingDialog
+                        trainerFirstName={booking.trainerFirstName}
+                        onConfirm={cancelBooking}
+                        trigger={
+                            <button type="button" className="underline">
+                                Annulla
+                            </button>
+                        }
+                    />
+                </span>
+            )}
         </article>
     );
 }

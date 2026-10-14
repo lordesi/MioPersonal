@@ -37,7 +37,7 @@ export function TrainerReviewHeader({ trainer, status }: HeaderProps) {
                         </AdminBadge>
                     </div>
                     <span className="text-sm text-muted-foreground">
-                        {trainer.disciplines.join(', ')} · {trainer.zone} ·{' '}
+                        {trainer.disciplines.join(', ')} · {trainer.city} ·{' '}
                         {since}
                     </span>
                 </div>
@@ -63,12 +63,19 @@ export function TrainerReviewHeader({ trainer, status }: HeaderProps) {
     );
 }
 
+type DetailsProps = {
+    trainer: TrainerUnderReview;
+    /** "Note interne": saved together with the next decision. */
+    note: string;
+    onNoteChange: (note: string) => void;
+};
+
 /** What the trainer sent: profile, certificates and the team's notes. */
 export function TrainerReviewDetails({
     trainer,
-}: {
-    trainer: TrainerUnderReview;
-}) {
+    note,
+    onNoteChange,
+}: DetailsProps) {
     const notesId = useId();
     const certificates = trainer.certifications.length;
     const documents = [
@@ -117,7 +124,7 @@ export function TrainerReviewDetails({
                 ) : (
                     trainer.certifications.map((certification) => (
                         <div
-                            key={certification.title}
+                            key={certification.id}
                             className="flex items-center gap-3 rounded-[10px] bg-muted px-3 py-2.5"
                         >
                             <span className="flex flex-1 flex-col">
@@ -128,15 +135,27 @@ export function TrainerReviewDetails({
                                     {certification.issuer}
                                 </span>
                             </span>
-                            {/* TODO: open the file with a temporary link once uploads are stored. */}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="bg-background"
-                            >
-                                Apri attestato
-                            </Button>
+                            {certification.fileHref ? (
+                                // A temporary link: it works for a few minutes.
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-background"
+                                >
+                                    <a
+                                        href={certification.fileHref}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        Apri attestato
+                                    </a>
+                                </Button>
+                            ) : (
+                                <span className="text-xs text-muted-foreground">
+                                    Nessun file
+                                </span>
+                            )}
                         </div>
                     ))
                 )}
@@ -150,13 +169,16 @@ export function TrainerReviewDetails({
                 <label htmlFor={notesId} className="font-semibold">
                     Note interne
                 </label>
-                {/* TODO: save the team's notes on the server. */}
                 <Textarea
-                    key={trainer.id}
                     id={notesId}
                     rows={3}
                     placeholder="Visibili solo al team"
+                    value={note}
+                    onChange={(event) => onNoteChange(event.target.value)}
                 />
+                <span className="text-xs text-muted-foreground">
+                    Si salvano insieme alla decisione.
+                </span>
             </section>
         </div>
     );

@@ -1,30 +1,37 @@
 /** Trainer data shown in search results and featured lists. */
 export type TrainerSummary = {
+    /** In the URL /trainer/{slug}; used to save it among the favorites. */
+    slug: string;
     name: string;
     href: string;
-    zone: string;
+    /** City name, or "Solo online". */
+    city: string;
     disciplines: string[];
     /** Average rating, null when the trainer has no reviews yet ("Nuovo"). */
     rating: number | null;
     reviewCount: number;
     priceFromCents: number;
-    /** Already formatted in Europe/Rome, e.g. "domani 18:00". */
-    nextSlotLabel: string;
+    /** Already formatted in Europe/Rome, e.g. "domani 18:00"; null without free slots. */
+    nextSlotLabel: string | null;
     /** 'also' = in person and online, 'only' = online only. */
     online: 'also' | 'only' | null;
     photoUrl?: string | null;
+    /** Search results: saved by the logged-in client (the full heart). */
+    favorite?: boolean;
 };
 
 export type TrainerService = {
     id: number;
     name: string;
-    /** e.g. "1 o 2 ore", "10 × 1 ora" */
+    /** Duration of one session, e.g. 60. */
+    minutes: number;
+    /** e.g. "da 30 min a 2 ore", "10 × 1 ora" */
     durationLabel: string;
     note: string;
     priceCents: number;
-    /** Price per hour: total = priceCents × hours. */
+    /** Price per hour: total = priceCents × minutes / 60. */
     perHour: boolean;
-    /** Only bookable for 1 hour. */
+    /** Only bookable for its own `minutes`. */
     fixedDuration: boolean;
 };
 
@@ -46,32 +53,41 @@ export type TrainerReview = {
 export type AvailabilityDay = {
     /** Local date in Europe/Rome, "YYYY-MM-DD". */
     date: string;
-    /** start is an ISO UTC string; maxHours is the longest bookable duration. */
-    slots: { start: string; maxHours: number }[];
+    /** start is an ISO UTC string; maxMinutes is the longest session that fits. */
+    slots: { start: string; maxMinutes: number }[];
 };
 
 /** Everything shown on the public trainer profile. */
 export type TrainerProfile = {
     slug: string;
+    /** Saved among the favorites by the logged-in client. */
+    favorite: boolean;
     name: string;
     headline: string;
     verified: boolean;
     bio: string[];
     experienceLabel: string;
-    responseTimeLabel: string;
+    /** Null until the trainer has answered some bookings. */
+    responseTimeLabel: string | null;
     cancellationLabel: string;
     rating: number | null;
     reviewCount: number;
-    zones: string[];
+    /** Main city: the breadcrumb links to its search. Null for online-only trainers. */
+    city: { slug: string; name: string } | null;
+    /** Every city where the trainer trains in person. */
+    cities: string[];
     areaLabel: string;
     online: 'also' | 'only' | null;
     disciplines: string[];
-    photos: { caption: string; isPortrait: boolean }[];
+    /** url is null for the placeholder with the initials. */
+    photos: { caption: string; isPortrait: boolean; url: string | null }[];
     services: TrainerService[];
     places: TrainingPlace[];
     certifications: { title: string; issuer: string }[];
     ratingDistribution: { stars: number; count: number }[];
     reviews: TrainerReview[];
+    /** "Durate prenotabili" in minutes, shortest first, e.g. [60, 90, 120]. */
+    sessionMinutes: number[];
     availability: AvailabilityDay[];
     similarTrainers: {
         name: string;
@@ -84,6 +100,8 @@ export type TrainerProfile = {
 /** A confirmed session in the trainer's "Oggi" list. */
 export type TrainerTodaySession = {
     id: number;
+    /** null once the client deleted the account: no link to the profile. */
+    clientId: number | null;
     clientName: string;
     /** ISO UTC string. */
     start: string;
@@ -95,6 +113,7 @@ export type TrainerTodaySession = {
 /** A booking waiting for the trainer's answer. */
 export type TrainerBookingRequest = {
     id: number;
+    clientId: number | null;
     clientName: string;
     start: string;
     hours: number;
@@ -105,11 +124,23 @@ export type TrainerBookingRequest = {
     expiresAt: string;
 };
 
+/** A client's profile, seen by a trainer the client booked with. */
+export type TrainerClientProfile = {
+    id: number;
+    name: string;
+    firstName: string;
+    avatar: string | null;
+    /** ISO UTC strings. */
+    joinedAt: string | null;
+    /** Confirmed sessions with this trainer. */
+    sessions: number;
+    nextSession: string | null;
+    /** null until the trainer confirms a booking of this client. */
+    contacts: { email: string; phone: string | null } | null;
+};
+
 export type TrainerStats = {
     sessionsThisWeek: number;
-    sessionsLastWeek: number;
-    profileViews: number;
-    profileBookings: number;
 };
 
 /** A row of the "Da fare" list. */
@@ -123,7 +154,14 @@ export type TrainerTodo = {
 /** Sent by every page of the trainer area, read by the trainer layout. */
 export type TrainerAreaData = {
     pendingCount: number;
-    publicProfileHref: string;
+    /** Null until the registration is sent. */
+    publicProfileHref: string | null;
+    /** For the notice at the top of every page, until the profile is approved. */
+    profile: {
+        status: 'missing' | 'review' | 'changes' | 'approved' | 'rejected';
+        /** The team's message, with "changes" and "rejected". */
+        message: string | null;
+    };
 };
 
 /** A block in the trainer calendar. */
@@ -135,23 +173,12 @@ export type CalendarEvent = {
     title: string;
     detail: string;
     place: string;
-    /** 'busy' = an appointment imported from Google or Apple. */
-    kind: 'confirmed' | 'pending' | 'busy';
-    source: 'google' | 'apple' | null;
-};
-
-export type CalendarSync = {
-    id: 'google' | 'apple';
-    name: string;
-    connected: boolean;
-    /** Shown while connected, e.g. "Aggiornato 2 min fa". */
-    status: string;
+    kind: 'confirmed' | 'pending';
 };
 
 export type TrainerClient = {
     id: number;
     name: string;
-    email: string;
     sessions: number;
     /** ISO UTC strings. */
     lastSession: string;
@@ -174,8 +201,8 @@ export type BookingRules = {
     noticeHours: number;
     bookingWindowDays: number;
     breakMinutes: number;
-    travelMinutes: number;
-    maxSessionsPerDay: number;
+    /** null = "Nessun limite". */
+    maxSessionsPerDay: number | null;
     confirmHours: number;
     freeCancellationHours: number;
 };

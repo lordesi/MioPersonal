@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
+import ProfileStatusNotice from '@/components/layout/profile-status-notice';
 import TrainerHeader from '@/components/layout/trainer-header';
 import type { TrainerSection } from '@/components/layout/trainer-nav';
 import {
@@ -46,7 +47,9 @@ export default function TrainerLayout({
                 userName={userName ?? auth?.user?.name ?? ''}
                 notificationCount={notificationCount ?? pending}
                 publicProfileHref={
-                    publicProfileHref ?? trainerArea?.publicProfileHref
+                    publicProfileHref ??
+                    trainerArea?.publicProfileHref ??
+                    undefined
                 }
             />
             <div className="mx-auto flex w-full max-w-340 flex-1 items-start gap-7 px-4 pt-5 pb-7 md:px-8 md:pt-7 md:pb-16">
@@ -55,6 +58,12 @@ export default function TrainerLayout({
                     notificationsEnabled={notificationsEnabled}
                 />
                 <main className="flex min-w-0 flex-1 flex-col gap-6">
+                    {trainerArea?.profile && (
+                        <ProfileStatusNotice
+                            {...trainerArea.profile}
+                            previewHref={trainerArea.publicProfileHref}
+                        />
+                    )}
                     {children}
                 </main>
             </div>

@@ -23,8 +23,9 @@ export default function FavoriteTrainers({ trainers }: FavoriteTrainersProps) {
                             {trainer.name}
                         </span>
                         <span className="text-xs text-muted-foreground tabular-nums">
-                            Primo slot:{' '}
-                            {formatRelativeSlot(trainer.nextSlotStart)}
+                            {trainer.nextSlotStart
+                                ? `Primo slot: ${formatRelativeSlot(trainer.nextSlotStart)}`
+                                : 'Nessuno slot libero'}
                         </span>
                     </span>
                 </Link>

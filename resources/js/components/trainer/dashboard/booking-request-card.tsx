@@ -1,5 +1,7 @@
+import { Link } from '@inertiajs/react';
 import BookingStatusBadge from '@/components/booking/booking-status-badge';
 import ResponsiveText from '@/components/shared/responsive-text';
+import ConfirmDialog from '@/components/shared/confirm-dialog';
 import UserAvatar from '@/components/shared/user-avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +12,7 @@ import {
     hoursUntil,
 } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { show as showClient } from '@/routes/trainer/clients';
 import type { TrainerBookingRequest } from '@/types';
 
 /** Requests expiring sooner than this get the filled, more urgent badge. */
@@ -20,26 +23,20 @@ export type RequestAnswer = 'pending' | 'confirmed' | 'declined';
 type BookingRequestCardProps = {
     request: TrainerBookingRequest;
     answer: RequestAnswer;
-    onAnswer: (answer: RequestAnswer) => void;
+    onAnswer: (answer: Exclude<RequestAnswer, 'pending'>) => void;
 };
 
-/** A booking waiting for the trainer: confirm, decline or propose a new time. */
+/**
+ * A booking waiting for the trainer: confirm, decline or propose a new time.
+ * Confirming and declining ask first and are final: no "Annulla".
+ */
 export default function BookingRequestCard({
     request,
     answer,
     onAnswer,
 }: BookingRequestCardProps) {
     const hoursLeft = hoursUntil(request.expiresAt);
-
-    const undo = (
-        <button
-            type="button"
-            className="text-foreground underline"
-            onClick={() => onAnswer('pending')}
-        >
-            Annulla
-        </button>
-    );
+    const slot = formatSlot(request.start, request.hours);
 
     return (
         <article
@@ -54,11 +51,20 @@ export default function BookingRequestCard({
                 />
                 <div className="flex min-w-0 flex-1 flex-col">
                     <span className="text-[15px] leading-5 font-semibold md:text-base">
-                        {request.clientName}
+                        {request.clientId === null ? (
+                            request.clientName
+                        ) : (
+                            <Link
+                                href={showClient(request.clientId)}
+                                className="hover:underline"
+                            >
+                                {request.clientName}
+                            </Link>
+                        )}
                     </span>
                     <span className="text-xs text-muted-foreground tabular-nums md:text-[13px] md:leading-4.5">
-                        {formatSlot(request.start, request.hours)} ·{' '}
-                        {request.serviceName} · {formatHours(request.hours)}
+                        {slot} · {request.serviceName} ·{' '}
+                        {formatHours(request.hours)}
                     </span>
                 </div>
                 {answer === 'pending' ? (
@@ -88,15 +94,21 @@ export default function BookingRequestCard({
                             «{request.note}»
                         </p>
                     )}
-                    {/* TODO: send the answer to the server. */}
                     <div className="grid grid-cols-2 gap-1.5 md:flex md:flex-wrap md:gap-2">
-                        <Button
-                            type="button"
-                            className="h-11 md:order-1 md:h-9"
-                            onClick={() => onAnswer('confirmed')}
-                        >
-                            Conferma
-                        </Button>
+                        <ConfirmDialog
+                            title="Confermare la prenotazione?"
+                            description={`${request.clientName} · ${slot}. Il cliente riceve subito i tuoi contatti; la conferma non si può annullare.`}
+                            confirmLabel="Sì, conferma"
+                            onConfirm={() => onAnswer('confirmed')}
+                            trigger={
+                                <Button
+                                    type="button"
+                                    className="h-11 md:order-1 md:h-9"
+                                >
+                                    Conferma
+                                </Button>
+                            }
+                        />
                         {/* TODO: open the "propose another time" flow. */}
                         <Button
                             type="button"
@@ -105,14 +117,22 @@ export default function BookingRequestCard({
                         >
                             Proponi un altro orario
                         </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="-order-1 h-11 md:order-3 md:h-9 md:border-transparent md:px-3 md:shadow-none"
-                            onClick={() => onAnswer('declined')}
-                        >
-                            Rifiuta
-                        </Button>
+                        <ConfirmDialog
+                            title="Rifiutare la prenotazione?"
+                            description={`${request.clientName} · ${slot}. Lo slot torna libero sul profilo; non si può annullare.`}
+                            confirmLabel="Sì, rifiuta"
+                            destructive
+                            onConfirm={() => onAnswer('declined')}
+                            trigger={
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="-order-1 h-11 md:order-3 md:h-9 md:border-transparent md:px-3 md:shadow-none"
+                                >
+                                    Rifiuta
+                                </Button>
+                            }
+                        />
                     </div>
                 </>
             )}
@@ -122,8 +142,7 @@ export default function BookingRequestCard({
                     <ResponsiveText
                         mobile="Il cliente ha ricevuto i tuoi contatti."
                         desktop="Confermata: il cliente ha ricevuto l'email con i tuoi contatti. È già nel tuo calendario."
-                    />{' '}
-                    {undo}
+                    />
                 </span>
             )}
 
@@ -135,8 +154,7 @@ export default function BookingRequestCard({
                     <ResponsiveText
                         mobile="Lo slot torna libero."
                         desktop="Rifiutata: lo slot torna libero sul profilo."
-                    />{' '}
-                    {undo}
+                    />
                 </span>
             )}
         </article>

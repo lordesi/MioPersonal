@@ -1,7 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
 import SegmentedControl from '@/components/shared/segmented-control';
-import CalendarSyncs from '@/components/trainer/area/calendar-syncs';
 import DayAgenda from '@/components/trainer/area/day-agenda';
 import MonthHeatmap from '@/components/trainer/area/month-heatmap';
 import PageHeading from '@/components/trainer/area/page-heading';
@@ -10,13 +9,13 @@ import type { CalendarItem } from '@/lib/calendar';
 import { blockKey, romeParts, weekDates } from '@/lib/calendar';
 import { formatDayRange } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import type { CalendarEvent, CalendarSync } from '@/types';
+import type { CalendarEvent } from '@/types';
 
 type CalendarProps = {
     /** Monday of the current week, "YYYY-MM-DD". */
     weekStart: string;
+    /** Empty until bookings are stored (step 5 of docs/database/analisi.md). */
     events: CalendarEvent[];
-    syncs: CalendarSync[];
     /** Confirmed sessions per day, for the month view. */
     sessionCounts: Record<string, number>;
 };
@@ -29,14 +28,12 @@ const MONTHS_AHEAD = 2;
 const legend: { kind: CalendarItem['kind']; label: string }[] = [
     { kind: 'confirmed', label: 'Confermata' },
     { kind: 'pending', label: 'Da confermare' },
-    { kind: 'busy', label: 'Dal tuo calendario' },
     { kind: 'block', label: 'Bloccato' },
 ];
 
 export default function Calendar({
     weekStart,
     events,
-    syncs: initialSyncs,
     sessionCounts,
 }: CalendarProps) {
     const days = weekDates(weekStart);
@@ -44,8 +41,7 @@ export default function Calendar({
     const currentMonth = today.slice(0, 7);
 
     const [view, setView] = useState<View>('week');
-    // TODO: blocks and sync changes only live in the page for now.
-    const [syncs, setSyncs] = useState(initialSyncs);
+    // TODO: blocks only live in the page for now.
     const [blocks, setBlocks] = useState<Set<string>>(new Set());
     const [mobileDay, setMobileDay] = useState(
         days.includes(today) ? today : days[0],
@@ -53,28 +49,21 @@ export default function Calendar({
     const [monthOffset, setMonthOffset] = useState(0);
     const [monthDay, setMonthDay] = useState(today);
 
-    const connected = new Set(
-        syncs.filter((sync) => sync.connected).map((sync) => sync.id),
-    );
-
     const items: CalendarItem[] = [
-        ...events
-            // Imported appointments disappear when their calendar is unlinked.
-            .filter((event) => !event.source || connected.has(event.source))
-            .map((event) => {
-                const start = romeParts(event.start);
+        ...events.map((event) => {
+            const start = romeParts(event.start);
 
-                return {
-                    key: `event-${event.id}`,
-                    date: start.date,
-                    from: start.hour,
-                    to: romeParts(event.end).hour,
-                    title: event.title,
-                    detail: event.detail,
-                    place: event.place,
-                    kind: event.kind,
-                };
-            }),
+            return {
+                key: `event-${event.id}`,
+                date: start.date,
+                from: start.hour,
+                to: romeParts(event.end).hour,
+                title: event.title,
+                detail: event.detail,
+                place: event.place,
+                kind: event.kind,
+            };
+        }),
         ...[...blocks].map((key) => {
             const date = key.slice(0, 10);
             const hour = Number(key.slice(11));
@@ -149,20 +138,6 @@ export default function Calendar({
                             'hidden md:flex',
                         )}
                     </>
-                }
-            />
-
-            <CalendarSyncs
-                syncs={syncs}
-                className="max-md:order-last"
-                onToggle={(id) =>
-                    setSyncs(
-                        syncs.map((sync) =>
-                            sync.id === id
-                                ? { ...sync, connected: !sync.connected }
-                                : sync,
-                        ),
-                    )
                 }
             />
 

@@ -93,8 +93,7 @@ export default function PublicFooter({
                 <div className="flex max-w-80 flex-col gap-3">
                     <BrandLogo linkToHome={false} />
                     <p className="text-sm text-muted-foreground">
-                        Personal trainer a Milano e provincia, in presenza e
-                        online.
+                        Personal trainer in tutta Italia, in presenza e online.
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-16">

@@ -16,7 +16,8 @@ class TrainerDashboardTest extends TestCase
         $this->get(route('trainer.today'))->assertRedirect(route('login'));
     }
 
-    public function test_dashboard_renders_with_its_data()
+    /** No sample data: a new trainer sees an empty dashboard until real bookings exist. */
+    public function test_a_new_trainer_sees_an_empty_dashboard()
     {
         $user = User::factory()->trainer()->create(['name' => 'Giulia Rossi']);
 
@@ -26,29 +27,11 @@ class TrainerDashboardTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('trainer/today')
                 ->where('firstName', 'Giulia')
-                ->has('today', 4)
-                ->has('requests', 3)
-                ->has('stats', fn (Assert $stats) => $stats
-                    ->whereType('sessionsThisWeek', 'integer')
-                    ->whereType('sessionsLastWeek', 'integer')
-                    ->whereType('profileViews', 'integer')
-                    ->whereType('profileBookings', 'integer')
-                )
-                ->has('todos')
+                ->has('today', 0)
+                ->has('requests', 0)
+                ->where('stats', ['sessionsThisWeek' => 0])
+                ->has('todos', 0)
+                ->where('trainerArea.pendingCount', 0)
             );
-    }
-
-    public function test_session_and_request_times_are_utc_iso_strings()
-    {
-        $this->actingAs(User::factory()->trainer()->create())
-            ->get(route('trainer.today'))
-            ->assertInertia(function (Assert $page) {
-                $props = $page->toArray()['props'];
-                $utcIso = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/';
-
-                $this->assertMatchesRegularExpression($utcIso, $props['today'][0]['start']);
-                $this->assertMatchesRegularExpression($utcIso, $props['requests'][0]['start']);
-                $this->assertMatchesRegularExpression($utcIso, $props['requests'][0]['expiresAt']);
-            });
     }
 }

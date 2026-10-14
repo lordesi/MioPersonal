@@ -26,7 +26,7 @@ type BookingSummaryProps = {
     };
     status?: BookingStatus;
     rows: BookingSummaryRow[];
-    /** Actions under the details, e.g. "Sposta" and "Annulla la prenotazione". */
+    /** Actions under the details, e.g. "Annulla la prenotazione". */
     children?: ReactNode;
     className?: string;
 };

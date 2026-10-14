@@ -11,7 +11,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { SESSION_MINUTES } from '@/lib/booking';
 import { hourLabel } from '@/lib/calendar';
+import { formatDuration } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 type StepProps = {
@@ -29,26 +31,46 @@ const dayLabels = [
     'Sabato',
     'Domenica',
 ];
-const allHours = Array.from({ length: 14 }, (_, index) => 7 + index);
+/** Start hours from 6:00 to 23:00, so the last slot ends at 24:00 (as on the server). */
+const allHours = Array.from({ length: 18 }, (_, index) => 6 + index);
 const range = (from: number, to: number) =>
     allHours.filter((hour) => hour >= from && hour < to);
 
-const groups = [
-    { label: 'Mattina', range: '7–12', hours: range(7, 12) },
-    { label: 'Pomeriggio', range: '12–18', hours: range(12, 18) },
-    { label: 'Sera', range: '18–21', hours: range(18, 21) },
-    { label: 'Tutto il giorno', range: '7–21', hours: allHours },
-    { label: 'Svuota', range: '', hours: [] },
+/**
+ * The buttons above the grid. "toggle": added to the selected days, or
+ * removed from all of them when every selected day already has the whole
+ * group. "set": the day gets exactly these hours (all of them, or none).
+ */
+const groups: {
+    label: string;
+    range: string;
+    hours: number[];
+    mode: 'toggle' | 'set';
+}[] = [
+    { label: 'Mattina', range: '6–12', hours: range(6, 12), mode: 'toggle' },
+    {
+        label: 'Pomeriggio',
+        range: '12–18',
+        hours: range(12, 18),
+        mode: 'toggle',
+    },
+    { label: 'Sera', range: '18–24', hours: range(18, 24), mode: 'toggle' },
+    { label: 'Tutto il giorno', range: '6–24', hours: allHours, mode: 'set' },
+    { label: 'Svuota', range: '', hours: [], mode: 'set' },
 ];
 
 const hoursLabel = (n: number) => (n === 1 ? '1 ora' : `${n} ore`);
 const minutesLabel = (n: number) => (n === 0 ? 'Nessuna' : `${n} minuti`);
 
+/** Radix Select doesn't accept null: "Nessun limite" uses this value. */
+const NO_LIMIT = 'none';
+
 const rules: {
     name: keyof TrainerDraft['rules'];
     label: string;
     hint: string;
-    options: number[];
+    /** null = "Nessun limite". */
+    options: (number | null)[];
     format: (value: number) => string;
 }[] = [
     {
@@ -73,22 +95,15 @@ const rules: {
         format: minutesLabel,
     },
     {
-        name: 'travelMinutes',
-        label: 'Spostamento per il domicilio',
-        hint: 'Prima e dopo le sedute a casa del cliente.',
-        options: [0, 15, 30, 45, 60],
-        format: minutesLabel,
-    },
-    {
         name: 'maxSessionsPerDay',
         label: 'Massimo sedute al giorno',
         hint: 'Poi il giorno risulta pieno.',
-        options: [2, 3, 4, 5, 6, 7, 8, 10],
+        options: [2, 3, 4, 5, 6, 7, 8, 10, null],
         format: String,
     },
     {
         name: 'freeCancellationHours',
-        label: 'Cancellazione gratuita',
+        label: 'Cancellazione',
         hint: 'La vedono i clienti prima di prenotare.',
         options: [12, 24, 48],
         format: (n) => `Fino a ${n} ore prima`,
@@ -114,27 +129,43 @@ export default function StepHours({ draft, update }: StepProps) {
                 : [...draft.hours[day], hour],
         );
 
-    /** Adds the group to the selected days, or removes it if all are there. */
-    const applyGroup = (hours: number[]) =>
+    /**
+     * Applies a group to the selected days. The choice "add or remove" is made
+     * once for all of them, so days with different hours end up the same.
+     */
+    const applyGroup = (group: (typeof groups)[number]) => {
+        const removing =
+            group.mode === 'toggle' &&
+            selectedDays.every((day) =>
+                group.hours.every((hour) => draft.hours[day].includes(hour)),
+            );
+
         update({
             hours: draft.hours.map((current, day) => {
                 if (!selectedDays.includes(day)) {
                     return current;
                 }
 
-                if (hours.length === 0) {
-                    return [];
+                if (group.mode === 'set') {
+                    return [...group.hours];
                 }
 
-                const complete = hours.every((hour) => current.includes(hour));
-
-                return complete
-                    ? current.filter((hour) => !hours.includes(hour))
-                    : [...new Set([...current, ...hours])].sort(
+                return removing
+                    ? current.filter((hour) => !group.hours.includes(hour))
+                    : [...new Set([...current, ...group.hours])].sort(
                           (a, b) => a - b,
                       );
             }),
         });
+    };
+
+    const toggleDuration = (minutes: number) => {
+        const sessionMinutes = draft.sessionMinutes.includes(minutes)
+            ? draft.sessionMinutes.filter((item) => item !== minutes)
+            : [...draft.sessionMinutes, minutes].sort((a, b) => a - b);
+
+        update({ sessionMinutes });
+    };
 
     return (
         <>
@@ -152,8 +183,9 @@ export default function StepHours({ draft, update }: StepProps) {
                         <button
                             key={group.label}
                             type="button"
-                            onClick={() => applyGroup(group.hours)}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
+                            disabled={selectedDays.length === 0}
+                            onClick={() => applyGroup(group)}
+                            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-input bg-background px-3 text-sm font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {group.label}
                             {group.range && (
@@ -201,9 +233,7 @@ export default function StepHours({ draft, update }: StepProps) {
                                         {name}
                                     </span>
                                     <span className="text-[11px] tabular-nums opacity-75">
-                                        {draft.hours[day].length
-                                            ? `${draft.hours[day].length} h`
-                                            : 'riposo'}
+                                        {draft.hours[day].length} h
                                     </span>
                                 </button>
                             );
@@ -214,6 +244,7 @@ export default function StepHours({ draft, update }: StepProps) {
                                 key={hour}
                                 hour={hour}
                                 draft={draft}
+                                selectedDays={selectedDays}
                                 onToggle={toggleHour}
                             />
                         ))}
@@ -225,8 +256,8 @@ export default function StepHours({ draft, update }: StepProps) {
                         {weeklyHours(draft)} ore a settimana.
                     </strong>{' '}
                     Tocca un giorno in alto per selezionarlo, poi aggiungi un
-                    gruppo di ore; oppure tocca le singole ore. Sono gli stessi
-                    slot da un’ora che i clienti vedono sul tuo profilo.
+                    gruppo di ore oppure tocca le singole ore: si possono
+                    cambiare solo le ore dei giorni selezionati.
                 </p>
             </div>
 
@@ -249,12 +280,17 @@ export default function StepHours({ draft, update }: StepProps) {
                         >
                             {({ id, describedBy }) => (
                                 <Select
-                                    value={String(draft.rules[rule.name])}
+                                    value={String(
+                                        draft.rules[rule.name] ?? NO_LIMIT,
+                                    )}
                                     onValueChange={(value) =>
                                         update({
                                             rules: {
                                                 ...draft.rules,
-                                                [rule.name]: Number(value),
+                                                [rule.name]:
+                                                    value === NO_LIMIT
+                                                        ? null
+                                                        : Number(value),
                                             },
                                         })
                                     }
@@ -269,10 +305,14 @@ export default function StepHours({ draft, update }: StepProps) {
                                     <SelectContent>
                                         {rule.options.map((option) => (
                                             <SelectItem
-                                                key={option}
-                                                value={String(option)}
+                                                key={option ?? NO_LIMIT}
+                                                value={String(
+                                                    option ?? NO_LIMIT,
+                                                )}
                                             >
-                                                {rule.format(option)}
+                                                {option === null
+                                                    ? 'Nessun limite'
+                                                    : rule.format(option)}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -285,30 +325,22 @@ export default function StepHours({ draft, update }: StepProps) {
                 <fieldset className="flex flex-col gap-1">
                     <legend className="pb-1.5 text-sm font-medium">
                         Durate prenotabili
+                        <span className="font-normal text-muted-foreground">
+                            {' '}
+                            · almeno una
+                        </span>
                     </legend>
                     <div className="flex flex-wrap gap-x-5 gap-y-1">
-                        <ConsentCheckbox
-                            name="duration_one"
-                            checked={draft.durations.one}
-                            onCheckedChange={(one) =>
-                                update({
-                                    durations: { ...draft.durations, one },
-                                })
-                            }
-                        >
-                            1 ora
-                        </ConsentCheckbox>
-                        <ConsentCheckbox
-                            name="duration_two"
-                            checked={draft.durations.two}
-                            onCheckedChange={(two) =>
-                                update({
-                                    durations: { ...draft.durations, two },
-                                })
-                            }
-                        >
-                            2 ore
-                        </ConsentCheckbox>
+                        {SESSION_MINUTES.map((minutes) => (
+                            <ConsentCheckbox
+                                key={minutes}
+                                name={`session_minutes_${minutes}`}
+                                checked={draft.sessionMinutes.includes(minutes)}
+                                onCheckedChange={() => toggleDuration(minutes)}
+                            >
+                                {formatDuration(minutes)}
+                            </ConsentCheckbox>
+                        ))}
                     </div>
                 </fieldset>
 
@@ -336,13 +368,16 @@ export default function StepHours({ draft, update }: StepProps) {
     );
 }
 
+/** One hour of the week; only the hours of the selected days can be changed. */
 function HourRow({
     hour,
     draft,
+    selectedDays,
     onToggle,
 }: {
     hour: number;
     draft: TrainerDraft;
+    selectedDays: number[];
     onToggle: (day: number, hour: number) => void;
 }) {
     return (
@@ -352,6 +387,7 @@ function HourRow({
             </span>
             {dayLabels.map((label, day) => {
                 const on = draft.hours[day].includes(hour);
+                const locked = !selectedDays.includes(day);
 
                 return (
                     <button
@@ -359,12 +395,14 @@ function HourRow({
                         type="button"
                         aria-pressed={on}
                         aria-label={`${label} ${hourLabel(hour)}, ${on ? 'disponibile' : 'non disponibile'}`}
+                        disabled={locked}
                         onClick={() => onToggle(day, hour)}
                         className={cn(
-                            'h-7.5 rounded-md',
+                            'h-7.5 rounded-md disabled:cursor-not-allowed',
                             on
                                 ? 'bg-primary'
                                 : 'border border-dashed border-input bg-background',
+                            locked && 'opacity-40',
                         )}
                     />
                 );

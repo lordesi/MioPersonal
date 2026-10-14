@@ -13,7 +13,11 @@ import { register as trainerRegister } from '@/routes/trainer';
 const TERMS_HREF = terms.url();
 const PRIVACY_HREF = privacy.url();
 
-export default function Register() {
+export default function Register({
+    googleEnabled,
+}: {
+    googleEnabled: boolean;
+}) {
     return (
         <div className="flex min-h-screen flex-col bg-secondary">
             <Head title="Crea il tuo account" />
@@ -51,15 +55,14 @@ export default function Register() {
                                 </p>
                             </div>
 
-                            <SocialSignIn verb="Registrati con" />
-
-                            <AccountFields
-                                errors={errors}
-                                emailHint="Ti mandiamo un link per verificarla."
+                            <SocialSignIn
+                                verb="Registrati con"
+                                googleEnabled={googleEnabled}
                             />
 
-                            <fieldset className="flex flex-col gap-3 border-t pt-4">
-                                <legend className="sr-only">Consensi</legend>
+                            <AccountFields errors={errors} />
+
+                            <div className="border-t pt-4">
                                 <ConsentCheckbox
                                     name="terms"
                                     required
@@ -81,9 +84,7 @@ export default function Register() {
                                         (obbligatorio)
                                     </span>
                                 </ConsentCheckbox>
-                                {/* TODO: "Voglio ricevere novità…" (facoltativo) needs a
-                                    marketing consent column: add it with that migration. */}
-                            </fieldset>
+                            </div>
 
                             <Button
                                 type="submit"

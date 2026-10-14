@@ -1,9 +1,5 @@
 import type { AdminBadgeVariant } from '@/components/admin/admin-badge';
-import type {
-    AdminBookingStatus,
-    ContactMessageStatus,
-    TrainerReviewStatus,
-} from '@/types';
+import type { AdminBookingStatus, TrainerReviewStatus } from '@/types';
 
 type StatusStyle = { label: string; variant: AdminBadgeVariant };
 
@@ -12,12 +8,6 @@ export const trainerStatuses: Record<TrainerReviewStatus, StatusStyle> = {
     changes: { label: 'Modifiche richieste', variant: 'outline' },
     approved: { label: 'Approvato', variant: 'solid' },
     rejected: { label: 'Rifiutato', variant: 'muted' },
-};
-
-export const messageStatuses: Record<ContactMessageStatus, StatusStyle> = {
-    new: { label: 'Nuovo', variant: 'solid' },
-    'in-progress': { label: 'In corso', variant: 'dashed' },
-    closed: { label: 'Chiuso', variant: 'muted' },
 };
 
 export const bookingStatuses: Record<AdminBookingStatus, StatusStyle> = {

@@ -1,31 +1,50 @@
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, X } from 'lucide-react';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
 import FormField from '@/components/auth/form-field';
 import type { TrainerDraft } from '@/components/onboarding/trainer/draft';
 import {
     MAX_DISCIPLINES,
-    disciplineOptions,
+    MAX_OTHER_CITIES,
+    MAX_STUDIOS,
+    needsCity,
     placeOptions,
-    zoneOptions,
 } from '@/components/onboarding/trainer/draft';
 import StepTitle from '@/components/onboarding/trainer/step-title';
+import FilterSelect from '@/components/search/filter-select';
 import ChoiceChips from '@/components/shared/choice-chips';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import type { CatalogOption, CityOption } from '@/types';
 
 type StepProps = {
     draft: TrainerDraft;
     update: (changes: Partial<TrainerDraft>) => void;
+    /** From the catalog. */
+    disciplines: CatalogOption[];
+    cities: CityOption[];
 };
 
-const asOptions = (labels: string[]) =>
-    labels.map((label) => ({ value: label, label }));
-
-/** Step 3: disciplines (max 5), where the trainer works and which zones. */
-export default function StepPlaces({ draft, update }: StepProps) {
+/**
+ * Step 3: disciplines (max 5), where the trainer works (max 3 places in
+ * person) and in which cities (the main one + max 2 others).
+ */
+export default function StepPlaces({
+    draft,
+    update,
+    disciplines,
+    cities,
+}: StepProps) {
     const hasStudio = draft.places.includes('studio');
+    const cityName = (slug: string) =>
+        cities.find((city) => city.value === slug)?.label ?? slug;
+    // The main city and the ones already added can't be added again.
+    const addableCities = cities.filter(
+        (city) =>
+            city.value !== draft.city &&
+            !draft.otherCities.includes(city.value),
+    );
 
     const togglePlace = (place: TrainerDraft['places'][number]) =>
         update({
@@ -47,7 +66,7 @@ export default function StepPlaces({ draft, update }: StepProps) {
     return (
         <>
             <StepTitle
-                title="Discipline, luoghi e zone"
+                title="Discipline, luoghi e città"
                 description="Servono a farti trovare dai clienti giusti nella ricerca."
             />
 
@@ -59,7 +78,7 @@ export default function StepPlaces({ draft, update }: StepProps) {
                     <ChoiceChips
                         multiple
                         aria-labelledby={labelId}
-                        options={asOptions(disciplineOptions)}
+                        options={disciplines}
                         value={draft.disciplines}
                         onChange={(disciplines) =>
                             disciplines.length <= MAX_DISCIPLINES &&
@@ -108,7 +127,7 @@ export default function StepPlaces({ draft, update }: StepProps) {
             {hasStudio && (
                 <Group
                     legend="Dove alleni in presenza"
-                    note="studi, palestre o centri sportivi"
+                    note={`studi, palestre o centri sportivi · ${draft.studios.length} di ${MAX_STUDIOS} al massimo`}
                 >
                     {() => (
                         <div className="flex flex-col gap-3">
@@ -170,6 +189,7 @@ export default function StepPlaces({ draft, update }: StepProps) {
                                 type="button"
                                 variant="outline"
                                 className="self-start"
+                                disabled={draft.studios.length >= MAX_STUDIOS}
                                 onClick={() =>
                                     update({
                                         studios: [
@@ -183,7 +203,7 @@ export default function StepPlaces({ draft, update }: StepProps) {
                                 Aggiungi indirizzo
                             </Button>
                             <span className="text-xs text-muted-foreground">
-                                Sul profilo mostriamo solo la zona di ogni
+                                Sul profilo mostriamo solo la città di ogni
                                 luogo. L’indirizzo esatto lo riceve il cliente
                                 con la conferma.
                             </span>
@@ -192,20 +212,94 @@ export default function StepPlaces({ draft, update }: StepProps) {
                 </Group>
             )}
 
-            <Group
-                legend="Zone in cui ti sposti"
-                note={`${draft.zones.length} selezionate`}
-            >
-                {(labelId) => (
-                    <ChoiceChips
-                        multiple
-                        aria-labelledby={labelId}
-                        options={asOptions(zoneOptions)}
-                        value={draft.zones}
-                        onChange={(zones) => update({ zones })}
+            {needsCity(draft) && (
+                <>
+                    <FilterSelect
+                        id="trainer-city"
+                        label="La tua città"
+                        noneLabel="Scegli la città"
+                        options={cities}
+                        value={draft.city || null}
+                        onChange={(city) =>
+                            update({
+                                city: city ?? '',
+                                otherCities: draft.otherCities.filter(
+                                    (other) => other !== city,
+                                ),
+                            })
+                        }
+                        highlight={false}
+                        className="max-w-80"
                     />
-                )}
-            </Group>
+
+                    <Group
+                        legend="Altre città in cui ti sposti"
+                        note={`${draft.otherCities.length} di ${MAX_OTHER_CITIES} al massimo`}
+                    >
+                        {(labelId) => (
+                            <div
+                                role="group"
+                                aria-labelledby={labelId}
+                                className="flex flex-col gap-2.5"
+                            >
+                                {draft.otherCities.length > 0 && (
+                                    <ul className="flex flex-wrap gap-2">
+                                        {draft.otherCities.map((slug) => (
+                                            <li
+                                                key={slug}
+                                                className="flex h-9 items-center gap-1 rounded-full border bg-background pr-1 pl-3.5 text-sm"
+                                            >
+                                                {cityName(slug)}
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    aria-label={`Togli ${cityName(slug)}`}
+                                                    className="size-7 rounded-full"
+                                                    onClick={() =>
+                                                        update({
+                                                            otherCities:
+                                                                draft.otherCities.filter(
+                                                                    (other) =>
+                                                                        other !==
+                                                                        slug,
+                                                                ),
+                                                        })
+                                                    }
+                                                >
+                                                    <X />
+                                                </Button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {/* At the limit the menu goes away: remove a city to add another. */}
+                                {draft.otherCities.length <
+                                    MAX_OTHER_CITIES && (
+                                    <FilterSelect
+                                        id="trainer-other-city"
+                                        label="Aggiungi una città"
+                                        noneLabel="Scegli una città"
+                                        options={addableCities}
+                                        value={null}
+                                        onChange={(city) =>
+                                            city &&
+                                            update({
+                                                otherCities: [
+                                                    ...draft.otherCities,
+                                                    city,
+                                                ],
+                                            })
+                                        }
+                                        highlight={false}
+                                        className="max-w-80"
+                                    />
+                                )}
+                            </div>
+                        )}
+                    </Group>
+                </>
+            )}
         </>
     );
 }

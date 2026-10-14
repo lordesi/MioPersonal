@@ -33,7 +33,8 @@ class TrainerAvailabilityController extends Controller
                 $day(6, 'Sabato', [['08:00', '14:00']]),
                 $day(7, 'Domenica', []),
             ],
-            'durations' => [1, 2],
+            // "Durate prenotabili", in minutes.
+            'durations' => [60, 90, 120],
             'holidays' => [
                 ['id' => 1, 'from' => "{$year}-12-24", 'to' => ($year + 1).'-01-06'],
             ],
@@ -42,7 +43,6 @@ class TrainerAvailabilityController extends Controller
                 'noticeHours' => 12,
                 'bookingWindowDays' => 60,
                 'breakMinutes' => 15,
-                'travelMinutes' => 30,
                 'maxSessionsPerDay' => 6,
                 'confirmHours' => 24,
                 'freeCancellationHours' => 24,

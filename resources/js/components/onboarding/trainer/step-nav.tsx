@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 export const stepLabels = [
     'Account',
     'Profilo pubblico',
-    'Discipline e zone',
+    'Discipline e città',
     'Servizi e prezzi',
     'Orari e regole',
     'Certificazioni',
@@ -16,11 +16,18 @@ type StepNavProps = {
     step: number;
     /** Highest step reached: the ones after it can't be opened yet. */
     reached: number;
+    /** 2 when a trainer fixes the profile: the account step is closed. */
+    firstStep?: number;
     onSelect: (step: number) => void;
 };
 
 /** List of the 7 steps on desktop, progress bar with the step name on mobile. */
-export default function StepNav({ step, reached, onSelect }: StepNavProps) {
+export default function StepNav({
+    step,
+    reached,
+    firstStep = 1,
+    onSelect,
+}: StepNavProps) {
     return (
         <>
             <div className="flex w-full flex-col gap-2 md:hidden">
@@ -54,7 +61,7 @@ export default function StepNav({ step, reached, onSelect }: StepNavProps) {
                             key={label}
                             type="button"
                             aria-current={current ? 'step' : undefined}
-                            disabled={number > reached}
+                            disabled={number > reached || number < firstStep}
                             onClick={() => onSelect(number)}
                             className={cn(
                                 'flex min-h-11 items-center gap-3 rounded-lg px-3 text-left text-sm font-medium disabled:cursor-not-allowed',

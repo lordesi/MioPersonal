@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Search as SearchIcon } from 'lucide-react';
 import { useState } from 'react';
 import FilterBar from '@/components/search/filter-bar';
@@ -18,12 +18,15 @@ import {
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
+import { saveFavorite } from '@/hooks/use-favorite';
 import { searchUrl } from '@/lib/search';
 import type { SearchFilters } from '@/lib/search';
-import { home } from '@/routes';
+import { home, login } from '@/routes';
 import type { TrainerSummary } from '@/types';
 
 type SearchProps = {
+    /** The city in the URL; null = all of Italy. */
+    city: { slug: string; name: string } | null;
     /** Trainers of the current page. */
     trainers: TrainerSummary[];
     /** Trainers matching the filters, on every page. */
@@ -31,40 +34,52 @@ type SearchProps = {
     pagination: { currentPage: number; lastPage: number };
     filters: ActiveFilters;
     disciplines: SearchOption[];
-    zones: SearchOption[];
+    cities: SearchOption[];
 };
 
 export default function Search({
+    city,
     trainers,
     total,
     pagination,
     filters,
     disciplines,
-    zones,
+    cities,
 }: SearchProps) {
-    // TODO: save favorites on the server for logged-in clients.
-    const [favorites, setFavorites] = useState<string[]>([]);
+    const { auth } = usePage().props;
+    // The hearts changed on this page; the others come from the server.
+    const [saved, setSaved] = useState<Record<string, boolean>>({});
+    // Trainers and admins have no favorites: no heart for them.
+    const canSave = !auth?.user || auth.user.role === 'client';
+
+    const place = city ? `a ${city.name}` : 'in Italia';
 
     /** Reloads the page with the new filters, back to page 1. */
-    const visit = (next: SearchFilters) =>
+    const visit = (next: SearchFilters, nextCity = city?.slug ?? null) =>
         router.get(
-            searchUrl(next),
+            searchUrl(next, nextCity),
             {},
             { preserveState: true, preserveScroll: true, replace: true },
         );
 
-    const toggleFavorite = (href: string, pressed: boolean) =>
-        setFavorites(
-            pressed
-                ? [...favorites, href]
-                : favorites.filter((item) => item !== href),
+    const toggleFavorite = (slug: string, pressed: boolean) => {
+        if (!auth?.user) {
+            router.visit(login());
+
+            return;
+        }
+
+        setSaved((current) => ({ ...current, [slug]: pressed }));
+        saveFavorite(slug, pressed, () =>
+            setSaved((current) => ({ ...current, [slug]: !pressed })),
         );
+    };
 
     const resetFilters = () => visit({ ordina: filters.ordina });
 
     return (
         <>
-            <Head title="Personal trainer a Milano" />
+            <Head title={`Personal trainer ${place}`} />
 
             <div className="mx-auto flex w-full max-w-7xl flex-col md:gap-6 md:px-8 md:pt-8 md:pb-20">
                 <Breadcrumb aria-label="Percorso" className="hidden md:block">
@@ -75,17 +90,33 @@ export default function Search({
                             </BreadcrumbLink>
                         </BreadcrumbItem>
                         <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                        <BreadcrumbItem>Personal trainer</BreadcrumbItem>
-                        <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                        <BreadcrumbItem>
-                            <BreadcrumbPage>Milano</BreadcrumbPage>
-                        </BreadcrumbItem>
+                        {city ? (
+                            <>
+                                <BreadcrumbItem>
+                                    <BreadcrumbLink asChild>
+                                        <Link href={searchUrl()}>
+                                            Personal trainer
+                                        </Link>
+                                    </BreadcrumbLink>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator>/</BreadcrumbSeparator>
+                                <BreadcrumbItem>
+                                    <BreadcrumbPage>{city.name}</BreadcrumbPage>
+                                </BreadcrumbItem>
+                            </>
+                        ) : (
+                            <BreadcrumbItem>
+                                <BreadcrumbPage>
+                                    Personal trainer
+                                </BreadcrumbPage>
+                            </BreadcrumbItem>
+                        )}
                     </BreadcrumbList>
                 </Breadcrumb>
 
                 <div className="flex flex-col gap-1 px-4 pt-6 pb-4 md:p-0">
                     <h1 className="text-3xl font-semibold tracking-tight md:text-4xl md:leading-10">
-                        Personal trainer a Milano
+                        Personal trainer {place}
                     </h1>
                     <p className="text-sm text-muted-foreground tabular-nums md:text-base">
                         {total} trainer · profili approvati dal nostro team
@@ -95,8 +126,10 @@ export default function Search({
                 <FilterBar
                     filters={filters}
                     disciplines={disciplines}
-                    zones={zones}
+                    cities={cities}
+                    city={city?.slug ?? null}
                     onChange={(changes) => visit({ ...filters, ...changes })}
+                    onCityChange={(nextCity) => visit(filters, nextCity)}
                     onReset={resetFilters}
                 />
 
@@ -108,16 +141,23 @@ export default function Search({
                                     <TrainerCard
                                         trainer={trainer}
                                         className="flex-1"
-                                        favorite={{
-                                            pressed: favorites.includes(
-                                                trainer.href,
-                                            ),
-                                            onPressedChange: (pressed) =>
-                                                toggleFavorite(
-                                                    trainer.href,
-                                                    pressed,
-                                                ),
-                                        }}
+                                        favorite={
+                                            canSave
+                                                ? {
+                                                      pressed:
+                                                          saved[trainer.slug] ??
+                                                          trainer.favorite ??
+                                                          false,
+                                                      onPressedChange: (
+                                                          pressed,
+                                                      ) =>
+                                                          toggleFavorite(
+                                                              trainer.slug,
+                                                              pressed,
+                                                          ),
+                                                  }
+                                                : undefined
+                                        }
                                     />
                                 </li>
                             ))}
@@ -125,7 +165,7 @@ export default function Search({
                         <SearchPagination
                             {...pagination}
                             pageUrl={(pagina) =>
-                                searchUrl({ ...filters, pagina })
+                                searchUrl({ ...filters, pagina }, city?.slug)
                             }
                         />
                     </div>
@@ -134,7 +174,7 @@ export default function Search({
                         bordered
                         icon={SearchIcon}
                         title="Nessun trainer con questi filtri"
-                        description="Prova a togliere un filtro o a scegliere un'altra zona. Stiamo aggiungendo nuovi trainer ogni settimana."
+                        description="Prova a togliere un filtro o a scegliere un'altra città. Stiamo aggiungendo nuovi trainer ogni settimana."
                         action={
                             <Button
                                 type="button"

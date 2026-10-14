@@ -82,7 +82,7 @@ export default function TrainerCard({
     const zone = (
         <>
             <MapPin aria-hidden="true" className="size-3.5" />
-            {trainer.zone}
+            {trainer.city}
         </>
     );
 
@@ -90,7 +90,7 @@ export default function TrainerCard({
         <div className={cn('relative', className)}>
             <Link
                 href={trainer.href}
-                aria-label={`${trainer.name}, ${trainer.zone}, da ${price} a seduta`}
+                aria-label={`${trainer.name}, ${trainer.city}, da ${price} a seduta`}
                 className={cn(
                     'flex h-full overflow-hidden rounded-xl border bg-card text-foreground',
                     styles.link,
@@ -182,15 +182,19 @@ export default function TrainerCard({
 
                     <span className="flex items-center gap-1.5 text-[13px] leading-[18px] font-semibold tabular-nums">
                         <Clock aria-hidden="true" className="size-3.5" />
-                        <span>
-                            <span className={styles.slotShort}>
-                                Primo slot:
+                        {trainer.nextSlotLabel ? (
+                            <span>
+                                <span className={styles.slotShort}>
+                                    Primo slot:
+                                </span>
+                                <span className={styles.slotLong}>
+                                    Primo slot libero:
+                                </span>{' '}
+                                {trainer.nextSlotLabel}
                             </span>
-                            <span className={styles.slotLong}>
-                                Primo slot libero:
-                            </span>{' '}
-                            {trainer.nextSlotLabel}
-                        </span>
+                        ) : (
+                            <span>Nessuno slot nei prossimi giorni</span>
+                        )}
                     </span>
 
                     <span

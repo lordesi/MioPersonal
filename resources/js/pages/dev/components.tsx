@@ -37,9 +37,10 @@ import type { BookingStatus, TrainerSummary } from '@/types';
 
 const trainers: TrainerSummary[] = [
     {
+        slug: 'giulia-rossi',
         name: 'Giulia Rossi',
         href: '#',
-        zone: 'Città Studi',
+        city: 'Milano',
         disciplines: ['Functional', 'Pilates'],
         rating: 4.9,
         reviewCount: 23,
@@ -48,9 +49,10 @@ const trainers: TrainerSummary[] = [
         online: 'also',
     },
     {
+        slug: 'andrea-conti',
         name: 'Andrea Conti',
         href: '#',
-        zone: 'Lambrate',
+        city: 'Roma',
         disciplines: ['Calisthenics', 'Pesi'],
         rating: 4.8,
         reviewCount: 31,
@@ -59,9 +61,10 @@ const trainers: TrainerSummary[] = [
         online: null,
     },
     {
+        slug: 'elena-ricci',
         name: 'Elena Ricci',
         href: '#',
-        zone: 'Monza',
+        city: 'Monza',
         disciplines: ['Pilates', 'Yoga'],
         rating: null,
         reviewCount: 0,
@@ -383,7 +386,7 @@ export default function DevComponents() {
 
                     <Showcase
                         title="Voto e stelle"
-                        screens="Home, Ricerca, Profilo, Quiz risultati, Dashboard trainer"
+                        screens="Home, Ricerca, Profilo, Dashboard trainer"
                     >
                         <div className="flex flex-wrap items-center gap-6">
                             <RatingSummary rating={4.9} reviewCount={23} />

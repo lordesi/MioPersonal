@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import BookingAside from '@/components/profile/booking-aside';
@@ -22,53 +22,76 @@ import {
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { useClipboard } from '@/hooks/use-clipboard';
+import { useFavorite } from '@/hooks/use-favorite';
 import { freeStarts, toWeeks } from '@/lib/booking';
 import { searchUrl } from '@/lib/search';
 import { home } from '@/routes';
-import type { TrainerProfile } from '@/types';
-
-// TODO: point to the booking/registration flow once it exists.
-const BOOK_HREF = '#';
+import { book } from '@/routes/trainers';
+import { start as startBooking } from '@/routes/trainers/book';
+import type { TrainerProfile, TrainerService } from '@/types';
 
 type ProfileProps = {
     trainer: TrainerProfile;
+    /** Not approved yet: only its trainer and the team can see it. */
+    preview: boolean;
 };
 
-export default function Profile({ trainer }: ProfileProps) {
+export default function Profile({ trainer, preview }: ProfileProps) {
+    const page = usePage();
+    const user = page.props.auth?.user;
     const firstName = trainer.name.split(' ')[0];
     const weeks = toWeeks(trainer.availability);
 
-    /** First day of a week with at least one free slot of `hours`. */
-    const firstFreeDate = (weekIndex: number, hours: number) => {
+    /** First day of a week with at least one free slot of `minutes`. */
+    const firstFreeDate = (weekIndex: number, minutes: number) => {
         const week = weeks[weekIndex] ?? [];
 
         return (
-            week.find((day) => freeStarts(day, hours).length > 0)?.date ??
+            week.find((day) => freeStarts(day, minutes).length > 0)?.date ??
             week[0]?.date ??
             null
         );
     };
 
     const [photoIndex, setPhotoIndex] = useState(0);
-    const [favorite, setFavorite] = useState(false);
-    const [serviceId, setServiceId] = useState(trainer.services[0].id);
-    const [hours, setHours] = useState(1);
-    const [weekIndex, setWeekIndex] = useState(0);
-    const [date, setDate] = useState(() => firstFreeDate(0, 1));
-    const [start, setStart] = useState<string | null>(null);
+    const favorite = useFavorite(trainer.slug, trainer.favorite);
+    /** A fixed service lasts its own minutes; the others use the trainer's durations. */
+    const durationsOf = (item: TrainerService) =>
+        item.fixedDuration ? [item.minutes] : trainer.sessionMinutes;
+    /** 1 hour when the trainer offers it, otherwise the shortest duration. */
+    const defaultMinutes = (item: TrainerService) => {
+        const durations = durationsOf(item);
+
+        return durations.includes(60) ? 60 : (durations[0] ?? 60);
+    };
+
+    // Back from login or sign-up: the slot chosen before is still chosen.
+    const [choice] = useState(() =>
+        savedChoice(page.url, trainer, weeks, durationsOf),
+    );
+    const [serviceId, setServiceId] = useState(choice.service.id);
+    const [minutes, setMinutes] = useState(
+        () => choice.minutes ?? defaultMinutes(choice.service),
+    );
+    const [weekIndex, setWeekIndex] = useState(choice.weekIndex);
+    const [date, setDate] = useState(
+        () => choice.date ?? firstFreeDate(0, minutes),
+    );
+    const [start, setStart] = useState<string | null>(choice.start);
+    const [booking, setBooking] = useState(false);
 
     const service =
         trainer.services.find((item) => item.id === serviceId) ??
         trainer.services[0];
 
-    const changeHours = (newHours: number) => {
-        setHours(newHours);
+    const changeMinutes = (newMinutes: number) => {
+        setMinutes(newMinutes);
         setStart(null);
 
         const day = weeks[weekIndex]?.find((item) => item.date === date);
 
-        if (!day || freeStarts(day, newHours).length === 0) {
-            setDate(firstFreeDate(weekIndex, newHours));
+        if (!day || freeStarts(day, newMinutes).length === 0) {
+            setDate(firstFreeDate(weekIndex, newMinutes));
         }
     };
 
@@ -77,20 +100,74 @@ export default function Profile({ trainer }: ProfileProps) {
 
         const next = trainer.services.find((item) => item.id === id);
 
-        if (next?.fixedDuration && hours > 1) {
-            changeHours(1);
+        if (next && !durationsOf(next).includes(minutes)) {
+            changeMinutes(defaultMinutes(next));
         }
     };
 
     const changeWeek = (index: number) => {
         setWeekIndex(index);
-        setDate(firstFreeDate(index, hours));
+        setDate(firstFreeDate(index, minutes));
         setStart(null);
     };
 
     const changeDate = (newDate: string) => {
         setDate(newDate);
         setStart(null);
+    };
+
+    /**
+     * "Prenota questo slot". Guests go through login or sign-up and come back
+     * here with the same choice; clients send the request.
+     */
+    const bookSlot = () => {
+        if (!start) {
+            return;
+        }
+
+        if (!user) {
+            router.visit(
+                startBooking.url(trainer.slug, {
+                    query: {
+                        servizio: service.id,
+                        durata: minutes,
+                        inizio: start,
+                    },
+                }),
+            );
+
+            return;
+        }
+
+        if (user.role !== 'client') {
+            toast.error('Per prenotare serve un account cliente.');
+
+            return;
+        }
+
+        router.post(
+            book.url(trainer.slug),
+            { service_id: service.id, start, minutes },
+            {
+                preserveScroll: true,
+                onStart: () => setBooking(true),
+                onFinish: () => setBooking(false),
+                onError: (errors) => {
+                    toast.error(
+                        errors.start ??
+                            errors.minutes ??
+                            errors.service_id ??
+                            'Riprova tra poco.',
+                    );
+
+                    // «Slot appena preso»: show the free slots as they are now.
+                    if (errors.start) {
+                        setStart(null);
+                        router.reload({ only: ['trainer'] });
+                    }
+                },
+            },
+        );
     };
 
     const [, copy] = useClipboard();
@@ -113,12 +190,25 @@ export default function Profile({ trainer }: ProfileProps) {
         }
     };
 
+    // Back to the trainers of the same city.
+    const citySearchHref = searchUrl({}, trainer.city?.slug);
+
     return (
         <>
             <Head title={trainer.name} />
-            <ProfileMobileHeader backHref={searchUrl()} onShare={share} />
+            <ProfileMobileHeader backHref={citySearchHref} onShare={share} />
 
             <div className="mx-auto flex w-full max-w-7xl flex-col md:gap-8 md:px-8 md:pt-8">
+                {preview && (
+                    <p
+                        role="status"
+                        className="mx-4 mt-4 rounded-xl border-[1.5px] border-foreground px-3.5 py-3 text-sm md:mx-0 md:mt-0"
+                    >
+                        <strong>Anteprima:</strong> il profilo non è ancora
+                        pubblico. Lo vedi solo tu (e il nostro team) finché non
+                        viene approvato.
+                    </p>
+                )}
                 <Breadcrumb aria-label="Percorso" className="hidden md:block">
                     <BreadcrumbList>
                         <BreadcrumbItem>
@@ -129,8 +219,10 @@ export default function Profile({ trainer }: ProfileProps) {
                         <BreadcrumbSeparator>/</BreadcrumbSeparator>
                         <BreadcrumbItem>
                             <BreadcrumbLink asChild>
-                                <Link href={searchUrl()}>
-                                    Personal trainer a Milano
+                                <Link href={citySearchHref}>
+                                    {trainer.city
+                                        ? `Personal trainer a ${trainer.city.name}`
+                                        : 'Personal trainer'}
                                 </Link>
                             </BreadcrumbLink>
                         </BreadcrumbItem>
@@ -151,8 +243,8 @@ export default function Profile({ trainer }: ProfileProps) {
                 <div className="flex flex-col gap-8 px-4 pt-6 pb-10 md:px-0 md:pt-0 md:pb-20">
                     <ProfileIntro
                         trainer={trainer}
-                        favorite={favorite}
-                        onFavoriteChange={setFavorite}
+                        favorite={favorite.canSave ? favorite.pressed : null}
+                        onFavoriteChange={favorite.change}
                         onShare={share}
                     />
 
@@ -210,9 +302,9 @@ export default function Profile({ trainer }: ProfileProps) {
                                         weekIndex={weekIndex}
                                         weekCount={weeks.length}
                                         onWeekChange={changeWeek}
-                                        hours={hours}
-                                        onHoursChange={changeHours}
-                                        hoursLocked={service.fixedDuration}
+                                        durations={durationsOf(service)}
+                                        minutes={minutes}
+                                        onMinutesChange={changeMinutes}
                                         selectedDate={date}
                                         onDateChange={changeDate}
                                         selectedStart={start}
@@ -241,9 +333,10 @@ export default function Profile({ trainer }: ProfileProps) {
                             services={trainer.services}
                             service={service}
                             onServiceChange={changeService}
-                            hours={hours}
+                            minutes={minutes}
                             selectedStart={start}
-                            bookHref={BOOK_HREF}
+                            onBook={bookSlot}
+                            booking={booking}
                         />
                     </div>
 
@@ -253,12 +346,63 @@ export default function Profile({ trainer }: ProfileProps) {
 
             <BookingBar
                 service={service}
-                hours={hours}
+                minutes={minutes}
                 selectedStart={start}
-                bookHref={BOOK_HREF}
+                onBook={bookSlot}
+                booking={booking}
             />
         </>
     );
+}
+
+/**
+ * The choice kept in the URL by BookingController::start (?servizio=…&durata=…
+ * &inizio=…), checked against the current offer: anything no longer valid is
+ * left out, and the page starts from its defaults.
+ */
+function savedChoice(
+    url: string,
+    trainer: TrainerProfile,
+    weeks: ReturnType<typeof toWeeks>,
+    durationsOf: (item: TrainerService) => number[],
+): {
+    service: TrainerService;
+    minutes: number | null;
+    weekIndex: number;
+    date: string | null;
+    start: string | null;
+} {
+    const query = new URLSearchParams(url.split('?')[1] ?? '');
+    const service =
+        trainer.services.find(
+            (item) => item.id === Number(query.get('servizio')),
+        ) ?? trainer.services[0];
+    const minutes = Number(query.get('durata'));
+    const start = query.get('inizio');
+
+    if (!durationsOf(service).includes(minutes)) {
+        return {
+            service,
+            minutes: null,
+            weekIndex: 0,
+            date: null,
+            start: null,
+        };
+    }
+
+    const weekIndex = weeks.findIndex((week) =>
+        week.some((day) => start && freeStarts(day, minutes).includes(start)),
+    );
+
+    if (weekIndex === -1) {
+        return { service, minutes, weekIndex: 0, date: null, start: null };
+    }
+
+    const day = weeks[weekIndex].find(
+        (item) => start && freeStarts(item, minutes).includes(start),
+    );
+
+    return { service, minutes, weekIndex, date: day?.date ?? null, start };
 }
 
 Profile.layout = { footer: 'compact', hideHeaderOnMobile: true };

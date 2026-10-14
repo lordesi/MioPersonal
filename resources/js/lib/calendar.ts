@@ -90,7 +90,7 @@ export type CalendarItem = {
     title: string;
     detail: string;
     place: string;
-    kind: 'confirmed' | 'pending' | 'busy' | 'block';
+    kind: 'confirmed' | 'pending' | 'block';
 };
 
 /** Key of a one-hour block the trainer made unbookable. */

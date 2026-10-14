@@ -16,13 +16,13 @@ class DashboardTest extends TestCase
         $response->assertRedirect(route('login'));
     }
 
-    public function test_clients_are_sent_to_their_bookings()
+    public function test_clients_are_sent_to_their_home()
     {
         $user = User::factory()->create();
         $this->actingAs($user);
 
         $response = $this->get(route('dashboard'));
-        $response->assertRedirect(route('client.bookings'));
+        $response->assertRedirect(route('client.home'));
     }
 
     public function test_trainers_are_sent_to_their_area()

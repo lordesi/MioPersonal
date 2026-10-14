@@ -2,90 +2,93 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\BookingStatus;
 use App\Http\Controllers\Concerns\BuildsPlaceholderData;
-use Carbon\CarbonImmutable;
+use App\Models\Booking;
+use App\Models\TrainerProfile;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * "Oggi", the trainer's dashboard: today's sessions, the requests to answer
+ * and a few numbers. A new trainer sees an empty dashboard.
+ */
 class TrainerDashboardController extends Controller
 {
     use BuildsPlaceholderData;
 
     public function __invoke(Request $request): Response
     {
-        // TODO: load the logged-in trainer's sessions, requests and stats from the database.
-        $now = $this->romeNow();
+        /** @var User $trainer */
+        $trainer = $request->user();
+        $profile = $trainer->trainerProfile;
 
         return Inertia::render('trainer/today', [
-            'firstName' => Str::before((string) $request->user()?->name, ' '),
+            'firstName' => Str::before($trainer->name, ' '),
             'trainerArea' => $this->trainerArea(),
-            'today' => [
-                $this->session(1, 'Anna B.', $this->at($now, 0, 7, 30), 'Seduta singola', 'Parco Lambro'),
-                $this->session(2, 'Roberto C.', $this->at($now, 0, 12), 'Pacchetto 10 · 7ª seduta', 'Studio'),
-                $this->session(3, 'Luca M.', $this->at($now, 0, 18), 'Valutazione iniziale', 'Studio'),
-                $this->session(4, 'Paolo R.', $this->at($now, 0, 19, 30), 'Seduta online', 'Videochiamata'),
-            ],
-            'requests' => [
-                [
-                    'id' => 1,
-                    'clientName' => 'Francesca D.',
-                    'start' => $this->iso($this->at($now, 1, 18)),
-                    'hours' => 1,
-                    'serviceName' => 'Seduta singola',
-                    'placeLabel' => 'Al parco · Parco Lambro',
-                    'note' => 'Prima volta con un trainer, vorrei lavorare sulla postura.',
-                    'expiresAt' => $this->iso($now->addHours(5)),
-                ],
-                [
-                    'id' => 2,
-                    'clientName' => 'Marco P.',
-                    'start' => $this->iso($this->at($now, 3, 7)),
-                    'hours' => 2,
-                    'serviceName' => 'Seduta singola',
-                    'placeLabel' => 'A domicilio · Lambrate',
-                    'note' => 'Preparazione per una mezza maratona a novembre.',
-                    'expiresAt' => $this->iso($now->addHours(22)),
-                ],
-                [
-                    'id' => 3,
-                    'clientName' => 'Sofia L.',
-                    'start' => $this->iso($this->at($now, 5, 10)),
-                    'hours' => 1,
-                    'serviceName' => 'Seduta online',
-                    'placeLabel' => 'Videochiamata',
-                    'note' => null,
-                    'expiresAt' => $this->iso($now->addHours(26)),
-                ],
-            ],
-            'stats' => [
-                'sessionsThisWeek' => 12,
-                'sessionsLastWeek' => 9,
-                'profileViews' => 312,
-                'profileBookings' => 18,
-            ],
+            // No profile yet (registration not sent): nothing to show.
+            ...($profile === null ? ['today' => [], 'requests' => [], 'stats' => ['sessionsThisWeek' => 0]] : $this->bookings($profile)),
             // Pending requests and sessions to mark are added by the page itself.
-            'todos' => [
-                ['label' => 'Rispondi alla recensione di Marta', 'hint' => '5 stelle · 2 giorni fa', 'cta' => 'Rispondi', 'href' => route('trainer.reviews', absolute: false)],
-                ['label' => 'Il pacchetto di Roberto C. sta per finire', 'hint' => 'Restano 3 sedute su 10', 'cta' => 'Apri cliente', 'href' => route('trainer.clients', absolute: false)],
-                ['label' => 'Completa il profilo: aggiungi altre foto', 'hint' => 'Profilo completo all’85%', 'cta' => 'Completa', 'href' => '#'],
-            ],
+            'todos' => [],
         ]);
     }
 
     /**
-     * @return array{id: int, clientName: string, start: string, hours: int, serviceName: string, placeLabel: string}
+     * @return array<string, mixed>
      */
-    private function session(int $id, string $clientName, CarbonImmutable $start, string $serviceName, string $placeLabel): array
+    private function bookings(TrainerProfile $profile): array
+    {
+        $today = $this->romeNow()->startOfDay();
+        $week = $today->startOfWeek();
+
+        return [
+            'today' => $profile->bookings()
+                ->where('status', BookingStatus::Confirmed)
+                ->whereBetween('starts_at', [$today->utc(), $today->addDay()->utc()])
+                ->with('client')
+                ->orderBy('starts_at')
+                ->get()
+                ->map(fn (Booking $booking) => $this->row($booking))
+                ->all(),
+            // Waiting for an answer, the ones expiring first on top.
+            'requests' => $profile->bookings()
+                ->awaitingAnswer()
+                ->with('client')
+                ->orderBy('expires_at')
+                ->get()
+                ->map(fn (Booking $booking) => [
+                    ...$this->row($booking),
+                    'note' => $booking->client_note,
+                    'expiresAt' => $booking->expires_at === null ? null : $this->iso($booking->expires_at),
+                ])
+                ->all(),
+            'stats' => [
+                'sessionsThisWeek' => $profile->bookings()
+                    ->where('status', BookingStatus::Confirmed)
+                    ->whereBetween('starts_at', [$week->utc(), $week->addWeek()->utc()])
+                    ->count(),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{id: int, clientId: int|null, clientName: string, start: string, hours: float, serviceName: string, placeLabel: string}
+     */
+    private function row(Booking $booking): array
     {
         return [
-            'id' => $id,
-            'clientName' => $clientName,
-            'start' => $this->iso($start),
-            'hours' => 1,
-            'serviceName' => $serviceName,
-            'placeLabel' => $placeLabel,
+            'id' => $booking->id,
+            // For the link to the client's profile; null once the account is deleted.
+            'clientId' => $booking->client_id,
+            // Clients are told the trainer sees their first and last name.
+            'clientName' => $booking->client->name ?? 'Account eliminato',
+            'start' => $this->iso($booking->starts_at),
+            'hours' => $booking->starts_at->diffInMinutes($booking->ends_at) / 60,
+            'serviceName' => $booking->service_name,
+            'placeLabel' => $booking->place_label,
         ];
     }
 }

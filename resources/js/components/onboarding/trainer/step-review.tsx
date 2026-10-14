@@ -3,6 +3,7 @@ import ConsentCheckbox from '@/components/auth/consent-checkbox';
 import type { TrainerDraft } from '@/components/onboarding/trainer/draft';
 import {
     minPriceCents,
+    serviceCount,
     placeOptions,
     weeklyHours,
 } from '@/components/onboarding/trainer/draft';
@@ -12,10 +13,16 @@ import UserAvatar from '@/components/shared/user-avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatPrice } from '@/lib/format';
+import type { CatalogOption } from '@/types';
 
 type StepReviewProps = {
     draft: TrainerDraft;
     fullName: string;
+    /** A trainer fixing the profile: the account can't be changed here. */
+    editing?: boolean;
+    /** From the catalog, to show names instead of slugs. */
+    disciplines: CatalogOption[];
+    cities: CatalogOption[];
     onEdit: (step: number) => void;
     confirmed: boolean;
     onConfirmedChange: (confirmed: boolean) => void;
@@ -28,25 +35,34 @@ const plural = (n: number, one: string, many: string) =>
 export default function StepReview({
     draft,
     fullName,
+    editing = false,
+    disciplines,
+    cities,
     onEdit,
     confirmed,
     onConfirmedChange,
 }: StepReviewProps) {
+    const labelOf = (options: CatalogOption[], slug: string) =>
+        options.find((option) => option.value === slug)?.label ?? slug;
+    const disciplineNames = draft.disciplines.map((slug) =>
+        labelOf(disciplines, slug),
+    );
+    const cityName = draft.city ? labelOf(cities, draft.city) : null;
     const minPrice = minPriceCents(draft);
     const priceLabel = minPrice === null ? '—' : formatPrice(minPrice);
     const placeNames = placeOptions
         .filter((place) => draft.places.includes(place.value))
         .map((place) => place.short);
 
-    const rows = [
+    const allRows = [
         { step: 1, label: 'Account', value: fullName },
         { step: 2, label: 'Profilo pubblico', value: draft.headline || '—' },
         {
             step: 3,
-            label: 'Discipline e zone',
+            label: 'Discipline e città',
             value: [
-                draft.disciplines.join(', ') || '—',
-                plural(draft.zones.length, 'zona', 'zone'),
+                disciplineNames.join(', ') || '—',
+                cityName,
                 placeNames.join(', '),
             ]
                 .filter(Boolean)
@@ -55,7 +71,7 @@ export default function StepReview({
         {
             step: 4,
             label: 'Servizi e prezzi',
-            value: `${plural(draft.services.length, 'servizio', 'servizi')} · da ${priceLabel}`,
+            value: `${plural(serviceCount(draft), 'servizio', 'servizi')} · da ${priceLabel}/ora`,
         },
         {
             step: 5,
@@ -72,16 +88,18 @@ export default function StepReview({
             ),
         },
     ];
+    const rows = editing ? allRows.slice(1) : allRows;
 
-    const otherZones = draft.zones.length - 1;
-    const otherZonesLabel =
-        otherZones === 1 ? " e un'altra zona" : ` e altre ${otherZones} zone`;
-    const previewZone =
-        draft.zones.length > 0
-            ? `${draft.zones[0]}${otherZones > 0 ? otherZonesLabel : ''}`
-            : draft.places.includes('online')
-              ? 'Solo online'
-              : 'Nessuna zona';
+    const otherCities = draft.otherCities.length;
+    const otherCitiesLabel =
+        otherCities === 1
+            ? " e un'altra città"
+            : ` e altre ${otherCities} città`;
+    const previewCity = cityName
+        ? `${cityName}${otherCities > 0 ? otherCitiesLabel : ''}`
+        : draft.places.includes('online')
+          ? 'Solo online'
+          : 'Nessuna città';
 
     return (
         <>
@@ -136,10 +154,10 @@ export default function StepReview({
                                 <Badge variant="outline">Nuovo</Badge>
                             </div>
                             <span className="text-xs text-muted-foreground">
-                                {previewZone}
+                                {previewCity}
                             </span>
                             <div className="flex flex-wrap gap-1">
-                                {draft.disciplines.slice(0, 3).map((name) => (
+                                {disciplineNames.slice(0, 3).map((name) => (
                                     <Badge key={name} variant="secondary">
                                         {name}
                                     </Badge>

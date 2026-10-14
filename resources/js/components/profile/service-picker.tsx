@@ -79,7 +79,7 @@ export default function ServicePicker({
                                     detailed ? 'text-sm' : 'text-xs',
                                 )}
                             >
-                                {detailed
+                                {detailed && service.note
                                     ? `${service.durationLabel} · ${service.note}`
                                     : service.durationLabel}
                             </span>

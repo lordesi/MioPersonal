@@ -1,8 +1,8 @@
 import { Check } from 'lucide-react';
 import ServicePicker from '@/components/profile/service-picker';
 import { Button } from '@/components/ui/button';
-import { serviceSummary, totalPriceCents } from '@/lib/booking';
-import { formatPrice, formatSlot } from '@/lib/format';
+import { serviceSummary, totalPriceLabel } from '@/lib/booking';
+import { formatSlot } from '@/lib/format';
 import type { TrainerService } from '@/types';
 
 const guarantees = [
@@ -16,10 +16,13 @@ type BookingAsideProps = {
     services: TrainerService[];
     service: TrainerService;
     onServiceChange: (serviceId: number) => void;
-    hours: number;
+    /** Chosen duration of the session. */
+    minutes: number;
     selectedStart: string | null;
-    /** Where "Prenota questo slot" goes once a slot is chosen. */
-    bookHref: string;
+    /** "Prenota questo slot", once a slot is chosen. */
+    onBook: () => void;
+    /** The request is being sent. */
+    booking: boolean;
 };
 
 /** Desktop booking box next to the profile content. */
@@ -27,9 +30,10 @@ export default function BookingAside({
     services,
     service,
     onServiceChange,
-    hours,
+    minutes,
     selectedStart,
-    bookHref,
+    onBook,
+    booking,
 }: BookingAsideProps) {
     return (
         <aside
@@ -38,10 +42,10 @@ export default function BookingAside({
         >
             <div className="flex items-baseline gap-1.5 tabular-nums">
                 <span className="text-3xl font-bold tracking-tight">
-                    {formatPrice(totalPriceCents(service, hours))}
+                    {totalPriceLabel(service, minutes)}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                    {serviceSummary(service, hours)} · indicativo
+                    {serviceSummary(service, minutes)} · indicativo
                 </span>
             </div>
 
@@ -58,7 +62,7 @@ export default function BookingAside({
                 </span>
                 {selectedStart ? (
                     <span className="text-base font-semibold tabular-nums">
-                        {formatSlot(selectedStart, hours)}
+                        {formatSlot(selectedStart, minutes / 60)}
                     </span>
                 ) : (
                     <a
@@ -70,13 +74,20 @@ export default function BookingAside({
                 )}
             </div>
 
-            <Button asChild className="h-11 px-6">
-                <a href={selectedStart ? bookHref : '#prenota'}>
-                    {selectedStart
-                        ? 'Prenota questo slot'
-                        : 'Scegli giorno e orario'}
-                </a>
-            </Button>
+            {selectedStart ? (
+                <Button
+                    type="button"
+                    className="h-11 px-6"
+                    disabled={booking}
+                    onClick={onBook}
+                >
+                    Prenota questo slot
+                </Button>
+            ) : (
+                <Button asChild className="h-11 px-6">
+                    <a href="#prenota">Scegli giorno e orario</a>
+                </Button>
+            )}
 
             <ul className="flex flex-col gap-2.5 border-t pt-4 text-sm text-muted-foreground">
                 {guarantees.map((guarantee) => (

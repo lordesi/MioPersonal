@@ -11,9 +11,9 @@ const steps: {
     {
         icon: Search,
         title: 'Cerca',
-        mobile: 'Filtra per disciplina, zona e modalità. Guardi profili e prezzi senza registrarti.',
+        mobile: 'Filtra per disciplina, città e modalità. Guardi profili e prezzi senza registrarti.',
         desktop:
-            'Filtra per disciplina, zona e modalità. Guardi profili, servizi e prezzi indicativi senza registrarti.',
+            'Filtra per disciplina, città e modalità. Guardi profili, servizi e prezzi indicativi senza registrarti.',
     },
     {
         icon: Send,

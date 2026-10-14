@@ -1,18 +1,22 @@
 import { Link } from '@inertiajs/react';
 import { searchUrl } from '@/lib/search';
+import type { CatalogOption } from '@/types';
 
-// TODO: load the most searched disciplines from the database.
-const disciplines = [
-    { value: 'functional-training', label: 'Functional training' },
-    { value: 'pesi-bodybuilding', label: 'Pesi e bodybuilding' },
-    { value: 'pilates', label: 'Pilates' },
-    { value: 'yoga', label: 'Yoga' },
-    { value: 'crossfit', label: 'Crossfit' },
-    { value: 'boxe', label: 'Boxe' },
-];
+/** How many shortcuts the design shows. */
+const SHOWN = 6;
+
+type PopularDisciplinesProps = {
+    /**
+     * From the catalog, in the team's order.
+     * TODO: show the most searched ones once searches are counted.
+     */
+    disciplines: CatalogOption[];
+};
 
 /** Shortcut links to the search; the design shows them only on mobile. */
-export default function PopularDisciplines() {
+export default function PopularDisciplines({
+    disciplines,
+}: PopularDisciplinesProps) {
     return (
         <section
             aria-labelledby="popular-title"
@@ -22,10 +26,10 @@ export default function PopularDisciplines() {
                 id="popular-title"
                 className="px-4 text-sm font-medium text-muted-foreground"
             >
-                Discipline popolari a Milano
+                Discipline popolari
             </h2>
             <div className="flex gap-2 overflow-x-auto px-4">
-                {disciplines.map((discipline) => (
+                {disciplines.slice(0, SHOWN).map((discipline) => (
                     <Link
                         key={discipline.value}
                         href={searchUrl({ disciplina: discipline.value })}

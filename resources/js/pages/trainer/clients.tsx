@@ -1,8 +1,9 @@
 import { Head } from '@inertiajs/react';
-import { Search } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import { useState } from 'react';
 import PageHeading from '@/components/trainer/area/page-heading';
 import ClientCard from '@/components/trainer/area/client-card';
+import EmptyState from '@/components/states/empty-state';
 import ClientList from '@/components/trainer/area/client-list';
 import type { TrainerClient } from '@/types';
 
@@ -50,23 +51,32 @@ export default function Clients({ clients }: ClientsProps) {
                 }
             />
 
-            <div className="flex flex-wrap items-start gap-5">
-                <ClientList
-                    clients={visible}
-                    selectedId={selectedId}
-                    onSelect={setSelectedId}
+            {clients.length === 0 ? (
+                <EmptyState
+                    icon={Users}
+                    title="Ancora nessun cliente"
+                    description="Chi prenota una seduta con te compare qui, con le sue sedute e le tue note."
+                    bordered
                 />
-                {selected && (
-                    <ClientCard
-                        key={selected.id}
-                        client={selected}
-                        note={notes[selected.id] ?? selected.note}
-                        onNoteChange={(note) =>
-                            setNotes({ ...notes, [selected.id]: note })
-                        }
+            ) : (
+                <div className="flex flex-wrap items-start gap-5">
+                    <ClientList
+                        clients={visible}
+                        selectedId={selectedId}
+                        onSelect={setSelectedId}
                     />
-                )}
-            </div>
+                    {selected && (
+                        <ClientCard
+                            key={selected.id}
+                            client={selected}
+                            note={notes[selected.id] ?? selected.note}
+                            onNoteChange={(note) =>
+                                setNotes({ ...notes, [selected.id]: note })
+                            }
+                        />
+                    )}
+                </div>
+            )}
         </>
     );
 }

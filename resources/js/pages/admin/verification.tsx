@@ -1,8 +1,9 @@
-import { Head, setLayoutProps } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { ShieldCheck } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import AdminVerificationController from '@/actions/App/Http/Controllers/Admin/AdminVerificationController';
 import AdminNotice from '@/components/admin/admin-notice';
-import type { ReviewCheckId } from '@/components/admin/review-decision';
+import type { ReviewDecisionPayload } from '@/components/admin/review-decision';
 import ReviewDecision from '@/components/admin/review-decision';
 import {
     TrainerReviewDetails,
@@ -10,31 +11,24 @@ import {
 } from '@/components/admin/trainer-review-details';
 import VerificationQueue from '@/components/admin/verification-queue';
 import EmptyState from '@/components/states/empty-state';
-import type { TrainerReviewStatus, TrainerUnderReview } from '@/types';
+import type { TrainerUnderReview } from '@/types';
 
 type VerificationProps = {
+    /** Waiting for the team, plus the ones decided in the last 24 hours. */
     trainers: TrainerUnderReview[];
 };
 
 export default function Verification({ trainers }: VerificationProps) {
     const [selectedId, setSelectedId] = useState(trainers[0]?.id ?? 0);
-    // TODO: decisions and checks only live in the page until the backend exists.
-    const [decisions, setDecisions] = useState<
-        Record<number, TrainerReviewStatus>
-    >({});
-    const [checks, setChecks] = useState<Record<number, ReviewCheckId[]>>({});
+    // "Note interne" being written, by trainer.
+    const [notes, setNotes] = useState<Record<number, string>>({});
     const [notice, setNotice] = useState<string | null>(null);
+    const [processing, setProcessing] = useState(false);
+    const [error, setError] = useState<string | undefined>();
 
-    const statusOf = (trainer: TrainerUnderReview) =>
-        decisions[trainer.id] ?? trainer.status;
     const reviewCount = trainers.filter(
-        (trainer) => statusOf(trainer) === 'review',
+        (trainer) => trainer.status === 'review',
     ).length;
-
-    useEffect(() => {
-        // The menu badge follows the decisions taken on this page.
-        setLayoutProps({ verificationCount: reviewCount });
-    }, [reviewCount]);
 
     const trainer = trainers.find((item) => item.id === selectedId);
 
@@ -52,33 +46,41 @@ export default function Verification({ trainers }: VerificationProps) {
         );
     }
 
-    const checked = checks[trainer.id] ?? [];
+    const note = notes[trainer.id] ?? trainer.internalNote ?? '';
 
-    const toggleCheck = (id: ReviewCheckId) =>
-        setChecks({
-            ...checks,
-            [trainer.id]: checked.includes(id)
-                ? checked.filter((item) => item !== id)
-                : [...checked, id],
-        });
+    const send = (
+        decision: ReviewDecisionPayload['decision'] | 'undone',
+        payload: Omit<ReviewDecisionPayload, 'decision'>,
+        success: string | null,
+    ) =>
+        router.post(
+            AdminVerificationController.decide.url(trainer.id),
+            { decision, ...payload, internal_note: note },
+            {
+                preserveScroll: true,
+                onStart: () => setProcessing(true),
+                onFinish: () => setProcessing(false),
+                onSuccess: () => {
+                    setNotice(success);
+                    setError(undefined);
+                },
+                onError: (errors) =>
+                    setError(errors.message ?? errors.decision),
+            },
+        );
 
-    const decide = (status: 'approved' | 'changes' | 'rejected') => {
-        setDecisions({ ...decisions, [trainer.id]: status });
-        setNotice(
+    const decide = ({ decision, ...payload }: ReviewDecisionPayload) =>
+        send(
+            decision,
+            payload,
             {
                 approved: `Profilo di ${trainer.name} approvato e pubblicato. Email inviata.`,
                 changes: `Richiesta di modifiche inviata a ${trainer.name}.`,
                 rejected: `Profilo di ${trainer.name} rifiutato. Email inviata.`,
-            }[status],
+            }[decision],
         );
-    };
 
-    const undo = () => {
-        const rest = { ...decisions };
-        delete rest[trainer.id];
-        setDecisions(rest);
-        setNotice(null);
-    };
+    const undo = () => send('undone', { reasons: [], message: '' }, null);
 
     return (
         <>
@@ -89,11 +91,12 @@ export default function Verification({ trainers }: VerificationProps) {
             <div className="grid items-start gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
                 <VerificationQueue
                     trainers={trainers}
-                    statusOf={statusOf}
+                    statusOf={(item) => item.status}
                     selectedId={trainer.id}
                     onSelect={(id) => {
                         setSelectedId(id);
                         setNotice(null);
+                        setError(undefined);
                     }}
                     reviewCount={reviewCount}
                 />
@@ -104,17 +107,23 @@ export default function Verification({ trainers }: VerificationProps) {
                 >
                     <TrainerReviewHeader
                         trainer={trainer}
-                        status={statusOf(trainer)}
+                        status={trainer.status}
                     />
                     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-                        <TrainerReviewDetails trainer={trainer} />
+                        <TrainerReviewDetails
+                            trainer={trainer}
+                            note={note}
+                            onNoteChange={(value) =>
+                                setNotes({ ...notes, [trainer.id]: value })
+                            }
+                        />
                         <ReviewDecision
-                            key={trainer.id}
-                            status={statusOf(trainer)}
-                            checked={checked}
-                            onToggleCheck={toggleCheck}
+                            key={`${trainer.id}-${trainer.status}`}
+                            status={trainer.status}
                             onDecide={decide}
                             onUndo={undo}
+                            processing={processing}
+                            error={error}
                         />
                     </div>
                 </section>

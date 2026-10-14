@@ -1,10 +1,14 @@
+import { Link } from '@inertiajs/react';
+import ConfirmDialog from '@/components/shared/confirm-dialog';
 import ResponsiveText from '@/components/shared/responsive-text';
 import { Button } from '@/components/ui/button';
 import { formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { show as showClient } from '@/routes/trainer/clients';
 import type { TrainerTodaySession } from '@/types';
 
 export type SessionTiming = 'past' | 'next' | 'later';
+/** null = not marked yet; once marked it never goes back to null. */
 export type Attendance = 'completed' | 'no_show' | null;
 
 type TodaySessionRowProps = {
@@ -16,7 +20,8 @@ type TodaySessionRowProps = {
 
 /**
  * One session of today. The next one is highlighted; finished ones ask the
- * trainer to mark them as done or as a no-show.
+ * trainer to mark them as done or as a no-show. The choice asks first and is
+ * final: it can't be undone or changed.
  */
 export default function TodaySessionRow({
     session,
@@ -28,16 +33,6 @@ export default function TodaySessionRow({
     const end = new Date(
         new Date(session.start).getTime() + session.hours * 60 * 60 * 1000,
     ).toISOString();
-
-    const undo = (
-        <button
-            type="button"
-            className="underline"
-            onClick={() => onAttendanceChange(null)}
-        >
-            annulla
-        </button>
-    );
 
     return (
         <article
@@ -60,7 +55,16 @@ export default function TodaySessionRow({
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[15px] leading-5 font-semibold md:text-base">
-                        {session.clientName}
+                        {session.clientId === null ? (
+                            session.clientName
+                        ) : (
+                            <Link
+                                href={showClient(session.clientId)}
+                                className="hover:underline"
+                            >
+                                {session.clientName}
+                            </Link>
+                        )}
                     </span>
                     {isNext && (
                         <span className="hidden h-5 items-center rounded-full bg-primary-foreground px-2 text-[11px] font-semibold text-primary md:inline-flex">
@@ -76,27 +80,44 @@ export default function TodaySessionRow({
                     attendance === null && (
                         // TODO: save the attendance on the server.
                         <div className="grid grid-cols-2 gap-1.5 pt-2 md:flex md:flex-wrap md:gap-2">
-                            <Button
-                                type="button"
-                                className="h-10 text-[13px] md:h-8 md:px-3"
-                                onClick={() => onAttendanceChange('completed')}
-                            >
-                                <ResponsiveText
-                                    mobile="Svolta"
-                                    desktop="Completata"
-                                />
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="h-10 text-[13px] md:h-8 md:px-3"
-                                onClick={() => onAttendanceChange('no_show')}
-                            >
-                                <ResponsiveText
-                                    mobile="Assente"
-                                    desktop="Non si è presentato"
-                                />
-                            </Button>
+                            <ConfirmDialog
+                                title="Seduta svolta?"
+                                description={`${session.clientName}, ore ${formatTime(session.start)}. Una volta segnata non si può più cambiare.`}
+                                confirmLabel="Sì, svolta"
+                                onConfirm={() =>
+                                    onAttendanceChange('completed')
+                                }
+                                trigger={
+                                    <Button
+                                        type="button"
+                                        className="h-10 text-[13px] md:h-8 md:px-3"
+                                    >
+                                        <ResponsiveText
+                                            mobile="Svolta"
+                                            desktop="Completata"
+                                        />
+                                    </Button>
+                                }
+                            />
+                            <ConfirmDialog
+                                title="Il cliente non si è presentato?"
+                                description={`${session.clientName}, ore ${formatTime(session.start)}. Si applica la regola di cancellazione; una volta segnata non si può più cambiare.`}
+                                confirmLabel="Sì, non si è presentato"
+                                destructive
+                                onConfirm={() => onAttendanceChange('no_show')}
+                                trigger={
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="h-10 text-[13px] md:h-8 md:px-3"
+                                    >
+                                        <ResponsiveText
+                                            mobile="Assente"
+                                            desktop="Non si è presentato"
+                                        />
+                                    </Button>
+                                }
+                            />
                         </div>
                     )}
                 {attendance === 'completed' && (
@@ -107,8 +128,7 @@ export default function TodaySessionRow({
                         <ResponsiveText
                             mobile="Svolta"
                             desktop="Segnata come svolta"
-                        />{' '}
-                        · {undo}
+                        />
                     </span>
                 )}
                 {attendance === 'no_show' && (
@@ -119,21 +139,10 @@ export default function TodaySessionRow({
                         <ResponsiveText
                             mobile="Assenza registrata"
                             desktop="Segnata come assenza: si applica la regola di cancellazione"
-                        />{' '}
-                        · {undo}
+                        />
                     </span>
                 )}
             </div>
-
-            {isNext && (
-                // TODO: show the client's phone and email.
-                <Button
-                    type="button"
-                    className="hidden h-9 self-center bg-primary-foreground px-3.5 text-[13px] font-semibold text-primary hover:bg-primary-foreground/90 md:inline-flex"
-                >
-                    Contatti
-                </Button>
-            )}
         </article>
     );
 }

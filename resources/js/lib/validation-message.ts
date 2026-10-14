@@ -20,6 +20,11 @@ export function validationMessage(field: FormControl): string {
         return 'Inserisci un’email valida, es. nome@esempio.it.';
     }
 
+    // `pattern` fields bring their message: <input data-pattern-message="…">.
+    if (validity.patternMismatch && field.dataset.patternMessage) {
+        return field.dataset.patternMessage;
+    }
+
     if (validity.tooShort && !(field instanceof HTMLSelectElement)) {
         return `Almeno ${field.minLength} caratteri.`;
     }

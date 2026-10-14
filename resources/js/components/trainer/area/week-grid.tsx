@@ -21,14 +21,12 @@ const hours = Array.from(
 export const itemStyles: Record<CalendarItem['kind'], string> = {
     confirmed: 'bg-primary text-primary-foreground',
     pending: 'border-[1.5px] border-dashed border-foreground bg-background',
-    busy: 'border bg-muted text-muted-foreground',
     block: 'border text-muted-foreground bg-[repeating-linear-gradient(135deg,var(--muted)_0_6px,var(--background)_6px_12px)]',
 };
 
 const kindNames: Record<CalendarItem['kind'], string> = {
     confirmed: 'confermata',
     pending: 'da confermare',
-    busy: 'impegno dal calendario',
     block: 'orario bloccato',
 };
 

@@ -2,7 +2,6 @@ import { Head } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminBadge from '@/components/admin/admin-badge';
 import ChoiceChips from '@/components/shared/choice-chips';
-import { Button } from '@/components/ui/button';
 import { bookingStatuses } from '@/lib/admin';
 import { formatHoursShort, formatSlot, hoursUntil } from '@/lib/format';
 import type { AdminBooking, AdminBookingStatus } from '@/types';
@@ -82,9 +81,6 @@ export default function Bookings({ bookings }: BookingsProps) {
                             <th scope="col" className={headCell}>
                                 Stato
                             </th>
-                            <th scope="col" className={headCell}>
-                                <span className="sr-only">Azioni</span>
-                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -131,16 +127,6 @@ export default function Bookings({ bookings }: BookingsProps) {
                                                 </span>
                                             )}
                                         </span>
-                                    </td>
-                                    <td className={`${bodyCell} text-right`}>
-                                        {/* TODO: open the booking detail once bookings are stored. */}
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                        >
-                                            Dettaglio
-                                        </Button>
                                     </td>
                                 </tr>
                             );

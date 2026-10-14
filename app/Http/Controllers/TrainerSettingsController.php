@@ -5,14 +5,16 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\BuildsAccountSettings;
 use App\Http\Controllers\Concerns\BuildsPlaceholderData;
 use App\Models\User;
+use App\Support\TrainerSlots;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
  * "Impostazioni account" of the trainer: the client sections plus visibility,
- * contacts for the clients and "Chiudi il profilo". It saves name, email and
- * password through AccountSettingsController.
+ * contacts for the clients and "Chiudi il profilo". Name, email and password
+ * are saved by AccountSettingsController, the trainer sections by
+ * TrainerProfileSettingsController.
  */
 class TrainerSettingsController extends Controller
 {
@@ -23,17 +25,29 @@ class TrainerSettingsController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+        $profile = $user->trainerProfile;
+        $pausedUntil = $profile?->paused_until?->isFuture() ? $profile->paused_until : null;
 
-        // TODO: load visibility, contacts and upcoming sessions from the database.
         return Inertia::render('trainer/settings', [
             'trainerArea' => $this->trainerArea(),
             'account' => $this->accountSettings($user),
-            // TODO: add the phone (and WhatsApp) once users have a phone column.
-            'contacts' => [
-                'email' => $user->email,
-                'arrivalNotes' => 'Citofono «Studio 3B», secondo piano.',
+            // Null until the registration is sent: visibility and contacts are hidden.
+            'visibility' => $profile === null ? null : [
+                'visibleInSearch' => $profile->visible_in_search,
+                'acceptsNewClients' => $profile->accepts_new_clients,
+                // The first day bookable again, in Rome ("YYYY-MM-DD").
+                'pausedUntil' => $pausedUntil?->setTimezone(TrainerSlots::TIMEZONE)->toDateString(),
             ],
-            'upcoming' => ['sessions' => 3, 'requests' => 3],
+            'contacts' => $profile === null ? null : [
+                'phone' => $user->phone,
+                'email' => $user->email,
+                'arrivalNotes' => $profile->arrival_notes ?? '',
+                'showPhone' => $profile->show_phone,
+                'showEmail' => $profile->show_email,
+                'showWhatsapp' => $profile->show_whatsapp,
+            ],
+            // TODO (step 5): the confirmed sessions and requests that get cancelled.
+            'upcoming' => ['sessions' => 0, 'requests' => 0],
         ]);
     }
 }

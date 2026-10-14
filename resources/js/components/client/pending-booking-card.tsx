@@ -1,8 +1,9 @@
 import { Link } from '@inertiajs/react';
-import { useState } from 'react';
 import BookingStatusBadge from '@/components/booking/booking-status-badge';
+import CancelBookingDialog from '@/components/client/cancel-booking-dialog';
 import TrainerRow from '@/components/client/trainer-row';
 import { Button } from '@/components/ui/button';
+import { useCancelBooking } from '@/hooks/use-cancel-booking';
 import { formatHoursLeft, formatSlot, hoursUntil } from '@/lib/format';
 import { searchUrl } from '@/lib/search';
 import type { ClientPendingBooking } from '@/types';
@@ -12,20 +13,18 @@ type PendingBookingCardProps = {
 };
 
 /**
- * A request the trainer has not answered yet, or one that expired.
- * Cancelling only changes the page for now.
+ * A request the trainer has not answered yet, or one that expired or was declined.
+ * Cancelling asks first and can't be undone: there is no "Ripristina".
  */
 export default function PendingBookingCard({
     booking,
 }: PendingBookingCardProps) {
-    // TODO: send cancel/restore to the server once bookings are stored.
-    const [cancelled, setCancelled] = useState(false);
-    const [calendarOpen, setCalendarOpen] = useState(false);
+    const { cancelled, cancelBooking } = useCancelBooking(booking.id);
 
     const detail = `${formatSlot(booking.start, booking.hours)} · ${booking.serviceName}`;
     const status =
-        booking.status === 'expired'
-            ? 'expired'
+        booking.status !== 'pending'
+            ? booking.status
             : cancelled
               ? 'cancelled'
               : 'pending';
@@ -39,11 +38,12 @@ export default function PendingBookingCard({
                 aside={<BookingStatusBadge status={status} />}
             />
 
-            {status === 'expired' && (
+            {(status === 'expired' || status === 'declined') && (
                 <>
                     <span className="text-sm text-muted-foreground">
-                        {booking.trainerFirstName} non ha risposto entro 24 ore,
-                        quindi lo slot è stato liberato.
+                        {status === 'expired'
+                            ? `${booking.trainerFirstName} non ha risposto in tempo, quindi lo slot è stato liberato.`
+                            : `${booking.trainerFirstName} non può in questo orario.`}
                     </span>
                     <div className="flex flex-wrap gap-2">
                         <Button asChild className="h-10 px-3.5">
@@ -74,54 +74,20 @@ export default function PendingBookingCard({
                         avvisiamo.
                     </p>
                     <div className="flex flex-wrap gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="h-10 px-3.5 max-md:h-11 max-md:flex-[1_1_140px]"
-                            aria-expanded={calendarOpen}
-                            onClick={() => setCalendarOpen(!calendarOpen)}
-                        >
-                            Aggiungi al calendario
-                        </Button>
-                        {/* TODO: open the reschedule flow. */}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="h-10 px-3.5 max-md:h-11 max-md:flex-[1_1_140px]"
-                        >
-                            Sposta
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            className="h-10 px-3 underline"
-                            onClick={() => setCancelled(true)}
-                        >
-                            Annulla
-                        </Button>
-                    </div>
-                    {calendarOpen && (
-                        // TODO: generate the calendar links and the .ics file.
-                        <div
-                            role="group"
-                            aria-label="Aggiungi al calendario"
-                            className="flex flex-wrap gap-1.5"
-                        >
-                            {[
-                                'Google Calendar',
-                                'Calendario Apple',
-                                'Scarica .ics',
-                            ].map((label) => (
+                        <CancelBookingDialog
+                            trainerFirstName={booking.trainerFirstName}
+                            onConfirm={cancelBooking}
+                            trigger={
                                 <Button
-                                    key={label}
                                     type="button"
                                     variant="outline"
+                                    className="h-10 px-3.5 max-md:h-11 max-md:flex-[1_1_140px]"
                                 >
-                                    {label}
+                                    Annulla
                                 </Button>
-                            ))}
-                        </div>
-                    )}
+                            }
+                        />
+                    </div>
                 </>
             )}
 
@@ -136,13 +102,8 @@ export default function PendingBookingCard({
                         Prenotazione annullata, senza costi. Abbiamo avvisato{' '}
                         {booking.trainerFirstName}.
                     </span>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        className="px-3 underline"
-                        onClick={() => setCancelled(false)}
-                    >
-                        Ripristina
+                    <Button asChild variant="outline" className="h-10 px-3.5">
+                        <Link href={booking.trainerHref}>Prenota di nuovo</Link>
                     </Button>
                 </div>
             )}

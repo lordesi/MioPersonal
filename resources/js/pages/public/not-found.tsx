@@ -11,12 +11,12 @@ import { show as contactPage } from '@/routes/contact';
 const usefulLinks = [
     {
         title: 'Torna alla home',
-        hint: 'Trova trainer, quiz e come funziona',
+        hint: 'Trova trainer e come funziona',
         href: home.url(),
     },
     {
         title: 'Cerca un trainer',
-        hint: 'Per disciplina, zona e disponibilità',
+        hint: 'Per disciplina, città e disponibilità',
         href: searchUrl(),
     },
     {
@@ -78,7 +78,7 @@ export default function NotFound() {
                             <input
                                 id="not-found-search"
                                 type="search"
-                                placeholder="Disciplina o zona, es. pilates Isola"
+                                placeholder="Disciplina o città, es. pilates Roma"
                                 className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
                             />
                         </div>

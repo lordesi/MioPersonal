@@ -44,7 +44,13 @@ export default function PhotoGallery({
                         aria-label={`${index + 1} di ${total}: ${photo.caption}`}
                         className="flex size-full flex-col items-center justify-center gap-2.5 text-muted-foreground"
                     >
-                        {photo.isPortrait ? (
+                        {photo.url ? (
+                            <img
+                                src={photo.url}
+                                alt={`${trainerName}: ${photo.caption}`}
+                                className="absolute inset-0 size-full object-cover"
+                            />
+                        ) : photo.isPortrait ? (
                             <span className="text-7xl font-bold tracking-tight md:text-8xl">
                                 {getInitials(trainerName)}
                             </span>

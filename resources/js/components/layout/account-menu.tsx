@@ -6,6 +6,7 @@ import {
     Dumbbell,
     Eye,
     Heart,
+    House,
     LayoutDashboard,
     LogOut,
     Settings,
@@ -33,7 +34,12 @@ import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { cn } from '@/lib/utils';
 import { logout } from '@/routes';
 import { settings } from '@/routes/account';
-import { bookings, completeProfile, favorites } from '@/routes/client';
+import {
+    bookings,
+    completeProfile,
+    favorites,
+    home as clientHome,
+} from '@/routes/client';
 import { show as contactPage } from '@/routes/contact';
 import {
     availability,
@@ -56,7 +62,7 @@ type MenuItem = {
 type AccountMenuProps = {
     variant: AccountMenuVariant;
     userName: string;
-    /** Number on "Preferiti" (client), hidden when 0. */
+    /** Number on "Preferiti" (client), hidden when 0. By default the one shared by the server. */
     favoritesCount?: number;
     /** "Il mio profilo pubblico" (trainer), hidden when missing. */
     publicProfileHref?: string;
@@ -111,6 +117,7 @@ function menuGroups({
 
     return [
         [
+            { title: 'Home', href: clientHome.url(), icon: House },
             {
                 title: 'Le mie prenotazioni',
                 href: bookings.url(),
@@ -155,7 +162,13 @@ export default function AccountMenu(props: AccountMenuProps) {
     const { variant, userName, headerHeight = 15 } = props;
     const { auth } = usePage().props;
     const email = auth?.user?.email ?? '';
-    const groups = menuGroups(props);
+    // The photo of "Completa il tuo profilo"; without it, the initials.
+    const avatar = auth?.user?.avatar;
+    const groups = menuGroups({
+        ...props,
+        favoritesCount:
+            props.favoritesCount ?? auth?.favoritesCount ?? undefined,
+    });
     const roleLabel = variant === 'trainer' ? 'Trainer' : 'Cliente';
     const label = `Menu account di ${userName}`;
 
@@ -170,7 +183,7 @@ export default function AccountMenu(props: AccountMenuProps) {
 
     const header = (
         <div className="flex items-center gap-2.5 px-2.5 pt-2 pb-2.5">
-            <UserAvatar name={userName} size="md" />
+            <UserAvatar name={userName} src={avatar} size="md" />
             <span className="flex min-w-0 flex-col">
                 <span className="text-sm font-semibold">{userName}</span>
                 {email && (
@@ -223,6 +236,7 @@ export default function AccountMenu(props: AccountMenuProps) {
                 >
                     <UserAvatar
                         name={userName}
+                        src={avatar}
                         className={cn(desktopOpen && avatarOpen)}
                     />
                     <ChevronDown aria-hidden="true" className="size-3.5" />
@@ -285,6 +299,7 @@ export default function AccountMenu(props: AccountMenuProps) {
                 >
                     <UserAvatar
                         name={userName}
+                        src={avatar}
                         className={cn(mobileOpen && avatarOpen)}
                     />
                 </SheetTrigger>

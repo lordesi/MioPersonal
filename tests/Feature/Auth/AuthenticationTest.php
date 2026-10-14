@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
 use Tests\TestCase;
@@ -30,6 +31,35 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_remember_me_sets_the_remember_cookie()
+    {
+        $user = User::factory()->create();
+
+        // The checkbox sends "on", as a ticked Radix Checkbox inside a form does.
+        $response = $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+            'remember' => 'on',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertCookie(Auth::guard()->getRecallerName());
+        $this->assertNotNull($user->refresh()->remember_token);
+    }
+
+    public function test_without_remember_me_there_is_no_remember_cookie()
+    {
+        $user = User::factory()->create();
+
+        $response = $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertCookieMissing(Auth::guard()->getRecallerName());
     }
 
     public function test_users_with_two_factor_enabled_are_redirected_to_two_factor_challenge()

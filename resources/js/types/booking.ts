@@ -10,23 +10,23 @@ export type BookingStatus =
 export type ClientUpcomingBooking = {
     id: number;
     trainerName: string;
+    trainerFirstName: string;
     trainerHref: string;
-    trainerPhone: string;
-    trainerEmail: string;
     discipline: string;
     /** ISO UTC string. */
     start: string;
     hours: number;
     placeLabel: string;
     status: 'confirmed';
-    /** ISO UTC string: after this moment moving or cancelling is no longer free. */
+    /** ISO UTC string: after this moment cancelling is no longer free. */
     freeCancellationUntil: string;
 };
 
 /** The request just sent, on the "Prenotazione inviata" page. */
 export type SentBooking = {
     id: number;
-    status: 'pending';
+    /** 'confirmed' when the trainer confirms automatically. */
+    status: 'pending' | 'confirmed';
     /** ISO UTC string. */
     start: string;
     hours: number;
@@ -54,8 +54,9 @@ export type ClientPendingBooking = {
     start: string;
     hours: number;
     serviceName: string;
-    status: 'pending' | 'expired';
-    /** ISO UTC string, null once expired. */
+    /** 'declined' = refused by the trainer, 'expired' = no answer in time. */
+    status: 'pending' | 'expired' | 'declined';
+    /** ISO UTC string, null once expired or declined. */
     expiresAt: string | null;
 };
 
@@ -64,17 +65,16 @@ export type ClientPackage = {
     name: string;
     trainerName: string;
     trainerHref: string;
+    /** Counted from the package's bookings: see docs/database/analisi.md §3.4. */
     used: number;
     total: number;
-    /** Local date in Europe/Rome, "YYYY-MM-DD". */
-    validUntil: string;
 };
 
 export type FavoriteTrainer = {
     name: string;
     href: string;
-    /** ISO UTC string of the first free slot. */
-    nextSlotStart: string;
+    /** ISO UTC string of the first free slot, null without free slots. */
+    nextSlotStart: string | null;
 };
 
 export type ClientPastSession = {

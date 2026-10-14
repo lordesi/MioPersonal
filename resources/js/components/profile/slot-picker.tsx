@@ -5,14 +5,12 @@ import {
     formatDayLong,
     formatDayNumber,
     formatDayRange,
-    formatHours,
+    formatDuration,
     formatTimeRange,
     formatWeekdayShort,
 } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { AvailabilityDay } from '@/types';
-
-const durations = [1, 2];
 
 type SlotPickerProps = {
     trainerFirstName: string;
@@ -21,18 +19,18 @@ type SlotPickerProps = {
     weekIndex: number;
     weekCount: number;
     onWeekChange: (weekIndex: number) => void;
-    hours: number;
-    onHoursChange: (hours: number) => void;
-    /** Services like "Valutazione iniziale" can only last 1 hour. */
-    hoursLocked: boolean;
+    /** The durations of the chosen service, in minutes (one for fixed services). */
+    durations: number[];
+    minutes: number;
+    onMinutesChange: (minutes: number) => void;
     selectedDate: string | null;
     onDateChange: (date: string) => void;
     selectedStart: string | null;
     onStartChange: (start: string) => void;
 };
 
-function slotCountLabel(count: number, hours: number): string {
-    const duration = formatHours(hours);
+function slotCountLabel(count: number, minutes: number): string {
+    const duration = formatDuration(minutes);
 
     if (count === 0) {
         return `nessun orario libero da ${duration}`;
@@ -50,16 +48,16 @@ export default function SlotPicker({
     weekIndex,
     weekCount,
     onWeekChange,
-    hours,
-    onHoursChange,
-    hoursLocked,
+    durations,
+    minutes,
+    onMinutesChange,
     selectedDate,
     onDateChange,
     selectedStart,
     onStartChange,
 }: SlotPickerProps) {
     const selectedDay = week.find((day) => day.date === selectedDate) ?? null;
-    const starts = selectedDay ? freeStarts(selectedDay, hours) : [];
+    const starts = selectedDay ? freeStarts(selectedDay, minutes) : [];
 
     return (
         <section
@@ -82,11 +80,10 @@ export default function SlotPicker({
                 <div
                     role="radiogroup"
                     aria-label="Durata della seduta"
-                    className="flex gap-0.5 rounded-lg bg-muted p-0.75"
+                    className="flex max-w-full gap-0.5 overflow-x-auto rounded-lg bg-muted p-0.75"
                 >
                     {durations.map((duration) => {
-                        const disabled = hoursLocked && duration > 1;
-                        const checked = duration === hours;
+                        const checked = duration === minutes;
 
                         return (
                             <button
@@ -94,19 +91,15 @@ export default function SlotPicker({
                                 type="button"
                                 role="radio"
                                 aria-checked={checked}
-                                aria-disabled={disabled}
-                                onClick={() =>
-                                    !disabled && onHoursChange(duration)
-                                }
+                                onClick={() => onMinutesChange(duration)}
                                 className={cn(
-                                    'h-8.5 rounded-md px-3.5 text-sm font-medium',
+                                    'h-8.5 rounded-md px-3 text-sm font-medium whitespace-nowrap',
                                     checked
                                         ? 'bg-background text-foreground shadow-sm'
                                         : 'text-muted-foreground',
-                                    disabled && 'cursor-not-allowed opacity-50',
                                 )}
                             >
-                                {formatHours(duration)}
+                                {formatDuration(duration)}
                             </button>
                         );
                     })}
@@ -147,7 +140,7 @@ export default function SlotPicker({
 
                 <div className="grid grid-cols-7 gap-1 md:gap-2">
                     {week.map((day) => {
-                        const count = freeStarts(day, hours).length;
+                        const count = freeStarts(day, minutes).length;
                         const selected = day.date === selectedDate;
 
                         return (
@@ -194,7 +187,7 @@ export default function SlotPicker({
                                 {formatDayLong(selectedDay.date)}
                             </span>
                             <span className="text-sm text-muted-foreground tabular-nums">
-                                {slotCountLabel(starts.length, hours)}
+                                {slotCountLabel(starts.length, minutes)}
                             </span>
                         </div>
                         {starts.length > 0 ? (
@@ -216,15 +209,15 @@ export default function SlotPicker({
                                                 : 'border border-input bg-background text-foreground',
                                         )}
                                     >
-                                        {formatTimeRange(start, hours)}
+                                        {formatTimeRange(start, minutes / 60)}
                                     </button>
                                 ))}
                             </div>
                         ) : (
                             <p className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
-                                Nessun orario libero da {formatHours(hours)} in
-                                questo giorno. Prova un altro giorno o la durata
-                                da 1 ora.
+                                Nessun orario libero da{' '}
+                                {formatDuration(minutes)} in questo giorno.
+                                Prova un altro giorno o una durata più breve.
                             </p>
                         )}
                     </div>

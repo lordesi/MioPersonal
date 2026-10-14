@@ -13,9 +13,9 @@ const sections: LegalSection[] = [
             <>
                 <LegalParagraph>
                     MioPersonal è una piattaforma che permette di trovare
-                    personal trainer a Milano e provincia, consultarne il
-                    profilo e prenotare una seduta. È in fase beta e gratuita
-                    per clienti e trainer.
+                    personal trainer in tutta Italia, consultarne il profilo e
+                    prenotare una seduta. È in fase beta e gratuita per clienti
+                    e trainer.
                 </LegalParagraph>
                 <LegalParagraph>
                     Gestito da [nome e cognome del titolare / futura società],
@@ -69,7 +69,7 @@ const sections: LegalSection[] = [
         content: (
             <LegalList
                 items={[
-                    'Puoi spostare o annullare gratuitamente fino al termine indicato sul profilo del trainer (di norma 24 ore prima).',
+                    'Puoi annullare gratuitamente fino al termine indicato sul profilo del trainer (di norma 24 ore prima). Le prenotazioni non si spostano: per cambiare orario annulli e prenoti di nuovo.',
                     'Il trainer può segnare un’assenza se non ti presenti; eventuali penali sono concordate direttamente con lui.',
                     'Se il trainer annulla, ti avvisiamo subito e puoi scegliere un altro orario.',
                 ]}

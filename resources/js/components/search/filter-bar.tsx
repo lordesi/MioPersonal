@@ -79,16 +79,22 @@ function labelOf<T>(
 type FilterBarProps = {
     filters: ActiveFilters;
     disciplines: SearchOption[];
-    zones: SearchOption[];
+    cities: SearchOption[];
+    /** Slug of the city in the URL, null = all of Italy. */
+    city: string | null;
     onChange: (changes: SearchFilters) => void;
+    /** The city is in the URL path, not in the filters. */
+    onCityChange: (city: string | null) => void;
     onReset: () => void;
 };
 
 export default function FilterBar({
     filters,
     disciplines,
-    zones,
+    cities,
+    city,
     onChange,
+    onCityChange,
     onReset,
 }: FilterBarProps) {
     const hasFilters = Object.entries(filters).some(
@@ -120,12 +126,12 @@ export default function FilterBar({
                 className={cn(inRow && 'max-w-65 flex-[1_1_200px]')}
             />
             <FilterSelect
-                id={`${prefix}-zona`}
-                label="Zona"
-                noneLabel="Tutta Milano e provincia"
-                options={zones}
-                value={filters.zona}
-                onChange={(zona) => onChange({ zona })}
+                id={`${prefix}-citta`}
+                label="Città"
+                noneLabel="Tutta Italia"
+                options={cities}
+                value={city}
+                onChange={onCityChange}
                 className={cn(inRow && 'max-w-65 flex-[1_1_200px]')}
             />
             <FilterSelect

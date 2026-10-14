@@ -1,32 +1,9 @@
 import { useId, useState } from 'react';
 import ChoiceChips from '@/components/shared/choice-chips';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import type { TrainerReviewStatus } from '@/types';
-
-/** What the team must check before publishing a profile. */
-export const reviewChecks = [
-    {
-        id: 'identity',
-        label: 'Documento d’identità valido e coerente con il nome',
-    },
-    {
-        id: 'certificates',
-        label: 'Attestati coerenti con le certificazioni dichiarate',
-    },
-    {
-        id: 'photo',
-        label: 'Foto profilo adeguata (viso visibile, niente loghi)',
-    },
-    { id: 'bio', label: 'Bio senza contatti, link o promesse sanitarie' },
-    { id: 'prices', label: 'Servizi e prezzi plausibili' },
-    { id: 'places', label: 'Indirizzi dei luoghi verificabili' },
-] as const;
-
-export type ReviewCheckId = (typeof reviewChecks)[number]['id'];
 
 const changeReasons = [
     'Foto profilo non adatta',
@@ -36,87 +13,92 @@ const changeReasons = [
     'Indirizzo non verificabile',
 ].map((reason) => ({ value: reason, label: reason }));
 
-type ReviewDecisionProps = {
-    status: TrainerReviewStatus;
-    checked: ReviewCheckId[];
-    onToggleCheck: (id: ReviewCheckId) => void;
-    /** TODO: send the decision (and the message for the trainer) to the server. */
-    onDecide: (status: 'approved' | 'changes' | 'rejected') => void;
-    onUndo: () => void;
+export type ReviewDecisionPayload = {
+    decision: 'approved' | 'changes' | 'rejected';
+    /** The chips of "Cosa deve sistemare?". */
+    reasons: string[];
+    /** For the trainer, sent by email. */
+    message: string;
 };
 
-/**
- * "Controlli": the checklist and the three decisions. "Approva e pubblica"
- * works only when every check is ticked.
- */
+const defaultChangesMessage =
+    'Ciao, manca poco! Ti chiediamo di sistemare questi punti e reinviare il profilo.';
+
+type ReviewDecisionProps = {
+    status: TrainerReviewStatus;
+    onDecide: (payload: ReviewDecisionPayload) => void;
+    onUndo: () => void;
+    /** A decision is being sent. */
+    processing: boolean;
+    /** From the server, e.g. a missing reason for the rejection. */
+    error?: string;
+};
+
+/** "Decisione": approve, ask for changes or reject the profile. */
 export default function ReviewDecision({
     status,
-    checked,
-    onToggleCheck,
     onDecide,
     onUndo,
+    processing,
+    error,
 }: ReviewDecisionProps) {
     const titleId = useId();
     const messageId = useId();
     const rejectId = useId();
     const [mode, setMode] = useState<'changes' | 'reject' | null>(null);
     const [reasons, setReasons] = useState<string[]>([]);
-    const allChecked = checked.length === reviewChecks.length;
-    const decided = status === 'approved' || status === 'rejected';
+    const [changesMessage, setChangesMessage] = useState(defaultChangesMessage);
+    const [rejectMessage, setRejectMessage] = useState('');
+    // "Chiedi modifiche" is a decision too: the trainer has to send the profile again.
+    const decided = status !== 'review';
 
     const cancel = () => {
         setMode(null);
         setReasons([]);
+        setChangesMessage(defaultChangesMessage);
+        setRejectMessage('');
     };
 
-    const decide = (decision: 'approved' | 'changes' | 'rejected') => {
-        onDecide(decision);
-        cancel();
-    };
+    const decide = (decision: ReviewDecisionPayload['decision']) =>
+        onDecide({
+            decision,
+            reasons: decision === 'changes' ? reasons : [],
+            message:
+                decision === 'changes'
+                    ? changesMessage
+                    : decision === 'rejected'
+                      ? rejectMessage
+                      : '',
+        });
 
     return (
         <section
             aria-labelledby={titleId}
             className="sticky top-4 flex flex-col gap-3.5 rounded-[14px] border bg-card p-5"
         >
-            <div className="flex items-baseline justify-between">
-                <h2 id={titleId} className="font-semibold">
-                    Controlli
-                </h2>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                    {checked.length} di {reviewChecks.length} controlli fatti
-                </span>
-            </div>
-
-            {reviewChecks.map((check) => (
-                <div key={check.id} className="flex items-start gap-2.5">
-                    <Checkbox
-                        id={`${titleId}-${check.id}`}
-                        checked={checked.includes(check.id)}
-                        onCheckedChange={() => onToggleCheck(check.id)}
-                        className="mt-0.5 size-5"
-                    />
-                    <Label
-                        htmlFor={`${titleId}-${check.id}`}
-                        className="text-sm leading-5 font-normal"
-                    >
-                        {check.label}
-                    </Label>
-                </div>
-            ))}
-
-            <Separator />
+            <h2 id={titleId} className="font-semibold">
+                Decisione
+            </h2>
 
             {decided && (
                 <div className="flex flex-col gap-2">
                     <span className="text-sm">
-                        {status === 'approved'
-                            ? 'Approvato: il profilo è visibile nella ricerca.'
-                            : 'Rifiutato: il trainer ha ricevuto l’email con il motivo.'}
+                        {
+                            {
+                                approved:
+                                    'Approvato: il profilo è visibile nella ricerca.',
+                                changes:
+                                    'Modifiche richieste: il trainer le sistema e reinvia il profilo.',
+                                rejected:
+                                    'Rifiutato: il trainer ha ricevuto l’email con il motivo.',
+                                review: '',
+                            }[status]
+                        }
                     </span>
                     <button
                         type="button"
                         onClick={onUndo}
+                        disabled={processing}
                         className="h-8 self-start text-[13px] underline"
                     >
                         Annulla decisione
@@ -128,7 +110,7 @@ export default function ReviewDecision({
                 <div className="flex flex-col gap-2">
                     <Button
                         type="button"
-                        disabled={!allChecked}
+                        disabled={processing}
                         onClick={() => decide('approved')}
                         className="h-10 font-semibold disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
                     >
@@ -175,11 +157,15 @@ export default function ReviewDecision({
                     <Textarea
                         id={messageId}
                         rows={3}
-                        defaultValue="Ciao, manca poco! Ti chiediamo di sistemare questi punti e reinviare il profilo."
+                        value={changesMessage}
+                        onChange={(event) =>
+                            setChangesMessage(event.target.value)
+                        }
                     />
                     <Button
                         type="button"
                         className="h-10 font-semibold"
+                        disabled={processing}
                         onClick={() => decide('changes')}
                     >
                         Invia richiesta
@@ -203,10 +189,19 @@ export default function ReviewDecision({
                         id={rejectId}
                         rows={3}
                         placeholder="Il trainer lo riceverà via email"
+                        value={rejectMessage}
+                        onChange={(event) =>
+                            setRejectMessage(event.target.value)
+                        }
+                        aria-invalid={!!error}
                     />
+                    {error && (
+                        <p className="text-sm text-destructive">{error}</p>
+                    )}
                     <Button
                         type="button"
                         variant="outline"
+                        disabled={processing || rejectMessage.trim() === ''}
                         className="h-10 border-[1.5px] border-foreground font-semibold"
                         onClick={() => decide('rejected')}
                     >

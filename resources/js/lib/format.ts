@@ -221,6 +221,27 @@ export function formatHours(hours: number): string {
     return hours === 1 ? '1 ora' : `${hours} ore`;
 }
 
+/**
+ * 30 → "30 min", 60 → "1 ora", 90 → "1 ora e mezza", 150 → "2 ore e mezza".
+ * Same as minutesLabel() in TrainerProfileController.
+ */
+export function formatDuration(minutes: number): string {
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+
+    if (hours === 0) {
+        return `${minutes} min`;
+    }
+
+    if (rest === 0) {
+        return formatHours(hours);
+    }
+
+    return rest === 30
+        ? `${formatHours(hours)} e mezza`
+        : `${formatHours(hours)} e ${rest} min`;
+}
+
 /** ISO UTC → "Oggi", "Domani" or "Gio 8 ott" */
 export function formatDayRelative(iso: string, now = new Date()): string {
     const date = new Date(iso);
@@ -302,6 +323,18 @@ export function formatDateShortYear(iso: string): string {
     const date = new Date(iso);
 
     return `${part(date, { day: 'numeric' })} ${part(date, { month: 'short' })} ${part(date, { year: 'numeric' })}`;
+}
+
+/** ISO UTC → "2 ottobre 2026" */
+export function formatDayMonthYear(iso: string): string {
+    const date = new Date(iso);
+
+    return `${part(date, { day: 'numeric' })} ${part(date, { month: 'long' })} ${part(date, { year: 'numeric' })}`;
+}
+
+/** ISO UTC → "marzo 2026" */
+export function formatMonthYear(iso: string): string {
+    return part(new Date(iso), { month: 'long', year: 'numeric' });
 }
 
 /** ISO UTC → "7 novembre" */

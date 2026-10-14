@@ -13,26 +13,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { searchUrl } from '@/lib/search';
-
-// TODO: load disciplines and zones from the database.
-const disciplines = [
-    { value: 'functional-training', label: 'Functional training' },
-    { value: 'pesi-bodybuilding', label: 'Pesi e bodybuilding' },
-    { value: 'pilates', label: 'Pilates' },
-    { value: 'yoga', label: 'Yoga' },
-    { value: 'crossfit', label: 'Crossfit' },
-    { value: 'boxe', label: 'Boxe' },
-];
-
-const zones = [
-    { value: 'citta-studi', label: 'Città Studi' },
-    { value: 'citylife', label: 'CityLife' },
-    { value: 'lambrate', label: 'Lambrate' },
-    { value: 'navigli', label: 'Navigli' },
-    { value: 'porta-romana', label: 'Porta Romana' },
-    { value: 'porta-venezia', label: 'Porta Venezia' },
-    { value: 'monza', label: 'Monza' },
-];
+import type { CatalogOption } from '@/types';
 
 type Mode = 'tutte' | 'presenza' | 'online';
 
@@ -91,20 +72,28 @@ function FilterSelect({
     );
 }
 
+type HeroSearchProps = {
+    /** From the catalog (App\Support\CatalogOptions). */
+    disciplines: CatalogOption[];
+    cities: CatalogOption[];
+};
+
 /** Home hero: headline, benefits and the search form. */
-export default function HeroSearch() {
+export default function HeroSearch({ disciplines, cities }: HeroSearchProps) {
     const [discipline, setDiscipline] = useState('');
-    const [zone, setZone] = useState('');
+    const [city, setCity] = useState('');
     const [mode, setMode] = useState<Mode>('tutte');
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
         router.get(
-            searchUrl({
-                disciplina: discipline,
-                zona: zone,
-                modalita: mode === 'tutte' ? null : mode,
-            }),
+            searchUrl(
+                {
+                    disciplina: discipline,
+                    modalita: mode === 'tutte' ? null : mode,
+                },
+                city,
+            ),
         );
     };
 
@@ -115,7 +104,7 @@ export default function HeroSearch() {
                     Trova il personal trainer giusto, vicino a te.
                 </h1>
                 <p className="max-w-130 text-base text-muted-foreground md:text-lg md:leading-7">
-                    Cerca per disciplina e zona, confronta profili e prezzi
+                    Cerca per disciplina e città, confronta profili e prezzi
                     indicativi, richiedi una seduta in pochi minuti. Gratis.
                 </p>
             </div>
@@ -138,12 +127,12 @@ export default function HeroSearch() {
                     onChange={setDiscipline}
                 />
                 <FilterSelect
-                    id="hero-zone"
-                    label="Zona"
-                    allLabel="Tutta Milano e provincia"
-                    options={zones}
-                    value={zone}
-                    onChange={setZone}
+                    id="hero-city"
+                    label="Città"
+                    allLabel="Tutta Italia"
+                    options={cities}
+                    value={city}
+                    onChange={setCity}
                 />
                 <div className="flex flex-col gap-1.5">
                     <span

@@ -2,71 +2,219 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\PlaceType;
+use App\Enums\TrainerProfileStatus;
+use App\Enums\TrainerReviewDecision;
 use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
 use App\Http\Controllers\Controller;
+use App\Models\TrainerDocument;
+use App\Models\TrainerPlace;
+use App\Models\TrainerProfile;
+use App\Models\User;
+use App\Notifications\TrainerProfileDecided;
+use App\Support\TrainerSlots;
+use Carbon\CarbonImmutable;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
-/** "Verifica trainer": profiles waiting for the team's approval, oldest first. */
+/**
+ * "Verifica trainer": the profiles waiting for the team, oldest first. The
+ * ones decided in the last 24 hours stay in the list, so "Annulla decisione"
+ * works after a reload too.
+ *
+ * TODO: record the decisions in admin_activity_log (step 7 of docs/database/analisi.md).
+ */
 class AdminVerificationController extends Controller
 {
     use BuildsAdminPlaceholderData;
 
+    /** How long a decided profile stays in the list. */
+    private const DECIDED_HOURS = 24;
+
+    /** Minutes a link to a certificate works. */
+    private const CERTIFICATE_LINK_MINUTES = 10;
+
     public function __invoke(): Response
     {
-        // TODO: load the trainer profiles waiting for approval from the database.
-        $now = $this->romeNow();
-
-        // id, name, disciplines, zone, status, days since sent, bio, places,
-        // services [label, cents], hours a week, certifications, warnings.
-        $trainers = [
-            [1, 'Marco Ferri', ['Functional', 'Kettlebell'], 'Isola, Milano', 'review', 3,
-                'Allenatore da 6 anni, lavoro con chi vuole tornare in forma con allenamenti brevi e intensi. Prima seduta di valutazione gratuita.',
-                ['Palestra Isola Fit (Isola)', 'Parco Biblioteca degli Alberi'],
-                [['Seduta 1 ora', 4000], ['2 ore', 7500], ['Pacchetto 10 × 1 ora', 36000]], 34,
-                [['ISSA Personal Trainer', 'ISSA Europe · 2020'], ['Kettlebell Instructor Level 1', 'StrongFirst · 2022']], []],
-            [2, 'Sofia Bassi', ['Pilates', 'Yoga'], 'Navigli, Milano', 'review', 2,
-                'Insegno pilates matwork e yoga dolce. Per info scrivimi al 333 000 0000.',
-                ['Studio in via Vigevano (Navigli)', 'Online'],
-                [['Seduta 1 ora', 4500]], 22,
-                [['Pilates Matwork', 'Polestar · 2021']], ['La bio contiene un numero di telefono']],
-            [3, 'Daniele Russo', ['Pesi', 'Bodybuilding'], 'Monza', 'review', 1,
-                'Preparatore per ipertrofia e forza, anche per principianti.',
-                ['Palestra Monza Centro'],
-                [['Seduta 1 ora', 3500], ['2 ore', 6500]], 28,
-                [['Istruttore Body Building', 'CSEN · 2019']], ['Manca la foto profilo']],
-            [4, 'Laura Conti', ['Postura', 'Ginnastica dolce'], 'Città Studi, Milano', 'review', 0,
-                'Laureata in Scienze Motorie, mi occupo di postura e mobilità per chi lavora seduto.',
-                ['A domicilio', 'Studio Città Studi'],
-                [['Seduta 1 ora', 4500], ['Valutazione 1 ora', 3000]], 30,
-                [['Laurea in Scienze Motorie', 'Università di Milano · 2018'], ['Posturologia', 'AIF · 2021']], []],
-            [5, 'Pietro Gallo', ['Boxe'], 'Sesto San Giovanni', 'changes', 4,
-                'Maestro di boxe, lezioni individuali per tutti i livelli.',
-                ['Palestra Boxe Sesto'],
-                [['Seduta 1 ora', 3500]], 18,
-                [], ['Nessun attestato caricato']],
-        ];
+        $profiles = TrainerProfile::query()
+            ->with(['user', 'city', 'disciplines', 'places', 'services', 'workingHours', 'documents', 'portrait', 'decisions'])
+            ->where(fn ($query) => $query
+                ->whereIn('status', [TrainerProfileStatus::Review, TrainerProfileStatus::Changes])
+                ->orWhere('status_changed_at', '>=', now()->subHours(self::DECIDED_HOURS)))
+            ->orderBy('status_changed_at')
+            ->get();
 
         return Inertia::render('admin/verification', [
             'adminArea' => $this->adminArea(),
-            'trainers' => array_map(fn (array $t) => [
-                'id' => $t[0],
-                'name' => $t[1],
-                'disciplines' => $t[2],
-                'zone' => $t[3],
-                'status' => $t[4],
-                // When the profile was sent (or when changes were asked, for 'changes').
-                'statusSince' => $this->iso($now->subDays($t[5])->subHours(5)),
-                'bio' => $t[6],
-                'places' => $t[7],
-                'services' => array_map(fn (array $s) => ['label' => $s[0], 'priceCents' => $s[1]], $t[8]),
-                'weeklyHours' => $t[9],
-                'hasIdentityDocument' => true,
-                'certifications' => array_map(fn (array $c) => ['title' => $c[0], 'issuer' => $c[1]], $t[10]),
-                'warnings' => $t[11],
-                // TODO: link to the preview of this trainer's own profile.
-                'profileHref' => route('trainers.show', 'giulia-rossi', false),
-            ], $trainers),
+            'trainers' => $profiles->map(fn (TrainerProfile $profile) => $this->card($profile))->values()->all(),
         ]);
+    }
+
+    /** "Approva e pubblica", "Chiedi modifiche", "Rifiuta" and "Annulla decisione". */
+    public function decide(Request $request, TrainerProfile $profile): RedirectResponse
+    {
+        $data = $request->validate([
+            'decision' => ['required', Rule::enum(TrainerReviewDecision::class)],
+            'reasons' => ['array'],
+            'reasons.*' => ['string', 'max:100'],
+            'message' => ['nullable', 'string', 'max:2000', 'required_if:decision,rejected'],
+            'internal_note' => ['nullable', 'string', 'max:2000'],
+        ], [
+            'message.required_if' => 'Scrivi il motivo del rifiuto: il trainer lo riceve via email.',
+        ]);
+
+        $decision = TrainerReviewDecision::from($data['decision']);
+
+        // Only a decided profile can be undone; only one waiting can be decided.
+        $allowed = $decision === TrainerReviewDecision::Undone
+            ? $profile->status !== TrainerProfileStatus::Review
+            : $profile->status === TrainerProfileStatus::Review;
+
+        if (! $allowed) {
+            return back()->withErrors(['decision' => 'Il profilo è cambiato nel frattempo: ricarica la pagina.']);
+        }
+
+        /** @var User $admin */
+        $admin = $request->user();
+
+        $review = DB::transaction(function () use ($profile, $decision, $data, $admin) {
+            $review = $profile->decisions()->create([
+                'admin_id' => $admin->id,
+                'decision' => $decision,
+                'reasons' => $decision === TrainerReviewDecision::Changes ? array_values($data['reasons'] ?? []) : null,
+                'message_to_trainer' => $data['message'] ?? null,
+                'internal_note' => $data['internal_note'] ?? null,
+            ]);
+
+            $profile->forceFill([
+                'status' => $decision->status(),
+                'status_changed_at' => now(),
+                'approved_at' => $decision === TrainerReviewDecision::Approved ? now() : $profile->approved_at,
+            ])->save();
+
+            if (in_array($decision, [TrainerReviewDecision::Approved, TrainerReviewDecision::Rejected], true)) {
+                $this->deleteCertificateFiles($profile, $decision === TrainerReviewDecision::Approved);
+            }
+
+            return $review;
+        });
+
+        // The slot saved when the profile was sent may be old by now.
+        if ($decision === TrainerReviewDecision::Approved) {
+            TrainerSlots::refresh($profile->load('workingHours'));
+        }
+
+        if ($decision !== TrainerReviewDecision::Undone) {
+            $profile->user->notify(new TrainerProfileDecided($review, route('trainers.show', $profile->slug)));
+        }
+
+        return back();
+    }
+
+    /** "Apri attestato": only with the temporary signed link of the page. */
+    public function certificate(TrainerDocument $document): StreamedResponse
+    {
+        abort_if($document->path === null || ! Storage::disk(TrainerDocument::DISK)->exists($document->path), 404);
+
+        return Storage::disk(TrainerDocument::DISK)->response($document->path);
+    }
+
+    /**
+     * After the decision the files go, as the privacy policy says. Title and
+     * issuer stay on the profile; approved certifications are marked verified.
+     */
+    private function deleteCertificateFiles(TrainerProfile $profile, bool $verified): void
+    {
+        $documents = $profile->documents()->where('type', 'certificate')->get();
+        $paths = $documents->pluck('path')->filter()->values()->all();
+
+        $profile->documents()->where('type', 'certificate')->update([
+            'path' => null,
+            'verified_at' => $verified ? now() : null,
+        ]);
+
+        DB::afterCommit(fn () => Storage::disk(TrainerDocument::DISK)->delete($paths));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function card(TrainerProfile $profile): array
+    {
+        $certificates = $profile->documents->where('type', 'certificate');
+
+        return [
+            'id' => $profile->id,
+            'name' => $profile->user->name,
+            'disciplines' => $profile->disciplines->pluck('name')->all(),
+            'city' => $profile->city->name ?? 'Solo online',
+            'status' => $profile->status->value,
+            // When the profile was sent, or when the team decided.
+            'statusSince' => $this->iso(CarbonImmutable::instance($profile->status_changed_at ?? $profile->created_at ?? now())),
+            'bio' => $profile->bio,
+            'places' => $profile->places->map(fn (TrainerPlace $place) => $place->type === PlaceType::Studio
+                ? "{$place->name}, {$place->address}"
+                : $place->type->label())->all(),
+            'services' => $profile->services->map(fn ($service) => [
+                'label' => "{$service->name} · {$service->minutes} min",
+                'priceCents' => $service->price_cents,
+            ])->all(),
+            'weeklyHours' => $profile->workingHours->sum(fn ($range) => count($range->startHours())),
+            'hasIdentityDocument' => false,
+            'certifications' => $certificates->map(fn (TrainerDocument $document) => [
+                'id' => $document->id,
+                'title' => $document->title,
+                'issuer' => $document->issuerLabel(),
+                'fileHref' => $document->path === null ? null : URL::temporarySignedRoute(
+                    'admin.verification.certificate',
+                    now()->addMinutes(self::CERTIFICATE_LINK_MINUTES),
+                    ['document' => $document],
+                ),
+            ])->values()->all(),
+            'warnings' => $this->warnings($profile),
+            'internalNote' => $profile->decisions->first()?->internal_note,
+            'profileHref' => route('trainers.show', $profile->slug, false),
+        ];
+    }
+
+    /**
+     * Automatic warnings: computed every time, never saved.
+     *
+     * @return list<string>
+     */
+    private function warnings(TrainerProfile $profile): array
+    {
+        $warnings = [];
+
+        if (preg_match('/\d[\d .]{7,}\d/', $profile->bio) === 1) {
+            $warnings[] = 'La bio contiene un numero di telefono';
+        }
+
+        if (preg_match('/[^\s@]+@[^\s@]+\.[a-z]{2,}/i', $profile->bio) === 1) {
+            $warnings[] = 'La bio contiene un indirizzo email';
+        }
+
+        if (preg_match('/https?:\/\/|www\./i', $profile->bio) === 1) {
+            $warnings[] = 'La bio contiene un link';
+        }
+
+        if ($profile->portrait === null) {
+            $warnings[] = 'Manca la foto profilo';
+        }
+
+        $certificates = $profile->documents->where('type', 'certificate');
+
+        if ($profile->status !== TrainerProfileStatus::Approved && $certificates->whereNotNull('path')->isEmpty()) {
+            $warnings[] = 'Nessun attestato caricato';
+        }
+
+        return $warnings;
     }
 }

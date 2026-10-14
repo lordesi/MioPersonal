@@ -13,11 +13,10 @@ type ReviewsProps = {
     reviews: AdminReview[];
 };
 
-type Filter = 'all' | 'warnings' | 'hidden';
+type Filter = 'all' | 'hidden';
 
 const filters: { value: Filter; label: string }[] = [
     { value: 'all', label: 'Tutte' },
-    { value: 'warnings', label: 'Con avvisi' },
     { value: 'hidden', label: 'Nascoste' },
 ];
 
@@ -30,10 +29,6 @@ export default function Reviews({ reviews }: ReviewsProps) {
         hidden[review.id] ?? review.hidden;
 
     const visible = reviews.filter((review) => {
-        if (filter === 'warnings') {
-            return review.warning !== null;
-        }
-
         if (filter === 'hidden') {
             return isHidden(review);
         }

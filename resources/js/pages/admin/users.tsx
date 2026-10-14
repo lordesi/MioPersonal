@@ -205,14 +205,6 @@ export default function Users({ clients, trainers }: UsersProps) {
                                 </td>
                                 <td className={bodyCell}>
                                     <span className="flex justify-end gap-1.5">
-                                        {/* TODO: export the user's data (GDPR) once the tables exist. */}
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                        >
-                                            Esporta dati
-                                        </Button>
                                         <Button
                                             type="button"
                                             variant="outline"

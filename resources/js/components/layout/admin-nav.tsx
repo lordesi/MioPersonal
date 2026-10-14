@@ -61,7 +61,6 @@ const sections: {
         title: 'Messaggi',
         icon: Mail,
         href: messages.url,
-        badge: 'unreadMessages',
     },
     {
         section: 'bookings',
@@ -79,7 +78,7 @@ const sections: {
     },
     {
         section: 'catalog',
-        title: 'Discipline e zone',
+        title: 'Discipline e città',
         icon: List,
         href: catalog.url,
     },
@@ -153,16 +152,10 @@ function AdminBrand() {
 
 type AdminSidebarProps = AdminNavProps & {
     userName: string;
-    twoFactorEnabled: boolean;
 };
 
 /** Side menu of the admin panel, visible from lg up. */
-export function AdminSidebar({
-    current,
-    area,
-    userName,
-    twoFactorEnabled,
-}: AdminSidebarProps) {
+export function AdminSidebar({ current, area, userName }: AdminSidebarProps) {
     return (
         <aside className="sticky top-0 hidden h-screen w-62 shrink-0 flex-col gap-5 border-r bg-background px-3.5 py-5 lg:flex">
             <div className="px-1.5">
@@ -181,10 +174,7 @@ export function AdminSidebar({
                             {userName}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                            Admin ·{' '}
-                            {twoFactorEnabled
-                                ? '2FA attiva'
-                                : '2FA da attivare'}
+                            Admin
                         </span>
                     </span>
                 </div>

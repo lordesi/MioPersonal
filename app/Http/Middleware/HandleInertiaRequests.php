@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\TrainerProfileStatus;
+use App\Enums\UserRole;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -40,6 +42,10 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),
+                // The number on "Preferiti" in the account menu (the same trainers as the page).
+                'favoritesCount' => fn () => $request->user()?->role === UserRole::Client
+                    ? $request->user()->favoriteTrainers()->where('trainer_profiles.status', TrainerProfileStatus::Approved)->count()
+                    : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

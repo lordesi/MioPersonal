@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\TrainerProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -10,8 +11,6 @@ use Tests\TestCase;
 class TrainerAreaTest extends TestCase
 {
     use RefreshDatabase;
-
-    private const UTC_ISO = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/';
 
     /** @var array<string, string> route name => Inertia component */
     private const PAGES = [
@@ -32,7 +31,8 @@ class TrainerAreaTest extends TestCase
 
     public function test_every_page_shares_the_trainer_area_data()
     {
-        $this->actingAs(User::factory()->trainer()->create());
+        $profile = TrainerProfile::factory()->create();
+        $this->actingAs($profile->user);
 
         foreach (self::PAGES as $route => $component) {
             $this->get(route($route))
@@ -40,40 +40,41 @@ class TrainerAreaTest extends TestCase
                 ->assertInertia(fn (Assert $page) => $page
                     ->component($component)
                     ->whereType('trainerArea.pendingCount', 'integer')
-                    ->whereType('trainerArea.publicProfileHref', 'string')
+                    ->where('trainerArea.publicProfileHref', route('trainers.show', $profile->slug, false))
+                    // The notice "Il tuo profilo è in revisione".
+                    ->where('trainerArea.profile', ['status' => 'review', 'message' => null])
                 );
         }
     }
 
-    public function test_calendar_has_events_syncs_and_month_counts()
+    public function test_a_trainer_without_a_profile_is_asked_to_complete_it()
+    {
+        $this->actingAs(User::factory()->trainer()->create())
+            ->get(route('trainer.today'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('trainerArea.publicProfileHref', null)
+                ->where('trainerArea.profile.status', 'missing')
+            );
+    }
+
+    /** No sample appointments and no Google/Apple calendars: a new trainer has an empty calendar. */
+    public function test_a_new_trainer_has_an_empty_calendar()
     {
         $this->actingAs(User::factory()->trainer()->create())
             ->get(route('trainer.calendar'))
-            ->assertInertia(function (Assert $page) {
-                $props = $page->toArray()['props'];
-
-                $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $props['weekStart']);
-                $this->assertMatchesRegularExpression(self::UTC_ISO, $props['events'][0]['start']);
-                $this->assertMatchesRegularExpression(self::UTC_ISO, $props['events'][0]['end']);
-                $this->assertContains($props['events'][0]['kind'], ['confirmed', 'pending', 'busy']);
-                $this->assertCount(2, $props['syncs']);
-                $this->assertIsInt(array_values($props['sessionCounts'])[0]);
-            });
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('weekStart', fn (string $date) => preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1)
+                ->has('events', 0)
+                ->has('sessionCounts', 0)
+                ->missing('syncs')
+            );
     }
 
-    public function test_clients_have_sessions_and_packages()
+    public function test_a_new_trainer_has_no_clients()
     {
         $this->actingAs(User::factory()->trainer()->create())
             ->get(route('trainer.clients'))
-            ->assertInertia(fn (Assert $page) => $page
-                ->has('clients', 6)
-                ->has('clients.0', fn (Assert $client) => $client
-                    ->whereType('sessions', 'integer')
-                    ->whereType('package.left', 'integer')
-                    ->whereType('package.total', 'integer')
-                    ->etc()
-                )
-            );
+            ->assertInertia(fn (Assert $page) => $page->has('clients', 0));
     }
 
     public function test_availability_has_seven_days_and_rules()
@@ -95,6 +96,7 @@ class TrainerAreaTest extends TestCase
     public function test_settings_have_account_contacts_and_upcoming_sessions()
     {
         $user = User::factory()->trainer()->create(['name' => 'Giulia Rossi']);
+        TrainerProfile::factory()->for($user)->create();
 
         $this->actingAs($user)
             ->get(route('trainer.settings'))
@@ -108,17 +110,13 @@ class TrainerAreaTest extends TestCase
             );
     }
 
-    public function test_reviews_have_summary_and_list()
+    public function test_a_new_trainer_has_no_reviews()
     {
         $this->actingAs(User::factory()->trainer()->create())
             ->get(route('trainer.reviews'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('summary.count', 23)
-                ->has('reviews.0', fn (Assert $review) => $review
-                    ->whereType('rating', 'integer')
-                    ->where('reply', null)
-                    ->etc()
-                )
+                ->where('summary', ['average' => null, 'count' => 0])
+                ->has('reviews', 0)
             );
     }
 }

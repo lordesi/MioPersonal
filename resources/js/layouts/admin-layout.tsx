@@ -15,7 +15,6 @@ type AdminLayoutProps = {
     section?: AdminSection;
     /** Menu badges: default to the `adminArea` prop every admin page receives. */
     verificationCount?: number;
-    unreadMessages?: number;
     flaggedReviews?: number;
 };
 
@@ -24,14 +23,12 @@ export default function AdminLayout({
     children,
     section,
     verificationCount,
-    unreadMessages,
     flaggedReviews,
 }: AdminLayoutProps) {
     const { auth, adminArea } = usePage<{ adminArea?: AdminAreaData }>().props;
     const area: AdminAreaData = {
         verificationCount:
             verificationCount ?? adminArea?.verificationCount ?? 0,
-        unreadMessages: unreadMessages ?? adminArea?.unreadMessages ?? 0,
         flaggedReviews: flaggedReviews ?? adminArea?.flaggedReviews ?? 0,
     };
     const title = adminSectionTitle(section);
@@ -42,7 +39,6 @@ export default function AdminLayout({
                 current={section}
                 area={area}
                 userName={auth?.user?.name ?? ''}
-                twoFactorEnabled={Boolean(auth?.user?.two_factor_confirmed_at)}
             />
 
             <div className="flex min-w-0 flex-1 flex-col">

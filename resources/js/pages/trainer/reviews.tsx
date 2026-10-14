@@ -1,18 +1,23 @@
 import { Head } from '@inertiajs/react';
+import { Star } from 'lucide-react';
 import ResponsiveText from '@/components/shared/responsive-text';
 import PageHeading from '@/components/trainer/area/page-heading';
+import EmptyState from '@/components/states/empty-state';
 import ReviewReplyCard from '@/components/trainer/area/review-reply-card';
-import { Button } from '@/components/ui/button';
 import { formatRating } from '@/lib/format';
 import type { TrainerAreaReview } from '@/types';
 
 type ReviewsProps = {
-    summary: { average: number; count: number };
+    /** average is null until the first review. */
+    summary: { average: number | null; count: number };
     reviews: TrainerAreaReview[];
 };
 
 export default function Reviews({ summary, reviews }: ReviewsProps) {
-    const totals = `${formatRating(summary.average)} di media · ${summary.count} recensioni`;
+    const totals =
+        summary.average === null
+            ? 'Ancora nessuna recensione'
+            : `${formatRating(summary.average)} di media · ${summary.count} recensioni`;
 
     return (
         <>
@@ -23,20 +28,23 @@ export default function Reviews({ summary, reviews }: ReviewsProps) {
                 description={
                     <ResponsiveText
                         mobile={totals}
-                        desktop={`${totals} · tutte da sedute svolte`}
+                        desktop={
+                            summary.count === 0
+                                ? totals
+                                : `${totals} · tutte da sedute svolte`
+                        }
                     />
                 }
-                action={
-                    // TODO: send the client a link to review their last session.
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="hidden h-10 md:inline-flex"
-                    >
-                        Chiedi una recensione
-                    </Button>
-                }
             />
+
+            {reviews.length === 0 && (
+                <EmptyState
+                    icon={Star}
+                    title="Ancora nessuna recensione"
+                    description="Dopo una seduta svolta il cliente può lasciarti una recensione: la trovi qui e puoi rispondere."
+                    bordered
+                />
+            )}
 
             {reviews.map((review) => (
                 <ReviewReplyCard key={review.id} review={review} />

@@ -9,7 +9,7 @@ return [
     'accepted' => 'Devi accettare :attribute.',
     'confirmed' => 'La conferma di :attribute non corrisponde.',
     'current_password' => 'La password non è corretta.',
-    'email' => 'Inserisci un indirizzo email valido.',
+    'email' => 'Inserisci un’email valida, es. nome@esempio.it.',
     'in' => 'Scegli una delle opzioni per :attribute.',
     'max' => [
         'string' => ':Attribute può avere al massimo :max caratteri.',
@@ -24,9 +24,20 @@ return [
         'symbols' => 'La password deve contenere almeno un simbolo.',
         'uncompromised' => 'Questa password è comparsa in una fuga di dati: scegline un\'altra.',
     ],
+    'regex' => 'Controlla il formato di :attribute.',
     'required' => 'Compila il campo :attribute.',
     'string' => ':Attribute deve essere un testo.',
     'unique' => 'Esiste già un account con questa :attribute.',
+
+    'custom' => [
+        'phone' => [
+            'regex' => 'Inserisci un numero di telefono valido, es. 333 000 0000.',
+        ],
+        'phone_prefix' => [
+            'required' => 'Inserisci il prefisso, es. +39.',
+            'regex' => 'Prefisso non valido, es. +39.',
+        ],
+    ],
 
     'attributes' => [
         'current_password' => 'password attuale',
@@ -36,6 +47,8 @@ return [
         'message' => 'messaggio',
         'name' => 'nome',
         'password' => 'password',
+        'phone' => 'telefono',
+        'phone_prefix' => 'prefisso',
         'role' => 'Sei',
         'terms' => 'i Termini e l\'Informativa privacy',
         'topic' => 'Argomento',

@@ -17,12 +17,17 @@ import { register as trainerRegister } from '@/routes/trainer';
 type Props = {
     status?: string;
     canResetPassword: boolean;
+    googleEnabled: boolean;
 };
 
 const TERMS_HREF = terms.url();
 const PRIVACY_HREF = privacy.url();
 
-export default function Login({ status, canResetPassword }: Props) {
+export default function Login({
+    status,
+    canResetPassword,
+    googleEnabled,
+}: Props) {
     const forgotPassword = canResetPassword && (
         <Link
             href={request()}
@@ -52,7 +57,7 @@ export default function Login({ status, canResetPassword }: Props) {
                         </p>
                     </div>
                     <p className="text-xs opacity-60">
-                        © 2026 MioPersonal · Versione beta
+                        © {new Date().getFullYear()} MioPersonal
                     </p>
                 </section>
 
@@ -69,17 +74,12 @@ export default function Login({ status, canResetPassword }: Props) {
                     >
                         {({ processing, errors }) => (
                             <>
-                                <div className="flex flex-col gap-1.5">
-                                    <h1
-                                        id="login-title"
-                                        className="text-3xl font-semibold tracking-tight"
-                                    >
-                                        Accedi
-                                    </h1>
-                                    <p className="text-sm text-muted-foreground">
-                                        Un solo accesso per clienti e trainer.
-                                    </p>
-                                </div>
+                                <h1
+                                    id="login-title"
+                                    className="text-3xl font-semibold tracking-tight"
+                                >
+                                    Accedi
+                                </h1>
 
                                 {status && (
                                     <p
@@ -90,7 +90,10 @@ export default function Login({ status, canResetPassword }: Props) {
                                     </p>
                                 )}
 
-                                <SocialSignIn verb="Continua con" />
+                                <SocialSignIn
+                                    verb="Continua con"
+                                    googleEnabled={googleEnabled}
+                                />
 
                                 <FormField label="Email" error={errors.email}>
                                     {({ id, describedBy }) => (
@@ -157,7 +160,15 @@ export default function Login({ status, canResetPassword }: Props) {
                                     Accedi
                                 </Button>
 
-                                <TextDivider>Non hai un account?</TextDivider>
+                                <TextDivider>
+                                    Non hai un account?{' '}
+                                    <Link
+                                        href={register()}
+                                        className="font-medium text-foreground underline"
+                                    >
+                                        Registrati
+                                    </Link>
+                                </TextDivider>
 
                                 <div className="grid grid-cols-2 gap-2">
                                     <Button

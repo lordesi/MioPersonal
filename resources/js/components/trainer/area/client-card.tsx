@@ -92,13 +92,7 @@ export default function ClientCard({
                 </span>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-                {/* TODO: open the booking flow on behalf of the client. */}
-                <Button type="button">Prenota per questo cliente</Button>
-                <Button asChild variant="outline">
-                    <a href={`mailto:${client.email}`}>Email</a>
-                </Button>
-            </div>
+            {/* TODO: "Proponi" (a session proposed to the client), after bookings are stored. */}
         </aside>
     );
 }

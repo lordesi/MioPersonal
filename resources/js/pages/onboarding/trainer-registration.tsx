@@ -1,13 +1,29 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { ArrowRight } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AccountFields from '@/components/auth/account-fields';
+import { meetsPasswordRequirements } from '@/components/auth/password-requirements';
 import type { AccountField } from '@/components/auth/account-fields';
 import ConsentCheckbox from '@/components/auth/consent-checkbox';
 import MinimalHeader from '@/components/layout/minimal-header';
 import type { TrainerDraft } from '@/components/onboarding/trainer/draft';
-import { initialDraft } from '@/components/onboarding/trainer/draft';
+import {
+    initialDraft,
+    isPricingComplete,
+    isProfileComplete,
+    isValidYear,
+    needsCity,
+    stepOfField,
+    toPayload,
+} from '@/components/onboarding/trainer/draft';
+import {
+    clearDraft,
+    loadDraft,
+    saveDraft,
+} from '@/components/onboarding/trainer/saved-draft';
+import ChangeRequestNotice from '@/components/onboarding/trainer/change-request-notice';
 import StepCertifications from '@/components/onboarding/trainer/step-certifications';
+import StepErrors from '@/components/onboarding/trainer/step-errors';
 import StepHours from '@/components/onboarding/trainer/step-hours';
 import StepNav from '@/components/onboarding/trainer/step-nav';
 import StepPlaces from '@/components/onboarding/trainer/step-places';
@@ -22,6 +38,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
 import { privacy, terms } from '@/routes/legal';
 import { store } from '@/routes/trainer/register';
+import type { CatalogOption, CityOption } from '@/types';
 
 const TERMS_HREF = terms.url();
 const PRIVACY_HREF = privacy.url();
@@ -33,31 +50,101 @@ type TrainerRegistrationProps = {
     submitted: boolean;
     /** A logged-in client: they keep their account, step 1 only asks for the terms. */
     account: { name: string; email: string } | null;
+    /** Options of step 3, from the catalog. */
+    disciplines: CatalogOption[];
+    cities: CityOption[];
+    /** A trainer fixing the profile: no step 1, it starts from step 2. */
+    editing: boolean;
+    /** What the trainer already sent (null the first time). */
+    draft: Omit<TrainerDraft, 'photo'> | null;
+    /** What the team asked to fix ("Chiedi modifiche"). */
+    changeRequest: { reasons: string[]; message: string | null } | null;
+    /** The trainer's own profile, for "Vedi l'anteprima del profilo". */
+    previewHref: string | null;
 };
 
 export default function TrainerRegistration({
     submitted,
     account,
+    disciplines,
+    cities,
+    editing,
+    draft: savedDraft,
+    changeRequest,
+    previewHref,
 }: TrainerRegistrationProps) {
-    // Step 1 is the only part sent to the server today.
+    const authUser = usePage().props.auth?.user;
+    const authName = authUser?.name ?? '';
+    // The draft of "Salva e continua dopo" is kept per account in this browser.
+    const userId = authUser?.id ?? null;
+    const firstStep = editing ? 2 : 1;
+    // Step 1: the account. The other steps are in `draft` and sent at the end.
     const form = useForm({
         first_name: '',
         last_name: '',
         email: '',
+        phone_prefix: '+39',
+        phone: '',
         password: '',
         terms: false,
     });
-    const [step, setStep] = useState(1);
-    const [reached, setReached] = useState(1);
-    const [draft, setDraft] = useState<TrainerDraft>(initialDraft);
+    const [step, setStep] = useState(firstStep);
+    // A profile already sent can be opened at any step.
+    const [reached, setReached] = useState(savedDraft ? LAST_STEP : firstStep);
+    const startingDraft: TrainerDraft = savedDraft
+        ? { ...savedDraft, photo: null }
+        : initialDraft;
+    const [draft, setDraft] = useState<TrainerDraft>(startingDraft);
     const [confirmed, setConfirmed] = useState(false);
+    // "Salva e continua dopo": the message after saving, and the one after reopening.
+    const [saveResult, setSaveResult] = useState<'saved' | 'failed' | null>(
+        null,
+    );
+    const [restored, setRestored] = useState(false);
+    // The step reached in the saved draft. Step 1 (account and terms) is never
+    // saved, so the later steps open again only after it: see goTo.
+    const [restoredStep, setRestoredStep] = useState(0);
+
+    // Read after the first render: the page is also rendered on the server
+    // (SSR), where there is no localStorage.
+    useEffect(() => {
+        if (submitted) {
+            return;
+        }
+
+        const local = loadDraft(userId);
+
+        if (local) {
+            setDraft(local.draft);
+            setRestoredStep(Math.min(local.step, LAST_STEP));
+            setRestored(true);
+        }
+    }, [submitted, userId]);
+
+    const saveLater = () =>
+        setSaveResult(
+            saveDraft(userId, draft, Math.max(step, reached))
+                ? 'saved'
+                : 'failed',
+        );
+
+    const startOver = () => {
+        clearDraft(userId);
+        setDraft(startingDraft);
+        setReached(savedDraft ? LAST_STEP : firstStep);
+        setStep(firstStep);
+        setRestored(false);
+        setRestoredStep(0);
+        setSaveResult(null);
+    };
 
     const update = (changes: Partial<TrainerDraft>) =>
         setDraft({ ...draft, ...changes });
 
-    const fullName =
-        account?.name ??
-        `${form.data.first_name} ${form.data.last_name}`.trim();
+    const fullName = editing
+        ? authName
+        : (account?.name ??
+          `${form.data.first_name} ${form.data.last_name}`.trim());
 
     const canContinue: Record<number, boolean> = {
         1: account
@@ -65,30 +152,59 @@ export default function TrainerRegistration({
             : form.data.first_name.trim() !== '' &&
               form.data.last_name.trim() !== '' &&
               form.data.email.trim() !== '' &&
-              form.data.password.length >= 8 &&
+              form.data.phone.trim() !== '' &&
+              meetsPasswordRequirements(form.data.password) &&
               form.data.terms,
-        3: draft.disciplines.length > 0 && draft.places.length > 0,
-        4: draft.services.some(
-            (service) =>
-                service.name.trim() !== '' && (service.priceCents ?? 0) > 0,
-        ),
+        // Step 2: everything is required (photo, headline, bio, experience).
+        2: isProfileComplete(draft),
+        3:
+            draft.disciplines.length > 0 &&
+            draft.places.length > 0 &&
+            (!needsCity(draft) || draft.city !== ''),
+        // Step 4: the hourly price, and every optional part complete.
+        4: isPricingComplete(draft),
+        5: draft.sessionMinutes.length > 0,
+        // Optional, but a year must be real (1950 – this year).
+        6: draft.certifications.every((item) => isValidYear(item.year)),
         7: confirmed,
     };
 
     const goTo = (next: number) => {
         setStep(next);
-        setReached(Math.max(reached, next));
+        setSaveResult(null);
+        // Past the first step, the steps of a restored draft open again.
+        setReached(
+            Math.max(reached, next, next > firstStep ? restoredStep : 0),
+        );
         window.scrollTo({ top: 0 });
     };
 
     const submit = () => {
-        // A client already has name, email and password: only the terms are sent.
-        form.transform((data) => (account ? { terms: data.terms } : data));
+        // A client already has name, email and password: only the terms are
+        // sent. A trainer fixing the profile sends only the profile.
+        form.transform((data) => ({
+            ...(editing ? {} : account ? { terms: data.terms } : data),
+            ...toPayload(draft),
+        }));
         form.post(store.url(), {
-            // Account errors (e.g. email already used) are shown in step 1.
-            onError: () => goTo(1),
+            // With files the data goes as FormData: lists of objects need indices.
+            queryStringArrayFormat: 'indices',
+            // Sent: the draft of this browser is not needed any more.
+            onSuccess: () => clearDraft(userId),
+            // Open the first step with an error.
+            onError: (errors) =>
+                goTo(
+                    Math.max(
+                        firstStep,
+                        Math.min(...Object.keys(errors).map(stepOfField)),
+                    ),
+                ),
         });
     };
+
+    const stepErrors = Object.entries(form.errors)
+        .filter(([field]) => step > 1 && stepOfField(field) === step)
+        .map(([, message]) => message);
 
     const bind = (field: AccountField) => ({
         value: form.data[field],
@@ -101,7 +217,7 @@ export default function TrainerRegistration({
             <Head title="Diventa trainer" />
 
             <MinimalHeader badge="Per i trainer">
-                {!submitted && !account && (
+                {!submitted && !account && !editing && (
                     <>
                         <span className="hidden sm:inline">
                             Hai già un account?
@@ -119,13 +235,14 @@ export default function TrainerRegistration({
             <div className="mx-auto flex w-full max-w-300 flex-1 flex-wrap items-start gap-5 px-4 pt-5 pb-10 md:gap-8 md:px-8 md:pt-10 md:pb-20">
                 {submitted ? (
                     <div className="w-full">
-                        <Submitted />
+                        <Submitted previewHref={previewHref} />
                     </div>
                 ) : (
                     <>
                         <StepNav
                             step={step}
                             reached={reached}
+                            firstStep={firstStep}
                             onSelect={goTo}
                         />
 
@@ -149,6 +266,32 @@ export default function TrainerRegistration({
                                 }}
                             >
                                 <div className="flex flex-col gap-5 p-4 md:p-8">
+                                    {changeRequest && step === firstStep && (
+                                        <ChangeRequestNotice
+                                            {...changeRequest}
+                                        />
+                                    )}
+                                    {restored && step === firstStep && (
+                                        <div
+                                            role="status"
+                                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted px-3.5 py-3 text-sm"
+                                        >
+                                            <span>
+                                                Abbiamo ripreso la bozza
+                                                salvata. Foto e attestati vanno
+                                                ricaricati.
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                className="h-9 px-2 underline"
+                                                onClick={startOver}
+                                            >
+                                                Ricomincia da capo
+                                            </Button>
+                                        </div>
+                                    )}
+                                    <StepErrors errors={stepErrors} />
                                     {step === 1 && (
                                         <>
                                             <StepTitle
@@ -157,7 +300,7 @@ export default function TrainerRegistration({
                                                         ? 'Diventa trainer con il tuo account'
                                                         : 'Crea il tuo account trainer'
                                                 }
-                                                description="Servono circa 10 minuti. Puoi salvare e finire più tardi."
+                                                description="Servono circa 10 minuti. Dal passo 2 puoi salvare e finire più tardi."
                                             />
                                             {account ? (
                                                 <CurrentAccount {...account} />
@@ -165,6 +308,7 @@ export default function TrainerRegistration({
                                                 <AccountFields
                                                     errors={form.errors}
                                                     emailHint="Qui ricevi le richieste dei clienti. Ti mandiamo un link per verificarla."
+                                                    phoneHint="I clienti lo vedono solo dopo che hai confermato la prenotazione."
                                                     bind={bind}
                                                 />
                                             )}
@@ -207,6 +351,8 @@ export default function TrainerRegistration({
                                         <StepPlaces
                                             draft={draft}
                                             update={update}
+                                            disciplines={disciplines}
+                                            cities={cities}
                                         />
                                     )}
                                     {step === 4 && (
@@ -231,6 +377,9 @@ export default function TrainerRegistration({
                                         <StepReview
                                             draft={draft}
                                             fullName={fullName}
+                                            editing={editing}
+                                            disciplines={disciplines}
+                                            cities={cities}
                                             onEdit={goTo}
                                             confirmed={confirmed}
                                             onConfirmedChange={setConfirmed}
@@ -239,7 +388,7 @@ export default function TrainerRegistration({
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2 border-t p-4 md:px-8">
-                                    {step > 1 && (
+                                    {step > firstStep && (
                                         <Button
                                             type="button"
                                             variant="outline"
@@ -249,14 +398,17 @@ export default function TrainerRegistration({
                                             Indietro
                                         </Button>
                                     )}
-                                    {/* TODO: save the draft and send a link to finish later. */}
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="h-11 text-muted-foreground"
-                                    >
-                                        Salva e continua dopo
-                                    </Button>
+                                    {/* Not on step 1: the account doesn't exist yet. */}
+                                    {step > 1 && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className="h-11 text-muted-foreground"
+                                            onClick={saveLater}
+                                        >
+                                            Salva e continua dopo
+                                        </Button>
+                                    )}
                                     <Button
                                         type="submit"
                                         className="ml-auto h-11"
@@ -271,6 +423,16 @@ export default function TrainerRegistration({
                                             : 'Continua'}
                                         <ArrowRight aria-hidden="true" />
                                     </Button>
+                                    {saveResult && (
+                                        <p
+                                            role="status"
+                                            className="w-full text-sm text-muted-foreground"
+                                        >
+                                            {saveResult === 'saved'
+                                                ? 'Bozza salvata su questo dispositivo. Riapri «Diventa trainer» per continuare.'
+                                                : 'Non siamo riusciti a salvare la bozza in questo browser.'}
+                                        </p>
+                                    )}
                                 </div>
                             </form>
                         </main>

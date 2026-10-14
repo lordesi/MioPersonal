@@ -8,21 +8,26 @@ import { Input } from '@/components/ui/input';
 type PersonalDataSectionProps = {
     firstName: string;
     lastName: string;
+    phone: string | null;
+    /** Who sees these data: different for clients and trainers. */
+    description: string;
+    /** Who sees the phone: different for clients and trainers. */
+    phoneHint: string;
 };
 
-/**
- * Name and surname, saved on the server.
- * TODO: add "Telefono" once the users table has a phone column (ask first).
- */
+/** Name, surname and phone, all required, saved on the server. */
 export default function PersonalDataSection({
     firstName,
     lastName,
+    phone,
+    description,
+    phoneHint,
 }: PersonalDataSectionProps) {
     return (
         <SettingsSection
             id="dati"
             title="Dati personali"
-            description="Il trainer li vede solo dopo aver confermato una prenotazione."
+            description={description}
         >
             <Form
                 {...AccountSettingsController.updatePersonal.form()}
@@ -58,6 +63,26 @@ export default function PersonalDataSection({
                                         autoComplete="family-name"
                                         aria-describedby={describedBy}
                                         aria-invalid={!!errors.last_name}
+                                        className="h-11 text-base md:text-base"
+                                    />
+                                )}
+                            </FormField>
+                            <FormField
+                                label="Telefono"
+                                hint={phoneHint}
+                                error={errors.phone}
+                            >
+                                {({ id, describedBy }) => (
+                                    <Input
+                                        id={id}
+                                        type="tel"
+                                        name="phone"
+                                        defaultValue={phone ?? ''}
+                                        required
+                                        autoComplete="tel"
+                                        placeholder="+39"
+                                        aria-describedby={describedBy}
+                                        aria-invalid={!!errors.phone}
                                         className="h-11 text-base md:text-base"
                                     />
                                 )}

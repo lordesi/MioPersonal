@@ -1,0 +1,110 @@
+name,province_code,region,lat,lng
+Agrigento,AG,Sicilia,37.310650,13.576610
+Alessandria,AL,Piemonte,44.913331,8.620000
+Ancona,AN,Marche,43.616667,13.516667
+Andria,BT,Puglia,41.231667,16.308333
+Aosta,AO,"Valle d'Aosta",45.737222,7.320556
+Arezzo,AR,Toscana,43.463056,11.878056
+"Ascoli Piceno",AP,Marche,42.854722,13.575278
+Asti,AT,Piemonte,44.900000,8.206944
+Avellino,AV,Campania,40.915278,14.789722
+Bari,BA,Puglia,41.125278,16.866667
+Barletta,BT,Puglia,41.316667,16.283333
+Belluno,BL,Veneto,46.140831,12.215561
+Benevento,BN,Campania,41.133333,14.783333
+Bergamo,BG,Lombardia,45.695000,9.670000
+Biella,BI,Piemonte,45.566389,8.053333
+Bologna,BO,Emilia-Romagna,44.493889,11.342778
+Bolzano,BZ,"Trentino-Alto Adige",46.498113,11.354780
+Brescia,BS,Lombardia,45.538889,10.220281
+Brindisi,BR,Puglia,40.638333,17.945833
+Cagliari,CA,Sardegna,39.214886,9.109522
+Caltanissetta,CL,Sicilia,37.491472,14.062444
+Campobasso,CB,Molise,41.561000,14.668400
+Carbonia,SU,Sardegna,39.166803,8.521957
+Caserta,CE,Campania,41.066667,14.333333
+Catania,CT,Sicilia,37.502669,15.087269
+Catanzaro,CZ,Calabria,38.910000,16.587500
+Chieti,CH,Abruzzo,42.351114,14.167428
+Como,CO,Lombardia,45.810250,9.086139
+Cosenza,CS,Calabria,39.300000,16.250000
+Cremona,CR,Lombardia,45.133333,10.024722
+Crotone,KR,Calabria,39.072311,17.027392
+Cuneo,CN,Piemonte,44.383333,7.550000
+Enna,EN,Sicilia,37.566667,14.266667
+Fermo,FM,Marche,43.161284,13.718397
+Ferrara,FE,Emilia-Romagna,44.839167,11.617500
+Firenze,FI,Toscana,43.771389,11.254167
+Foggia,FG,Puglia,41.458450,15.551880
+Forlì,FC,Emilia-Romagna,44.222778,12.041389
+Frosinone,FR,Lazio,41.633333,13.350000
+Genova,GE,Liguria,44.407222,8.933889
+Gorizia,GO,"Friuli-Venezia Giulia",45.935200,13.619300
+Grosseto,GR,Toscana,42.772222,11.108889
+Imperia,IM,Liguria,43.886467,8.029653
+Isernia,IS,Molise,41.602778,14.239722
+L'Aquila,AQ,Abruzzo,42.354008,13.391992
+"La Spezia",SP,Liguria,44.108044,9.828881
+Latina,LT,Lazio,41.467222,12.903611
+Lecce,LE,Puglia,40.352011,18.169139
+Lecco,LC,Lombardia,45.853340,9.390480
+Livorno,LI,Toscana,43.550000,10.316667
+Lodi,LO,Lombardia,45.316667,9.500000
+Lucca,LU,Toscana,43.850000,10.516667
+Macerata,MC,Marche,43.300278,13.453333
+Mantova,MN,Lombardia,45.156389,10.791111
+Massa,MS,Toscana,44.033333,10.133333
+Matera,MT,Basilicata,40.666667,16.600000
+Messina,ME,Sicilia,38.193611,15.554167
+Milano,MI,Lombardia,45.466944,9.190000
+Modena,MO,Emilia-Romagna,44.645820,10.925720
+Monza,MB,Lombardia,45.583611,9.273611
+Napoli,NA,Campania,40.835833,14.248611
+Novara,NO,Piemonte,45.450000,8.620000
+Nuoro,NU,Sardegna,40.320062,9.328079
+Oristano,OR,Sardegna,39.905819,8.591609
+Padova,PD,Veneto,45.407778,11.873333
+Palermo,PA,Sicilia,38.115658,13.361262
+Parma,PR,Emilia-Romagna,44.801472,10.328000
+Pavia,PV,Lombardia,45.185281,9.155000
+Perugia,PG,Umbria,43.111918,12.388548
+Pesaro,PU,Marche,43.910150,12.913300
+Pescara,PE,Abruzzo,42.464278,14.214189
+Piacenza,PC,Emilia-Romagna,45.050000,9.700000
+Pisa,PI,Toscana,43.716667,10.400000
+Pistoia,PT,Toscana,43.933333,10.916667
+Pordenone,PN,"Friuli-Venezia Giulia",45.962600,12.656300
+Potenza,PZ,Basilicata,40.633333,15.800000
+Prato,PO,Toscana,43.880814,11.096561
+Ragusa,RG,Sicilia,36.925000,14.730556
+Ravenna,RA,Emilia-Romagna,44.416111,12.201667
+"Reggio di Calabria",RC,Calabria,38.114439,15.650000
+"Reggio nell'Emilia",RE,Emilia-Romagna,44.700000,10.633333
+Rieti,RI,Lazio,42.404430,12.856702
+Rimini,RN,Emilia-Romagna,44.059444,12.568333
+Roma,RM,Lazio,41.893056,12.482778
+Rovigo,RO,Veneto,45.080900,11.794000
+Salerno,SA,Campania,40.680556,14.759444
+Sassari,SS,Sardegna,40.726667,8.559167
+Savona,SV,Liguria,44.308056,8.481111
+Siena,SI,Toscana,43.318333,11.331389
+Siracusa,SR,Sicilia,37.069167,15.287500
+Sondrio,SO,Lombardia,46.169719,9.870000
+Taranto,TA,Puglia,40.471111,17.243056
+Teramo,TE,Abruzzo,42.658853,13.703911
+Terni,TR,Umbria,42.560771,12.646782
+Torino,TO,Piemonte,45.079167,7.676111
+Trani,BT,Puglia,41.266667,16.416667
+Trapani,TP,Sicilia,38.017500,12.515000
+Trento,TN,"Trentino-Alto Adige",46.066667,11.116667
+Treviso,TV,Veneto,45.665833,12.245556
+Trieste,TS,"Friuli-Venezia Giulia",45.650278,13.770278
+Udine,UD,"Friuli-Venezia Giulia",46.066667,13.233333
+Varese,VA,Lombardia,45.816667,8.833333
+Venezia,VE,Veneto,45.439722,12.331944
+Verbania,VB,Piemonte,45.922778,8.551944
+Vercelli,VC,Piemonte,45.326150,8.423410
+Verona,VR,Veneto,45.438611,10.992778
+"Vibo Valentia",VV,Calabria,38.675278,16.095900
+Vicenza,VI,Veneto,45.550000,11.550000
+Viterbo,VT,Lazio,42.418611,12.104167

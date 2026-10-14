@@ -1,17 +1,7 @@
 /** Sent by every admin page, read by the admin layout (menu badges). */
 export type AdminAreaData = {
     verificationCount: number;
-    unreadMessages: number;
     flaggedReviews: number;
-};
-
-/** A row of "Attività recente" / "Registro attività". */
-export type AdminActivity = {
-    id: number;
-    who: string;
-    what: string;
-    /** ISO UTC string. */
-    at: string;
 };
 
 export type TrainerReviewStatus =
@@ -25,7 +15,7 @@ export type TrainerUnderReview = {
     id: number;
     name: string;
     disciplines: string[];
-    zone: string;
+    city: string;
     status: TrainerReviewStatus;
     /** ISO UTC: when the profile was sent, or when changes were asked. */
     statusSince: string;
@@ -34,28 +24,18 @@ export type TrainerUnderReview = {
     services: { label: string; priceCents: number }[];
     weeklyHours: number;
     hasIdentityDocument: boolean;
-    certifications: { title: string; issuer: string }[];
+    certifications: {
+        id: number;
+        title: string;
+        issuer: string;
+        /** Temporary link to the private file; null when there is no file. */
+        fileHref: string | null;
+    }[];
     /** Automatic warnings, e.g. "La bio contiene un numero di telefono". */
     warnings: string[];
+    /** The team's note saved with the last decision. */
+    internalNote: string | null;
     profileHref: string;
-};
-
-export type ContactMessageStatus = 'new' | 'in-progress' | 'closed';
-
-/** A message sent from the Contatti page. */
-export type AdminContactMessage = {
-    id: number;
-    name: string;
-    email: string;
-    roleLabel: string;
-    topicLabel: string;
-    /** ISO UTC string. */
-    receivedAt: string;
-    subject: string;
-    text: string;
-    status: ContactMessageStatus;
-    /** "Privacy e dati": must be answered within the GDPR deadline. */
-    isPrivacyRequest: boolean;
 };
 
 export type AdminBookingStatus =
@@ -119,11 +99,23 @@ export type AdminReview = {
 export type AdminDiscipline = {
     id: number;
     name: string;
+    /** In the search URL; fixed once created. */
+    slug: string;
+    /** false = hidden from search and registration. */
+    isActive: boolean;
     trainerCount: number;
 };
 
-export type AdminTeamMember = {
+export type AdminCity = {
     id: number;
     name: string;
-    twoFactorEnabled: boolean;
+    /** In the search URL; fixed once created. */
+    slug: string;
+    /** Car plate code of the province, e.g. "MI". */
+    provinceCode: string;
+    region: string;
+    /** "45.4642, 9.19", the same text the form asks for. */
+    coordinates: string;
+    /** false = hidden from the menus, its search page gives 404. */
+    isActive: boolean;
 };
