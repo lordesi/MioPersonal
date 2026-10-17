@@ -1,113 +1,107 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import SegmentedControl from '@/components/shared/segmented-control';
 import DayAgenda from '@/components/trainer/area/day-agenda';
-import MonthHeatmap from '@/components/trainer/area/month-heatmap';
+import MonthCalendar from '@/components/trainer/area/month-calendar';
 import PageHeading from '@/components/trainer/area/page-heading';
 import WeekGrid, { itemStyles } from '@/components/trainer/area/week-grid';
+import { Button } from '@/components/ui/button';
 import type { CalendarItem } from '@/lib/calendar';
-import { blockKey, romeParts, weekDates } from '@/lib/calendar';
+import {
+    addDays,
+    calendarItems,
+    mondayOf,
+    monthName,
+    romeParts,
+    shiftMonth,
+    weekDates,
+} from '@/lib/calendar';
 import { formatDayRange } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { calendar } from '@/routes/trainer';
 import type { CalendarEvent } from '@/types';
-
-type CalendarProps = {
-    /** Monday of the current week, "YYYY-MM-DD". */
-    weekStart: string;
-    /** Empty until bookings are stored (step 5 of docs/database/analisi.md). */
-    events: CalendarEvent[];
-    /** Confirmed sessions per day, for the month view. */
-    sessionCounts: Record<string, number>;
-};
 
 type View = 'week' | 'month';
 
-/** How many months after the current one the month view can show. */
-const MONTHS_AHEAD = 2;
+type CalendarProps = {
+    view: View;
+    /** The day shown, "YYYY-MM-DD": its week or its month. */
+    focus: string;
+    /** First and last day the arrows can reach: 12 months around today. */
+    minDate: string;
+    maxDate: string;
+    /** The bookings of the week or month shown, confirmed or waiting. */
+    events: CalendarEvent[];
+};
 
 const legend: { kind: CalendarItem['kind']; label: string }[] = [
     { kind: 'confirmed', label: 'Confermata' },
     { kind: 'pending', label: 'Da confermare' },
-    { kind: 'block', label: 'Bloccato' },
 ];
 
 export default function Calendar({
-    weekStart,
+    view,
+    focus,
+    minDate,
+    maxDate,
     events,
-    sessionCounts,
 }: CalendarProps) {
-    const days = weekDates(weekStart);
     const today = romeParts(new Date()).date;
-    const currentMonth = today.slice(0, 7);
+    const items = calendarItems(events);
 
-    const [view, setView] = useState<View>('week');
-    // TODO: blocks only live in the page for now.
-    const [blocks, setBlocks] = useState<Set<string>>(new Set());
-    const [mobileDay, setMobileDay] = useState(
-        days.includes(today) ? today : days[0],
-    );
-    const [monthOffset, setMonthOffset] = useState(0);
-    const [monthDay, setMonthDay] = useState(today);
+    // The day chosen in the list; back to the shown day after each move.
+    const [selected, setSelected] = useState(focus);
+    const [shownFocus, setShownFocus] = useState(focus);
 
-    const items: CalendarItem[] = [
-        ...events.map((event) => {
-            const start = romeParts(event.start);
+    if (focus !== shownFocus) {
+        setShownFocus(focus);
+        setSelected(focus);
+    }
 
-            return {
-                key: `event-${event.id}`,
-                date: start.date,
-                from: start.hour,
-                to: romeParts(event.end).hour,
-                title: event.title,
-                detail: event.detail,
-                place: event.place,
-                kind: event.kind,
-            };
-        }),
-        ...[...blocks].map((key) => {
-            const date = key.slice(0, 10);
-            const hour = Number(key.slice(11));
+    const days = weekDates(mondayOf(focus));
+    const month = focus.slice(0, 7);
 
-            return {
-                key: `block-${key}`,
-                date,
-                from: hour,
-                to: hour + 1,
-                title: 'Bloccato',
-                detail: 'Non prenotabile',
-                place: '',
-                kind: 'block' as const,
-            };
-        }),
-    ];
+    const period =
+        view === 'week'
+            ? {
+                  label: `${formatDayRange(days[0], days[6])} ${days[6].slice(0, 4)}`,
+                  previous: addDays(days[0], -7),
+                  next: addDays(days[0], 7),
+                  canGoBack: days[0] > minDate,
+                  canGoForward: days[6] < maxDate,
+              }
+            : {
+                  label: monthName(month),
+                  previous: `${shiftMonth(month, -1)}-01`,
+                  next: `${shiftMonth(month, 1)}-01`,
+                  canGoBack: `${month}-01` > minDate,
+                  canGoForward: month < maxDate.slice(0, 7),
+              };
 
-    const toggleBlock = (date: string, hour: number) => {
-        const next = new Set(blocks);
-        const key = blockKey(date, hour);
-
-        if (next.has(key)) {
-            next.delete(key);
-        } else {
-            next.add(key);
-        }
-
-        setBlocks(next);
-    };
-
-    const month = shiftMonth(currentMonth, monthOffset);
-
-    const changeMonth = (step: -1 | 1) => {
-        const offset = monthOffset + step;
-        setMonthOffset(offset);
-        setMonthDay(`${shiftMonth(currentMonth, offset)}-01`);
-    };
+    /** Loads only the bookings of the new period: the page stays as it is. */
+    const show = (nextView: View, day: string) =>
+        router.get(
+            calendar.url({
+                query: {
+                    vista: nextView === 'month' ? 'mese' : 'settimana',
+                    giorno: day,
+                },
+            }),
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['view', 'focus', 'minDate', 'maxDate', 'events'],
+            },
+        );
 
     const viewSwitch = (labels: Record<View, string>, className: string) => (
         <SegmentedControl
             aria-label="Vista"
             className={className}
             value={view}
-            onChange={setView}
+            onChange={(value) => show(value, selected)}
             options={[
                 { value: 'week', label: labels.week },
                 { value: 'month', label: labels.month },
@@ -123,8 +117,7 @@ export default function Calendar({
                 title="Calendario"
                 description={
                     <span className="hidden md:inline">
-                        Tocca uno spazio libero per bloccarlo; toccalo di nuovo
-                        per liberarlo.
+                        Le tue sedute confermate e quelle da confermare.
                     </span>
                 }
                 action={
@@ -141,86 +134,110 @@ export default function Calendar({
                 }
             />
 
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label={
+                            view === 'week'
+                                ? 'Settimana precedente'
+                                : 'Mese precedente'
+                        }
+                        disabled={!period.canGoBack}
+                        onClick={() => show(view, period.previous)}
+                    >
+                        <ChevronLeft />
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label={
+                            view === 'week'
+                                ? 'Settimana successiva'
+                                : 'Mese successivo'
+                        }
+                        disabled={!period.canGoForward}
+                        onClick={() => show(view, period.next)}
+                    >
+                        <ChevronRight />
+                    </Button>
+                    <span
+                        aria-live="polite"
+                        className={cn(
+                            'font-semibold tabular-nums',
+                            // "ottobre 2026" → "Ottobre 2026"; the week stays "12 – 18 ottobre".
+                            view === 'month' && 'capitalize',
+                        )}
+                    >
+                        {period.label}
+                    </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3.5">
+                    <div className="hidden flex-wrap gap-3.5 text-xs text-muted-foreground md:flex">
+                        {legend.map((entry) => (
+                            <span
+                                key={entry.kind}
+                                className="inline-flex items-center gap-1.5"
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className={cn(
+                                        'size-3 rounded-[3px]',
+                                        itemStyles[entry.kind],
+                                    )}
+                                />
+                                {entry.label}
+                            </span>
+                        ))}
+                    </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => show(view, today)}
+                    >
+                        Oggi
+                    </Button>
+                </div>
+            </div>
+
             {view === 'week' ? (
                 <>
                     <section
-                        aria-label={`Settimana ${formatDayRange(days[0], days[6])}`}
-                        className="hidden flex-col gap-3 rounded-xl border bg-card p-4 md:flex"
+                        aria-label={`Settimana ${period.label}`}
+                        className="hidden rounded-xl border bg-card p-4 md:block"
                     >
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <span className="font-semibold tabular-nums">
-                                {formatDayRange(days[0], days[6])}{' '}
-                                {days[6].slice(0, 4)}
-                            </span>
-                            <div className="flex flex-wrap gap-3.5 text-xs text-muted-foreground">
-                                {legend.map((entry) => (
-                                    <span
-                                        key={entry.kind}
-                                        className="inline-flex items-center gap-1.5"
-                                    >
-                                        <span
-                                            aria-hidden="true"
-                                            className={cn(
-                                                'size-3 rounded-[3px]',
-                                                itemStyles[entry.kind],
-                                            )}
-                                        />
-                                        {entry.label}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                        <WeekGrid
-                            days={days}
-                            items={items}
-                            today={today}
-                            blocks={blocks}
-                            onToggleBlock={toggleBlock}
-                        />
+                        <WeekGrid days={days} items={items} today={today} />
                     </section>
 
                     <div className="md:hidden">
                         <DayAgenda
                             days={days}
-                            selected={mobileDay}
-                            onSelect={setMobileDay}
+                            selected={
+                                days.includes(selected) ? selected : days[0]
+                            }
+                            onSelect={setSelected}
                             items={items}
                         />
                     </div>
                 </>
             ) : (
-                <MonthHeatmap
+                <MonthCalendar
                     month={month}
-                    monthLabel={monthName(month)}
-                    canGoBack={monthOffset > 0}
-                    canGoForward={monthOffset < MONTHS_AHEAD}
-                    onMonthChange={changeMonth}
-                    counts={sessionCounts}
+                    items={items}
                     today={today}
-                    selected={monthDay}
-                    onSelect={setMonthDay}
-                    onOpenWeek={() => setView('week')}
+                    selected={
+                        selected.startsWith(month) ? selected : `${month}-01`
+                    }
+                    onSelect={setSelected}
+                    onOpenWeek={() => show('week', selected)}
                 />
             )}
         </>
     );
-}
-
-/** "2026-10" + 2 → "2026-12" */
-function shiftMonth(month: string, offset: number): string {
-    const [year, monthNumber] = month.split('-').map(Number);
-    const date = new Date(Date.UTC(year, monthNumber - 1 + offset, 1));
-
-    return date.toISOString().slice(0, 7);
-}
-
-/** "2026-10" → "ottobre 2026" */
-function monthName(month: string): string {
-    return new Intl.DateTimeFormat('it-IT', {
-        month: 'long',
-        year: 'numeric',
-        timeZone: 'UTC',
-    }).format(new Date(`${month}-15T12:00:00Z`));
 }
 
 Calendar.layout = { section: 'calendar' };

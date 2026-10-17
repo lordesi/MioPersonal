@@ -1,31 +1,34 @@
-import { Head, router, setLayoutProps } from '@inertiajs/react';
+import { Head, Link, router, setLayoutProps } from '@inertiajs/react';
+import { ArrowRight } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 import { toast } from 'sonner';
 import type { RequestAnswer } from '@/components/trainer/dashboard/booking-request-card';
 import BookingRequestCard from '@/components/trainer/dashboard/booking-request-card';
 import type { StatCard } from '@/components/trainer/dashboard/stat-cards';
 import StatCards from '@/components/trainer/dashboard/stat-cards';
-import TodoList from '@/components/trainer/dashboard/todo-list';
-import type {
-    Attendance,
-    SessionTiming,
-} from '@/components/trainer/dashboard/today-session-row';
+import type { SessionTiming } from '@/components/trainer/dashboard/today-session-row';
 import TodaySessionRow from '@/components/trainer/dashboard/today-session-row';
+import PastSessionList from '@/components/trainer/dashboard/past-session-list';
+import UpcomingSessions from '@/components/trainer/dashboard/upcoming-sessions';
 import { formatTime } from '@/lib/format';
+import { pastSessions } from '@/routes/trainer';
 import { accept, decline } from '@/routes/trainer/requests';
 import type {
     TrainerBookingRequest,
+    TrainerPastSession,
     TrainerStats,
     TrainerTodaySession,
-    TrainerTodo,
 } from '@/types';
 
 type TodayProps = {
     firstName: string;
     today: TrainerTodaySession[];
+    /** Confirmed sessions from tomorrow on. */
+    upcoming: TrainerTodaySession[];
+    /** Over in the last 7 days, before today; the most recent first. */
+    past: TrainerPastSession[];
     requests: TrainerBookingRequest[];
     stats: TrainerStats;
-    todos: TrainerTodo[];
 };
 
 const timingOrder: Record<SessionTiming, number> = {
@@ -37,20 +40,18 @@ const timingOrder: Record<SessionTiming, number> = {
 export default function Today({
     firstName,
     today,
+    upcoming,
+    past,
     requests,
     stats,
-    todos,
 }: TodayProps) {
     const todayTitleId = useId();
     const requestsTitleId = useId();
+    const pastTitleId = useId();
     const [now] = useState(() => new Date());
 
     // The answers given on this page: the card shows them until the next visit.
     const [answers, setAnswers] = useState<Record<number, RequestAnswer>>({});
-    // TODO: attendance only lives in the page until "Svolta / Assente" exists.
-    const [attendance, setAttendance] = useState<Record<number, Attendance>>(
-        {},
-    );
 
     const pendingRequests = requests.filter(
         (request) => (answers[request.id] ?? 'pending') === 'pending',
@@ -69,7 +70,7 @@ export default function Today({
             {
                 preserveScroll: true,
                 // The answered card stays on the page with its message.
-                only: ['today', 'stats'],
+                only: ['today', 'upcoming', 'stats'],
                 onSuccess: () =>
                     setAnswers((current) => ({
                         ...current,
@@ -93,10 +94,6 @@ export default function Today({
         (a, b) => timingOrder[a.timing] - timingOrder[b.timing],
     );
     const next = sessions.find((session) => session.timing === 'next');
-    const toMark = sessions.filter(
-        (session) =>
-            session.timing === 'past' && !attendance[session.session.id],
-    );
 
     const statCards: StatCard[] = [
         {
@@ -109,29 +106,9 @@ export default function Today({
         },
     ];
 
-    const allTodos: TrainerTodo[] = [
-        ...(pendingCount > 0
-            ? [
-                  {
-                      label: requestsTitle(pendingCount),
-                      hint: 'Lo slot resta bloccato finché non rispondi',
-                      cta: 'Vedi',
-                      href: '#prenotazioni',
-                  },
-              ]
-            : []),
-        ...toMark.map(({ session }) => ({
-            label: `Segna la seduta delle ${formatTime(session.start)} con ${session.clientName}`,
-            hint: 'Svolta o cliente non presentato',
-            cta: 'Segna',
-            href: '#oggi',
-        })),
-        ...todos,
-    ];
-
     return (
         <>
-            <Head title="Oggi" />
+            <Head title="Le tue prenotazioni" />
 
             <div className="flex flex-col gap-0.5 md:gap-1">
                 <h1 className="text-[28px] leading-8.5 font-bold tracking-tight md:text-3xl">
@@ -147,71 +124,95 @@ export default function Today({
 
             <StatCards stats={statCards} />
 
-            <div className="flex flex-wrap items-start gap-6">
-                <div className="flex min-w-0 flex-[999_1_460px] flex-col gap-6">
-                    <section
-                        id="oggi"
-                        aria-labelledby={todayTitleId}
-                        className="flex scroll-mt-4 flex-col gap-2 md:gap-2.5"
+            <div className="flex flex-col gap-6">
+                <section
+                    id="oggi"
+                    aria-labelledby={todayTitleId}
+                    className="flex scroll-mt-4 flex-col gap-2 md:gap-2.5"
+                >
+                    <h2
+                        id={todayTitleId}
+                        className="text-lg font-semibold tracking-tight md:text-xl"
                     >
-                        <h2
-                            id={todayTitleId}
-                            className="text-lg font-semibold tracking-tight md:text-xl"
-                        >
-                            Oggi
-                        </h2>
-                        {sessions.length === 0 && (
-                            <p className="text-sm text-muted-foreground">
-                                Nessuna seduta oggi.
-                            </p>
-                        )}
-                        {sessions.map(({ session, timing }) => (
-                            <TodaySessionRow
-                                key={session.id}
-                                session={session}
-                                timing={timing}
-                                attendance={attendance[session.id] ?? null}
-                                onAttendanceChange={(value) =>
-                                    setAttendance({
-                                        ...attendance,
-                                        [session.id]: value,
-                                    })
-                                }
-                            />
-                        ))}
-                    </section>
+                        Oggi
+                    </h2>
+                    {sessions.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                            Nessuna seduta oggi.
+                        </p>
+                    )}
+                    {sessions.map(({ session, timing }) => (
+                        <TodaySessionRow
+                            key={session.id}
+                            session={session}
+                            timing={timing}
+                        />
+                    ))}
+                </section>
 
-                    <section
-                        id="prenotazioni"
-                        aria-labelledby={requestsTitleId}
-                        className="flex scroll-mt-4 flex-col gap-2 md:gap-2.5"
-                    >
+                <UpcomingSessions sessions={upcoming} />
+
+                <section
+                    id="prenotazioni"
+                    aria-labelledby={requestsTitleId}
+                    className="flex scroll-mt-4 flex-col gap-2 md:gap-2.5"
+                >
+                    <div className="flex flex-col gap-0.5">
+                        <h2
+                            id={requestsTitleId}
+                            className="text-lg font-semibold tracking-tight tabular-nums md:text-xl"
+                        >
+                            {requestsTitle(pendingCount)}
+                        </h2>
+                        <span className="hidden text-[13px] leading-4.5 text-muted-foreground md:block">
+                            Lo slot resta bloccato per il cliente finché non
+                            rispondi, al massimo 24 ore.
+                        </span>
+                    </div>
+                    {requests.map((request) => (
+                        <BookingRequestCard
+                            key={request.id}
+                            request={request}
+                            answer={answers[request.id] ?? 'pending'}
+                            onAnswer={(value) => answer(request, value)}
+                        />
+                    ))}
+                </section>
+
+                <section
+                    id="passate"
+                    aria-labelledby={pastTitleId}
+                    className="flex scroll-mt-4 flex-col gap-2 md:gap-2.5"
+                >
+                    <div className="flex items-end justify-between gap-3">
                         <div className="flex flex-col gap-0.5">
                             <h2
-                                id={requestsTitleId}
-                                className="text-lg font-semibold tracking-tight tabular-nums md:text-xl"
+                                id={pastTitleId}
+                                className="text-lg font-semibold tracking-tight md:text-xl"
                             >
-                                {requestsTitle(pendingCount)}
+                                Ultimi 7 giorni
                             </h2>
                             <span className="hidden text-[13px] leading-4.5 text-muted-foreground md:block">
-                                Lo slot resta bloccato per il cliente finché non
-                                rispondi, al massimo 24 ore.
+                                Le sedute risultano effettuate: segna «Saltata»
+                                se il cliente non si è presentato.
                             </span>
                         </div>
-                        {requests.map((request) => (
-                            <BookingRequestCard
-                                key={request.id}
-                                request={request}
-                                answer={answers[request.id] ?? 'pending'}
-                                onAnswer={(value) => answer(request, value)}
-                            />
-                        ))}
-                    </section>
-                </div>
-
-                <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-6">
-                    <TodoList todos={allTodos} />
-                </div>
+                        <Link
+                            href={pastSessions()}
+                            className="inline-flex min-h-11 shrink-0 items-center gap-1 text-sm font-medium md:min-h-0"
+                        >
+                            Vedi tutte
+                            <ArrowRight aria-hidden="true" className="size-4" />
+                        </Link>
+                    </div>
+                    {past.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                            Nessuna seduta negli ultimi 7 giorni.
+                        </p>
+                    ) : (
+                        <PastSessionList sessions={past} />
+                    )}
+                </section>
             </div>
         </>
     );

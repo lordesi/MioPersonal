@@ -111,7 +111,6 @@ class GoogleAuthController extends Controller
         $request->validate([
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
-            'phone_prefix' => $this->phonePrefixRules(),
             'phone' => $this->phoneNumberRules(),
             'terms' => ['accepted'],
         ]);
@@ -127,7 +126,7 @@ class GoogleAuthController extends Controller
             'first_name' => trim($request->string('first_name')->value()),
             'last_name' => trim($request->string('last_name')->value()),
             'email' => $data['email'],
-            'phone' => CreateNewUser::phoneWithPrefix($request->input('phone_prefix'), $request->input('phone')),
+            'phone' => CreateNewUser::italianPhone($request->input('phone')),
             // When the consent was given, as the GDPR asks.
             'terms_accepted_at' => now(),
         ]);

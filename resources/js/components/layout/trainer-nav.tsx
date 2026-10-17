@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Calendar, Clock, House, Star, Users } from 'lucide-react';
+import { Calendar, Clock, House, Star, Tag, Users } from 'lucide-react';
 import type { TabItem } from '@/components/layout/mobile-tab-bar';
 import MobileTabBar from '@/components/layout/mobile-tab-bar';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import {
     calendar,
     clients,
     reviews,
+    services,
     today,
 } from '@/routes/trainer';
 
@@ -17,15 +18,29 @@ export type TrainerSection =
     | 'calendar'
     | 'clients'
     | 'availability'
+    | 'services'
     | 'reviews';
+
+/** A link of the trainer area; desktopOnly ones stay out of the mobile tab bar. */
+export type TrainerNavItem = TabItem & { desktopOnly?: boolean };
 
 const sections: {
     section: TrainerSection;
     title: string;
+    /** For the mobile tab bar, when the title is too long. */
+    shortTitle?: string;
     icon: TabItem['icon'];
     href: () => string;
+    /** The tab bar has room for 5 links: this one is only in the side menu. */
+    desktopOnly?: boolean;
 }[] = [
-    { section: 'today', title: 'Oggi', icon: House, href: today.url },
+    {
+        section: 'today',
+        title: 'Le tue prenotazioni',
+        shortTitle: 'Prenotazioni',
+        icon: House,
+        href: today.url,
+    },
     {
         section: 'calendar',
         title: 'Calendario',
@@ -39,24 +54,33 @@ const sections: {
         icon: Clock,
         href: availability.url,
     },
+    {
+        section: 'services',
+        title: 'Servizi',
+        icon: Tag,
+        href: services.url,
+        desktopOnly: true,
+    },
     { section: 'reviews', title: 'Recensioni', icon: Star, href: reviews.url },
 ];
 
 export function trainerNavItems(
     current?: TrainerSection,
     pendingCount = 0,
-): TabItem[] {
+): TrainerNavItem[] {
     return sections.map((item) => ({
         title: item.title,
+        shortTitle: item.shortTitle,
         href: item.href(),
         icon: item.icon,
         isActive: item.section === current,
         badge: item.section === 'today' ? pendingCount : undefined,
+        desktopOnly: item.desktopOnly,
     }));
 }
 
 type TrainerSidebarProps = {
-    items: TabItem[];
+    items: TrainerNavItem[];
     /** When false, shows the "Attiva le notifiche" card under the menu. */
     notificationsEnabled?: boolean;
     onEnableNotifications?: () => void;
@@ -97,11 +121,7 @@ export function TrainerSidebar({
                 </Link>
             ))}
 
-            {notificationsEnabled ? (
-                <p className="mt-4 px-3 text-xs text-muted-foreground">
-                    Notifiche attive su questo dispositivo.
-                </p>
-            ) : (
+            {!notificationsEnabled && (
                 <div className="mt-4 flex flex-col gap-2 rounded-xl border bg-background p-3.5">
                     <span className="text-sm font-semibold">
                         Non perdere le prenotazioni
@@ -119,6 +139,11 @@ export function TrainerSidebar({
 }
 
 /** Bottom tab bar of the trainer area, visible below md. */
-export function TrainerTabBar({ items }: { items: TabItem[] }) {
-    return <MobileTabBar items={items} label="Area trainer" />;
+export function TrainerTabBar({ items }: { items: TrainerNavItem[] }) {
+    return (
+        <MobileTabBar
+            items={items.filter((item) => !item.desktopOnly)}
+            label="Area trainer"
+        />
+    );
 }

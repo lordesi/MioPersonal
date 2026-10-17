@@ -4,15 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Trainer\SaveTrainerProfile;
-use App\Enums\PlaceType;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\TrainerReviewDecision;
 use App\Enums\UserRole;
 use App\Http\Requests\TrainerProfileRequest;
-use App\Models\Service;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\CatalogOptions;
+use App\Support\TrainerDraft;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -52,7 +51,7 @@ class TrainerRegistrationController extends Controller
                 : null,
             // A trainer fixing the profile starts from step 2, with what was sent.
             'editing' => $user?->role === UserRole::Trainer,
-            'draft' => $profile === null ? null : $this->draft($profile),
+            'draft' => $profile === null ? null : TrainerDraft::fromProfile($profile),
             'changeRequest' => $profile === null ? null : $this->changeRequest($profile),
             'previewHref' => $profile === null ? null : route('trainers.show', $profile->slug, false),
         ]);
@@ -72,7 +71,7 @@ class TrainerRegistrationController extends Controller
         if ($user === null) {
             $user = DB::transaction(function () use ($request, $creator, $saver, $data) {
                 // Same rules as the client sign-up.
-                $user = $creator->create($request->only(['first_name', 'last_name', 'email', 'phone_prefix', 'phone', 'password', 'terms']));
+                $user = $creator->create($request->only(['first_name', 'last_name', 'email', 'phone', 'password', 'terms']));
                 $this->makeTrainer($user);
                 $saver->handle($user, $data);
 
@@ -111,93 +110,6 @@ class TrainerRegistrationController extends Controller
     {
         $user->role = UserRole::Trainer;
         $user->save();
-    }
-
-    /**
-     * The saved profile in the format of the page (TrainerDraft in draft.ts).
-     *
-     * @return array<string, mixed>
-     */
-    private function draft(TrainerProfile $profile): array
-    {
-        $profile->load(['city', 'otherCities', 'disciplines', 'places', 'services', 'workingHours', 'documents', 'portrait']);
-
-        $hours = array_fill(0, 7, []);
-
-        foreach ($profile->workingHours as $range) {
-            $hours[$range->weekday - 1] = [...$hours[$range->weekday - 1], ...$range->startHours()];
-        }
-
-        return [
-            'headline' => $profile->headline,
-            'bio' => $profile->bio,
-            'experience' => $profile->experience->value,
-            'photoUrl' => $profile->portrait?->url(),
-            'disciplines' => $profile->disciplines->pluck('slug')->all(),
-            'places' => $profile->places->pluck('type')->unique()->map(fn (PlaceType $type) => $type->value)->values()->all(),
-            'studios' => $profile->places
-                ->where('type', PlaceType::Studio)
-                ->map(fn ($place) => ['name' => $place->name ?? '', 'address' => $place->address ?? ''])
-                ->values()->all() ?: [['name' => '', 'address' => '']],
-            'city' => $profile->city->slug ?? '',
-            'otherCities' => $profile->otherCities->pluck('slug')->all(),
-            'pricing' => $this->pricing($profile),
-            'hours' => $hours,
-            'rules' => [
-                'noticeHours' => $profile->notice_hours,
-                'bookingWindowDays' => $profile->booking_window_days,
-                'breakMinutes' => $profile->break_minutes,
-                // null = "Nessun limite".
-                'maxSessionsPerDay' => $profile->max_sessions_per_day,
-                'freeCancellationHours' => $profile->free_cancellation_hours,
-            ],
-            'sessionMinutes' => $profile->session_minutes,
-            'autoConfirm' => $profile->auto_confirm,
-            'certifications' => $profile->documents->where('type', 'certificate')->map(fn ($document) => [
-                'id' => $document->id,
-                'title' => $document->title,
-                'issuer' => $document->issuer ?? '',
-                'year' => $document->year === null ? '' : (string) $document->year,
-                'hasFile' => $document->path !== null,
-            ])->values()->all(),
-        ];
-    }
-
-    /**
-     * "Servizi e prezzi" in the format of the page (`pricing` in draft.ts),
-     * read back from the rows written by SaveTrainerProfile::saveServices().
-     *
-     * @return array<string, mixed>
-     */
-    private function pricing(TrainerProfile $profile): array
-    {
-        $services = $profile->services->sortBy('sort');
-        $single = $services->first(fn (Service $service) => $service->price_per_hour && ! $service->online_only);
-        $online = $services->first(fn (Service $service) => $service->price_per_hour && $service->online_only);
-        $first = $services->first(fn (Service $service) => $service->kind === 'session' && ! $service->price_per_hour);
-        // Older profiles may have durations that can't be chosen any more (e.g. 45 min).
-        $minutes = fn (int $value) => in_array($value, TrainerProfile::SESSION_MINUTES, true) ? $value : 60;
-
-        return [
-            'hourlyCents' => $single?->price_cents,
-            'singleNote' => $single->note ?? '',
-            'onlineSamePrice' => $online === null,
-            'onlineHourlyCents' => $online?->price_cents,
-            'onlineNote' => $online->note ?? '',
-            'firstSession' => [
-                'enabled' => $first !== null,
-                'name' => $first->name ?? 'Prima seduta',
-                'minutes' => $minutes($first->minutes ?? 60),
-                'priceCents' => $first?->price_cents,
-                'note' => $first->note ?? '',
-            ],
-            'packages' => $services->where('kind', 'package')->map(fn (Service $service) => [
-                'sessions' => $service->package_sessions ?? 10,
-                'minutes' => $minutes($service->minutes),
-                'priceCents' => $service->price_cents,
-                'note' => $service->note ?? '',
-            ])->values()->all(),
-        ];
     }
 
     /**

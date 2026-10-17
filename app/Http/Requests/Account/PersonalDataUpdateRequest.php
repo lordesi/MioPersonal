@@ -19,7 +19,7 @@ class PersonalDataUpdateRequest extends FormRequest
         return [
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
-            'phone' => $this->phoneRules(),
+            'phone' => $this->phoneNumberRules(),
         ];
     }
 }

@@ -1,35 +1,22 @@
+import { Link } from '@inertiajs/react';
 import { useId } from 'react';
-import ProgressBar from '@/components/shared/progress-bar';
-import ResponsiveText from '@/components/shared/responsive-text';
 import UserAvatar from '@/components/shared/user-avatar';
-import {
-    nextSessionLabel,
-    packageLabel,
-} from '@/components/trainer/area/client-list';
+import AttendanceLabel from '@/components/trainer/attendance-label';
+import { nextSessionLabel } from '@/components/trainer/area/client-list';
+import NoShowButton from '@/components/trainer/no-show-button';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { sessionsLabel } from '@/lib/calendar';
+import { formatDayShort, formatTimeRange } from '@/lib/format';
+import { show as showClient } from '@/routes/trainer/clients';
 import type { TrainerClient } from '@/types';
 
-/** Packages with this many sessions left (or fewer) suggest a renewal. */
-const LOW_PACKAGE = 3;
-
-type ClientCardProps = {
-    client: TrainerClient;
-    note: string;
-    onNoteChange: (note: string) => void;
-};
-
-/** Details of the selected client: package, practical notes, actions. */
-export default function ClientCard({
-    client,
-    note,
-    onNoteChange,
-}: ClientCardProps) {
-    const noteId = useId();
-    const hintId = useId();
-    const lowPackage =
-        client.package !== null && client.package.left <= LOW_PACKAGE;
+/**
+ * Details of the selected client: how often they show up, every slot still to
+ * come, the last week's sessions with "Saltata", link to the profile.
+ */
+export default function ClientCard({ client }: { client: TrainerClient }) {
+    const titleId = useId();
+    const recentTitleId = useId();
 
     return (
         <aside
@@ -41,58 +28,83 @@ export default function ClientCard({
                 <div className="flex flex-col">
                     <span className="text-lg font-bold">{client.name}</span>
                     <span className="text-[13px] leading-4.5 text-muted-foreground tabular-nums">
-                        {client.sessions} sedute · prossima{' '}
+                        {sessionsLabel(client.sessions)} · prossima{' '}
                         {nextSessionLabel(client)}
                     </span>
+                    <AttendanceLabel attendance={client.attendance} />
                 </div>
             </div>
 
-            {client.package && (
-                <div className="flex flex-col gap-1.5 rounded-lg bg-muted p-3">
-                    <span className="text-sm font-semibold tabular-nums">
-                        {client.package.name} · {packageLabel(client)}
-                    </span>
-                    <ProgressBar
-                        value={client.package.total - client.package.left}
-                        max={client.package.total}
-                        label={`Sedute usate del pacchetto di ${client.name}`}
-                        className="bg-background"
-                    />
-                    {lowPackage && (
-                        // TODO: send the client a renewal proposal.
-                        <Button
-                            type="button"
-                            size="sm"
-                            className="mt-1 self-start text-[13px]"
-                        >
-                            <ResponsiveText
-                                mobile="Proponi il rinnovo del pacchetto"
-                                desktop="Proponi il rinnovo"
-                            />
-                        </Button>
-                    )}
-                </div>
+            <section
+                aria-labelledby={titleId}
+                className="flex flex-col gap-1.5"
+            >
+                <h3 id={titleId} className="text-sm font-semibold">
+                    Prossime sedute
+                </h3>
+                {client.upcoming.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                        Nessuna seduta in programma.
+                    </p>
+                ) : (
+                    <ul className="overflow-hidden rounded-lg border">
+                        {client.upcoming.map((session) => (
+                            <li
+                                key={session.id}
+                                className="flex flex-col border-b px-3 py-2 last:border-b-0"
+                            >
+                                <span className="text-sm font-semibold tabular-nums">
+                                    {formatDayShort(session.start)} ·{' '}
+                                    {formatTimeRange(
+                                        session.start,
+                                        session.hours,
+                                    )}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                    {session.serviceName} · {session.placeLabel}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </section>
+
+            {client.recent.length > 0 && (
+                <section
+                    aria-labelledby={recentTitleId}
+                    className="flex flex-col gap-1.5"
+                >
+                    <h3 id={recentTitleId} className="text-sm font-semibold">
+                        Ultime sedute
+                    </h3>
+                    <ul className="overflow-hidden rounded-lg border">
+                        {client.recent.map((session) => (
+                            <li
+                                key={session.id}
+                                className="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2 last:border-b-0"
+                            >
+                                <span className="flex flex-col">
+                                    <span className="text-sm font-semibold tabular-nums">
+                                        {formatDayShort(session.start)} ·{' '}
+                                        {formatTimeRange(
+                                            session.start,
+                                            session.hours,
+                                        )}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {session.serviceName}
+                                    </span>
+                                </span>
+                                <NoShowButton session={session} />
+                            </li>
+                        ))}
+                    </ul>
+                </section>
             )}
 
-            {/* TODO: save the note on the server. */}
-            <div className="flex flex-col gap-1.5">
-                <Label htmlFor={noteId}>Note pratiche</Label>
-                <Textarea
-                    id={noteId}
-                    rows={3}
-                    value={note}
-                    aria-describedby={hintId}
-                    onChange={(event) => onNoteChange(event.target.value)}
-                />
-                <span id={hintId} className="text-xs text-muted-foreground">
-                    <ResponsiveText
-                        mobile="Niente dati sulla salute."
-                        desktop="Solo informazioni pratiche: non inserire dati sulla salute."
-                    />
-                </span>
-            </div>
-
-            {/* TODO: "Proponi" (a session proposed to the client), after bookings are stored. */}
+            <Button asChild variant="outline" className="self-start">
+                <Link href={showClient(client.id)}>Apri la scheda</Link>
+            </Button>
         </aside>
     );
 }

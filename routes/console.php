@@ -1,9 +1,12 @@
 <?php
 
 use App\Enums\BookingStatus;
+use App\Enums\PlaceType;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
+use App\Jobs\GeocodeTrainerPlace;
 use App\Models\Booking;
+use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\TrainerSlots;
@@ -75,3 +78,17 @@ Artisan::command('bookings:expire', function () {
 })->purpose('Mark the booking requests the trainer did not answer in time as expired');
 
 Schedule::command('bookings:expire')->everyMinute();
+
+// The studios saved before their coordinates existed (or when Nominatim didn't
+// answer): finds them on the map, one per second as Nominatim asks.
+Artisan::command('places:geocode', function () {
+    $ids = TrainerPlace::where('type', PlaceType::Studio)->whereNull('lat')->pluck('id');
+
+    foreach ($ids as $id) {
+        GeocodeTrainerPlace::dispatchSync($id);
+    }
+
+    $found = TrainerPlace::whereIn('id', $ids)->whereNotNull('lat')->count();
+
+    $this->info("{$found} of {$ids->count()} studios found on the map.");
+})->purpose('Find the coordinates of the studios that do not have them yet');

@@ -63,9 +63,9 @@ class TrainerAreaTest extends TestCase
         $this->actingAs(User::factory()->trainer()->create())
             ->get(route('trainer.calendar'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('weekStart', fn (string $date) => preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1)
+                ->where('view', 'week')
+                ->where('focus', now('Europe/Rome')->toDateString())
                 ->has('events', 0)
-                ->has('sessionCounts', 0)
                 ->missing('syncs')
             );
     }
@@ -77,20 +77,12 @@ class TrainerAreaTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->has('clients', 0));
     }
 
-    public function test_availability_has_seven_days_and_rules()
+    /** Hours and rules come from the registration: without it there is nothing to change. */
+    public function test_availability_needs_the_registration()
     {
         $this->actingAs(User::factory()->trainer()->create())
             ->get(route('trainer.availability'))
-            ->assertInertia(fn (Assert $page) => $page
-                ->has('weekdays', 7)
-                ->whereType('autoConfirm', 'boolean')
-                ->whereType('rules.noticeHours', 'integer')
-                ->has('holidays.0', fn (Assert $holiday) => $holiday
-                    ->whereType('from', 'string')
-                    ->whereType('to', 'string')
-                    ->etc()
-                )
-            );
+            ->assertInertia(fn (Assert $page) => $page->where('availability', null));
     }
 
     public function test_settings_have_account_contacts_and_upcoming_sessions()

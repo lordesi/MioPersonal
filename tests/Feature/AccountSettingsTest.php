@@ -35,7 +35,7 @@ class AccountSettingsTest extends TestCase
                 ->where('account.email', $user->email)
                 ->where('account.hasPassword', true)
                 ->where('account.passwordChangedAt', null)
-                ->has('account.providers', 2)
+                ->has('account.providers', 1)
                 // Removed from the page: devices and notifications.
                 ->missing('account.devices')
                 ->missing('account.notifications')
@@ -61,7 +61,7 @@ class AccountSettingsTest extends TestCase
             ->patch(route('account.personal.update'), [
                 'first_name' => ' Luca ',
                 'last_name' => 'Moretti',
-                'phone' => '+39 333 000 0000',
+                'phone' => '333 000 0000',
             ])
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('account.settings'));
@@ -79,6 +79,18 @@ class AccountSettingsTest extends TestCase
         $this->actingAs($user)
             ->from(route('account.settings'))
             ->patch(route('account.personal.update'), ['first_name' => 'Luca', 'last_name' => 'Moretti', 'phone' => ''])
+            ->assertSessionHasErrors('phone');
+
+        $this->assertSame('+393330000000', $user->refresh()->phone);
+    }
+
+    public function test_the_phone_must_have_10_digits()
+    {
+        $user = User::factory()->create(['phone' => '+393330000000']);
+
+        $this->actingAs($user)
+            ->from(route('account.settings'))
+            ->patch(route('account.personal.update'), ['first_name' => 'Luca', 'last_name' => 'Moretti', 'phone' => '333 000 00000'])
             ->assertSessionHasErrors('phone');
 
         $this->assertSame('+393330000000', $user->refresh()->phone);

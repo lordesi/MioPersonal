@@ -51,7 +51,7 @@ class AccountSettingsController extends Controller
         $user->update([
             'first_name' => trim($request->string('first_name')),
             'last_name' => trim($request->string('last_name')),
-            'phone' => CreateNewUser::normalizePhone($request->string('phone')->value()),
+            'phone' => CreateNewUser::italianPhone($request->string('phone')->value()),
         ]);
 
         return back();

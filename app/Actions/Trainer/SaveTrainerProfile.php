@@ -4,13 +4,14 @@ namespace App\Actions\Trainer;
 
 use App\Enums\PlaceType;
 use App\Enums\TrainerProfileStatus;
-use App\Http\Requests\TrainerProfileRequest;
+use App\Jobs\GeocodeTrainerPlace;
 use App\Models\City;
 use App\Models\Discipline;
 use App\Models\TrainerDocument;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\TrainerAvailability;
 use App\Support\TrainerSlots;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -22,82 +23,73 @@ use Illuminate\Support\Facades\Storage;
  * (disciplines, places, services, hours, certifications) are replaced, then
  * the computed fields of the search are updated. The profile goes (back) to
  * "In revisione": it shows up in the site only after the team approves it.
+ *
+ * update() is "Modifica profilo" of an approved trainer: the same steps
+ * without the services (step 4, changed from "Servizi") and the hours
+ * (step 5), public right away, without a new review.
  */
 class SaveTrainerProfile
 {
+    public function __construct(private SaveTrainerServices $services) {}
+
     /**
      * @param  array<string, mixed>  $data  validated by TrainerProfileRequest
      */
     public function handle(User $user, array $data): TrainerProfile
     {
-        // Files written before a failed transaction are removed at the end.
+        return $this->withFileCleanup(function (array &$newFiles) use ($user, $data) {
+            $profile = $user->trainerProfile ?? new TrainerProfile;
+            $profile->user_id = $user->id;
+            $profile->slug ??= TrainerProfile::uniqueSlug($user->name);
+
+            $profile->fill(TrainerAvailability::attributes($data));
+            $profile->forceFill([
+                'status' => TrainerProfileStatus::Review,
+                'status_changed_at' => now(),
+            ]);
+
+            $this->saveDetails($profile, $data, $newFiles);
+            $this->services->save($profile, $data);
+            TrainerAvailability::saveHours($profile, $data['hours'] ?? []);
+
+            TrainerSlots::refresh($profile->load('workingHours'));
+
+            // The user may have read "no profile" before: now it has one.
+            $user->setRelation('trainerProfile', $profile);
+
+            return $profile;
+        });
+    }
+
+    /**
+     * "Modifica profilo": steps 2, 3 and 6. Status, services and hours don't change.
+     *
+     * @param  array<string, mixed>  $data  validated by TrainerProfileUpdateRequest
+     */
+    public function update(TrainerProfile $profile, array $data): TrainerProfile
+    {
+        return $this->withFileCleanup(function (array &$newFiles) use ($profile, $data) {
+            $this->saveDetails($profile, $data, $newFiles);
+            // Online or the places in person may be gone: their own online prices too.
+            $this->services->dropOnlinePricesIfUnused($profile);
+
+            return $profile;
+        });
+    }
+
+    /**
+     * Runs $save in a transaction. Files written before a failed transaction
+     * are removed at the end.
+     *
+     * @param  \Closure(list<array{string, string}>&): TrainerProfile  $save
+     */
+    private function withFileCleanup(\Closure $save): TrainerProfile
+    {
         $newFiles = [];
 
         try {
-            return DB::transaction(function () use ($user, $data, &$newFiles) {
-                $profile = $user->trainerProfile ?? new TrainerProfile;
-                $profile->user_id = $user->id;
-                $profile->slug ??= TrainerProfile::uniqueSlug($user->name);
-
-                $citySlugs = [$data['city'] ?? null, ...$data['other_cities'] ?? []];
-                $cityIds = City::whereIn('slug', array_filter($citySlugs))->pluck('id', 'slug');
-                $places = array_map(PlaceType::from(...), array_values(array_unique($data['places'])));
-                $inPerson = array_filter($places, fn (PlaceType $place) => $place !== PlaceType::Online) !== [];
-                $mainCityId = $inPerson ? ($cityIds[$data['city'] ?? ''] ?? null) : null;
-
-                $profile->fill([
-                    'headline' => trim($data['headline']),
-                    'bio' => trim($data['bio']),
-                    'experience' => $data['experience'],
-                    'city_id' => $mainCityId,
-                    'session_minutes' => $this->sessionMinutes($data['session_minutes']),
-                    // null = "Nessun limite".
-                    'max_sessions_per_day' => $data['max_sessions_per_day'] ?? null,
-                    'auto_confirm' => (bool) $data['auto_confirm'],
-                    ...array_intersect_key($data, TrainerProfileRequest::RULE_OPTIONS),
-                ]);
-                // A separate online price only for who trains both online and in person.
-                $onlinePrice = $inPerson && in_array(PlaceType::Online, $places, true) && filled($data['online_price_cents'] ?? null)
-                    ? (int) $data['online_price_cents']
-                    : null;
-                // "da 45 €" in the search: the lowest hourly price.
-                $prices = array_filter([(int) $data['hourly_price_cents'], $onlinePrice]);
-
-                $profile->forceFill([
-                    'status' => TrainerProfileStatus::Review,
-                    'status_changed_at' => now(),
-                    'trains_online' => in_array(PlaceType::Online, $places, true),
-                    'trains_in_person' => $inPerson,
-                    'price_from_cents' => $prices === [] ? null : min($prices),
-                ])->save();
-
-                $this->saveDisciplines($profile, $data['disciplines']);
-
-                // Online-only trainers go nowhere; the main city is not repeated.
-                $otherCityIds = [];
-
-                foreach ($inPerson ? $data['other_cities'] ?? [] : [] as $slug) {
-                    $id = $cityIds[$slug] ?? null;
-
-                    if ($id !== null && $id !== $mainCityId) {
-                        $otherCityIds[] = $id;
-                    }
-                }
-
-                $profile->otherCities()->sync($otherCityIds);
-
-                $this->savePlaces($profile, $places, $data['studios'] ?? [], $mainCityId);
-                $this->saveServices($profile, $data, $onlinePrice, $data['first_session'] ?? null, $data['packages'] ?? []);
-                $this->saveHours($profile, $data['hours'] ?? []);
-                $newFiles = [...$newFiles, ...$this->savePhoto($profile, $data['photo'] ?? null)];
-                $newFiles = [...$newFiles, ...$this->saveCertifications($profile, $data['certifications'] ?? [])];
-
-                TrainerSlots::refresh($profile->load('workingHours'));
-
-                // The user may have read "no profile" before: now it has one.
-                $user->setRelation('trainerProfile', $profile);
-
-                return $profile;
+            return DB::transaction(function () use ($save, &$newFiles) {
+                return $save($newFiles);
             });
         } catch (\Throwable $exception) {
             foreach ($newFiles as [$disk, $path]) {
@@ -109,18 +101,51 @@ class SaveTrainerProfile
     }
 
     /**
-     * "Durate prenotabili" as whole minutes, shortest first: ['90', '60'] → [60, 90].
-     * Forms with files send them as text.
+     * Steps 2, 3 and 6: public profile, disciplines and places, photo and
+     * certifications, plus where the trainer trains (read by the search).
      *
-     * @param  list<int|string>  $minutes
-     * @return list<int>
+     * @param  array<string, mixed>  $data
+     * @param  list<array{string, string}>  $newFiles  the files written: [disk, path]
      */
-    private function sessionMinutes(array $minutes): array
+    private function saveDetails(TrainerProfile $profile, array $data, array &$newFiles): void
     {
-        $minutes = array_values(array_unique(array_map(intval(...), $minutes)));
-        sort($minutes);
+        $citySlugs = [$data['city'] ?? null, ...$data['other_cities'] ?? []];
+        $cityIds = City::whereIn('slug', array_filter($citySlugs))->pluck('id', 'slug');
+        $places = array_map(PlaceType::from(...), array_values(array_unique($data['places'])));
+        $inPerson = array_filter($places, fn (PlaceType $place) => $place !== PlaceType::Online) !== [];
+        $mainCityId = $inPerson ? ($cityIds[$data['city'] ?? ''] ?? null) : null;
 
-        return $minutes;
+        $profile->fill([
+            'headline' => trim($data['headline']),
+            'bio' => trim($data['bio']),
+            'experience' => $data['experience'],
+            'city_id' => $mainCityId,
+        ]);
+        $profile->forceFill([
+            'trains_online' => in_array(PlaceType::Online, $places, true),
+            'trains_in_person' => $inPerson,
+            // A new profile: the durations come right after, with the services.
+            'session_minutes' => $profile->session_minutes ?? [],
+        ])->save();
+
+        $this->saveDisciplines($profile, $data['disciplines']);
+
+        // Online-only trainers go nowhere; the main city is not repeated.
+        $otherCityIds = [];
+
+        foreach ($inPerson ? $data['other_cities'] ?? [] : [] as $slug) {
+            $id = $cityIds[$slug] ?? null;
+
+            if ($id !== null && $id !== $mainCityId) {
+                $otherCityIds[] = $id;
+            }
+        }
+
+        $profile->otherCities()->sync($otherCityIds);
+
+        $this->savePlaces($profile, $places, $data['studios'] ?? [], $mainCityId);
+        $newFiles = [...$newFiles, ...$this->savePhoto($profile, $data['photo'] ?? null)];
+        $newFiles = [...$newFiles, ...$this->saveCertifications($profile, $data['certifications'] ?? [])];
     }
 
     /** @param  list<string>  $slugs  in the trainer's order */
@@ -137,19 +162,34 @@ class SaveTrainerProfile
     }
 
     /**
-     * One row per studio, then one for home, park and online.
+     * One row per studio, then one for home, park and online. A studio keeps
+     * its coordinates while its address stays the same; a new address is
+     * looked up on the map after the response (GeocodeTrainerPlace).
      *
      * @param  list<PlaceType>  $places
      * @param  list<array{name: string, address: string}>  $studios
      */
     private function savePlaces(TrainerProfile $profile, array $places, array $studios, ?int $cityId): void
     {
+        $coordinates = [];
+
+        foreach ($profile->places()->whereNotNull('lat')->get() as $place) {
+            $coordinates[$place->city_id.'|'.$place->address] = ['lat' => $place->lat, 'lng' => $place->lng];
+        }
+
         $profile->places()->delete();
         $rows = [];
 
         if (in_array(PlaceType::Studio, $places, true)) {
             foreach ($studios as $studio) {
-                $rows[] = ['type' => PlaceType::Studio, 'name' => trim($studio['name']), 'address' => trim($studio['address']), 'city_id' => $cityId];
+                $address = trim($studio['address']);
+                $rows[] = [
+                    'type' => PlaceType::Studio,
+                    'name' => trim($studio['name']),
+                    'address' => $address,
+                    'city_id' => $cityId,
+                    ...($coordinates[$cityId.'|'.$address] ?? []),
+                ];
             }
         }
 
@@ -160,91 +200,10 @@ class SaveTrainerProfile
         }
 
         foreach ($rows as $index => $row) {
-            $profile->places()->create([...$row, 'sort' => $index]);
-        }
-    }
+            $place = $profile->places()->create([...$row, 'sort' => $index]);
 
-    /**
-     * "Servizi e prezzi" becomes rows of `services`, in this order:
-     * - "Seduta singola": hourly price, bookable in every duration of step 5;
-     * - "Seduta online": the same, online only, when it has its own price;
-     * - the first session (optional): fixed duration, can be free (0);
-     * - the packages (at most 3): sessions × duration, total price.
-     *
-     * @param  array<string, mixed>  $data  validated by TrainerProfileRequest
-     * @param  array{name: string, minutes: int|string, price_cents: int|string, note?: string|null}|null  $first
-     * @param  list<array{sessions: int|string, minutes: int|string, price_cents: int|string, note?: string|null}>  $packages
-     */
-    private function saveServices(TrainerProfile $profile, array $data, ?int $onlinePrice, ?array $first, array $packages): void
-    {
-        // TODO (step 5): bookings will point to services; then hide the old ones instead of deleting them.
-        $profile->services()->delete();
-
-        $note = fn (mixed $text) => filled($text) ? trim((string) $text) : null;
-        $hourly = ['kind' => 'session', 'minutes' => 60, 'price_per_hour' => true, 'fixed_duration' => false];
-        $rows = [[...$hourly, 'name' => 'Seduta singola', 'price_cents' => (int) $data['hourly_price_cents'], 'note' => $note($data['single_note'] ?? null)]];
-
-        if ($onlinePrice !== null) {
-            $rows[] = [...$hourly, 'name' => 'Seduta online', 'price_cents' => $onlinePrice, 'note' => $note($data['online_note'] ?? null), 'online_only' => true];
-        }
-
-        if ($first !== null) {
-            $rows[] = [
-                'kind' => 'session',
-                'name' => trim($first['name']),
-                'minutes' => (int) $first['minutes'],
-                'price_cents' => (int) $first['price_cents'],
-                'note' => $note($first['note'] ?? null),
-            ];
-        }
-
-        foreach ($packages as $package) {
-            $rows[] = [
-                'kind' => 'package',
-                'name' => "Pacchetto {$package['sessions']} sedute",
-                'minutes' => (int) $package['minutes'],
-                'price_cents' => (int) $package['price_cents'],
-                'package_sessions' => (int) $package['sessions'],
-                'note' => $note($package['note'] ?? null),
-            ];
-        }
-
-        foreach ($rows as $index => $row) {
-            $profile->services()->create([...$row, 'sort' => $index]);
-        }
-    }
-
-    /**
-     * The grid has whole start hours; consecutive hours become one range:
-     * 7, 8, 9, 10, 11 → 07:00–12:00.
-     *
-     * @param  array<int|string, list<int|string>>  $hours  0 = Monday … 6 = Sunday
-     */
-    private function saveHours(TrainerProfile $profile, array $hours): void
-    {
-        $profile->workingHours()->delete();
-
-        foreach ($hours as $day => $dayHours) {
-            $starts = array_unique(array_map(intval(...), $dayHours));
-            sort($starts);
-            $ranges = [];
-
-            foreach ($starts as $hour) {
-                $last = array_key_last($ranges);
-
-                if ($last !== null && $ranges[$last][1] === $hour) {
-                    $ranges[$last][1] = $hour + 1;
-                } else {
-                    $ranges[] = [$hour, $hour + 1];
-                }
-            }
-
-            foreach ($ranges as [$from, $to]) {
-                $profile->workingHours()->create([
-                    'weekday' => (int) $day + 1,
-                    'starts_at' => sprintf('%02d:00', $from),
-                    'ends_at' => sprintf('%02d:00', $to),
-                ]);
+            if ($place->type === PlaceType::Studio && $place->lat === null) {
+                GeocodeTrainerPlace::dispatchAfterResponse($place->id);
             }
         }
     }
@@ -279,9 +238,10 @@ class SaveTrainerProfile
 
     /**
      * The list replaces the old one. A certification sent again with its id
-     * keeps its file, unless a new file replaces it.
+     * keeps its file, unless a new file replaces it or remove_file (the ✕
+     * next to the certificate) takes it away.
      *
-     * @param  list<array{id?: int|null, title: string, issuer?: string|null, year?: int|null, file?: UploadedFile|null}>  $certifications
+     * @param  list<array{id?: int|null, title: string, issuer?: string|null, year?: int|null, file?: UploadedFile|null, remove_file?: bool|int|string|null}>  $certifications
      * @return list<array{string, string}> the files written: [disk, path]
      */
     private function saveCertifications(TrainerProfile $profile, array $certifications): array
@@ -292,7 +252,8 @@ class SaveTrainerProfile
 
         foreach ($certifications as $index => $certification) {
             $previous = $old->get((int) ($certification['id'] ?? 0));
-            $path = $previous?->path;
+            $removeFile = (bool) ($certification['remove_file'] ?? false);
+            $path = $removeFile ? null : $previous?->path;
             $file = $certification['file'] ?? null;
 
             if ($file !== null) {
@@ -304,7 +265,7 @@ class SaveTrainerProfile
 
                 $written[] = [TrainerDocument::DISK, $stored];
                 $path = $stored;
-            } elseif ($previous !== null) {
+            } elseif ($previous !== null && ! $removeFile) {
                 $kept[] = $previous->id;
             }
 

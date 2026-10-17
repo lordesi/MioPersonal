@@ -30,6 +30,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class Service extends Model
 {
+    /** The name of the first session: fixed, the trainer can't change it. */
+    public const FIRST_SESSION_NAME = 'Prima seduta';
+
     /**
      * @return array<string, string>
      */
@@ -45,6 +48,24 @@ class Service extends Model
             'sort' => 'integer',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * The first session: a session with a fixed duration (the kinds of
+     * session let the client choose it). Only for a client's first booking.
+     */
+    public function isFirstSession(): bool
+    {
+        return $this->kind === 'session' && $this->fixed_duration;
+    }
+
+    /**
+     * The name as clients read it: the online prices of a kind of session
+     * have its same name, with "(online)" after it.
+     */
+    public function displayName(): string
+    {
+        return $this->online_only ? "{$this->name} (online)" : $this->name;
     }
 
     /**

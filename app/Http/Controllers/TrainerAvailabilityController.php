@@ -3,50 +3,54 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Requests\TrainerAvailabilityRequest;
+use App\Models\User;
+use App\Support\TrainerAvailability;
+use App\Support\TrainerSlots;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * "Disponibilità e regole": the working hours and booking rules chosen in
+ * step 5 of "Diventa trainer", changed at any time. Saving does not send
+ * the profile back to the team: hours are not checked. Bookings already
+ * made stay valid, even outside the new hours.
+ */
 class TrainerAvailabilityController extends Controller
 {
     use BuildsPlaceholderData;
 
-    public function __invoke(): Response
+    public function show(Request $request): Response
     {
-        // TODO: load working hours and booking rules from the database.
-        $year = $this->romeNow()->year;
-
-        $day = fn (int $day, string $label, array $ranges) => [
-            'day' => $day,
-            'label' => $label,
-            'enabled' => $ranges !== [],
-            'ranges' => array_map(fn (array $range) => ['from' => $range[0], 'to' => $range[1]], $ranges),
-        ];
+        /** @var User $trainer */
+        $trainer = $request->user();
+        $profile = $trainer->trainerProfile;
 
         return Inertia::render('trainer/availability', [
             'trainerArea' => $this->trainerArea(),
-            'weekdays' => [
-                $day(1, 'Lunedì', [['07:00', '12:00'], ['18:00', '21:00']]),
-                $day(2, 'Martedì', [['12:00', '21:00']]),
-                $day(3, 'Mercoledì', [['07:00', '12:00'], ['18:00', '21:00']]),
-                $day(4, 'Giovedì', [['12:00', '21:00']]),
-                $day(5, 'Venerdì', [['07:00', '13:00']]),
-                $day(6, 'Sabato', [['08:00', '14:00']]),
-                $day(7, 'Domenica', []),
-            ],
-            // "Durate prenotabili", in minutes.
-            'durations' => [60, 90, 120],
-            'holidays' => [
-                ['id' => 1, 'from' => "{$year}-12-24", 'to' => ($year + 1).'-01-06'],
-            ],
-            'autoConfirm' => false,
-            'rules' => [
-                'noticeHours' => 12,
-                'bookingWindowDays' => 60,
-                'breakMinutes' => 15,
-                'maxSessionsPerDay' => 6,
-                'confirmHours' => 24,
-                'freeCancellationHours' => 24,
-            ],
+            // null: the registration was never sent, there is nothing to change yet.
+            'availability' => $profile === null ? null : TrainerAvailability::fromProfile($profile),
         ]);
+    }
+
+    public function update(TrainerAvailabilityRequest $request): RedirectResponse
+    {
+        /** @var User $trainer */
+        $trainer = $request->user();
+        $profile = $trainer->trainerProfile ?? abort(404);
+        $data = $request->validated();
+
+        DB::transaction(function () use ($profile, $data) {
+            $profile->fill(TrainerAvailability::attributes($data))->save();
+            TrainerAvailability::saveHours($profile, $data['hours']);
+        });
+
+        // The first free slot shown in the search follows the new hours.
+        TrainerSlots::refresh($profile->load('workingHours'));
+
+        return back();
     }
 }

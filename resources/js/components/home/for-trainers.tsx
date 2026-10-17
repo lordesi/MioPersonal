@@ -1,10 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { ArrowRight, Check } from 'lucide-react';
 import ResponsiveText from '@/components/shared/responsive-text';
-
-// TODO: point to the trainer registration and info pages once they exist.
-const REGISTER_TRAINER_HREF = '#';
-const LEARN_MORE_HREF = '#';
+import { register } from '@/routes/trainer';
 
 const benefits = [
     {
@@ -66,17 +63,11 @@ export default function ForTrainers() {
                     </ul>
                     <div className="flex flex-col gap-3 md:flex-row md:flex-wrap">
                         <Link
-                            href={REGISTER_TRAINER_HREF}
+                            href={register()}
                             className="flex h-11 items-center justify-center gap-2 rounded-lg bg-primary-foreground px-6 text-sm font-medium text-primary"
                         >
                             Crea il tuo profilo gratis
                             <ArrowRight aria-hidden="true" className="size-4" />
-                        </Link>
-                        <Link
-                            href={LEARN_MORE_HREF}
-                            className="hidden h-11 items-center justify-center rounded-lg border border-current px-6 text-sm font-medium md:flex"
-                        >
-                            Scopri di più
                         </Link>
                     </div>
                 </div>

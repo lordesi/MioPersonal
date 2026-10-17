@@ -1,8 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
-import { CalendarDays } from 'lucide-react';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
 import FavoriteTrainers from '@/components/client/favorite-trainers';
+import NoUpcomingSessions from '@/components/client/no-upcoming-sessions';
 import PackageCard from '@/components/client/package-card';
 import PastSessionCard from '@/components/client/past-session-card';
 import PendingBookingCard from '@/components/client/pending-booking-card';
@@ -34,15 +34,6 @@ export default function Bookings({
     favorites,
     past,
 }: BookingsProps) {
-    // A new account: nothing booked or saved yet.
-    const empty =
-        upcoming.length +
-            pending.length +
-            packages.length +
-            favorites.length +
-            past.length ===
-        0;
-
     return (
         <>
             <Head title="Le mie prenotazioni" />
@@ -56,32 +47,18 @@ export default function Bookings({
                 </Button>
             </div>
 
-            {empty && (
-                <div className="flex flex-col items-center gap-2.5 rounded-xl border border-dashed border-input px-4 py-12 text-center">
-                    <span className="flex size-12 items-center justify-center rounded-full bg-muted">
-                        <CalendarDays aria-hidden="true" className="size-5" />
-                    </span>
-                    <strong className="text-lg">Nessuna prenotazione</strong>
-                    <span className="max-w-90 text-sm text-muted-foreground">
-                        Scegli un trainer, un giorno e un orario: le tue sedute
-                        compariranno qui.
-                    </span>
-                    <Button asChild className="h-11 rounded-lg px-4.5">
-                        <Link href={searchUrl()}>Cerca un trainer</Link>
-                    </Button>
-                </div>
-            )}
-
-            {upcoming.length > 0 && (
-                <Section title="Prossime">
-                    {upcoming.map((booking) => (
+            <Section title="Prossime">
+                {upcoming.length > 0 ? (
+                    upcoming.map((booking) => (
                         <UpcomingBookingCard
                             key={booking.id}
                             booking={booking}
                         />
-                    ))}
-                </Section>
-            )}
+                    ))
+                ) : (
+                    <NoUpcomingSessions bookUrl={searchUrl()} />
+                )}
+            </Section>
 
             {/* On mobile the design shows the requests first. */}
             {pending.length > 0 && (

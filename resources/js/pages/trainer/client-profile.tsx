@@ -1,5 +1,6 @@
 import { Head } from '@inertiajs/react';
 import UserAvatar from '@/components/shared/user-avatar';
+import AttendanceLabel from '@/components/trainer/attendance-label';
 import ClientContacts from '@/components/trainer/area/client-contacts';
 import { formatDateMedium, formatMonthYear } from '@/lib/format';
 import type { TrainerClientProfile } from '@/types';
@@ -41,6 +42,10 @@ export default function ClientProfile({ client }: ClientProfileProps) {
                             {client.nextSession &&
                                 ` · prossima ${formatDateMedium(client.nextSession)}`}
                         </span>
+                        <AttendanceLabel
+                            attendance={client.attendance}
+                            className="text-sm md:text-sm"
+                        />
                     </div>
                 </div>
 

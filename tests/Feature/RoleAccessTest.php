@@ -77,7 +77,7 @@ class RoleAccessTest extends TestCase
             ->patch(route('account.personal.update'), [
                 'first_name' => 'Giulia',
                 'last_name' => 'Rossi',
-                'phone' => '+39 333 000 0000',
+                'phone' => '333 000 0000',
             ])
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('trainer.settings'));

@@ -365,7 +365,7 @@ Devi vedere la pagina di benvenuto con **Log in** e **Register** in alto. 🎉
 ## 10. Registrare un utente di prova
 
 1. Clicca **Register** e crea un account inventato (es. `test@example.com`).
-2. Comparirà la pagina **Email verification**: in locale le email **non vengono inviate davvero**, ma scritte in un file di log.
+2. Dopo **Completa il tuo profilo** (clicca **Salta per ora**) comparirà la pagina **Conferma la tua email**: in locale le email **non vengono inviate davvero**, ma scritte in un file di log.
 
 ### Trovare il link di verifica
 
@@ -374,7 +374,7 @@ Devi vedere la pagina di benvenuto con **Log in** e **Register** in alto. 🎉
 3. Cerca (**Ctrl + F**) il testo `email/verify`.
 4. Copia il link **completo** (inizia con `http://miopersonal.test/email/verify/`) e aprilo nel browser.
 
-Arriverai alla **Dashboard**. ✅
+Arriverai nella tua area (cliente o trainer). ✅ Il link vale 24 ore; se scade, dalla pagina premi **Invia di nuovo il link**.
 
 ### Se il link non funziona
 
@@ -413,6 +413,28 @@ Finché nel `.env` non c'è `GOOGLE_CLIENT_ID`, il pulsante **Continua con Googl
 5. Avvia `php artisan serve` (oltre a `npm run dev`) e apri `http://localhost:8000/login`.
 
 In produzione si aggiunge in Google l'indirizzo vero, es. `https://miopersonal.it/auth/google/callback`.
+
+### Email in produzione con Brevo
+
+In locale le email restano nel log. Online servono davvero (conferma email, password dimenticata, esito della verifica trainer, form contatti): le consegna [Brevo](https://www.brevo.com), collegato via **SMTP**. Non serve nessuna libreria: basta il `.env`.
+
+1. Crea un account Brevo (il piano gratuito permette circa 300 email al giorno: controlla sul sito).
+2. In **Impostazioni → Mittenti, domini e IP → Domini** aggiungi `miopersonal.it` e copia nel DNS del dominio i record che Brevo ti mostra (DKIM, DMARC e il codice di verifica). Senza, le email finiscono nello spam.
+3. In **SMTP e API → SMTP** genera una **chiave SMTP** e copia login e chiave nel `.env` del server:
+
+    ```
+    MAIL_MAILER=smtp
+    MAIL_HOST=smtp-relay.brevo.com
+    MAIL_PORT=587
+    MAIL_USERNAME=il-login-smtp-di-brevo
+    MAIL_PASSWORD=la-chiave-smtp
+    MAIL_FROM_ADDRESS="noreply@miopersonal.it"
+    MAIL_FROM_NAME="MioPersonal"
+    ```
+
+4. Registra un utente di prova con una tua email vera e controlla che arrivi **Conferma la tua email**.
+
+> Le chiavi vanno **solo** nel `.env` del server, mai su GitHub.
 
 ---
 

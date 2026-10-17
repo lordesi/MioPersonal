@@ -1,3 +1,5 @@
+import type { CalendarEvent } from '@/types';
+
 /** Date helpers for the trainer calendar. Every day is a Rome calendar day. */
 
 const TIME_ZONE = 'Europe/Rome';
@@ -79,7 +81,7 @@ export function sessionsLabel(count: number): string {
     return count === 1 ? '1 seduta' : `${count} sedute`;
 }
 
-/** Anything drawn in the calendar: sessions, imported appointments, blocks. */
+/** A session drawn in the calendar, confirmed or waiting for an answer. */
 export type CalendarItem = {
     key: string;
     /** Rome day "YYYY-MM-DD". */
@@ -87,13 +89,54 @@ export type CalendarItem = {
     /** Hours as numbers, 07:30 → 7.5. */
     from: number;
     to: number;
+    /** The client's name. */
     title: string;
+    /** The service, e.g. "Seduta singola". */
     detail: string;
     place: string;
-    kind: 'confirmed' | 'pending' | 'block';
+    kind: 'confirmed' | 'pending';
 };
 
-/** Key of a one-hour block the trainer made unbookable. */
-export function blockKey(date: string, hour: number): string {
-    return `${date}-${hour}`;
+/** The bookings of the server as calendar items, in Rome time. */
+export function calendarItems(events: CalendarEvent[]): CalendarItem[] {
+    return events.map((event) => {
+        const start = romeParts(event.start);
+        const end = romeParts(event.end);
+
+        return {
+            key: `event-${event.id}`,
+            date: start.date,
+            from: start.hour,
+            // A session ending at midnight ends at 24, not at 0.
+            to: end.date === start.date ? end.hour : 24,
+            title: event.clientName,
+            detail: event.serviceName,
+            place: event.placeLabel,
+            kind: event.kind,
+        };
+    });
+}
+
+/** "2026-10-15" → "2026-10-12", the Monday of its week. */
+export function mondayOf(date: string): string {
+    const weekday = (new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7;
+
+    return addDays(date, -weekday);
+}
+
+/** "2026-10" + 2 → "2026-12" */
+export function shiftMonth(month: string, offset: number): string {
+    const [year, monthNumber] = month.split('-').map(Number);
+    const date = new Date(Date.UTC(year, monthNumber - 1 + offset, 1));
+
+    return date.toISOString().slice(0, 7);
+}
+
+/** "2026-10" → "ottobre 2026" */
+export function monthName(month: string): string {
+    return new Intl.DateTimeFormat('it-IT', {
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+    }).format(new Date(`${month}-15T12:00:00Z`));
 }

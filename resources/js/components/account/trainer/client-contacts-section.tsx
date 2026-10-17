@@ -10,13 +10,12 @@ import type { TrainerContacts } from '@/types';
 type Choices = {
     showPhone: boolean;
     showEmail: boolean;
-    showWhatsapp: boolean;
     arrivalNotes: string;
 };
 
 /**
- * What clients receive once a booking is confirmed. Telefono and WhatsApp
- * need the phone of "Dati personali". The switches are saved right away,
+ * What clients receive once a booking is confirmed. Telefono needs the
+ * phone of "Dati personali". The switches are saved right away,
  * the notes when the field is left.
  */
 export default function ClientContactsSection({
@@ -25,12 +24,10 @@ export default function ClientContactsSection({
     arrivalNotes,
     showPhone,
     showEmail,
-    showWhatsapp,
 }: TrainerContacts) {
     const [saved, setSaved] = useState<Choices>({
         showPhone,
         showEmail,
-        showWhatsapp,
         arrivalNotes,
     });
     const [choices, setChoices] = useState<Choices>(saved);
@@ -45,7 +42,6 @@ export default function ClientContactsSection({
             {
                 show_phone: next.showPhone,
                 show_email: next.showEmail,
-                show_whatsapp: next.showWhatsapp,
                 arrival_notes: next.arrivalNotes,
             },
             {
@@ -90,26 +86,16 @@ export default function ClientContactsSection({
                     }
                     className="border-b py-3"
                 />
-                {phone ? (
-                    <SwitchRow
-                        label="Scrivimi su WhatsApp"
-                        description="Mostra un pulsante che apre la chat con il tuo numero"
-                        checked={choices.showWhatsapp}
-                        onCheckedChange={(checked) =>
-                            save({ ...choices, showWhatsapp: checked })
-                        }
-                        className="border-b py-3"
-                    />
-                ) : (
+                {!phone && (
                     <p className="border-b py-3 text-xs text-muted-foreground">
                         Aggiungi il telefono in «Dati personali» per mostrarlo
-                        ai clienti e ricevere messaggi su WhatsApp.
+                        ai clienti.
                     </p>
                 )}
             </div>
             <div className="flex flex-col gap-1.5">
                 <Label htmlFor={notesId}>
-                    Indicazioni per arrivare{' '}
+                    Indicazioni aggiuntive{' '}
                     <span className="font-normal text-muted-foreground">
                         (facoltativo)
                     </span>
@@ -118,6 +104,8 @@ export default function ClientContactsSection({
                     id={notesId}
                     rows={2}
                     maxLength={500}
+                    // Saved when the field is left (onBlur).
+                    placeholder="Fai sapere al tuo cliente se hai indicazioni aggiuntive"
                     value={choices.arrivalNotes}
                     onChange={(event) =>
                         setChoices({
@@ -130,17 +118,9 @@ export default function ClientContactsSection({
                             save(choices);
                         }
                     }}
-                    aria-describedby={`${notesId}-hint`}
                     aria-invalid={!!error}
                     className="text-[15px] md:text-[15px]"
                 />
-                <span
-                    id={`${notesId}-hint`}
-                    className="text-xs text-muted-foreground"
-                >
-                    Arriva nell’email di conferma insieme all’indirizzo. Si
-                    salva quando esci dal campo.
-                </span>
                 {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
         </SettingsSection>

@@ -18,7 +18,7 @@ type AccessSectionProps = Pick<
     'email' | 'hasPassword' | 'passwordChangedAt' | 'providers'
 >;
 
-/** Email (read only), password and sign-in with Google/Apple. */
+/** Email (read only), password and sign-in with Google. */
 export default function AccessSection({
     email,
     hasPassword,
@@ -188,7 +188,7 @@ function PasswordForm({
     );
 }
 
-/** TODO: connect and disconnect for real once sign-in with Google/Apple exists. */
+/** TODO: connect and disconnect Google for real from here. */
 function Providers({ providers }: Pick<AccountSettings, 'providers'>) {
     const [connected, setConnected] = useState(
         () =>

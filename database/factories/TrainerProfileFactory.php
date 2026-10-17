@@ -80,7 +80,8 @@ class TrainerProfileFactory extends Factory
 
     /**
      * Ready to be booked: every evening 18–21 (Rome), notice of 2 hours, no
-     * break between sessions, and a "Seduta singola" at 40 € per hour.
+     * break between sessions, and a "Seduta singola" of 1 hour (40 €) or
+     * 2 hours (75 €): one row for each duration, as SaveTrainerProfile writes them.
      */
     public function bookable(): static
     {
@@ -92,13 +93,15 @@ class TrainerProfileFactory extends Factory
                 $profile->workingHours()->create(['weekday' => $weekday, 'starts_at' => '18:00', 'ends_at' => '21:00']);
             }
 
-            $profile->services()->create([
-                'name' => 'Seduta singola',
-                'minutes' => 60,
-                'price_cents' => 4000,
-                'price_per_hour' => true,
-                'fixed_duration' => false,
-            ]);
+            foreach ([60 => 4000, 120 => 7500] as $minutes => $cents) {
+                $profile->services()->create([
+                    'name' => 'Seduta singola',
+                    'minutes' => $minutes,
+                    'price_cents' => $cents,
+                    'fixed_duration' => false,
+                    'sort' => $minutes,
+                ]);
+            }
         });
     }
 

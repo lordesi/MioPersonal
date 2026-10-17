@@ -42,11 +42,11 @@ import {
 } from '@/routes/client';
 import { show as contactPage } from '@/routes/contact';
 import {
-    availability,
     register as trainerRegister,
     settings as trainerSettings,
     today,
 } from '@/routes/trainer';
+import { edit as editTrainerProfile } from '@/routes/trainer/profile';
 
 export type AccountMenuVariant = 'client' | 'trainer';
 
@@ -99,10 +99,9 @@ function menuGroups({
                           },
                       ]
                     : []),
-                // The design opens "Disponibilità" until a profile editor exists.
                 {
                     title: 'Modifica profilo',
-                    href: availability.url(),
+                    href: editTrainerProfile.url(),
                     icon: User,
                 },
                 {

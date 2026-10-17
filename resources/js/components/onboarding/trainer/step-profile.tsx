@@ -1,4 +1,4 @@
-import { ImageUp, UserRound } from 'lucide-react';
+import { ImageUp, UserRound, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import FormField from '@/components/auth/form-field';
 import type { TrainerDraft } from '@/components/onboarding/trainer/draft';
@@ -59,11 +59,31 @@ export default function StepProfile({ draft, update }: StepProps) {
 
             <div className="flex flex-wrap items-center gap-4">
                 {preview ? (
-                    <img
-                        src={preview}
-                        alt="Foto profilo"
-                        className="size-24 rounded-xl border object-cover"
-                    />
+                    <div className="relative size-24 flex-none">
+                        <img
+                            src={preview}
+                            alt="Foto profilo"
+                            className="size-24 rounded-xl border object-cover"
+                        />
+                        {/* The photo stays required: without one the step can't go on. */}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            aria-label="Rimuovi la foto"
+                            className="absolute -top-2 -right-2 size-7 rounded-full shadow-sm"
+                            onClick={() => {
+                                update({ photo: null, photoUrl: null });
+
+                                // The same file can be chosen again.
+                                if (fileInput.current) {
+                                    fileInput.current.value = '';
+                                }
+                            }}
+                        >
+                            <X className="size-4" />
+                        </Button>
+                    </div>
                 ) : (
                     <div className="flex size-24 flex-col items-center justify-center gap-1 rounded-xl border border-dashed text-muted-foreground">
                         <UserRound aria-hidden="true" className="size-7" />

@@ -46,13 +46,21 @@ export default function ProfileIntro({
             className="flex flex-col gap-3.5 md:flex-row md:flex-wrap md:items-center md:gap-8"
         >
             <div className="flex items-center gap-4 md:contents">
-                <span
-                    role="img"
-                    aria-label={`Foto profilo di ${trainer.name}`}
-                    className="flex size-24 shrink-0 items-center justify-center rounded-xl bg-muted text-[32px] font-bold tracking-tight text-muted-foreground md:size-30 md:rounded-full md:text-5xl"
-                >
-                    {getInitials(trainer.name)}
-                </span>
+                {trainer.portraitUrl ? (
+                    <img
+                        src={trainer.portraitUrl}
+                        alt={`Foto profilo di ${trainer.name}`}
+                        className="size-24 shrink-0 rounded-xl bg-muted object-cover md:size-30 md:rounded-full"
+                    />
+                ) : (
+                    <span
+                        role="img"
+                        aria-label={`Foto profilo di ${trainer.name}`}
+                        className="flex size-24 shrink-0 items-center justify-center rounded-xl bg-muted text-[32px] font-bold tracking-tight text-muted-foreground md:size-30 md:rounded-full md:text-5xl"
+                    >
+                        {getInitials(trainer.name)}
+                    </span>
+                )}
 
                 <div className="flex min-w-0 flex-col gap-1 md:flex-[1_1_400px] md:gap-3">
                     <div className="flex flex-wrap items-center justify-between gap-3">

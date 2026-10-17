@@ -12,8 +12,11 @@ import {
 } from '@/components/ui/dialog';
 
 type ConfirmDialogProps = {
-    /** The button that opens the dialog. */
-    trigger: ReactNode;
+    /** The button that opens the dialog; none when `open` is controlled. */
+    trigger?: ReactNode;
+    /** Controlled from outside, e.g. opened by the submit of a form. */
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
     title: string;
     description: string;
     confirmLabel: string;
@@ -29,6 +32,8 @@ type ConfirmDialogProps = {
  */
 export default function ConfirmDialog({
     trigger,
+    open,
+    onOpenChange,
     title,
     description,
     confirmLabel,
@@ -37,8 +42,8 @@ export default function ConfirmDialog({
     onConfirm,
 }: ConfirmDialogProps) {
     return (
-        <Dialog>
-            <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>

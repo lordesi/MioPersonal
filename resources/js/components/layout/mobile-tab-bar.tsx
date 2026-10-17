@@ -5,6 +5,8 @@ import type { NavItem } from '@/types';
 export type TabItem = NavItem & {
     /** Small counter on the icon, e.g. bookings waiting for an answer. */
     badge?: number;
+    /** Shorter name for the narrow tab bar, e.g. "Prenotazioni". */
+    shortTitle?: string;
 };
 
 const columns: Record<number, string> = {
@@ -50,7 +52,7 @@ export default function MobileTabBar({
                     {item.icon && (
                         <item.icon aria-hidden="true" className="size-5.5" />
                     )}
-                    {item.title}
+                    {item.shortTitle ?? item.title}
                     {item.badge ? (
                         <span className="absolute top-1 right-4.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground tabular-nums">
                             {item.badge}

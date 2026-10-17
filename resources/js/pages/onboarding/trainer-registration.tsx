@@ -11,7 +11,7 @@ import {
     initialDraft,
     isPricingComplete,
     isProfileComplete,
-    isValidYear,
+    isCertificationValid,
     needsCity,
     stepOfField,
     toPayload,
@@ -83,7 +83,6 @@ export default function TrainerRegistration({
         first_name: '',
         last_name: '',
         email: '',
-        phone_prefix: '+39',
         phone: '',
         password: '',
         terms: false,
@@ -161,11 +160,11 @@ export default function TrainerRegistration({
             draft.disciplines.length > 0 &&
             draft.places.length > 0 &&
             (!needsCity(draft) || draft.city !== ''),
-        // Step 4: the hourly price, and every optional part complete.
+        // Step 4: a price for each duration, and every optional part complete.
         4: isPricingComplete(draft),
-        5: draft.sessionMinutes.length > 0,
-        // Optional, but a year must be real (1950 – this year).
-        6: draft.certifications.every((item) => isValidYear(item.year)),
+        5: true,
+        // Optional, but a started certification needs title, issuer and a real year.
+        6: draft.certifications.every(isCertificationValid),
         7: confirmed,
     };
 

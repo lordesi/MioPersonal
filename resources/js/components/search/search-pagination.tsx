@@ -8,6 +8,10 @@ type SearchPaginationProps = {
     lastPage: number;
     /** URL of a page, keeping the current filters. */
     pageUrl: (page: number) => string;
+    /** Accessible name of the page links. */
+    label?: string;
+    /** The mobile button that opens the next page. */
+    moreLabel?: string;
 };
 
 /** Pages around the current one, with "…" for the gaps: 1 2 3 … 9 */
@@ -32,6 +36,8 @@ export default function SearchPagination({
     currentPage,
     lastPage,
     pageUrl,
+    label = 'Pagine dei risultati',
+    moreLabel = 'Carica altri trainer',
 }: SearchPaginationProps) {
     if (lastPage <= 1) {
         return null;
@@ -44,7 +50,7 @@ export default function SearchPagination({
     return (
         <>
             <nav
-                aria-label="Pagine dei risultati"
+                aria-label={label}
                 className="hidden justify-center pt-4 md:flex"
             >
                 <ul className="flex items-center gap-1 text-sm font-medium tabular-nums">
@@ -122,9 +128,7 @@ export default function SearchPagination({
                     variant="outline"
                     className="mx-4 mt-2 h-11 md:hidden"
                 >
-                    <Link href={pageUrl(currentPage + 1)}>
-                        Carica altri trainer
-                    </Link>
+                    <Link href={pageUrl(currentPage + 1)}>{moreLabel}</Link>
                 </Button>
             )}
         </>

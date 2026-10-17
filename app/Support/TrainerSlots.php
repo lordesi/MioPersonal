@@ -43,6 +43,13 @@ final class TrainerSlots
             $date = $now->startOfDay()->addDays($index);
             $slots = [];
 
+            // "Metti in pausa": no free slots until the trainer turns the profile back on.
+            if ($profile->paused_at !== null) {
+                $result[] = ['date' => $date->toDateString(), 'slots' => []];
+
+                continue;
+            }
+
             $dayBookings = $bookings->filter(fn (array $booking) => $booking['start']->isSameDay($date));
             // "Massimo sedute al giorno": that day is full.
             $full = $profile->max_sessions_per_day !== null && $dayBookings->count() >= $profile->max_sessions_per_day;

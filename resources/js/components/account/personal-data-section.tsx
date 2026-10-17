@@ -1,6 +1,7 @@
 import { Form } from '@inertiajs/react';
 import AccountSettingsController from '@/actions/App/Http/Controllers/AccountSettingsController';
 import SettingsSection from '@/components/account/settings-section';
+import { PhoneFields } from '@/components/auth/account-fields';
 import FormField from '@/components/auth/form-field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,26 +68,11 @@ export default function PersonalDataSection({
                                     />
                                 )}
                             </FormField>
-                            <FormField
-                                label="Telefono"
+                            <PhoneFields
+                                errors={errors}
                                 hint={phoneHint}
-                                error={errors.phone}
-                            >
-                                {({ id, describedBy }) => (
-                                    <Input
-                                        id={id}
-                                        type="tel"
-                                        name="phone"
-                                        defaultValue={phone ?? ''}
-                                        required
-                                        autoComplete="tel"
-                                        placeholder="+39"
-                                        aria-describedby={describedBy}
-                                        aria-invalid={!!errors.phone}
-                                        className="h-11 text-base md:text-base"
-                                    />
-                                )}
-                            </FormField>
+                                defaultPhone={phone ?? ''}
+                            />
                         </div>
                         <div className="flex items-center gap-3">
                             <Button

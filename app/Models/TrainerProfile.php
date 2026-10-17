@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BookingStatus;
 use App\Enums\TrainerExperience;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
@@ -34,6 +35,7 @@ use Illuminate\Support\Str;
  * @property bool $visible_in_search
  * @property bool $accepts_new_clients
  * @property CarbonImmutable|null $paused_until
+ * @property CarbonImmutable|null $paused_at "Metti in pausa" without an end; null = active
  * @property int $notice_hours
  * @property int $booking_window_days
  * @property int $break_minutes
@@ -73,6 +75,9 @@ class TrainerProfile extends Model
 
     public const MAX_DISCIPLINES = 5;
 
+    /** Photos of the carousel besides the profile photo ("Foto della galleria"). */
+    public const MAX_GALLERY_PHOTOS = 8;
+
     /** "Durate prenotabili": 30 min, 1 ora, 1 ora e mezza, 2 ore, 2 ore e mezza, 3 ore. */
     public const SESSION_MINUTES = [30, 60, 90, 120, 150, 180];
 
@@ -89,6 +94,7 @@ class TrainerProfile extends Model
             'visible_in_search' => 'boolean',
             'accepts_new_clients' => 'boolean',
             'paused_until' => 'datetime',
+            'paused_at' => 'datetime',
             // Forms with files send numbers as text: always read them as integers.
             'notice_hours' => 'integer',
             'booking_window_days' => 'integer',
@@ -185,6 +191,16 @@ class TrainerProfile extends Model
     }
 
     /**
+     * The other photos of the carousel, in the trainer's order.
+     *
+     * @return HasMany<TrainerPhoto, $this>
+     */
+    public function galleryPhotos(): HasMany
+    {
+        return $this->hasMany(TrainerPhoto::class)->where('is_portrait', false)->orderBy('sort')->orderBy('id');
+    }
+
+    /**
      * @return HasMany<TrainerDocument, $this>
      */
     public function documents(): HasMany
@@ -219,14 +235,40 @@ class TrainerProfile extends Model
     }
 
     /**
-     * Approved and switched on in "Visibile nella ricerca": search and home.
-     * A paused profile still shows up: it just has no free slots.
+     * The clients' reviews, hidden ones included: use notHidden() for the public ones.
+     *
+     * @return HasMany<Review, $this>
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    /**
+     * The client already booked this trainer: a request waiting for an answer
+     * or confirmed (also in the past). Declined, cancelled and expired ones
+     * don't count. Then the first session is not for them any more.
+     */
+    public function hasBookingFrom(User $client): bool
+    {
+        return $this->bookings()
+            ->where('client_id', $client->id)
+            ->whereIn('status', BookingStatus::active())
+            ->exists();
+    }
+
+    /**
+     * Approved, switched on in "Visibile nella ricerca" and not paused with
+     * "Metti in pausa": search and home. A pause with dates (paused_until)
+     * still shows up: it just has no free slots.
      *
      * @param  Builder<self>  $query
      */
     public function scopePublished(Builder $query): void
     {
-        $query->where('status', TrainerProfileStatus::Approved)->where('visible_in_search', true);
+        $query->where('status', TrainerProfileStatus::Approved)
+            ->where('visible_in_search', true)
+            ->whereNull('paused_at');
     }
 
     public function isApproved(): bool
@@ -249,6 +291,21 @@ class TrainerProfile extends Model
     public function rating(): ?float
     {
         return $this->rating_count > 0 ? round($this->rating_sum / $this->rating_count, 1) : null;
+    }
+
+    /**
+     * Counts again the reviews that are not hidden into rating_count and
+     * rating_sum, the fields read by search, cards and profile. Call it after
+     * a review is added, hidden or shown again.
+     */
+    public function refreshRating(): void
+    {
+        $reviews = $this->reviews()->notHidden();
+
+        $this->forceFill([
+            'rating_count' => $reviews->count(),
+            'rating_sum' => (int) $reviews->sum('rating'),
+        ])->save();
     }
 
     /** "giulia-rossi", then "giulia-rossi-2"… if it is taken. */

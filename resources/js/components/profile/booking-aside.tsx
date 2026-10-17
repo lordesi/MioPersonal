@@ -1,16 +1,8 @@
-import { Check } from 'lucide-react';
 import ServicePicker from '@/components/profile/service-picker';
 import { Button } from '@/components/ui/button';
 import { serviceSummary, totalPriceLabel } from '@/lib/booking';
 import { formatSlot } from '@/lib/format';
 import type { TrainerService } from '@/types';
-
-const guarantees = [
-    'Scegli tu giorno, orario e durata',
-    'Ti registri solo quando prenoti',
-    'Contatti visibili dopo la conferma',
-    'Nessun pagamento online',
-];
 
 type BookingAsideProps = {
     services: TrainerService[];
@@ -88,18 +80,6 @@ export default function BookingAside({
                     <a href="#prenota">Scegli giorno e orario</a>
                 </Button>
             )}
-
-            <ul className="flex flex-col gap-2.5 border-t pt-4 text-sm text-muted-foreground">
-                {guarantees.map((guarantee) => (
-                    <li key={guarantee} className="flex gap-2.5">
-                        <Check
-                            aria-hidden="true"
-                            className="mt-0.5 size-4 shrink-0"
-                        />
-                        {guarantee}
-                    </li>
-                ))}
-            </ul>
         </aside>
     );
 }

@@ -259,7 +259,9 @@ export default function DevComponents() {
                     >
                         <MobileTabBar
                             label="Area trainer"
-                            items={trainerNavItems('today', 3)}
+                            items={trainerNavItems('today', 3).filter(
+                                (item) => !item.desktopOnly,
+                            )}
                             className="static max-w-sm rounded-lg border md:grid"
                         />
                         <MobileTabBar

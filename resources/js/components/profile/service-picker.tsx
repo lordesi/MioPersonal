@@ -63,7 +63,8 @@ export default function ServicePicker({
                                     : 'border border-input',
                             )}
                         />
-                        <span className="flex flex-1 flex-col">
+                        {/* min-w-0 + break-words: a long note wraps instead of widening the row. */}
+                        <span className="flex min-w-0 flex-1 flex-col break-words">
                             <span
                                 className={cn(
                                     detailed

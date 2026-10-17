@@ -1,5 +1,12 @@
-import type { TrainerDraft } from '@/components/onboarding/trainer/draft';
-import { initialDraft } from '@/components/onboarding/trainer/draft';
+import type {
+    DurationPrice,
+    Pricing,
+    TrainerDraft,
+} from '@/components/onboarding/trainer/draft';
+import {
+    firstSessionType,
+    initialDraft,
+} from '@/components/onboarding/trainer/draft';
 
 /**
  * "Salva e continua dopo": the answers of steps 2–6 are kept in this
@@ -70,13 +77,49 @@ export function loadDraft(
         }
 
         return {
-            // Fields added to the form later get their starting value.
-            draft: { ...initialDraft, ...saved.draft, photo: null },
+            // Fields added to the form later get their starting value
+            // (e.g. the prices by duration of a draft saved with the hourly price).
+            draft: {
+                ...initialDraft,
+                ...saved.draft,
+                pricing: savedPricing(saved.draft.pricing),
+                photo: null,
+            },
             step: saved.step,
         };
     } catch {
         return null;
     }
+}
+
+/**
+ * Drafts saved when there was only "Seduta singola" (single, singleNote,
+ * online, onlineNote): it becomes the first kind of session.
+ */
+type OldPricing = Partial<Pricing> & {
+    single?: DurationPrice[];
+    singleNote?: string;
+    online?: DurationPrice[];
+    onlineNote?: string;
+};
+
+function savedPricing(pricing: OldPricing): Pricing {
+    const { single, singleNote, online, onlineNote, ...rest } = pricing;
+    const merged = { ...initialDraft.pricing, ...rest };
+
+    if (rest.sessions === undefined && single !== undefined) {
+        merged.sessions = [
+            {
+                ...firstSessionType,
+                prices: single,
+                note: singleNote ?? '',
+                online: online ?? [],
+                onlineNote: onlineNote ?? '',
+            },
+        ];
+    }
+
+    return merged;
 }
 
 export function clearDraft(userId: number | null): void {

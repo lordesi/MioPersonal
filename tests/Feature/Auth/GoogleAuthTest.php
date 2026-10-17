@@ -109,7 +109,6 @@ class GoogleAuthTest extends TestCase
         $this->post(route('google.register.store'), [
             'first_name' => 'Giulia',
             'last_name' => 'Rossi',
-            'phone_prefix' => '+39',
             'phone' => '333 000 0000',
             'terms' => '1',
         ])->assertRedirect(route('client.complete-profile', absolute: false));

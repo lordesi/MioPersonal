@@ -6,10 +6,13 @@ use App\Actions\Trainer\SaveTrainerProfile;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\TrainerReviewDecision;
 use App\Enums\UserRole;
+use App\Models\Service;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
+use Random\Engine\Mt19937;
+use Random\Randomizer;
 
 /**
  * Example trainers for local development only (DatabaseSeeder calls it when
@@ -17,8 +20,8 @@ use Illuminate\Support\Str;
  * profiles waiting in "Admin · Verifica". It can run again: it updates them.
  * Emails are …@demo.miopersonal.test, the password is "password".
  *
- * Ratings are written straight into the computed fields until the real
- * reviews exist (step 6 of docs/database/analisi.md).
+ * The approved trainers get example reviews, written by 12 demo clients and
+ * not linked to a booking, with the average of the search design.
  */
 class DemoTrainerSeeder extends Seeder
 {
@@ -46,15 +49,17 @@ class DemoTrainerSeeder extends Seeder
             ['Francesca Marino', 'roma', [], ['preparazione-atletica', 'pesi-e-bodybuilding'], null, 0, 5500, ['studio', 'home'], ['early-morning', 'lunch'], 'Preparazione atletica per gare amatoriali'],
         ];
 
+        $clients = $this->clients();
+
         foreach ($approved as [$name, $city, $otherCities, $disciplines, $rating, $reviews, $price, $places, $times, $headline]) {
             $profile = $this->trainer($saver, $name, $city, $otherCities, $disciplines, $price, $places, $times, $headline);
             $profile->forceFill([
                 'status' => TrainerProfileStatus::Approved,
                 'status_changed_at' => now()->subMonths(2),
                 'approved_at' => now()->subMonths(2),
-                'rating_count' => $reviews,
-                'rating_sum' => $rating === null ? 0 : (int) round($rating * $reviews),
             ])->save();
+
+            $this->reviews($profile, $clients, $rating ?? 5.0, $reviews);
         }
 
         $this->giuliaServices();
@@ -113,8 +118,16 @@ class DemoTrainerSeeder extends Seeder
             'studios' => in_array('studio', $places, true) ? [['name' => "Studio {$lastName}", 'address' => 'Via Roma 10']] : [],
             'city' => $city,
             'other_cities' => $otherCities,
-            // "Servizi e prezzi": the hourly price and a package of 10 one-hour sessions.
-            'hourly_price_cents' => $price,
+            // "Servizi e prezzi": 1 hour, 1 hour and a half, 2 hours (each with its
+            // own price, in whole euros) and a package of 10 one-hour sessions.
+            'sessions' => [[
+                'name' => 'Seduta singola',
+                'prices' => [
+                    ['minutes' => 60, 'price_cents' => $price],
+                    ['minutes' => 90, 'price_cents' => intdiv($price * 14, 1000) * 100],
+                    ['minutes' => 120, 'price_cents' => intdiv($price * 18, 1000) * 100],
+                ],
+            ]],
             'packages' => [['sessions' => 10, 'minutes' => 60, 'price_cents' => $price * 9]],
             'hours' => $this->hours($times),
             'notice_hours' => 12,
@@ -122,7 +135,6 @@ class DemoTrainerSeeder extends Seeder
             'break_minutes' => 15,
             'max_sessions_per_day' => 6,
             'free_cancellation_hours' => 24,
-            'session_minutes' => [60, 90, 120],
             'auto_confirm' => false,
             'certifications' => [
                 ['title' => 'Laurea in Scienze Motorie', 'issuer' => 'Università degli Studi', 'year' => 2016],
@@ -166,6 +178,104 @@ class DemoTrainerSeeder extends Seeder
         return $hours;
     }
 
+    /**
+     * The demo clients who write the reviews (they can log in too).
+     *
+     * @return list<User>
+     */
+    private function clients(): array
+    {
+        $names = [
+            'Anna Bianchi', 'Paolo Verdi', 'Martina Esposito', 'Luca Romano', 'Silvia Fontana', 'Matteo Moretti',
+            'Giorgia Barbieri', 'Stefano Lombardi', 'Valentina Rinaldi', 'Federico Caruso', 'Alessia Ferrara', 'Simone Mancini',
+        ];
+
+        return array_map(function (string $name) {
+            [$firstName, $lastName] = explode(' ', $name, 2);
+
+            $user = User::firstOrNew(['email' => Str::slug($name).'@demo.miopersonal.test']);
+            $user->forceFill([
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'password' => 'password',
+                'role' => UserRole::Client,
+                'email_verified_at' => now(),
+                'terms_accepted_at' => now(),
+            ])->save();
+
+            return $user;
+        }, $names);
+    }
+
+    /**
+     * `$count` example reviews whose average is `$average`, from today back by
+     * about a week each; a third of them with the trainer's reply. The same
+     * trainer always gets the same reviews.
+     *
+     * @param  list<User>  $clients
+     */
+    private function reviews(TrainerProfile $profile, array $clients, float $average, int $count): void
+    {
+        $texts = [
+            5 => [
+                'Allenamenti sempre diversi e mai noiosi. Dopo due mesi salgo le scale senza fiatone e la schiena non mi fa più male a fine giornata.',
+                'Puntualità, preparazione e tanta attenzione alla tecnica. Già dalla prima seduta ho corretto la postura nello squat.',
+                'Finalmente qualcuno che mi fa venire voglia di allenarmi. Il programma da fare a casa è chiaro e veloce.',
+                'Super consigliato! Spiega bene ogni esercizio e adatta la seduta a come ti senti quel giorno.',
+                'Ho iniziato da zero e ogni esercizio è stato spiegato passo passo. Risultati visibili già dopo poche settimane.',
+                'Professionalità e simpatia. Le sedute volano e si torna a casa con il sorriso.',
+                'Ottima la prima valutazione: obiettivi realistici e un piano preciso. Lo consiglio a chi riparte dopo una pausa.',
+                'Sempre disponibile a spostare l’orario quando ho un imprevisto al lavoro. Allenamenti efficaci.',
+            ],
+            4 => [
+                'Grande preparazione e tanta motivazione. Unico neo: a volte le sedute iniziano con qualche minuto di ritardo.',
+                'Il programma funziona e c’è molta attenzione ai dettagli. Mi piacerebbe un po’ più di varietà negli esercizi.',
+                'Buona esperienza, allenamenti seri e ben spiegati. Il prezzo è un po’ alto ma ne vale la pena.',
+                'Ho imparato tanto sulla tecnica. Avrei preferito più indicazioni per i giorni senza seduta.',
+            ],
+            3 => [
+                'Tanta competenza, ma le sedute mi sono sembrate un po’ ripetitive. Per chi cerca qualcosa di base va bene.',
+                'Allenamento discreto. Non sempre facile trovare orari liberi la sera.',
+            ],
+        ];
+        $replies = [
+            5 => ['Grazie mille, è un piacere allenarti! Ci vediamo alla prossima seduta.', 'Grazie a te per l’impegno: i risultati sono tutti merito tuo!'],
+            4 => ['Grazie del consiglio, ne terrò conto già dalla prossima volta.'],
+            3 => ['Grazie per il feedback sincero, proverò a variare di più gli allenamenti.'],
+        ];
+
+        $randomizer = new Randomizer(new Mt19937(crc32($profile->slug)));
+        $profile->reviews()->whereNull('booking_id')->delete();
+
+        // All 5 stars, then one star less at a time (never below 3) until the sum gives the average.
+        $ratings = array_fill(0, $count, 5);
+        $missing = 5 * $count - (int) round($average * $count);
+
+        for ($index = 0; $missing > 0; $index = ($index + 1) % $count) {
+            if ($ratings[$index] > 3) {
+                $ratings[$index]--;
+                $missing--;
+            }
+        }
+
+        foreach ($randomizer->shuffleArray($ratings) as $index => $rating) {
+            $date = now()->subDays($index * 7 + $randomizer->getInt(0, 5))->subHours($randomizer->getInt(0, 10));
+            $reply = $index % 3 === 1 ? $replies[$rating][$index % count($replies[$rating])] : null;
+
+            $profile->reviews()->forceCreate([
+                'client_id' => $clients[($index + $profile->id) % count($clients)]->id,
+                'rating' => $rating,
+                'text' => $texts[$rating][$randomizer->getInt(0, count($texts[$rating]) - 1)],
+                'reply' => $reply,
+                'replied_at' => $reply === null ? null : $date->addDay(),
+                'created_at' => $date,
+                'updated_at' => $date,
+            ]);
+        }
+
+        $profile->refreshRating();
+    }
+
     /** Giulia Rossi has the services of the profile design. */
     private function giuliaServices(): void
     {
@@ -177,10 +287,17 @@ class DemoTrainerSeeder extends Seeder
 
         $profile->services()->delete();
 
+        // The first session on top, then one row for each duration (see SaveTrainerServices).
+        $single = ['name' => 'Seduta singola', 'fixed_duration' => false, 'note' => 'in studio, a domicilio o al parco'];
+        $online = ['name' => 'Seduta singola', 'fixed_duration' => false, 'note' => 'in videochiamata', 'online_only' => true];
         $services = [
-            ['name' => 'Seduta singola', 'minutes' => 60, 'price_cents' => 4500, 'price_per_hour' => true, 'fixed_duration' => false, 'note' => 'in studio, a domicilio o al parco'],
-            ['name' => 'Seduta online', 'minutes' => 60, 'price_cents' => 3500, 'price_per_hour' => true, 'fixed_duration' => false, 'note' => 'in videochiamata', 'online_only' => true],
-            ['name' => 'Valutazione iniziale', 'minutes' => 60, 'price_cents' => 3000, 'note' => 'test di partenza e obiettivi'],
+            ['name' => Service::FIRST_SESSION_NAME, 'minutes' => 60, 'price_cents' => 3000, 'note' => 'test di partenza e obiettivi'],
+            [...$single, 'minutes' => 60, 'price_cents' => 4500],
+            [...$single, 'minutes' => 90, 'price_cents' => 6000],
+            [...$single, 'minutes' => 120, 'price_cents' => 8000],
+            [...$online, 'minutes' => 60, 'price_cents' => 3500],
+            [...$online, 'minutes' => 90, 'price_cents' => 5000],
+            [...$online, 'minutes' => 120, 'price_cents' => 6500],
             ['name' => 'Pacchetto 10 sedute', 'kind' => 'package', 'minutes' => 60, 'price_cents' => 40000, 'note' => 'prenoti qui la prima', 'package_sessions' => 10],
         ];
 

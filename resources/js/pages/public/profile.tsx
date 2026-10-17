@@ -23,20 +23,31 @@ import {
 } from '@/components/ui/breadcrumb';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { useFavorite } from '@/hooks/use-favorite';
-import { freeStarts, toWeeks } from '@/lib/booking';
+import {
+    freeStarts,
+    serviceDurations,
+    serviceOption,
+    toWeeks,
+} from '@/lib/booking';
 import { searchUrl } from '@/lib/search';
 import { home } from '@/routes';
 import { book } from '@/routes/trainers';
 import { start as startBooking } from '@/routes/trainers/book';
-import type { TrainerProfile, TrainerService } from '@/types';
+import type { TrainerProfile, TrainerReview, TrainerService } from '@/types';
 
 type ProfileProps = {
     trainer: TrainerProfile;
     /** Not approved yet: only its trainer and the team can see it. */
     preview: boolean;
+    /** Every review, loaded by "Mostra tutte le recensioni". */
+    allReviews?: TrainerReview[];
 };
 
-export default function Profile({ trainer, preview }: ProfileProps) {
+export default function Profile({
+    trainer,
+    preview,
+    allReviews,
+}: ProfileProps) {
     const page = usePage();
     const user = page.props.auth?.user;
     const firstName = trainer.name.split(' ')[0];
@@ -55,20 +66,15 @@ export default function Profile({ trainer, preview }: ProfileProps) {
 
     const [photoIndex, setPhotoIndex] = useState(0);
     const favorite = useFavorite(trainer.slug, trainer.favorite);
-    /** A fixed service lasts its own minutes; the others use the trainer's durations. */
-    const durationsOf = (item: TrainerService) =>
-        item.fixedDuration ? [item.minutes] : trainer.sessionMinutes;
-    /** 1 hour when the trainer offers it, otherwise the shortest duration. */
+    /** 1 hour when the service offers it, otherwise the shortest duration. */
     const defaultMinutes = (item: TrainerService) => {
-        const durations = durationsOf(item);
+        const durations = serviceDurations(item);
 
         return durations.includes(60) ? 60 : (durations[0] ?? 60);
     };
 
     // Back from login or sign-up: the slot chosen before is still chosen.
-    const [choice] = useState(() =>
-        savedChoice(page.url, trainer, weeks, durationsOf),
-    );
+    const [choice] = useState(() => savedChoice(page.url, trainer, weeks));
     const [serviceId, setServiceId] = useState(choice.service.id);
     const [minutes, setMinutes] = useState(
         () => choice.minutes ?? defaultMinutes(choice.service),
@@ -100,7 +106,7 @@ export default function Profile({ trainer, preview }: ProfileProps) {
 
         const next = trainer.services.find((item) => item.id === id);
 
-        if (next && !durationsOf(next).includes(minutes)) {
+        if (next && !serviceDurations(next).includes(minutes)) {
             changeMinutes(defaultMinutes(next));
         }
     };
@@ -125,11 +131,14 @@ export default function Profile({ trainer, preview }: ProfileProps) {
             return;
         }
 
+        // Each duration of a service is a row of its own: the one booked.
+        const serviceId = serviceOption(service, minutes).serviceId;
+
         if (!user) {
             router.visit(
                 startBooking.url(trainer.slug, {
                     query: {
-                        servizio: service.id,
+                        servizio: serviceId,
                         durata: minutes,
                         inizio: start,
                     },
@@ -147,7 +156,7 @@ export default function Profile({ trainer, preview }: ProfileProps) {
 
         router.post(
             book.url(trainer.slug),
-            { service_id: service.id, start, minutes },
+            { service_id: serviceId, start, minutes },
             {
                 preserveScroll: true,
                 onStart: () => setBooking(true),
@@ -233,12 +242,15 @@ export default function Profile({ trainer, preview }: ProfileProps) {
                     </BreadcrumbList>
                 </Breadcrumb>
 
-                <PhotoGallery
-                    trainerName={trainer.name}
-                    photos={trainer.photos}
-                    index={photoIndex}
-                    onIndexChange={setPhotoIndex}
-                />
+                {/* Only the gallery: the profile photo is in the circle next to the name. */}
+                {trainer.photos.length > 0 && (
+                    <PhotoGallery
+                        trainerName={trainer.name}
+                        photos={trainer.photos}
+                        index={photoIndex}
+                        onIndexChange={setPhotoIndex}
+                    />
+                )}
 
                 <div className="flex flex-col gap-8 px-4 pt-6 pb-10 md:px-0 md:pt-0 md:pb-20">
                     <ProfileIntro
@@ -250,25 +262,28 @@ export default function Profile({ trainer, preview }: ProfileProps) {
 
                     <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-12">
                         <div className="flex min-w-0 flex-col gap-8">
-                            <section
-                                aria-labelledby="bio-title"
-                                className="order-1 flex flex-col gap-3"
-                            >
-                                <h2
-                                    id="bio-title"
-                                    className="text-xl font-semibold tracking-tight md:text-2xl"
+                            {trainer.bio.length > 0 && (
+                                <section
+                                    aria-labelledby="bio-title"
+                                    className="order-1 flex flex-col gap-3"
                                 >
-                                    Chi sono
-                                </h2>
-                                {trainer.bio.map((paragraph) => (
-                                    <p
-                                        key={paragraph}
-                                        className="text-base leading-[26px]"
+                                    <h2
+                                        id="bio-title"
+                                        className="text-xl font-semibold tracking-tight md:text-2xl"
                                     >
-                                        {paragraph}
-                                    </p>
-                                ))}
-                            </section>
+                                        Chi sono
+                                    </h2>
+                                    {trainer.bio.map((paragraph) => (
+                                        <p
+                                            key={paragraph}
+                                            // break-words: a very long word wraps instead of going under the prices.
+                                            className="text-base leading-[26px] break-words"
+                                        >
+                                            {paragraph}
+                                        </p>
+                                    ))}
+                                </section>
+                            )}
 
                             {/* Below lg the booking box is replaced by this section and the bottom bar. */}
                             <section
@@ -302,7 +317,7 @@ export default function Profile({ trainer, preview }: ProfileProps) {
                                         weekIndex={weekIndex}
                                         weekCount={weeks.length}
                                         onWeekChange={changeWeek}
-                                        durations={durationsOf(service)}
+                                        durations={serviceDurations(service)}
                                         minutes={minutes}
                                         onMinutesChange={changeMinutes}
                                         selectedDate={date}
@@ -313,20 +328,38 @@ export default function Profile({ trainer, preview }: ProfileProps) {
                                 )}
                             </div>
 
-                            <div className="order-3 lg:order-4">
-                                <TrainingPlaces places={trainer.places} />
-                            </div>
-                            <div className="order-5">
-                                <Certifications
-                                    certifications={trainer.certifications}
-                                />
-                            </div>
-                            <div className="order-6">
-                                <ZoneMap areaLabel={trainer.areaLabel} />
-                            </div>
-                            <div className="order-7">
-                                <ReviewsSection trainer={trainer} />
-                            </div>
+                            {/* Sections without content are left out, title included. */}
+                            {trainer.places.length > 0 && (
+                                <div className="order-3 lg:order-4">
+                                    <TrainingPlaces places={trainer.places} />
+                                </div>
+                            )}
+                            {trainer.certifications.length > 0 && (
+                                <div className="order-5">
+                                    <Certifications
+                                        certifications={trainer.certifications}
+                                    />
+                                </div>
+                            )}
+                            {/* Online only: there is no area to show. */}
+                            {trainer.online !== 'only' && (
+                                <div className="order-6">
+                                    <ZoneMap
+                                        areaLabel={trainer.areaLabel}
+                                        center={trainer.areaCenter}
+                                        radius={trainer.areaRadius}
+                                    />
+                                </div>
+                            )}
+                            {/* Without reviews ReviewsSection is empty. */}
+                            {trainer.rating !== null && (
+                                <div className="order-7">
+                                    <ReviewsSection
+                                        trainer={trainer}
+                                        allReviews={allReviews}
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         <BookingAside
@@ -358,13 +391,13 @@ export default function Profile({ trainer, preview }: ProfileProps) {
 /**
  * The choice kept in the URL by BookingController::start (?servizio=…&durata=…
  * &inizio=…), checked against the current offer: anything no longer valid is
- * left out, and the page starts from its defaults.
+ * left out, and the page starts from its defaults. `servizio` is the booked
+ * row: the service that has it among its options.
  */
 function savedChoice(
     url: string,
     trainer: TrainerProfile,
     weeks: ReturnType<typeof toWeeks>,
-    durationsOf: (item: TrainerService) => number[],
 ): {
     service: TrainerService;
     minutes: number | null;
@@ -374,13 +407,15 @@ function savedChoice(
 } {
     const query = new URLSearchParams(url.split('?')[1] ?? '');
     const service =
-        trainer.services.find(
-            (item) => item.id === Number(query.get('servizio')),
+        trainer.services.find((item) =>
+            item.options.some(
+                (option) => option.serviceId === Number(query.get('servizio')),
+            ),
         ) ?? trainer.services[0];
     const minutes = Number(query.get('durata'));
     const start = query.get('inizio');
 
-    if (!durationsOf(service).includes(minutes)) {
+    if (!serviceDurations(service).includes(minutes)) {
         return {
             service,
             minutes: null,

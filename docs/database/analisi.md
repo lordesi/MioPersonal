@@ -180,16 +180,20 @@ Tabelle collegate:
 
 **`bookings`**
 
-| Gruppo                              | Campi                                                                                                                                                                                    |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chi                                 | `client_id` (vuoto se il cliente cancella l'account), `trainer_profile_id`, `service_id`, `client_package_id`                                                                            |
-| Quando                              | `starts_at`, `ends_at`, `blocked_until` (= fine + pausa/spostamento: il trainer non è prenotabile fino a lì)                                                                             |
-| Copie al momento della prenotazione | `service_name`, `price_cents`, `place_type`, `place_label`, `address` (solo a domicilio; visibile al trainer dopo la conferma)                                                           |
-| Stato                               | `status` (pending, confirmed, declined, expired, cancelled, completed, no_show), `expires_at` (solo pending), `confirmed_at`, `cancelled_at`, `cancelled_by` (client / trainer / system) |
-| Testo                               | `client_note` (con l'avviso «non inserire dati sulla salute»)                                                                                                                            |
+| Gruppo                              | Campi                                                                                                                                                                              |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chi                                 | `client_id` (vuoto se il cliente cancella l'account), `trainer_profile_id`, `service_id`, `client_package_id`                                                                      |
+| Quando                              | `starts_at`, `ends_at`, `blocked_until` (= fine + pausa/spostamento: il trainer non è prenotabile fino a lì)                                                                       |
+| Copie al momento della prenotazione | `service_name`, `price_cents`, `place_type`, `place_label`, `address` (solo a domicilio; visibile al trainer dopo la conferma)                                                     |
+| Stato                               | `status` (pending, confirmed, declined, expired, cancelled), `expires_at` (solo pending), `confirmed_at`, `cancelled_at`, `cancelled_by` (client / trainer / system), `no_show_at` |
+| Testo                               | `client_note` (con l'avviso «non inserire dati sulla salute»)                                                                                                                      |
 
-- ✍️ Cliente (prenota, annulla, sposta), trainer (accetta, rifiuta, svolta / assente), sistema
+- ✍️ Cliente (prenota, annulla, sposta), trainer (accetta, rifiuta, «Saltata»), sistema
   (scadenza).
+- **Svolta o saltata**: non c'è uno stato `completed`. Una seduta confermata è svolta appena finisce
+  (`ends_at` passato). Entro 7 giorni il trainer può segnarla «Saltata» (`no_show_at`) e togliere il
+  segno. Lo stato resta `confirmed`: il cliente non lo vede. Serve solo alla percentuale di presenza
+  che vedono i trainer (`App\Support\ClientAttendance`).
 - 👁 Le mie prenotazioni, Prenotazione inviata, Oggi, Calendario, Clienti, Admin · Prenotazioni.
 
 **`booking_events`**: storico di ogni prenotazione. Campi: `booking_id`, `type` (requested,
@@ -201,7 +205,7 @@ confirmed, declined, moved, cancelled…), `actor_id`, `data`, `created_at`. Ser
 
 ### 3.7 Recensioni, preferiti, note
 
-**`reviews`**: `booking_id` (**unico**: una recensione per seduta, solo se `completed`),
+**`reviews`**: `booking_id` (**unico**: una recensione per seduta, solo se svolta),
 `trainer_profile_id`, `client_id` (vuoto dopo la cancellazione dell'account → «anonima»),
 `rating` (1–5), `text`, `reply`, `replied_at`, `flag_reason` (avviso automatico), `hidden_at`,
 `hidden_by`.
@@ -411,7 +415,12 @@ Ogni passo funziona da solo, ha i suoi test e sostituisce i dati d'esempio di al
     - da fare: `client_packages`, Calendario, Clienti, Admin · Prenotazioni.
 6. **Dopo la seduta** (in parte):
     - ✅ `favorites` (`2026_10_15_000001_create_favorites_table`): il cuore e la pagina Preferiti;
-    - da fare: «Svolta / Assente» del trainer, `reviews`, `trainer_client_notes`.
+    - ✅ `reviews` (`2026_10_17_000001_create_reviews_table`), per ora solo in lettura: il profilo
+      pubblico mostra le ultime 3, le barre per stella (che filtrano) e tutte le recensioni
+      ordinabili. `TrainerProfile::refreshRating()` ricalcola `rating_count` / `rating_sum`. Le
+      recensioni d'esempio le crea `DemoTrainerSeeder`, senza prenotazione (`booking_id` vuoto);
+    - da fare: «Svolta / Assente» del trainer, il cliente che scrive la recensione, la risposta
+      del trainer, Admin · Recensioni, `trainer_client_notes`.
 7. **Il resto**:
     - tabelle `client_preferences`, `contact_messages`, `contact_message_replies`,
       `admin_activity_log`, `settings`, `trainer_profile_views`, `notifications`,

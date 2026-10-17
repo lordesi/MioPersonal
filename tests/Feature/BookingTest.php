@@ -7,11 +7,13 @@ use App\Enums\BookingActor;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\City;
+use App\Models\Service;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\TrainerSlots;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 /** "Prenota questo slot" from the profile, and "Annulla" from "Le mie prenotazioni". */
@@ -37,13 +39,20 @@ class BookingTest extends TestCase
             ->create($attributes);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * The row of "Seduta singola" with the chosen duration (each duration is a
+     * row of its own); for a duration not offered, the 1-hour one.
+     *
+     * @return array<string, mixed>
+     */
     private function request(TrainerProfile $trainer, array $data = []): array
     {
+        $minutes = $data['minutes'] ?? 60;
+
         return [
-            'service_id' => $trainer->services()->value('id'),
+            'service_id' => $trainer->services()->where('minutes', $minutes)->value('id') ?? $trainer->services()->value('id'),
             'start' => self::SLOT,
-            'minutes' => 60,
+            'minutes' => $minutes,
             ...$data,
         ];
     }
@@ -62,8 +71,8 @@ class BookingTest extends TestCase
         $this->assertSame(BookingStatus::Pending, $booking->status);
         $this->assertSame(self::SLOT, $booking->starts_at->utc()->format('Y-m-d\TH:i:s\Z'));
         $this->assertSame(120, (int) $booking->starts_at->diffInMinutes($booking->ends_at));
-        // 40 € per hour × 2 hours, in cents.
-        $this->assertSame(8000, $booking->price_cents);
+        // The price of 2 hours, in cents: its own, not twice the price of 1 hour (40 €).
+        $this->assertSame(7500, $booking->price_cents);
         $this->assertSame('Seduta singola', $booking->service_name);
         $this->assertSame('Studio · Milano', $booking->place_label);
         // The trainer answers within confirm_hours (24 by default).
@@ -231,5 +240,70 @@ class BookingTest extends TestCase
         $this->assertSame(BookingStatus::Expired, $late->refresh()->status);
         $this->assertSame(['expired'], $late->events()->pluck('type')->all());
         $this->assertSame(BookingStatus::Pending, $waiting->refresh()->status);
+    }
+
+    /** The first session of 1 hour (30 €), on top of the services, as SaveTrainerProfile writes it. */
+    private function firstSession(TrainerProfile $trainer): Service
+    {
+        return $trainer->services()->create([
+            'name' => Service::FIRST_SESSION_NAME,
+            'kind' => 'session',
+            'minutes' => 60,
+            'price_cents' => 3000,
+            'fixed_duration' => true,
+            'sort' => 0,
+        ]);
+    }
+
+    /** A booking of last week with this trainer. */
+    private function pastBooking(TrainerProfile $trainer, User $client, BookingStatus $status): Booking
+    {
+        return Booking::factory()
+            ->at(CarbonImmutable::parse('2026-10-12 18:00', 'Europe/Rome'))
+            ->status($status)
+            ->create(['client_id' => $client->id, 'trainer_profile_id' => $trainer->id]);
+    }
+
+    public function test_the_first_session_is_only_for_the_first_booking()
+    {
+        $trainer = $this->trainer();
+        $first = $this->firstSession($trainer);
+        $client = User::factory()->create();
+        $this->pastBooking($trainer, $client, BookingStatus::Confirmed);
+
+        // The profile doesn't offer it to this client any more…
+        $this->actingAs($client)
+            ->get(route('trainers.show', $trainer->slug))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('trainer.services', fn ($services) => ! collect($services)->contains('name', Service::FIRST_SESSION_NAME))
+            );
+
+        // …and it can't be booked.
+        $this->actingAs($client)
+            ->post(route('trainers.book', $trainer->slug), $this->request($trainer, ['service_id' => $first->id]))
+            ->assertSessionHasErrors('service_id');
+
+        $this->assertSame(1, Booking::count());
+    }
+
+    public function test_a_new_client_books_the_first_session()
+    {
+        $trainer = $this->trainer();
+        $first = $this->firstSession($trainer);
+        $client = User::factory()->create();
+        // Cancelled, declined or expired requests don't count.
+        $this->pastBooking($trainer, $client, BookingStatus::Cancelled);
+
+        $this->actingAs($client)
+            ->get(route('trainers.show', $trainer->slug))
+            ->assertInertia(fn (Assert $page) => $page->where('trainer.services.0.name', Service::FIRST_SESSION_NAME));
+
+        $this->actingAs($client)
+            ->post(route('trainers.book', $trainer->slug), $this->request($trainer, ['service_id' => $first->id]))
+            ->assertSessionHasNoErrors();
+
+        $booking = Booking::where('status', BookingStatus::Pending)->sole();
+        $this->assertSame(Service::FIRST_SESSION_NAME, $booking->service_name);
+        $this->assertSame(3000, $booking->price_cents);
     }
 }

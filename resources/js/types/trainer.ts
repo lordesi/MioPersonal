@@ -20,19 +20,27 @@ export type TrainerSummary = {
     favorite?: boolean;
 };
 
+/** A duration of a service and its price; serviceId is the row that gets booked. */
+export type ServiceOption = {
+    serviceId: number;
+    minutes: number;
+    priceCents: number;
+};
+
+/**
+ * A service as the client chooses it. "Seduta singola" has a price for each
+ * duration (one option each); the first session and packages have one option.
+ */
 export type TrainerService = {
     id: number;
     name: string;
-    /** Duration of one session, e.g. 60. */
-    minutes: number;
-    /** e.g. "da 30 min a 2 ore", "10 × 1 ora" */
+    /** e.g. "da 30 min a 2 ore", "1 ora", "10 × 1 ora" */
     durationLabel: string;
     note: string;
+    /** The lowest price of the options ("da 25 €" when there are more). */
     priceCents: number;
-    /** Price per hour: total = priceCents × minutes / 60. */
-    perHour: boolean;
-    /** Only bookable for its own `minutes`. */
-    fixedDuration: boolean;
+    /** Shortest first. */
+    options: ServiceOption[];
 };
 
 export type TrainingPlace = {
@@ -43,11 +51,15 @@ export type TrainingPlace = {
 
 export type TrainerReview = {
     id: number;
+    /** "Anna B.", or "Utente anonimo" once the client deleted the account. */
     authorName: string;
-    meta: string;
     rating: number;
     text: string;
     reply: string | null;
+    /** The booked service, e.g. "Seduta singola"; null when unknown. */
+    serviceName: string | null;
+    /** ISO UTC string. */
+    createdAt: string;
 };
 
 export type AvailabilityDay = {
@@ -77,17 +89,21 @@ export type TrainerProfile = {
     /** Every city where the trainer trains in person. */
     cities: string[];
     areaLabel: string;
+    /** Center of the map circle: the first studio, or the main city. Null for online-only trainers. */
+    areaCenter: { lat: number; lng: number } | null;
+    /** Radius of the map circle, in meters. */
+    areaRadius: number;
     online: 'also' | 'only' | null;
     disciplines: string[];
-    /** url is null for the placeholder with the initials. */
-    photos: { caption: string; isPortrait: boolean; url: string | null }[];
+    /** The profile photo, for the circle next to the name; null = the initials. */
+    portraitUrl: string | null;
+    /** The gallery (carousel), without the profile photo; may be empty. */
+    photos: { caption: string; url: string }[];
     services: TrainerService[];
     places: TrainingPlace[];
     certifications: { title: string; issuer: string }[];
     ratingDistribution: { stars: number; count: number }[];
     reviews: TrainerReview[];
-    /** "Durate prenotabili" in minutes, shortest first, e.g. [60, 90, 120]. */
-    sessionMinutes: number[];
     availability: AvailabilityDay[];
     similarTrainers: {
         name: string;
@@ -97,7 +113,7 @@ export type TrainerProfile = {
     }[];
 };
 
-/** A confirmed session in the trainer's "Oggi" list. */
+/** A confirmed session in the trainer's "Le tue prenotazioni" page. */
 export type TrainerTodaySession = {
     id: number;
     /** null once the client deleted the account: no link to the profile. */
@@ -108,6 +124,25 @@ export type TrainerTodaySession = {
     hours: number;
     serviceName: string;
     placeLabel: string;
+    /** Marked "Saltata" by the trainer; otherwise done once it ends. */
+    noShow: boolean;
+};
+
+/** A finished session: "Ultimi 7 giorni" and "Sedute passate". */
+export type TrainerPastSession = TrainerTodaySession & {
+    /** Within 7 days from the end: "Saltata" can still be set or taken back. */
+    canChangeNoShow: boolean;
+};
+
+/** How often a client shows up: percentage of the sessions over that were not missed. */
+export type AttendanceRate = { rate: number; sessions: number };
+
+/** Only for trainers. null = no session over yet. */
+export type ClientAttendance = {
+    /** With every trainer on MioPersonal. */
+    platform: AttendanceRate | null;
+    /** With the trainer who is looking. */
+    withYou: AttendanceRate | null;
 };
 
 /** A booking waiting for the trainer's answer. */
@@ -122,6 +157,8 @@ export type TrainerBookingRequest = {
     note: string | null;
     /** ISO UTC string: after this the request decays and the slot is freed. */
     expiresAt: string;
+    /** null once the client deleted the account. */
+    attendance: ClientAttendance | null;
 };
 
 /** A client's profile, seen by a trainer the client booked with. */
@@ -135,20 +172,13 @@ export type TrainerClientProfile = {
     /** Confirmed sessions with this trainer. */
     sessions: number;
     nextSession: string | null;
+    attendance: ClientAttendance;
     /** null until the trainer confirms a booking of this client. */
     contacts: { email: string; phone: string | null } | null;
 };
 
 export type TrainerStats = {
     sessionsThisWeek: number;
-};
-
-/** A row of the "Da fare" list. */
-export type TrainerTodo = {
-    label: string;
-    hint: string;
-    cta: string;
-    href: string;
 };
 
 /** Sent by every page of the trainer area, read by the trainer layout. */
@@ -164,47 +194,52 @@ export type TrainerAreaData = {
     };
 };
 
-/** A block in the trainer calendar. */
+/** A booking in the trainer calendar, confirmed or waiting for an answer. */
 export type CalendarEvent = {
     id: number;
     /** ISO UTC strings. */
     start: string;
     end: string;
-    title: string;
-    detail: string;
-    place: string;
+    /** null once the client deleted the account: no link to the profile. */
+    clientId: number | null;
+    clientName: string;
+    serviceName: string;
+    placeLabel: string;
     kind: 'confirmed' | 'pending';
 };
 
+/** A client with at least one confirmed session, shown once in "Clienti". */
 export type TrainerClient = {
     id: number;
     name: string;
+    /** Confirmed sessions, past and future. */
     sessions: number;
-    /** ISO UTC strings. */
-    lastSession: string;
+    /** ISO UTC strings; null when there is none. */
+    lastSession: string | null;
     nextSession: string | null;
-    package: { name: string; left: number; total: number } | null;
-    /** Practical notes only: never health data. */
-    note: string;
+    attendance: ClientAttendance;
+    /** Every confirmed slot still to come, in order. */
+    upcoming: TrainerTodaySession[];
+    /** Over in the last 7 days, still in time for "Saltata"; most recent first. */
+    recent: TrainerTodaySession[];
 };
 
-export type WorkingDay = {
-    /** ISO day of week: 1 = Monday … 7 = Sunday. */
-    day: number;
-    label: string;
-    enabled: boolean;
-    /** "HH:MM" in Rome time. */
-    ranges: { from: string; to: string }[];
-};
-
+/** "Regole di prenotazione" of step 5 and of "Disponibilità". */
 export type BookingRules = {
     noticeHours: number;
     bookingWindowDays: number;
     breakMinutes: number;
     /** null = "Nessun limite". */
     maxSessionsPerDay: number | null;
-    confirmHours: number;
     freeCancellationHours: number;
+};
+
+/** Hours and rules of step 5 of "Diventa trainer" and of "Disponibilità". */
+export type TrainerAvailability = {
+    /** Start hours by day (0 = Monday … 6 = Sunday), from 6 to 23. */
+    hours: number[][];
+    rules: BookingRules;
+    autoConfirm: boolean;
 };
 
 /** A review as the trainer sees it in their area. */

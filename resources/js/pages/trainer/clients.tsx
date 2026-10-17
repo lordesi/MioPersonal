@@ -14,8 +14,6 @@ type ClientsProps = {
 export default function Clients({ clients }: ClientsProps) {
     const [query, setQuery] = useState('');
     const [selectedId, setSelectedId] = useState(clients[0]?.id ?? null);
-    // Notes edited in this page, by client id.
-    const [notes, setNotes] = useState<Record<number, string>>({});
 
     const visible = clients.filter((client) =>
         client.name.toLowerCase().includes(query.trim().toLowerCase()),
@@ -30,7 +28,9 @@ export default function Clients({ clients }: ClientsProps) {
                 title="Clienti"
                 description={
                     <span className="hidden md:inline">
-                        {clients.length} clienti attivi
+                        {clients.length === 1
+                            ? '1 cliente attivo'
+                            : `${clients.length} clienti attivi`}
                     </span>
                 }
                 action={
@@ -55,7 +55,7 @@ export default function Clients({ clients }: ClientsProps) {
                 <EmptyState
                     icon={Users}
                     title="Ancora nessun cliente"
-                    description="Chi prenota una seduta con te compare qui, con le sue sedute e le tue note."
+                    description="Chi prenota una seduta con te compare qui, con le sue sedute."
                     bordered
                 />
             ) : (
@@ -66,14 +66,7 @@ export default function Clients({ clients }: ClientsProps) {
                         onSelect={setSelectedId}
                     />
                     {selected && (
-                        <ClientCard
-                            key={selected.id}
-                            client={selected}
-                            note={notes[selected.id] ?? selected.note}
-                            onNoteChange={(note) =>
-                                setNotes({ ...notes, [selected.id]: note })
-                            }
-                        />
+                        <ClientCard key={selected.id} client={selected} />
                     )}
                 </div>
             )}

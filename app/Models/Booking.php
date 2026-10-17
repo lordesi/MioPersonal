@@ -33,6 +33,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $confirmed_at
  * @property CarbonImmutable|null $cancelled_at
  * @property BookingActor|null $cancelled_by
+ * @property CarbonImmutable|null $no_show_at set by the trainer: the client didn't come
  * @property string|null $client_note
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
@@ -50,6 +51,9 @@ class Booking extends Model
     /** @use HasFactory<BookingFactory> */
     use HasFactory;
 
+    /** Days after the end in which the trainer can mark (or unmark) a session as missed. */
+    public const NO_SHOW_DAYS = 7;
+
     /**
      * @return array<string, string>
      */
@@ -65,6 +69,7 @@ class Booking extends Model
             'confirmed_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'cancelled_by' => BookingActor::class,
+            'no_show_at' => 'datetime',
         ];
     }
 
@@ -126,6 +131,17 @@ class Booking extends Model
     public function isPending(): bool
     {
         return $this->status === BookingStatus::Pending && ! $this->isExpired();
+    }
+
+    /**
+     * A confirmed session that ended less than NO_SHOW_DAYS ago: the trainer
+     * can still mark it as missed, or take the mark back.
+     */
+    public function canChangeNoShow(): bool
+    {
+        return $this->status === BookingStatus::Confirmed
+            && $this->ends_at->isPast()
+            && $this->ends_at->addDays(self::NO_SHOW_DAYS)->isFuture();
     }
 
     /** Saves a row of the history: requested, confirmed, declined, cancelled, expired. */

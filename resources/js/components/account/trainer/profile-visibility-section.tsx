@@ -26,6 +26,7 @@ export default function ProfileVisibilitySection({
     visibleInSearch,
     acceptsNewClients,
     pausedUntil,
+    paused: pausedWithoutEnd,
 }: TrainerVisibility) {
     const [visible, setVisible] = useState(visibleInSearch);
     const [newClients, setNewClients] = useState(acceptsNewClients);
@@ -78,19 +79,22 @@ export default function ProfileVisibilitySection({
     };
 
     const paused = pausedUntil !== null;
-    const online = !paused && visible && newClients;
-    const title = paused
-        ? 'In pausa'
-        : !visible
-          ? 'Nascosto dalla ricerca'
-          : !newClients
-            ? 'Solo clienti già seguiti'
-            : 'Online e prenotabile';
-    const hint = paused
-        ? `Nessuno può prenotare fino ${formatUntilDay(pausedUntil)}`
-        : online
-          ? 'I clienti ti trovano e possono prenotare'
-          : 'Controlla le opzioni qui sotto';
+    const online = !pausedWithoutEnd && !paused && visible && newClients;
+    const title =
+        pausedWithoutEnd || paused
+            ? 'In pausa'
+            : !visible
+              ? 'Nascosto dalla ricerca'
+              : !newClients
+                ? 'Solo clienti già seguiti'
+                : 'Online e prenotabile';
+    const hint = pausedWithoutEnd
+        ? 'Non compari nella ricerca e nessuno può prenotare finché non riattivi il profilo'
+        : paused
+          ? `Nessuno può prenotare fino ${formatUntilDay(pausedUntil)}`
+          : online
+            ? 'I clienti ti trovano e possono prenotare'
+            : 'Controlla le opzioni qui sotto';
 
     return (
         <SettingsSection
@@ -136,9 +140,8 @@ export default function ProfileVisibilitySection({
                     Metti in pausa per un periodo
                 </span>
                 <span className="text-[13px] leading-4.75 text-muted-foreground">
-                    Per ferie o infortuni: il profilo resta online ma non si può
-                    prenotare, e chi ti ha salvato tra i preferiti viene
-                    avvisato al rientro.
+                    Il profilo resta online ma non si può prenotare, e chi ti ha
+                    salvato tra i preferiti viene avvisato al rientro.
                 </span>
                 <ChoiceChips
                     aria-labelledby="pause-title"

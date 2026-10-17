@@ -1,5 +1,5 @@
-import ProgressBar from '@/components/shared/progress-bar';
 import UserAvatar from '@/components/shared/user-avatar';
+import { sessionsLabel } from '@/lib/calendar';
 import { formatDayRelative, formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { TrainerClient } from '@/types';
@@ -11,13 +11,6 @@ export function nextSessionLabel(client: TrainerClient): string {
         : '—';
 }
 
-/** "3 su 10 rimaste" or "Sedute singole" */
-export function packageLabel(client: TrainerClient): string {
-    return client.package
-        ? `${client.package.left} su ${client.package.total} rimaste`
-        : 'Sedute singole';
-}
-
 type ClientListProps = {
     clients: TrainerClient[];
     selectedId: number | null;
@@ -25,7 +18,7 @@ type ClientListProps = {
 };
 
 const columns =
-    'md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1.4fr)] md:gap-3';
+    'md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.4fr)] md:gap-3';
 
 /** Clients table on desktop, compact list on mobile. */
 export default function ClientList({
@@ -48,7 +41,6 @@ export default function ClientList({
                 <span>Cliente</span>
                 <span>Sedute</span>
                 <span>Prossima</span>
-                <span>Pacchetto</span>
             </div>
 
             {clients.length === 0 && (
@@ -75,32 +67,22 @@ export default function ClientList({
                             <span className="text-sm font-semibold">
                                 {client.name}
                             </span>
-                            <span className="hidden text-xs text-muted-foreground md:inline">
-                                Ultima: {formatDayRelative(client.lastSession)}
-                            </span>
+                            {client.lastSession && (
+                                <span className="hidden text-xs text-muted-foreground md:inline">
+                                    Ultima:{' '}
+                                    {formatDayRelative(client.lastSession)}
+                                </span>
+                            )}
                             <span className="text-xs text-muted-foreground tabular-nums md:hidden">
                                 Prossima: {nextSessionLabel(client)}
                             </span>
                         </span>
                     </span>
                     <span className="hidden text-sm tabular-nums md:inline">
-                        {client.sessions} sedute
+                        {sessionsLabel(client.sessions)}
                     </span>
                     <span className="hidden text-sm tabular-nums md:inline">
                         {nextSessionLabel(client)}
-                    </span>
-                    <span className="flex flex-none flex-col gap-1 text-xs tabular-nums md:text-[13px]">
-                        {packageLabel(client)}
-                        {client.package && (
-                            <ProgressBar
-                                value={
-                                    client.package.total - client.package.left
-                                }
-                                max={client.package.total}
-                                label={`Sedute usate del pacchetto di ${client.name}`}
-                                className="hidden md:block"
-                            />
-                        )}
                     </span>
                 </button>
             ))}

@@ -10,7 +10,8 @@ use Inertia\Response;
 
 class HomeController extends Controller
 {
-    private const FEATURED = 3;
+    /** "Trainer in evidenza": 3 per page of the carousel, 3 pages. */
+    private const FEATURED = 9;
 
     public function __invoke(): Response
     {

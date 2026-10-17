@@ -4,9 +4,11 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
+use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 use Tests\TestCase;
 
@@ -27,7 +29,30 @@ class EmailVerificationTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('verification.notice'));
 
-        $response->assertOk();
+        $response->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('auth/verify-email'));
+    }
+
+    public function test_the_verification_email_is_in_italian()
+    {
+        app()->setLocale('it');
+        $user = User::factory()->unverified()->create();
+
+        $mail = (new VerifyEmail)->toMail($user);
+
+        $this->assertSame('Conferma la tua email', $mail->subject);
+        $this->assertSame('Conferma la tua email', $mail->actionText);
+    }
+
+    public function test_the_verification_link_works_for_24_hours()
+    {
+        $this->freezeTime();
+        $user = User::factory()->unverified()->create();
+
+        $url = (new VerifyEmail)->toMail($user)->actionUrl;
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->assertSame(now()->addDay()->getTimestamp(), (int) $query['expires']);
     }
 
     public function test_unverified_users_are_redirected_to_the_email_verification_prompt(): void

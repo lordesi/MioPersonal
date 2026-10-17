@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\BookingStatus;
 use App\Http\Controllers\Concerns\BuildsPlaceholderData;
 use App\Models\User;
+use App\Support\ClientAttendance;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,10 +23,11 @@ class TrainerClientProfileController extends Controller
     {
         /** @var User $trainer */
         $trainer = $request->user();
-        $bookings = $trainer->trainerProfile?->bookings()->where('client_id', $client->id);
+        $profile = $trainer->trainerProfile;
+        $bookings = $profile?->bookings()->where('client_id', $client->id);
 
         // 404 also for clients who exist: we don't tell who is on MioPersonal.
-        abort_if($bookings === null || ! $bookings->exists(), 404);
+        abort_if($profile === null || $bookings === null || ! $bookings->exists(), 404);
 
         $confirmed = $bookings->clone()->where('status', BookingStatus::Confirmed);
         $nextSession = $confirmed->clone()->where('starts_at', '>', now())->orderBy('starts_at')->first();
@@ -43,6 +45,7 @@ class TrainerClientProfileController extends Controller
                 'joinedAt' => $client->created_at === null ? null : $this->iso($client->created_at->toImmutable()),
                 'sessions' => $confirmed->count(),
                 'nextSession' => $nextSession === null ? null : $this->iso($nextSession->starts_at),
+                'attendance' => ClientAttendance::forClient($client->id, $profile),
                 'contacts' => $canSeeContacts ? [
                     'email' => $client->email,
                     'phone' => $client->phone,

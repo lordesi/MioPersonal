@@ -17,6 +17,30 @@ export function distanceKm(a: Point, b: Point): number {
     return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(h));
 }
 
+/**
+ * The edge of a circle on the map, as [lng, lat] points (the order the maps
+ * want); the last point repeats the first one to close the shape.
+ */
+export function circle(
+    center: Point,
+    radiusMeters: number,
+    points = 64,
+): [number, number][] {
+    // The radius as an angle seen from the center of the Earth, in degrees.
+    const degrees = (radiusMeters / 1000 / EARTH_RADIUS_KM) * (180 / Math.PI);
+    // Going east, a degree is shorter the farther from the equator.
+    const lngScale = 1 / Math.cos((center.lat * Math.PI) / 180);
+
+    return Array.from({ length: points + 1 }, (_, index) => {
+        const angle = (index / points) * 2 * Math.PI;
+
+        return [
+            center.lng + degrees * Math.cos(angle) * lngScale,
+            center.lat + degrees * Math.sin(angle),
+        ];
+    });
+}
+
 /** The city whose center is closest to the point; null for an empty list. */
 export function closestCity<T extends Point>(
     cities: T[],

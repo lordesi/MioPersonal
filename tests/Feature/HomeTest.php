@@ -34,7 +34,7 @@ class HomeTest extends TestCase
     {
         $this->get(route('home'))
             ->assertInertia(fn (Assert $page) => $page
-                ->has('featuredTrainers', 3)
+                ->has('featuredTrainers', 9)
                 ->has('featuredTrainers.0', fn (Assert $trainer) => $trainer
                     ->whereType('slug', 'string')
                     ->whereType('name', 'string')

@@ -32,13 +32,17 @@ class CreateBooking
 
     public function handle(User $client, TrainerProfile $profile, Service $service, CarbonImmutable $start, int $minutes): Booking
     {
-        $this->ensureDurationIsAllowed($profile, $service, $minutes);
+        $this->ensureDurationIsAllowed($service, $minutes);
+        $this->ensureNotPaused($profile);
         $this->ensureAcceptsClient($profile, $client);
 
         try {
             $booking = DB::transaction(function () use ($client, $profile, $service, $start, $minutes) {
                 // One booking at a time for this trainer, until the transaction ends.
                 TrainerProfile::whereKey($profile->id)->lockForUpdate()->first();
+
+                // Inside the lock: two requests of the same client can't both be "the first".
+                $this->ensureFirstSessionIsFirst($profile, $service, $client);
 
                 if (! TrainerSlots::isFree($profile, $start, $minutes)) {
                     throw ValidationException::withMessages(['start' => self::SLOT_TAKEN]);
@@ -54,8 +58,8 @@ class CreateBooking
                     'starts_at' => $start->utc(),
                     'ends_at' => $end->utc(),
                     'blocked_until' => $end->addMinutes($profile->break_minutes)->utc(),
-                    'service_name' => $service->name,
-                    'price_cents' => $this->priceCents($service, $minutes),
+                    'service_name' => $service->displayName(),
+                    'price_cents' => $service->price_cents,
                     'place_label' => $this->placeLabel($profile, $service),
                     'status' => $confirmed ? BookingStatus::Confirmed : BookingStatus::Pending,
                     'expires_at' => $confirmed ? null : now()->addHours($profile->confirm_hours),
@@ -84,13 +88,22 @@ class CreateBooking
         return $booking;
     }
 
-    /** A fixed service lasts its own minutes; the others use the trainer's durations (as on the profile page). */
-    private function ensureDurationIsAllowed(TrainerProfile $profile, Service $service, int $minutes): void
+    /**
+     * Every service lasts its own minutes: each duration of a kind of session
+     * is a row of its own, with its own price (see SaveTrainerServices).
+     */
+    private function ensureDurationIsAllowed(Service $service, int $minutes): void
     {
-        $durations = $service->fixed_duration ? [$service->minutes] : $profile->session_minutes;
-
-        if (! in_array($minutes, $durations, true)) {
+        if ($minutes !== $service->minutes) {
             throw ValidationException::withMessages(['minutes' => 'Scegli una delle durate proposte dal trainer.']);
+        }
+    }
+
+    /** "Metti in pausa" in the settings: nobody can book until the trainer turns the profile back on. */
+    private function ensureNotPaused(TrainerProfile $profile): void
+    {
+        if ($profile->paused_at !== null) {
+            throw ValidationException::withMessages(['start' => 'Al momento questo trainer non accetta prenotazioni.']);
         }
     }
 
@@ -104,12 +117,12 @@ class CreateBooking
         throw ValidationException::withMessages(['start' => 'Al momento questo trainer non accetta nuovi clienti.']);
     }
 
-    /** Same as totalPriceCents() in resources/js/lib/booking.ts. */
-    private function priceCents(Service $service, int $minutes): int
+    /** "Prima seduta" only for the first booking of a client with this trainer. */
+    private function ensureFirstSessionIsFirst(TrainerProfile $profile, Service $service, User $client): void
     {
-        return $service->price_per_hour
-            ? (int) round($service->price_cents * $minutes / 60)
-            : $service->price_cents;
+        if ($service->isFirstSession() && $profile->hasBookingFrom($client)) {
+            throw ValidationException::withMessages(['service_id' => 'La prima seduta è riservata a chi prenota con questo trainer per la prima volta.']);
+        }
     }
 
     /**

@@ -27,11 +27,16 @@ use App\Http\Controllers\TrainerCalendarController;
 use App\Http\Controllers\TrainerClientProfileController;
 use App\Http\Controllers\TrainerClientsController;
 use App\Http\Controllers\TrainerDashboardController;
+use App\Http\Controllers\TrainerNoShowController;
+use App\Http\Controllers\TrainerPastSessionsController;
+use App\Http\Controllers\TrainerPhotoController;
 use App\Http\Controllers\TrainerProfileController;
+use App\Http\Controllers\TrainerProfileEditController;
 use App\Http\Controllers\TrainerProfileSettingsController;
 use App\Http\Controllers\TrainerRegistrationController;
 use App\Http\Controllers\TrainerReviewsController;
 use App\Http\Controllers\TrainerSearchController;
+use App\Http\Controllers\TrainerServicesController;
 use App\Http\Controllers\TrainerSettingsController;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -118,21 +123,48 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('role:trainer')->prefix('area-trainer')->name('trainer.')->group(function () {
         Route::get('/', TrainerDashboardController::class)->name('today');
+        // "Vedi tutte" of the last 7 days in "Le tue prenotazioni".
+        Route::get('sedute-passate', TrainerPastSessionsController::class)->name('past-sessions');
         // The answer to a booking request, from "Oggi".
         Route::controller(TrainerBookingRequestController::class)->prefix('richieste/{booking}')->whereNumber('booking')->group(function () {
             Route::post('accetta', 'accept')->name('requests.accept');
             Route::post('rifiuta', 'decline')->name('requests.decline');
         });
+        // "Saltata" on a finished session, from "Oggi" and "Clienti" (within 7 days).
+        Route::controller(TrainerNoShowController::class)->prefix('sedute/{booking}/saltata')->whereNumber('booking')->group(function () {
+            Route::post('/', 'store')->name('sessions.no-show');
+            Route::delete('/', 'destroy')->name('sessions.no-show.destroy');
+        });
         Route::get('calendario', TrainerCalendarController::class)->name('calendar');
         Route::get('clienti', TrainerClientsController::class)->name('clients');
         // Only clients who booked with this trainer (404 for the others).
         Route::get('clienti/{client}', TrainerClientProfileController::class)->whereNumber('client')->name('clients.show');
-        Route::get('disponibilita', TrainerAvailabilityController::class)->name('availability');
+        Route::controller(TrainerAvailabilityController::class)->group(function () {
+            Route::get('disponibilita', 'show')->name('availability');
+            Route::put('disponibilita', 'update')->name('availability.update');
+        });
+        // "Servizi e prezzi": public right away, without a new review.
+        Route::controller(TrainerServicesController::class)->group(function () {
+            Route::get('servizi', 'show')->name('services');
+            Route::put('servizi', 'update')->name('services.update');
+        });
+        // "Modifica profilo": public right away, without a new review.
+        Route::controller(TrainerProfileEditController::class)->group(function () {
+            Route::get('profilo', 'show')->name('profile.edit');
+            Route::put('profilo', 'update')->name('profile.update');
+        });
+        // "Foto della galleria" of "Modifica profilo": each action is saved right away.
+        Route::controller(TrainerPhotoController::class)->prefix('profilo/foto')->name('photos.')->group(function () {
+            Route::post('/', 'store')->name('store');
+            Route::delete('{photo}', 'destroy')->whereNumber('photo')->name('destroy');
+        });
         Route::get('recensioni', TrainerReviewsController::class)->name('reviews');
         Route::get('impostazioni', TrainerSettingsController::class)->name('settings');
         Route::controller(TrainerProfileSettingsController::class)->group(function () {
             Route::patch('impostazioni/visibilita', 'updateVisibility')->name('visibility.update');
             Route::patch('impostazioni/contatti', 'updateContacts')->name('contacts.update');
+            // "Metti in pausa" / "Riattiva profilo".
+            Route::patch('impostazioni/pausa', 'updatePause')->name('pause.update');
             // "Chiudi il profilo": the account becomes a client one again.
             Route::delete('profilo', 'close')->name('profile.close');
         });

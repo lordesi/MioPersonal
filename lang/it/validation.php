@@ -31,11 +31,7 @@ return [
 
     'custom' => [
         'phone' => [
-            'regex' => 'Inserisci un numero di telefono valido, es. 333 000 0000.',
-        ],
-        'phone_prefix' => [
-            'required' => 'Inserisci il prefisso, es. +39.',
-            'regex' => 'Prefisso non valido, es. +39.',
+            'regex' => 'Inserisci un cellulare di 10 cifre, es. 333 000 0000.',
         ],
     ],
 
@@ -48,7 +44,6 @@ return [
         'name' => 'nome',
         'password' => 'password',
         'phone' => 'telefono',
-        'phone_prefix' => 'prefisso',
         'role' => 'Sei',
         'terms' => 'i Termini e l\'Informativa privacy',
         'topic' => 'Argomento',

@@ -26,7 +26,8 @@ type SlotPickerProps = {
     selectedDate: string | null;
     onDateChange: (date: string) => void;
     selectedStart: string | null;
-    onStartChange: (start: string) => void;
+    /** null = the time chosen before is tapped again: nothing chosen. */
+    onStartChange: (start: string | null) => void;
 };
 
 function slotCountLabel(count: number, minutes: number): string {
@@ -201,7 +202,13 @@ export default function SlotPicker({
                                         key={start}
                                         type="button"
                                         aria-pressed={start === selectedStart}
-                                        onClick={() => onStartChange(start)}
+                                        onClick={() =>
+                                            onStartChange(
+                                                start === selectedStart
+                                                    ? null
+                                                    : start,
+                                            )
+                                        }
                                         className={cn(
                                             'h-11 rounded-md px-1 text-sm font-medium whitespace-nowrap md:px-2',
                                             start === selectedStart
@@ -223,11 +230,6 @@ export default function SlotPicker({
                     </div>
                 )}
             </div>
-
-            <p className="text-xs font-medium text-muted-foreground">
-                {trainerFirstName} riceve la prenotazione e la conferma via
-                email. Puoi annullarla dalla tua area.
-            </p>
         </section>
     );
 }

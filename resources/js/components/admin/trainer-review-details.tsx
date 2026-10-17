@@ -110,7 +110,9 @@ export function TrainerReviewDetails({
                             <dt className="text-muted-foreground">
                                 {row.label}
                             </dt>
-                            <dd className="tabular-nums">{row.value}</dd>
+                            <dd className="break-words tabular-nums">
+                                {row.value}
+                            </dd>
                         </div>
                     ))}
                 </dl>

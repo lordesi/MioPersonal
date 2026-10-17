@@ -98,6 +98,19 @@
     --sidebar-accent-foreground: #171717;
     --sidebar-border: #e5e5e5;
     --sidebar-ring: #a3a3a3;
+    /* Map palette (resources/js/lib/map.ts), soft colors like Apple Maps and Airbnb.
+       In hex: MapLibre doesn't read oklch. */
+    --map-land: #f5f3ee;
+    --map-park: #d8ecd0;
+    --map-water: #b9dcf2;
+    --map-building: #e9e6df;
+    --map-road: #ffffff;
+    --map-road-casing: #e3e0d8;
+    --map-label: #4a4a4a;
+    --map-label-halo: #ffffff;
+    --map-water-label: #5b8db8;
+    /* The "Zona" circle: follows the theme, dark included. */
+    --map-area: var(--primary);
 }
 
 .dark {
@@ -133,6 +146,15 @@
     --sidebar-accent-foreground: #fafafa;
     --sidebar-border: rgba(255, 255, 255, 0.1);
     --sidebar-ring: #737373;
+    --map-land: #1c1c1e;
+    --map-park: #1f2b22;
+    --map-water: #0f2333;
+    --map-building: #2a2a2c;
+    --map-road: #3a3a3c;
+    --map-road-casing: #2c2c2e;
+    --map-label: #d1d1d6;
+    --map-label-halo: #1c1c1e;
+    --map-water-label: #6e9cc2;
 }
 
 @layer base {

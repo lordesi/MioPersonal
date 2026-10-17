@@ -1,8 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowRight, CalendarDays, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
 import FavoriteTrainers from '@/components/client/favorite-trainers';
+import NoUpcomingSessions from '@/components/client/no-upcoming-sessions';
 import PendingBookingCard from '@/components/client/pending-booking-card';
 import UpcomingBookingCard from '@/components/client/upcoming-booking-card';
 import SectionLabel from '@/components/shared/section-label';
@@ -104,24 +105,7 @@ export default function Home({
                 {nextBooking ? (
                     <UpcomingBookingCard booking={nextBooking} />
                 ) : (
-                    <div className="flex flex-col items-center gap-2.5 rounded-xl border border-dashed border-input px-4 py-10 text-center">
-                        <span className="flex size-12 items-center justify-center rounded-full bg-muted">
-                            <CalendarDays
-                                aria-hidden="true"
-                                className="size-5"
-                            />
-                        </span>
-                        <strong className="text-lg">
-                            Nessuna seduta in programma
-                        </strong>
-                        <span className="max-w-90 text-sm text-muted-foreground">
-                            Scegli un trainer, un giorno e un orario: la tua
-                            prossima seduta comparirà qui.
-                        </span>
-                        <Button asChild className="h-11 rounded-lg px-4.5">
-                            <Link href={bookUrl}>Cerca un trainer</Link>
-                        </Button>
-                    </div>
+                    <NoUpcomingSessions bookUrl={bookUrl} />
                 )}
             </Section>
 

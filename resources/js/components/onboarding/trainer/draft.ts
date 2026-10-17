@@ -1,3 +1,5 @@
+import type { BookingRules } from '@/types';
+
 /**
  * The trainer's answers in steps 2–7 of the registration, sent all together
  * at the end (see toPayload). When the trainer fixes the profile, the page
@@ -24,42 +26,55 @@ export type TrainerDraft = {
     pricing: Pricing;
     /** Working hours by day (0 = Monday … 6 = Sunday), start hours from 6 to 23. */
     hours: number[][];
-    rules: {
-        noticeHours: number;
-        bookingWindowDays: number;
-        breakMinutes: number;
-        /** null = "Nessun limite". */
-        maxSessionsPerDay: number | null;
-        freeCancellationHours: number;
-    };
-    /** "Durate prenotabili" in minutes, e.g. [60, 120]: see SESSION_MINUTES. */
-    sessionMinutes: number[];
+    rules: BookingRules;
     autoConfirm: boolean;
     certifications: Certification[];
 };
 
 /**
  * Step 4. Prices in whole cents; null = not written yet. Saved as rows of
- * `services` by SaveTrainerProfile::saveServices().
+ * `services` by SaveTrainerServices.
  */
 export type Pricing = {
-    /** "Seduta singola": price per hour, bookable in every duration of step 5. */
-    hourlyCents: number | null;
-    singleNote: string;
-    /** Online at the same price, or at its own hourly price ("Seduta online"). */
+    /**
+     * The kinds of session ("Seduta singola", "Calisthenics"…), at least
+     * one and at most MAX_SESSION_TYPES, each with its own name and prices.
+     */
+    sessions: SessionType[];
+    /** Online at the same prices, or each kind at its own online prices. */
     onlineSamePrice: boolean;
-    onlineHourlyCents: number | null;
-    onlineNote: string;
-    /** Optional, fixed duration; 0 = "Gratis". */
+    /**
+     * Optional, fixed duration; 0 = "Gratis". Always called "Prima seduta",
+     * only for a client's first booking with the trainer.
+     */
     firstSession: {
         enabled: boolean;
-        name: string;
         minutes: number;
         priceCents: number | null;
         note: string;
     };
     /** At most MAX_PACKAGES; priceCents is the total. */
     packages: PricePackage[];
+};
+
+/**
+ * A kind of session: the durations the client can choose, each with its own
+ * price (30 minutes is not half of an hour), shortest first.
+ */
+export type SessionType = {
+    /** Free text, "Seduta singola" for the first one. */
+    name: string;
+    prices: DurationPrice[];
+    note: string;
+    /** The online prices by duration; only those of `prices` are sent. */
+    online: DurationPrice[];
+    onlineNote: string;
+};
+
+/** A duration of a kind of session (see SESSION_MINUTES) and its price. */
+export type DurationPrice = {
+    minutes: number;
+    priceCents: number | null;
 };
 
 export type PricePackage = {
@@ -91,8 +106,8 @@ export const MAX_STUDIOS = 3;
 export const MAX_OTHER_CITIES = 2;
 export const MAX_CERTIFICATIONS = 3;
 export const HEADLINE_MAX = 60;
-export const BIO_MIN = 150;
-export const BIO_MAX = 800;
+export const BIO_MIN = 60;
+export const BIO_MAX = 500;
 /** Certifications: from this year to the current one. */
 export const FIRST_CERTIFICATION_YEAR = 1950;
 
@@ -131,11 +146,23 @@ export const experienceOptions: { value: Experience; label: string }[] = [
 ];
 
 /** Step 4, as in TrainerProfileRequest. */
+export const MAX_SESSION_TYPES = 5;
+export const SESSION_NAME_MAX = 60;
+/** The name of the first session, not one of the kinds of session. */
+export const FIRST_SESSION_NAME = 'Prima seduta';
 export const MAX_PACKAGES = 3;
 export const NOTE_MAX = 200;
-export const MAX_HOURLY_CENTS = 100000;
-export const MAX_PACKAGE_CENTS = 1000000;
+/** Every price: up to 10.000 €, in cents. */
+export const MAX_PRICE_CENTS = 1000000;
 export const PACKAGE_SESSIONS = { min: 2, max: 50 };
+
+export const firstSessionType: SessionType = {
+    name: 'Seduta singola',
+    prices: [{ minutes: 60, priceCents: null }],
+    note: '',
+    online: [],
+    onlineNote: '',
+};
 
 export const emptyPackage: PricePackage = {
     sessions: 10,
@@ -157,14 +184,10 @@ export const initialDraft: TrainerDraft = {
     city: '',
     otherCities: [],
     pricing: {
-        hourlyCents: null,
-        singleNote: '',
+        sessions: [firstSessionType],
         onlineSamePrice: true,
-        onlineHourlyCents: null,
-        onlineNote: '',
         firstSession: {
             enabled: false,
-            name: 'Prima seduta',
             minutes: 60,
             priceCents: null,
             note: '',
@@ -187,19 +210,64 @@ export const initialDraft: TrainerDraft = {
         maxSessionsPerDay: 6,
         freeCancellationHours: 24,
     },
-    sessionMinutes: [60, 120],
     autoConfirm: false,
     certifications: [{ title: '', issuer: '', year: '' }],
 };
 
-/** The "da X €" of the search: the lowest hourly price, or null. */
+/** The "da X €" of the search: the lowest price of a session, or null. */
 export function minPriceCents(draft: TrainerDraft): number | null {
-    const prices = [
-        draft.pricing.hourlyCents,
-        hasOwnOnlinePrice(draft) ? draft.pricing.onlineHourlyCents : null,
-    ].filter((price): price is number => price !== null && price > 0);
+    const prices = draft.pricing.sessions
+        .flatMap((session) => [
+            ...session.prices,
+            ...(hasOwnOnlinePrice(draft) ? onlinePrices(session) : []),
+        ])
+        .map((item) => item.priceCents)
+        .filter((price): price is number => price !== null && price > 0);
 
     return prices.length > 0 ? Math.min(...prices) : null;
+}
+
+/**
+ * The online prices for the durations of a kind of session (the same
+ * durations, each with its own online price; null = not written yet).
+ */
+export function onlinePrices(session: SessionType): DurationPrice[] {
+    return session.prices.map(({ minutes }) => ({
+        minutes,
+        priceCents:
+            session.online.find((item) => item.minutes === minutes)
+                ?.priceCents ?? null,
+    }));
+}
+
+/** The same name, ignoring spaces at the ends and capitals. */
+export function sameName(a: string, b: string): boolean {
+    return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+/**
+ * The problem with the name of a kind of session, or null: required,
+ * not "Prima seduta" and not the name of a kind before it.
+ */
+export function sessionNameError(
+    sessions: SessionType[],
+    index: number,
+): string | null {
+    const name = sessions[index].name;
+
+    if (name.trim() === '') {
+        return 'Scrivi il nome del servizio.';
+    }
+
+    if (sameName(name, FIRST_SESSION_NAME)) {
+        return `«${FIRST_SESSION_NAME}» è già il nome della prima seduta: scegline un altro.`;
+    }
+
+    if (sessions.some((other, i) => i < index && sameName(other.name, name))) {
+        return 'C’è già un servizio con questo nome.';
+    }
+
+    return null;
 }
 
 /** The online price question makes sense only for who trains both online and in person. */
@@ -207,7 +275,7 @@ export function asksOnlinePrice(draft: TrainerDraft): boolean {
     return draft.places.includes('online') && needsCity(draft);
 }
 
-/** "Seduta online" with its own hourly price. */
+/** "Seduta online" with its own prices. */
 export function hasOwnOnlinePrice(draft: TrainerDraft): boolean {
     return asksOnlinePrice(draft) && !draft.pricing.onlineSamePrice;
 }
@@ -215,35 +283,43 @@ export function hasOwnOnlinePrice(draft: TrainerDraft): boolean {
 const inRange = (cents: number | null, min: number, max: number) =>
     cents !== null && cents >= min && cents <= max;
 
-/** Step 4 can continue: hourly price, and every optional part complete. */
+/** Step 4 can continue: a price for each duration, and every optional part complete. */
 export function isPricingComplete(draft: TrainerDraft): boolean {
-    const { pricing } = draft;
+    return isPricingValid(draft.pricing, hasOwnOnlinePrice(draft));
+}
+
+/**
+ * The same check on the prices alone ("Servizi" in the trainer area).
+ * ownOnline: online has its own prices (see hasOwnOnlinePrice).
+ */
+export function isPricingValid(pricing: Pricing, ownOnline: boolean): boolean {
+    const allPriced = (prices: DurationPrice[]) =>
+        prices.every((item) => inRange(item.priceCents, 100, MAX_PRICE_CENTS));
 
     return (
-        inRange(pricing.hourlyCents, 100, MAX_HOURLY_CENTS) &&
-        (!hasOwnOnlinePrice(draft) ||
-            inRange(pricing.onlineHourlyCents, 100, MAX_HOURLY_CENTS)) &&
+        pricing.sessions.length > 0 &&
+        pricing.sessions.every(
+            (session, index) =>
+                sessionNameError(pricing.sessions, index) === null &&
+                session.prices.length > 0 &&
+                allPriced(session.prices) &&
+                (!ownOnline || allPriced(onlinePrices(session))),
+        ) &&
         (!pricing.firstSession.enabled ||
-            (pricing.firstSession.name.trim() !== '' &&
-                inRange(
-                    pricing.firstSession.priceCents,
-                    0,
-                    MAX_HOURLY_CENTS,
-                ))) &&
+            inRange(pricing.firstSession.priceCents, 0, MAX_PRICE_CENTS)) &&
         pricing.packages.every(
             (item) =>
                 item.sessions >= PACKAGE_SESSIONS.min &&
                 item.sessions <= PACKAGE_SESSIONS.max &&
-                inRange(item.priceCents, 100, MAX_PACKAGE_CENTS),
+                inRange(item.priceCents, 100, MAX_PRICE_CENTS),
         )
     );
 }
 
-/** How many services the profile will show (single, online, first session, packages). */
+/** How many services the profile will show (kinds of session and their online prices, first session, packages). */
 export function serviceCount(draft: TrainerDraft): number {
     return (
-        1 +
-        Number(hasOwnOnlinePrice(draft)) +
+        draft.pricing.sessions.length * (hasOwnOnlinePrice(draft) ? 2 : 1) +
         Number(draft.pricing.firstSession.enabled) +
         draft.pricing.packages.length
     );
@@ -255,8 +331,8 @@ export function needsCity(draft: TrainerDraft): boolean {
 }
 
 /** Total working hours in a week. */
-export function weeklyHours(draft: TrainerDraft): number {
-    return draft.hours.reduce((total, day) => total + day.length, 0);
+export function weeklyHours(hours: number[][]): number {
+    return hours.reduce((total, day) => total + day.length, 0);
 }
 
 /** Step 2: photo (new or already saved), headline, bio and experience. */
@@ -285,12 +361,29 @@ export function isValidYear(year: string): boolean {
 }
 
 /** Empty certification rows are not sent. */
-function isFilled(certification: Certification): boolean {
+export function isFilled(certification: Certification): boolean {
     return (
         certification.title.trim() !== '' ||
         certification.issuer.trim() !== '' ||
         certification.year.trim() !== '' ||
         !!certification.file
+    );
+}
+
+/**
+ * A certification is all or nothing: an empty row is skipped, a started one
+ * needs title, issuer and year (the certificate file stays optional).
+ */
+export function isCertificationValid(certification: Certification): boolean {
+    if (!isFilled(certification)) {
+        return true;
+    }
+
+    return (
+        certification.title.trim() !== '' &&
+        certification.issuer.trim() !== '' &&
+        certification.year !== '' &&
+        isValidYear(certification.year)
     );
 }
 
@@ -309,31 +402,7 @@ export function toPayload(draft: TrainerDraft) {
         studios: draft.places.includes('studio') ? draft.studios : [],
         city: needsCity(draft) ? draft.city : '',
         other_cities: needsCity(draft) ? draft.otherCities : [],
-        hourly_price_cents: draft.pricing.hourlyCents ?? '',
-        single_note: draft.pricing.singleNote,
-        // Only when online has its own price: otherwise "Seduta singola" covers it.
-        ...(hasOwnOnlinePrice(draft)
-            ? {
-                  online_price_cents: draft.pricing.onlineHourlyCents ?? '',
-                  online_note: draft.pricing.onlineNote,
-              }
-            : {}),
-        ...(draft.pricing.firstSession.enabled
-            ? {
-                  first_session: {
-                      name: draft.pricing.firstSession.name,
-                      minutes: draft.pricing.firstSession.minutes,
-                      price_cents: draft.pricing.firstSession.priceCents ?? '',
-                      note: draft.pricing.firstSession.note,
-                  },
-              }
-            : {}),
-        packages: draft.pricing.packages.map((item) => ({
-            sessions: item.sessions,
-            minutes: item.minutes,
-            price_cents: item.priceCents ?? '',
-            note: item.note,
-        })),
+        ...toServicesPayload(draft.pricing, hasOwnOnlinePrice(draft)),
         hours: draft.hours,
         notice_hours: draft.rules.noticeHours,
         booking_window_days: draft.rules.bookingWindowDays,
@@ -341,7 +410,6 @@ export function toPayload(draft: TrainerDraft) {
         // '' = "Nessun limite" (the server reads it as null).
         max_sessions_per_day: draft.rules.maxSessionsPerDay ?? '',
         free_cancellation_hours: draft.rules.freeCancellationHours,
-        session_minutes: draft.sessionMinutes,
         auto_confirm: draft.autoConfirm,
         certifications: draft.certifications.filter(isFilled).map((item) => ({
             id: item.id ?? '',
@@ -349,8 +417,81 @@ export function toPayload(draft: TrainerDraft) {
             issuer: item.issuer,
             year: item.year,
             file: item.file ?? null,
+            // The ✕ next to a certificate already sent: its file goes.
+            remove_file:
+                item.id !== undefined && !item.hasFile && !item.file ? 1 : 0,
         })),
     };
+}
+
+/**
+ * The fields of step 4 (servicesRules() in TrainerProfileRequest), also sent
+ * alone by "Servizi". ownOnline: online has its own prices.
+ */
+export function toServicesPayload(pricing: Pricing, ownOnline: boolean) {
+    return {
+        sessions: pricing.sessions.map((session) => ({
+            name: session.name,
+            prices: pricesPayload(session.prices),
+            note: session.note,
+            // Only when online has its own prices: otherwise the same prices cover it.
+            ...(ownOnline
+                ? {
+                      online_prices: pricesPayload(onlinePrices(session)),
+                      online_note: session.onlineNote,
+                  }
+                : {}),
+        })),
+        ...(pricing.firstSession.enabled
+            ? {
+                  first_session: {
+                      minutes: pricing.firstSession.minutes,
+                      price_cents: pricing.firstSession.priceCents ?? '',
+                      note: pricing.firstSession.note,
+                  },
+              }
+            : {}),
+        packages: pricing.packages.map((item) => ({
+            sessions: item.sessions,
+            minutes: item.minutes,
+            price_cents: item.priceCents ?? '',
+            note: item.note,
+        })),
+    };
+}
+
+/** Prices as the server reads them: [{ minutes: 60, price_cents: 4500 }]. */
+function pricesPayload(prices: DurationPrice[]) {
+    return prices.map((item) => ({
+        minutes: item.minutes,
+        price_cents: item.priceCents ?? '',
+    }));
+}
+
+/**
+ * "Modifica profilo" (TrainerProfileUpdateRequest): the same fields without
+ * the services of step 4, changed from "Servizi", and hours and rules of
+ * step 5, changed from "Disponibilità".
+ */
+export function toProfilePayload(draft: TrainerDraft) {
+    const otherPageFields = new Set([
+        'sessions',
+        'first_session',
+        'packages',
+        'hours',
+        'notice_hours',
+        'booking_window_days',
+        'break_minutes',
+        'max_sessions_per_day',
+        'free_cancellation_hours',
+        'auto_confirm',
+    ]);
+
+    return Object.fromEntries(
+        Object.entries(toPayload(draft)).filter(
+            ([field]) => !otherPageFields.has(field),
+        ),
+    );
 }
 
 /** The step of each field, to open the first step with an error. */
@@ -364,9 +505,7 @@ const fieldSteps: [prefix: string, step: number][] = [
     ['studios', 3],
     ['city', 3],
     ['other_cities', 3],
-    ['hourly_price_cents', 4],
-    ['single_note', 4],
-    ['online_', 4],
+    ['sessions', 4],
     ['first_session', 4],
     ['packages', 4],
     ['hours', 5],
@@ -375,7 +514,6 @@ const fieldSteps: [prefix: string, step: number][] = [
     ['break_minutes', 5],
     ['max_sessions_per_day', 5],
     ['free_cancellation_hours', 5],
-    ['session_minutes', 5],
     ['auto_confirm', 5],
     ['certifications', 6],
 ];

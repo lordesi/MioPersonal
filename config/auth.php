@@ -101,6 +101,11 @@ return [
         ],
     ],
 
+    // The link in the "Conferma la tua email" email works for 24 hours (Laravel's default is 60 minutes).
+    'verification' => [
+        'expire' => 1440,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Password Confirmation Timeout

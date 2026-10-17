@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\Booking;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\TrainerSlots;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -36,7 +38,7 @@ class TrainerProfileSettingsTest extends TestCase
 
         $this->get(route('trainer.settings'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('visibility', ['visibleInSearch' => false, 'acceptsNewClients' => true, 'pausedUntil' => '2026-10-18'])
+                ->where('visibility', ['visibleInSearch' => false, 'acceptsNewClients' => true, 'pausedUntil' => '2026-10-18', 'paused' => false])
             );
 
         // "Riprendi ora"; without "pause" the pause stays as it is.
@@ -44,6 +46,46 @@ class TrainerProfileSettingsTest extends TestCase
         $this->assertNull($profile->refresh()->paused_until);
 
         CarbonImmutable::setTestNow();
+    }
+
+    public function test_metti_in_pausa_hides_the_profile_until_it_is_turned_back_on()
+    {
+        // refresh(): the rules with a default in the database (e.g. booking_window_days).
+        $profile = TrainerProfile::factory()->approved()->bookable()->create()->refresh();
+        TrainerSlots::refresh($profile);
+        $this->assertNotNull($profile->next_free_slot_at);
+
+        $this->actingAs($profile->user)
+            ->patch(route('trainer.pause.update'), ['paused' => true])
+            ->assertSessionHasNoErrors();
+
+        $profile->refresh();
+        $this->assertNotNull($profile->paused_at);
+        // Out of the search, and no free slots.
+        $this->assertFalse(TrainerProfile::published()->whereKey($profile->id)->exists());
+        $this->assertNull($profile->next_free_slot_at);
+        $this->get(route('trainer.settings'))
+            ->assertInertia(fn (Assert $page) => $page->where('visibility.paused', true));
+
+        // Nobody can book, not even with an old link to a slot.
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainers.book', $profile->slug), [
+                'service_id' => $profile->services()->where('minutes', 60)->value('id'),
+                'start' => now()->addDays(2)->setTime(18, 0)->toIso8601String(),
+                'minutes' => 60,
+            ])
+            ->assertSessionHasErrors(['start' => 'Al momento questo trainer non accetta prenotazioni.']);
+        $this->assertSame(0, Booking::count());
+
+        // "Riattiva profilo".
+        $this->actingAs($profile->user)
+            ->patch(route('trainer.pause.update'), ['paused' => false])
+            ->assertSessionHasNoErrors();
+
+        $profile->refresh();
+        $this->assertNull($profile->paused_at);
+        $this->assertTrue(TrainerProfile::published()->whereKey($profile->id)->exists());
+        $this->assertNotNull($profile->next_free_slot_at);
     }
 
     public function test_contacts_for_the_clients_are_saved()
@@ -54,14 +96,13 @@ class TrainerProfileSettingsTest extends TestCase
             ->patch(route('trainer.contacts.update'), [
                 'show_phone' => false,
                 'show_email' => true,
-                'show_whatsapp' => true,
                 'arrival_notes' => ' Citofono «Studio 3B» ',
             ])
             ->assertSessionHasNoErrors();
 
         $profile->refresh();
         $this->assertFalse($profile->show_phone);
-        $this->assertTrue($profile->show_whatsapp);
+        $this->assertTrue($profile->show_email);
         $this->assertSame('Citofono «Studio 3B»', $profile->arrival_notes);
     }
 
@@ -98,7 +139,7 @@ class TrainerProfileSettingsTest extends TestCase
                 ->where('contacts', null)
             );
 
-        $this->patch(route('trainer.contacts.update'), ['show_phone' => true, 'show_email' => true, 'show_whatsapp' => true])
+        $this->patch(route('trainer.contacts.update'), ['show_phone' => true, 'show_email' => true])
             ->assertNotFound();
     }
 }

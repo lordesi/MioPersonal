@@ -71,12 +71,12 @@ export default function StepReview({
         {
             step: 4,
             label: 'Servizi e prezzi',
-            value: `${plural(serviceCount(draft), 'servizio', 'servizi')} · da ${priceLabel}/ora`,
+            value: `${plural(serviceCount(draft), 'servizio', 'servizi')} · da ${priceLabel}`,
         },
         {
             step: 5,
             label: 'Orari e regole',
-            value: `${weeklyHours(draft)} ore a settimana · preavviso ${draft.rules.noticeHours} ore`,
+            value: `${weeklyHours(draft.hours)} ore a settimana · preavviso ${draft.rules.noticeHours} ore`,
         },
         {
             step: 6,

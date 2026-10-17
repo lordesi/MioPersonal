@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Enums\PlaceType;
+use App\Models\Review;
 use App\Models\Service;
 use App\Models\TrainerDocument;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
+use App\Models\User;
 use App\Support\TrainerCard;
 use App\Support\TrainerSlots;
 use Illuminate\Http\Request;
@@ -25,6 +27,14 @@ class TrainerProfileController extends Controller
 
     private const SIMILAR = 3;
 
+    /** Reviews shown before "Mostra tutte le recensioni". */
+    private const REVIEWS_PREVIEW = 3;
+
+    /** Radius of the "Zona" circle, in meters: around the studio, or the whole city. */
+    private const STUDIO_RADIUS = 300;
+
+    private const CITY_RADIUS = 3000;
+
     public function __invoke(Request $request, string $slug): Response
     {
         $profile = TrainerProfile::where('slug', $slug)
@@ -35,19 +45,22 @@ class TrainerProfileController extends Controller
 
         return Inertia::render('public/profile', [
             'trainer' => [
-                ...$this->profile($profile),
+                ...$this->profile($profile, $request->user()),
                 // "Salva": full heart when the client already saved this trainer.
                 'favorite' => in_array($profile->id, TrainerCard::favoriteIds($request->user()), true),
             ],
             // Not approved yet: the trainer (or the team) is looking at a preview.
             'preview' => ! $profile->isApproved(),
+            // "Mostra tutte le recensioni": sent only when the page asks for it
+            // (router.reload with only: ['allReviews']), never on the first load.
+            'allReviews' => Inertia::optional(fn () => $this->reviews($profile)),
         ]);
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function profile(TrainerProfile $profile): array
+    private function profile(TrainerProfile $profile, ?User $viewer): array
     {
         $cities = array_values(array_filter([$profile->city?->name, ...$profile->otherCities->pluck('name')->all()]));
 
@@ -67,60 +80,144 @@ class TrainerProfileController extends Controller
             'reviewCount' => $profile->rating_count,
             'city' => $profile->city === null ? null : ['slug' => $profile->city->slug, 'name' => $profile->city->name],
             'cities' => $cities ?: ['Solo online'],
-            'areaLabel' => $profile->city->name ?? 'Online',
+            ...$this->area($profile),
             'online' => TrainerCard::online($profile),
             'disciplines' => $profile->disciplines->pluck('name')->all(),
+            // The profile photo goes in the circle next to the name, not in the carousel.
+            'portraitUrl' => $profile->photos->firstWhere('is_portrait', true)?->url(),
             'photos' => $this->photos($profile),
-            'services' => $profile->services->where('is_active', true)->map(fn (Service $service) => [
-                'id' => $service->id,
-                'name' => $service->name,
-                'minutes' => $service->minutes,
-                'durationLabel' => $this->durationLabel($service, $profile->session_minutes),
-                'note' => $service->note ?? '',
-                'priceCents' => $service->price_cents,
-                'perHour' => $service->price_per_hour,
-                'fixedDuration' => $service->fixed_duration,
-            ])->values()->all(),
+            'services' => $this->services($profile, $viewer),
             'places' => $profile->places->map(fn (TrainerPlace $place) => $this->place($place, $cities))->all(),
             'certifications' => $profile->documents->where('type', 'certificate')->map(fn (TrainerDocument $document) => [
                 'title' => $document->title,
                 'issuer' => $document->issuerLabel(),
             ])->values()->all(),
-            // TODO (step 6): the real reviews and their distribution.
-            'ratingDistribution' => [],
-            'reviews' => [],
-            // "Durate prenotabili", in minutes, shortest first.
-            'sessionMinutes' => $profile->session_minutes,
+            'ratingDistribution' => $this->ratingDistribution($profile),
+            // The preview: the latest ones. All of them are in `allReviews`.
+            'reviews' => $this->reviews($profile, self::REVIEWS_PREVIEW),
             'availability' => TrainerSlots::days($profile, self::AVAILABILITY_DAYS),
             'similarTrainers' => $this->similar($profile),
         ];
     }
 
     /**
-     * The saved photos; without any, a placeholder with the initials.
+     * How many reviews have 5 stars, 4, … 1 (the bars of the summary).
+     * Always 5 rows, with 0 for the missing ones; hidden reviews don't count.
      *
-     * @return list<array{caption: string, isPortrait: bool, url: string|null}>
+     * @return list<array{stars: int, count: int}>
      */
-    private function photos(TrainerProfile $profile): array
+    private function ratingDistribution(TrainerProfile $profile): array
     {
-        $photos = array_values($profile->photos
-            ->sortByDesc('is_portrait')
-            ->map(fn (TrainerPhoto $photo) => [
-                'caption' => $photo->caption ?? '',
-                'isPortrait' => $photo->is_portrait,
-                'url' => $photo->url(),
-            ])->all());
+        $counts = $profile->reviews()
+            ->notHidden()
+            ->selectRaw('rating, count(*) as total')
+            ->groupBy('rating')
+            ->pluck('total', 'rating');
 
-        return $photos ?: [['caption' => 'Ritratto', 'isPortrait' => true, 'url' => null]];
+        return array_map(fn (int $stars) => [
+            'stars' => $stars,
+            'count' => (int) ($counts[$stars] ?? 0),
+        ], [5, 4, 3, 2, 1]);
     }
 
     /**
-     * "1 ora", "1 ora e mezza", "45 min", "10 × 1 ora"; an hourly service that
-     * follows the trainer's durations: "da 30 min a 2 ore".
+     * The reviews that are not hidden, newest first; all of them without a limit.
      *
-     * @param  list<int>  $sessionMinutes
+     * @return list<array{id: int, authorName: string, rating: int, text: string, reply: string|null, serviceName: string|null, createdAt: string|null}>
      */
-    private function durationLabel(Service $service, array $sessionMinutes): string
+    private function reviews(TrainerProfile $profile, ?int $limit = null): array
+    {
+        return array_values($profile->reviews()
+            ->notHidden()
+            ->with(['client', 'booking'])
+            ->latest()
+            ->latest('id')
+            ->when($limit !== null, fn ($query) => $query->limit($limit))
+            ->get()
+            ->map(fn (Review $review) => [
+                'id' => $review->id,
+                // The client deleted the account: the review stays, anonymous.
+                'authorName' => $review->client?->publicName() ?? 'Utente anonimo',
+                'rating' => $review->rating,
+                'text' => $review->text,
+                'reply' => $review->reply,
+                // The booked service, e.g. "Seduta singola"; none for the demo reviews.
+                'serviceName' => $review->booking?->service_name,
+                // ISO UTC: the page shows "3 giorni fa" and sorts by date.
+                'createdAt' => $review->created_at?->toIso8601ZuluString(),
+            ])->all());
+    }
+
+    /**
+     * The photos of the carousel: the gallery, without the profile photo.
+     * Without any, the page shows no carousel.
+     *
+     * @return list<array{caption: string, url: string}>
+     */
+    private function photos(TrainerProfile $profile): array
+    {
+        return array_values($profile->photos
+            ->reject(fn (TrainerPhoto $photo) => $photo->is_portrait)
+            ->map(fn (TrainerPhoto $photo) => [
+                'caption' => $photo->caption ?? '',
+                'url' => $photo->url(),
+            ])->all());
+    }
+
+    /**
+     * The services as the client chooses them. The rows of a kind of session
+     * (one per duration, fixed_duration = false, same name) become one
+     * service, and so do its online rows: `options` has a price for each
+     * duration. The first session and the packages have a single option.
+     * The first session is only for a client's first booking: who already
+     * booked this trainer doesn't see it.
+     *
+     * @return list<array{id: int, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int}>}>
+     */
+    private function services(TrainerProfile $profile, ?User $viewer): array
+    {
+        $groups = [];
+        $booked = $viewer !== null && $profile->hasBookingFrom($viewer);
+
+        foreach ($profile->services->where('is_active', true)->sortBy('sort') as $service) {
+            if ($booked && $service->isFirstSession()) {
+                continue;
+            }
+
+            $key = $service->fixed_duration
+                ? "service-{$service->id}"
+                : ($service->online_only ? 'online:' : 'kind:').$service->name;
+            $groups[$key][] = $service;
+        }
+
+        return array_values(array_map(function (array $rows) {
+            // Shortest first: the first row gives name and note, the last the longest duration.
+            usort($rows, fn (Service $a, Service $b) => $a->minutes <=> $b->minutes);
+            $first = $rows[0];
+            $longest = $rows[array_key_last($rows)]->minutes;
+            $options = array_map(fn (Service $service) => [
+                'serviceId' => $service->id,
+                'minutes' => $service->minutes,
+                'priceCents' => $service->price_cents,
+            ], $rows);
+
+            return [
+                'id' => $first->id,
+                'name' => $first->displayName(),
+                'durationLabel' => $this->durationLabel($first, $longest),
+                'note' => $first->note ?? '',
+                // The lowest price: "da 25 €" when the price depends on the duration.
+                'priceCents' => min($first->price_cents, ...array_column($options, 'priceCents')),
+                'options' => $options,
+            ];
+        }, $groups));
+    }
+
+    /**
+     * "1 ora", "1 ora e mezza", "45 min", "10 × 1 ora"; a service with more
+     * durations (from the shortest, $service, to $longest): "da 30 min a 2 ore".
+     */
+    private function durationLabel(Service $service, int $longest): string
     {
         $one = self::minutesLabel($service->minutes);
 
@@ -128,16 +225,11 @@ class TrainerProfileController extends Controller
             return "{$service->package_sessions} × {$one}";
         }
 
-        if ($service->price_per_hour && ! $service->fixed_duration && $sessionMinutes !== []) {
-            $shortest = min($sessionMinutes);
-            $longest = max($sessionMinutes);
+        $shortest = $service->minutes;
 
-            return $shortest === $longest
-                ? self::minutesLabel($shortest)
-                : 'da '.self::minutesLabel($shortest).' a '.self::minutesLabel($longest);
-        }
-
-        return $one;
+        return $shortest === $longest
+            ? self::minutesLabel($shortest)
+            : 'da '.self::minutesLabel($shortest).' a '.self::minutesLabel($longest);
     }
 
     /** 30 → "30 min", 60 → "1 ora", 90 → "1 ora e mezza", 120 → "2 ore". Same as formatDuration() in format.ts. */
@@ -177,20 +269,46 @@ class TrainerProfileController extends Controller
     }
 
     /**
-     * Other published trainers of the same city with a discipline in common.
+     * The "Zona" map: a small circle on the first studio found on the map
+     * (its address is already public), otherwise a big one on the city center.
+     *
+     * @return array{areaLabel: string, areaCenter: array{lat: float, lng: float}|null, areaRadius: int}
+     */
+    private function area(TrainerProfile $profile): array
+    {
+        $studio = $profile->places->first(fn (TrainerPlace $place) => $place->type === PlaceType::Studio && $place->lat !== null && $place->lng !== null);
+
+        if ($studio !== null) {
+            return [
+                'areaLabel' => $studio->name ?? 'Studio',
+                'areaCenter' => ['lat' => (float) $studio->lat, 'lng' => (float) $studio->lng],
+                'areaRadius' => self::STUDIO_RADIUS,
+            ];
+        }
+
+        return [
+            'areaLabel' => $profile->city->name ?? 'Online',
+            'areaCenter' => $profile->city === null ? null : ['lat' => $profile->city->lat, 'lng' => $profile->city->lng],
+            'areaRadius' => self::CITY_RADIUS,
+        ];
+    }
+
+    /**
+     * Other published trainers with a discipline in common: of the same city,
+     * or training online for an online-only trainer (who has no city).
      *
      * @return list<array{name: string, href: string, subtitle: string, detail: string}>
      */
     private function similar(TrainerProfile $profile): array
     {
-        if ($profile->city_id === null) {
-            return [];
-        }
-
         $others = TrainerProfile::query()
             ->published()
             ->whereKeyNot($profile->id)
-            ->where('city_id', $profile->city_id)
+            ->when(
+                $profile->city_id === null,
+                fn ($query) => $query->where('trains_online', true),
+                fn ($query) => $query->where('city_id', $profile->city_id),
+            )
             ->whereHas('disciplines', fn ($query) => $query->whereKey($profile->disciplines->modelKeys()))
             ->with(TrainerCard::RELATIONS)
             ->orderByDesc('rating_count')

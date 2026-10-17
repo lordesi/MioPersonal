@@ -8,6 +8,7 @@ use App\Enums\TrainerExperience;
 use App\Enums\UserRole;
 use App\Models\City;
 use App\Models\Discipline;
+use App\Models\Service;
 use App\Models\TrainerProfile;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -41,10 +42,13 @@ class TrainerProfileRequest extends FormRequest
     /** Step 6: certifications are optional, at most 3. */
     public const MAX_CERTIFICATIONS = 3;
 
-    /** Step 4: hourly prices (1 – 1.000 €) and packages (up to 10.000 €), in cents. */
-    public const MAX_HOURLY_CENTS = 100000;
+    /** Step 4: every price (durations, online, first session, packages) up to 10.000 €, in cents. */
+    public const MAX_PRICE_CENTS = 1000000;
 
-    public const MAX_PACKAGE_CENTS = 1000000;
+    /** Step 4: the kinds of session ("Seduta singola", "Calisthenics"…). */
+    public const MAX_SESSION_TYPES = 5;
+
+    public const SESSION_NAME_MAX = 60;
 
     public const MAX_PACKAGES = 3;
 
@@ -65,7 +69,7 @@ class TrainerProfileRequest extends FormRequest
 
             // Step 2
             'headline' => ['required', 'string', 'max:60'],
-            'bio' => ['required', 'string', 'min:150', 'max:800'],
+            'bio' => ['required', 'string', 'min:60', 'max:500'],
             'experience' => ['required', Rule::enum(TrainerExperience::class)],
             // Required, except for a profile that already has one (fixing after "Chiedi modifiche").
             'photo' => [Rule::requiredIf(fn () => $this->user()?->trainerProfile?->portrait === null), 'nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=400,min_height=400'],
@@ -82,40 +86,166 @@ class TrainerProfileRequest extends FormRequest
             'other_cities' => ['array', 'max:'.self::MAX_OTHER_CITIES],
             'other_cities.*' => ['string', 'distinct', Rule::exists(City::class, 'slug')->where('is_active', true)],
 
-            // Step 4: "Seduta singola" at an hourly price, online at its own
-            // price (optional), a first session (optional, can be free), packages.
-            'hourly_price_cents' => ['required', 'integer', 'min:100', 'max:'.self::MAX_HOURLY_CENTS],
-            'single_note' => ['nullable', 'string', 'max:'.self::NOTE_MAX],
-            'online_price_cents' => ['nullable', 'integer', 'min:100', 'max:'.self::MAX_HOURLY_CENTS],
-            'online_note' => ['nullable', 'string', 'max:'.self::NOTE_MAX],
-            'first_session' => ['nullable', 'array'],
-            'first_session.name' => ['required_with:first_session', 'string', 'max:100'],
-            'first_session.minutes' => ['required_with:first_session', 'integer', Rule::in(TrainerProfile::SESSION_MINUTES)],
-            'first_session.price_cents' => ['required_with:first_session', 'integer', 'min:0', 'max:'.self::MAX_HOURLY_CENTS],
-            'first_session.note' => ['nullable', 'string', 'max:'.self::NOTE_MAX],
-            'packages' => ['array', 'max:'.self::MAX_PACKAGES],
-            'packages.*.sessions' => ['required', 'integer', 'between:2,50'],
-            'packages.*.minutes' => ['required', 'integer', Rule::in(TrainerProfile::SESSION_MINUTES)],
-            'packages.*.price_cents' => ['required', 'integer', 'min:100', 'max:'.self::MAX_PACKAGE_CENTS],
-            'packages.*.note' => ['nullable', 'string', 'max:'.self::NOTE_MAX],
+            // Step 4
+            ...self::servicesRules(),
 
-            // Step 5: hours by day, 0 = Monday … 6 = Sunday.
+            // Step 5
+            ...self::availabilityRules(),
+
+            // Step 6: id = a certification already sent, to keep its file.
+            // A certification is all or nothing: title, issuer and year (the file is optional).
+            'certifications' => ['array', 'max:'.self::MAX_CERTIFICATIONS],
+            'certifications.*.id' => ['nullable', 'integer'],
+            'certifications.*.title' => ['required', 'string', 'max:150'],
+            'certifications.*.issuer' => ['required', 'string', 'max:150'],
+            'certifications.*.year' => ['required', 'integer', 'between:1950,'.now()->year],
+            'certifications.*.file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+            // The ✕ next to a certificate already sent: its file goes.
+            'certifications.*.remove_file' => ['nullable', 'boolean'],
+        ];
+    }
+
+    /**
+     * Step 5, also checked by "Disponibilità" (TrainerAvailabilityRequest):
+     * hours by day (0 = Monday … 6 = Sunday) and booking rules. The durations
+     * come from the prices of step 4.
+     *
+     * @return array<string, array<mixed>>
+     */
+    public static function availabilityRules(): array
+    {
+        return [
             'hours' => ['array:0,1,2,3,4,5,6'],
             'hours.*' => ['array'],
             'hours.*.*' => ['integer', 'between:'.self::FIRST_HOUR.','.self::LAST_HOUR],
             ...array_map(fn (array $options) => ['required', 'integer', Rule::in($options)], self::RULE_OPTIONS),
             'max_sessions_per_day' => ['nullable', 'integer', Rule::in(self::MAX_SESSIONS_OPTIONS)],
-            'session_minutes' => ['required', 'array', 'min:1'],
-            'session_minutes.*' => ['integer', 'distinct', Rule::in(TrainerProfile::SESSION_MINUTES)],
             'auto_confirm' => ['required', 'boolean'],
+        ];
+    }
 
-            // Step 6: id = a certification already sent, to keep its file.
-            'certifications' => ['array', 'max:'.self::MAX_CERTIFICATIONS],
-            'certifications.*.id' => ['nullable', 'integer'],
-            'certifications.*.title' => ['required', 'string', 'max:150'],
-            'certifications.*.issuer' => ['nullable', 'string', 'max:150'],
-            'certifications.*.year' => ['nullable', 'integer', 'between:1950,'.now()->year],
-            'certifications.*.file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+    /**
+     * Step 4 "Servizi e prezzi", also checked by the "Servizi" page
+     * (TrainerServicesRequest).
+     *
+     * @return array<string, array<mixed>>
+     */
+    public static function servicesRules(): array
+    {
+        return [
+            // One or more kinds of session, each with its own name and a
+            // price for each duration the client can choose, and online its own
+            // prices for the same durations (optional); a first session
+            // (optional, can be free, always "Prima seduta"), packages.
+            'sessions' => ['required', 'array', 'min:1', 'max:'.self::MAX_SESSION_TYPES],
+            'sessions.*.name' => ['required', 'string', 'max:'.self::SESSION_NAME_MAX, 'distinct:ignore_case'],
+            'sessions.*.prices' => ['required', 'array', 'min:1', 'max:'.count(TrainerProfile::SESSION_MINUTES)],
+            'sessions.*.prices.*.minutes' => ['required', 'integer', Rule::in(TrainerProfile::SESSION_MINUTES)],
+            'sessions.*.prices.*.price_cents' => ['required', 'integer', 'min:100', 'max:'.self::MAX_PRICE_CENTS],
+            'sessions.*.note' => ['nullable', 'string', 'max:'.self::NOTE_MAX],
+            'sessions.*.online_prices' => ['nullable', 'array'],
+            'sessions.*.online_prices.*.minutes' => ['required', 'integer', Rule::in(TrainerProfile::SESSION_MINUTES)],
+            'sessions.*.online_prices.*.price_cents' => ['required', 'integer', 'min:100', 'max:'.self::MAX_PRICE_CENTS],
+            'sessions.*.online_note' => ['nullable', 'string', 'max:'.self::NOTE_MAX],
+            'first_session' => ['nullable', 'array'],
+            'first_session.minutes' => ['required_with:first_session', 'integer', Rule::in(TrainerProfile::SESSION_MINUTES)],
+            'first_session.price_cents' => ['required_with:first_session', 'integer', 'min:0', 'max:'.self::MAX_PRICE_CENTS],
+            'first_session.note' => ['nullable', 'string', 'max:'.self::NOTE_MAX],
+            'packages' => ['array', 'max:'.self::MAX_PACKAGES],
+            'packages.*.sessions' => ['required', 'integer', 'between:2,50'],
+            'packages.*.minutes' => ['required', 'integer', Rule::in(TrainerProfile::SESSION_MINUTES)],
+            'packages.*.price_cents' => ['required', 'integer', 'min:100', 'max:'.self::MAX_PRICE_CENTS],
+            'packages.*.note' => ['nullable', 'string', 'max:'.self::NOTE_MAX],
+        ];
+    }
+
+    /**
+     * The messages of servicesRules().
+     *
+     * @return array<string, string>
+     */
+    public static function servicesMessages(): array
+    {
+        return [
+            'sessions.required' => 'Aggiungi almeno un servizio con una durata e il suo prezzo.',
+            'sessions.min' => 'Aggiungi almeno un servizio con una durata e il suo prezzo.',
+            'sessions.array' => 'Aggiungi almeno un servizio con una durata e il suo prezzo.',
+            'sessions.max' => 'Puoi aggiungere al massimo '.self::MAX_SESSION_TYPES.' tipi di seduta.',
+            'sessions.*.name.required' => 'Scrivi il nome di ogni servizio.',
+            'sessions.*.name.max' => 'Il nome di un servizio può avere al massimo '.self::SESSION_NAME_MAX.' caratteri.',
+            'sessions.*.name.distinct' => 'Due servizi non possono avere lo stesso nome.',
+            'sessions.*.name.*' => 'Scrivi il nome di ogni servizio.',
+            'sessions.*.prices.required' => 'Scegli almeno una durata per ogni servizio e scrivi il suo prezzo.',
+            'sessions.*.prices.min' => 'Scegli almeno una durata per ogni servizio e scrivi il suo prezzo.',
+            'sessions.*.prices.array' => 'Scegli le durate tra quelle proposte.',
+            'sessions.*.prices.max' => 'Scegli le durate tra quelle proposte.',
+            'sessions.*.prices.*.minutes.*' => 'Scegli le durate tra quelle proposte.',
+            'sessions.*.prices.*.price_cents.*' => 'Il prezzo di ogni durata deve essere tra 1 e 10.000 €.',
+            'sessions.*.online_prices.array' => 'Scrivi un prezzo online per ogni durata del servizio.',
+            'sessions.*.online_prices.*.minutes.*' => 'Scegli le durate tra quelle proposte.',
+            'sessions.*.online_prices.*.price_cents.*' => 'Il prezzo online di ogni durata deve essere tra 1 e 10.000 €.',
+            'first_session.minutes.*' => 'Scegli la durata della prima seduta.',
+            'first_session.price_cents.*' => 'Il prezzo della prima seduta deve essere tra 0 (gratis) e 10.000 €.',
+            'packages.max' => 'Puoi aggiungere al massimo 3 pacchetti.',
+            'packages.*.sessions.*' => 'Un pacchetto deve avere da 2 a 50 sedute.',
+            'packages.*.minutes.*' => 'Scegli la durata delle sedute del pacchetto.',
+            'packages.*.price_cents.*' => 'Il prezzo di un pacchetto deve essere tra 1 e 10.000 €.',
+            'sessions.*.note.max' => 'Le note possono avere al massimo 200 caratteri.',
+            'sessions.*.online_note.max' => 'Le note possono avere al massimo 200 caratteri.',
+            'first_session.note.max' => 'Le note possono avere al massimo 200 caratteri.',
+            'packages.*.note.max' => 'Le note possono avere al massimo 200 caratteri.',
+        ];
+    }
+
+    /**
+     * The checks of the kinds of session that the rules can't do: not
+     * "Prima seduta", each duration once, online prices for the same durations.
+     *
+     * @param  array<array-key, mixed>  $sessions
+     */
+    public static function checkSessions(Validator $validator, array $sessions): void
+    {
+        foreach ($sessions as $index => $session) {
+            // Not a list of fields: servicesRules() already said it.
+            if (! is_array($session)) {
+                continue;
+            }
+
+            // "Prima seduta" is the first session, not a kind of session.
+            if (is_string($session['name'] ?? null) && mb_strtolower(trim($session['name'])) === mb_strtolower(Service::FIRST_SESSION_NAME)) {
+                $validator->errors()->add("sessions.{$index}.name", '«'.Service::FIRST_SESSION_NAME.'» è già il nome della prima seduta: scegline un altro.');
+            }
+
+            $prices = self::durations($session['prices'] ?? []);
+
+            // Each duration once in a kind of session (two kinds may share it).
+            if (count($prices) !== count(array_unique($prices))) {
+                $validator->errors()->add("sessions.{$index}.prices", 'Ogni durata può comparire una sola volta per servizio.');
+            }
+
+            // Online prices: one for each duration of the same kind, no more, no less.
+            if (filled($session['online_prices'] ?? null) && self::durations($session['online_prices']) !== $prices) {
+                $validator->errors()->add("sessions.{$index}.online_prices", 'Scrivi un prezzo online per ogni durata del servizio.');
+            }
+        }
+    }
+
+    /**
+     * The messages of availabilityRules().
+     *
+     * @return array<string, string>
+     */
+    public static function availabilityMessages(): array
+    {
+        return [
+            'hours.*' => 'Controlla gli orari: si può iniziare dalle 6 alle 23.',
+            'hours.*.*' => 'Controlla gli orari: si può iniziare dalle 6 alle 23.',
+            'hours.*.*.*' => 'Controlla gli orari: si può iniziare dalle 6 alle 23.',
+            'notice_hours.*' => 'Scegli il preavviso minimo tra le opzioni.',
+            'booking_window_days.*' => 'Scegli fino a quando si può prenotare.',
+            'break_minutes.*' => 'Scegli la pausa tra due sedute.',
+            'max_sessions_per_day.*' => 'Scegli il massimo di sedute al giorno.',
+            'free_cancellation_hours.*' => 'Scegli fino a quando si può cancellare.',
         ];
     }
 
@@ -153,8 +283,26 @@ class TrainerProfileRequest extends FormRequest
                 if (array_diff($places, [PlaceType::Online->value]) !== [] && ! $this->filled('city')) {
                     $validator->errors()->add('city', 'Scegli la tua città principale.');
                 }
+
+                self::checkSessions($validator, (array) $this->input('sessions', []));
             },
         ];
+    }
+
+    /**
+     * The durations of a list of prices, shortest first: [{minutes: 90}, {minutes: 60}] → [60, 90].
+     *
+     * @return list<int>
+     */
+    private static function durations(mixed $prices): array
+    {
+        $minutes = array_map(
+            fn (mixed $price) => is_array($price) ? (int) ($price['minutes'] ?? 0) : 0,
+            array_values((array) $prices),
+        );
+        sort($minutes);
+
+        return $minutes;
     }
 
     /**
@@ -166,8 +314,8 @@ class TrainerProfileRequest extends FormRequest
             'headline.required' => 'Scrivi il titolo del profilo.',
             'headline.max' => 'Il titolo può avere al massimo 60 caratteri.',
             'bio.required' => 'Scrivi chi sei e come lavori.',
-            'bio.min' => 'La presentazione deve avere almeno 150 caratteri.',
-            'bio.max' => 'La presentazione può avere al massimo 800 caratteri.',
+            'bio.min' => 'La presentazione deve avere almeno 60 caratteri.',
+            'bio.max' => 'La presentazione può avere al massimo 500 caratteri.',
             'experience.*' => 'Scegli gli anni di esperienza.',
             'photo.required' => 'Carica una foto del profilo.',
             'photo.image' => 'La foto deve essere un’immagine JPG o PNG.',
@@ -189,37 +337,12 @@ class TrainerProfileRequest extends FormRequest
             'city.exists' => 'La città scelta non è disponibile.',
             'other_cities.max' => 'Puoi aggiungere al massimo 2 altre città.',
             'other_cities.*.*' => 'Una delle altre città non è disponibile.',
-            'hourly_price_cents.required' => 'Indica il tuo prezzo all’ora.',
-            'hourly_price_cents.integer' => 'Indica il prezzo all’ora in euro.',
-            'hourly_price_cents.min' => 'Il prezzo all’ora deve essere almeno 1 €.',
-            'hourly_price_cents.max' => 'Il prezzo all’ora può essere al massimo 1.000 €.',
-            'online_price_cents.*' => 'Il prezzo online all’ora deve essere tra 1 e 1.000 €.',
-            'first_session.name.*' => 'Scrivi il nome della prima seduta (massimo 100 caratteri).',
-            'first_session.minutes.*' => 'Scegli la durata della prima seduta.',
-            'first_session.price_cents.*' => 'Il prezzo della prima seduta deve essere tra 0 (gratis) e 1.000 €.',
-            'packages.max' => 'Puoi aggiungere al massimo 3 pacchetti.',
-            'packages.*.sessions.*' => 'Un pacchetto deve avere da 2 a 50 sedute.',
-            'packages.*.minutes.*' => 'Scegli la durata delle sedute del pacchetto.',
-            'packages.*.price_cents.*' => 'Il prezzo di un pacchetto deve essere tra 1 e 10.000 €.',
-            'single_note.max' => 'Le note possono avere al massimo 200 caratteri.',
-            'online_note.max' => 'Le note possono avere al massimo 200 caratteri.',
-            'first_session.note.max' => 'Le note possono avere al massimo 200 caratteri.',
-            'packages.*.note.max' => 'Le note possono avere al massimo 200 caratteri.',
-            'hours.*' => 'Controlla gli orari: si può iniziare dalle 6 alle 23.',
-            'hours.*.*' => 'Controlla gli orari: si può iniziare dalle 6 alle 23.',
-            'hours.*.*.*' => 'Controlla gli orari: si può iniziare dalle 6 alle 23.',
-            'notice_hours.*' => 'Scegli il preavviso minimo tra le opzioni.',
-            'booking_window_days.*' => 'Scegli fino a quando si può prenotare.',
-            'break_minutes.*' => 'Scegli la pausa tra due sedute.',
-            'max_sessions_per_day.*' => 'Scegli il massimo di sedute al giorno.',
-            'free_cancellation_hours.*' => 'Scegli fino a quando si può cancellare.',
-            'session_minutes.required' => 'Scegli almeno una durata prenotabile.',
-            'session_minutes.min' => 'Scegli almeno una durata prenotabile.',
-            'session_minutes.*' => 'Scegli le durate tra quelle proposte.',
-            'session_minutes.*.*' => 'Scegli le durate tra quelle proposte.',
+            ...self::servicesMessages(),
+            ...self::availabilityMessages(),
             'certifications.max' => 'Puoi aggiungere al massimo 3 certificazioni.',
             'certifications.*.title.required' => 'Ogni certificazione deve avere un titolo.',
             'certifications.*.title.max' => 'Il titolo di una certificazione è troppo lungo.',
+            'certifications.*.issuer.required' => 'Ogni certificazione deve avere l’ente o la scuola.',
             'certifications.*.issuer.max' => 'Il nome di un ente è troppo lungo.',
             'certifications.*.year.*' => 'Scrivi l’anno con 4 cifre, es. 2020.',
             'certifications.*.file.mimes' => 'Gli attestati devono essere PDF, JPG o PNG.',

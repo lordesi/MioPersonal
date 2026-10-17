@@ -1,4 +1,5 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import BrandPanel from '@/components/auth/brand-panel';
 import FormField from '@/components/auth/form-field';
 import PasswordField from '@/components/auth/password-field';
 import SocialSignIn, { TextDivider } from '@/components/auth/social-sign-in';
@@ -42,24 +43,10 @@ export default function Login({
             <Head title="Accedi" />
 
             <div className="flex min-h-screen flex-wrap bg-background">
-                <section
-                    aria-label="MioPersonal"
-                    className="hidden flex-[1_1_480px] flex-col justify-between gap-12 bg-primary p-12 text-primary-foreground md:flex"
-                >
-                    <BrandLogo className="text-primary-foreground" />
-                    <div className="flex max-w-120 flex-col gap-4">
-                        <p className="text-5xl leading-13 font-bold tracking-tight">
-                            Il tuo allenamento, a un messaggio di distanza.
-                        </p>
-                        <p className="text-lg opacity-75">
-                            Accedi per seguire le tue richieste, vedere i
-                            contatti dei trainer e lasciare recensioni.
-                        </p>
-                    </div>
-                    <p className="text-xs opacity-60">
-                        © {new Date().getFullYear()} MioPersonal
-                    </p>
-                </section>
+                <BrandPanel
+                    title="Il tuo allenamento, a un messaggio di distanza."
+                    text="Accedi per seguire le tue richieste, vedere i contatti dei trainer e lasciare recensioni."
+                />
 
                 <main className="flex flex-[1_1_480px] flex-col items-center justify-center px-4 py-8 md:px-6 md:py-12">
                     <div className="mb-8 self-start md:hidden">

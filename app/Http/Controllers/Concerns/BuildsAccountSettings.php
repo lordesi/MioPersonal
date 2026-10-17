@@ -23,10 +23,9 @@ trait BuildsAccountSettings
             'hasPassword' => $user->password !== null,
             // ISO UTC, for «Cambiata l'ultima volta il…»; null = never changed here.
             'passwordChangedAt' => $user->password_changed_at?->utc()->format('Y-m-d\TH:i:s\Z'),
-            // "Continua con Google" saves google_id. TODO: Apple, not available yet.
+            // "Continua con Google" saves google_id.
             'providers' => [
                 ['name' => 'Google', 'connected' => $user->google_id !== null],
-                ['name' => 'Apple', 'connected' => false],
             ],
         ];
     }

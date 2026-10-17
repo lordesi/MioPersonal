@@ -106,15 +106,36 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
+     * "Anna B.": the name shown to strangers, e.g. under a public review.
+     * The full last name stays private.
+     */
+    public function publicName(): string
+    {
+        $initial = mb_substr($this->last_name, 0, 1);
+
+        return $initial === '' ? $this->first_name : "{$this->first_name} {$initial}.";
+    }
+
+    /**
      * URL of the photo, or null: the avatars then show the initials.
+     * Trainers: the profile photo of their public profile (the photo in
+     * `avatar_path` is the one of "Completa il tuo profilo", for clients).
      *
      * @return Attribute<string|null, never>
      */
     protected function avatar(): Attribute
     {
-        return Attribute::get(fn () => $this->avatar_path === null
-            ? null
-            : Storage::disk(self::AVATAR_DISK)->url($this->avatar_path));
+        return Attribute::get(function () {
+            $portrait = $this->role === UserRole::Trainer ? $this->trainerProfile?->portrait : null;
+
+            if ($portrait !== null) {
+                return $portrait->url();
+            }
+
+            return $this->avatar_path === null
+                ? null
+                : Storage::disk(self::AVATAR_DISK)->url($this->avatar_path);
+        });
     }
 
     /**

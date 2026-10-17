@@ -3,6 +3,7 @@ import BookingStatusBadge from '@/components/booking/booking-status-badge';
 import ResponsiveText from '@/components/shared/responsive-text';
 import ConfirmDialog from '@/components/shared/confirm-dialog';
 import UserAvatar from '@/components/shared/user-avatar';
+import AttendanceLabel from '@/components/trainer/attendance-label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -66,6 +67,9 @@ export default function BookingRequestCard({
                         {slot} · {request.serviceName} ·{' '}
                         {formatHours(request.hours)}
                     </span>
+                    {request.attendance && (
+                        <AttendanceLabel attendance={request.attendance} />
+                    )}
                 </div>
                 {answer === 'pending' ? (
                     <Badge

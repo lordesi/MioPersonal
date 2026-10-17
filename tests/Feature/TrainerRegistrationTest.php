@@ -30,6 +30,22 @@ class TrainerRegistrationTest extends TestCase
     }
 
     /**
+     * A kind of session of "Servizi e prezzi" as the page sends it.
+     *
+     * @param  array<string, mixed>  $changes
+     * @return array<string, mixed>
+     */
+    private function sessionType(array $changes = []): array
+    {
+        return [
+            'name' => 'Seduta singola',
+            'prices' => [['minutes' => '60', 'price_cents' => '4500'], ['minutes' => '90', 'price_cents' => '6000']],
+            'note' => 'in studio o a domicilio',
+            ...$changes,
+        ];
+    }
+
+    /**
      * Steps 2–7 as the page sends them (toPayload in draft.ts).
      *
      * @param  array<string, mixed>  $changes
@@ -48,10 +64,10 @@ class TrainerRegistrationTest extends TestCase
             'studios' => [['name' => 'Studio Città Studi', 'address' => 'Via Pascoli 10']],
             'city' => 'milano',
             'other_cities' => ['monza'],
-            // "Servizi e prezzi": hourly price and a first session.
-            'hourly_price_cents' => '4500',
-            'single_note' => 'in studio o a domicilio',
-            'first_session' => ['name' => 'Valutazione', 'minutes' => '60', 'price_cents' => '3000', 'note' => ''],
+            // "Servizi e prezzi": a kind of session of 1 hour and 1 hour and a half,
+            // each with its price, and a first session.
+            'sessions' => [$this->sessionType()],
+            'first_session' => ['minutes' => '60', 'price_cents' => '3000', 'note' => ''],
             'packages' => [],
             // Monday 7–12 and 18–21, Saturday 9–11.
             'hours' => [0 => [7, 8, 9, 10, 11, 18, 19, 20], 5 => [9, 10]],
@@ -61,7 +77,6 @@ class TrainerRegistrationTest extends TestCase
             'break_minutes' => '15',
             'max_sessions_per_day' => '6',
             'free_cancellation_hours' => '24',
-            'session_minutes' => ['60', '90'],
             'auto_confirm' => '0',
             'certifications' => [
                 ['title' => 'Laurea in Scienze Motorie', 'issuer' => 'Università di Milano', 'year' => '2016', 'file' => UploadedFile::fake()->create('laurea.pdf', 200, 'application/pdf')],
@@ -76,7 +91,6 @@ class TrainerRegistrationTest extends TestCase
             'first_name' => 'Giulia',
             'last_name' => 'Rossi',
             'email' => 'giulia@example.com',
-            'phone_prefix' => '+39',
             'phone' => '333 000 0000',
             'password' => 'Password1',
             'terms' => '1',
@@ -101,8 +115,9 @@ class TrainerRegistrationTest extends TestCase
         $this->assertSame('Via Pascoli 10', $profile->places->first()?->address);
         $this->assertTrue($profile->trains_online);
         $this->assertTrue($profile->trains_in_person);
-        // "da 45 €": the hourly price, not the one-off first session.
+        // "da 45 €": the lowest price of a session, not the one-off first session.
         $this->assertSame(4500, $profile->price_from_cents);
+        // The durations of the prices (and of the first session).
         $this->assertSame([60, 90], $profile->session_minutes);
         $this->assertSame(6, $profile->max_sessions_per_day);
 
@@ -155,13 +170,12 @@ class TrainerRegistrationTest extends TestCase
                     'disciplines' => ['pilates', 'yoga', 'boxe', 'running', 'crossfit', 'functional'],
                     'studios' => [],
                     'city' => '',
-                    'hourly_price_cents' => '',
+                    'sessions' => [],
                     'hours' => [0 => [5]],
-                    'session_minutes' => [],
                 ]),
             ])
             ->assertSessionHasErrors([
-                'bio', 'disciplines', 'studios', 'city', 'hourly_price_cents', 'hours.0.0', 'session_minutes',
+                'bio', 'disciplines', 'studios', 'city', 'sessions', 'hours.0.0',
             ]);
 
         $this->assertSame(UserRole::Client, $client->refresh()->role);
@@ -182,7 +196,7 @@ class TrainerRegistrationTest extends TestCase
 
     public function test_the_limits_of_places_cities_and_certifications()
     {
-        $certification = fn (string $title) => ['title' => $title, 'issuer' => '', 'year' => '2020'];
+        $certification = fn (string $title) => ['title' => $title, 'issuer' => 'Scuola', 'year' => '2020'];
 
         $this->actingAs(User::factory()->create())
             ->post(route('trainer.register.store'), [
@@ -201,9 +215,45 @@ class TrainerRegistrationTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->post(route('trainer.register.store'), [
                 'terms' => '1',
-                ...$this->profile(['certifications' => [['title' => 'Corso', 'issuer' => '', 'year' => '6500']]]),
+                ...$this->profile(['certifications' => [['title' => 'Corso', 'issuer' => 'Scuola', 'year' => '6500']]]),
             ])
             ->assertSessionHasErrors('certifications.0.year');
+    }
+
+    public function test_a_certification_needs_title_issuer_and_year()
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                // Only the year: the other fields become required.
+                ...$this->profile(['certifications' => [['title' => '', 'issuer' => '', 'year' => '2020']]]),
+            ])
+            ->assertSessionHasErrors(['certifications.0.title', 'certifications.0.issuer']);
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                // Only the title: the year (and the issuer) too.
+                ...$this->profile(['certifications' => [['title' => 'Corso', 'issuer' => '', 'year' => '']]]),
+            ])
+            ->assertSessionHasErrors(['certifications.0.issuer', 'certifications.0.year']);
+
+        $this->assertSame(0, TrainerProfile::count());
+    }
+
+    public function test_the_bio_has_from_60_to_500_characters()
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), ['terms' => '1', ...$this->profile(['bio' => str_repeat('a', 59)])])
+            ->assertSessionHasErrors('bio');
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), ['terms' => '1', ...$this->profile(['bio' => str_repeat('a', 501)])])
+            ->assertSessionHasErrors('bio');
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), ['terms' => '1', ...$this->profile(['bio' => str_repeat('a', 60)])])
+            ->assertSessionHasNoErrors();
     }
 
     public function test_hours_go_from_6_to_24_and_sessions_can_have_no_limit()
@@ -234,9 +284,11 @@ class TrainerRegistrationTest extends TestCase
             ->post(route('trainer.register.store'), [
                 'terms' => '1',
                 ...$this->profile([
-                    'online_price_cents' => '3500',
-                    'online_note' => 'in videochiamata',
-                    'first_session' => ['name' => 'Prova', 'minutes' => '30', 'price_cents' => '0', 'note' => 'per conoscerci'],
+                    'sessions' => [$this->sessionType([
+                        'online_prices' => [['minutes' => '90', 'price_cents' => '5000'], ['minutes' => '60', 'price_cents' => '3500']],
+                        'online_note' => 'in videochiamata',
+                    ])],
+                    'first_session' => ['minutes' => '30', 'price_cents' => '0', 'note' => 'per conoscerci'],
                     'packages' => [['sessions' => '10', 'minutes' => '90', 'price_cents' => '55000', 'note' => '']],
                 ]),
             ])
@@ -246,9 +298,13 @@ class TrainerRegistrationTest extends TestCase
         $this->assertNotNull($profile);
         $this->assertSame(
             [
-                ['Seduta singola', 'session', 60, 4500, true, false, false, null, 'in studio o a domicilio'],
-                ['Seduta online', 'session', 60, 3500, true, false, true, null, 'in videochiamata'],
-                ['Prova', 'session', 30, 0, false, true, false, null, 'per conoscerci'],
+                // The first session on top, then one row for each duration, with its own price.
+                // The online rows of a kind of session have its same name.
+                ['Prima seduta', 'session', 30, 0, false, true, false, null, 'per conoscerci'],
+                ['Seduta singola', 'session', 60, 4500, false, false, false, null, 'in studio o a domicilio'],
+                ['Seduta singola', 'session', 90, 6000, false, false, false, null, 'in studio o a domicilio'],
+                ['Seduta singola', 'session', 60, 3500, false, false, true, null, 'in videochiamata'],
+                ['Seduta singola', 'session', 90, 5000, false, false, true, null, 'in videochiamata'],
                 ['Pacchetto 10 sedute', 'package', 90, 55000, false, true, false, 10, null],
             ],
             $profile->services->sortBy('sort')->map(fn ($service) => [
@@ -256,16 +312,20 @@ class TrainerRegistrationTest extends TestCase
                 $service->fixed_duration, $service->online_only, $service->package_sessions, $service->note,
             ])->values()->all(),
         );
-        // The lowest hourly price: online.
+        // The lowest price of a session: online.
         $this->assertSame(3500, $profile->price_from_cents);
+        $this->assertSame([30, 60, 90], $profile->session_minutes);
 
         // Opened again to fix it, the page gets the same answers back.
         $profile->forceFill(['status' => TrainerProfileStatus::Changes])->save();
         $this->get(route('trainer.register'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('draft.pricing.hourlyCents', 4500)
+                ->has('draft.pricing.sessions', 1)
+                ->where('draft.pricing.sessions.0.name', 'Seduta singola')
+                ->where('draft.pricing.sessions.0.prices', [['minutes' => 60, 'priceCents' => 4500], ['minutes' => 90, 'priceCents' => 6000]])
                 ->where('draft.pricing.onlineSamePrice', false)
-                ->where('draft.pricing.onlineHourlyCents', 3500)
+                ->where('draft.pricing.sessions.0.online', [['minutes' => 60, 'priceCents' => 3500], ['minutes' => 90, 'priceCents' => 5000]])
+                ->where('draft.pricing.sessions.0.onlineNote', 'in videochiamata')
                 ->where('draft.pricing.firstSession.enabled', true)
                 ->where('draft.pricing.firstSession.priceCents', 0)
                 ->where('draft.pricing.packages.0.sessions', 10)
@@ -273,21 +333,104 @@ class TrainerRegistrationTest extends TestCase
             );
     }
 
-    public function test_the_online_price_counts_only_with_online_and_in_person()
+    public function test_the_online_prices_count_only_with_online_and_in_person()
     {
         $client = User::factory()->create();
+        $onlinePrices = [['minutes' => '60', 'price_cents' => '2000'], ['minutes' => '90', 'price_cents' => '3000']];
 
-        // No "Online" in the places: the online price is ignored.
+        // No "Online" in the places: the online prices are ignored.
         $this->actingAs($client)
             ->post(route('trainer.register.store'), [
                 'terms' => '1',
-                ...$this->profile(['places' => ['home'], 'studios' => [], 'online_price_cents' => '2000']),
+                ...$this->profile(['places' => ['home'], 'studios' => [], 'sessions' => [$this->sessionType(['online_prices' => $onlinePrices])]]),
             ])
             ->assertSessionHasNoErrors();
 
         $profile = $client->refresh()->trainerProfile;
-        $this->assertSame(['Seduta singola', 'Valutazione'], $profile?->services->sortBy('sort')->pluck('name')->values()->all());
+        $this->assertSame(['Prima seduta', 'Seduta singola', 'Seduta singola'], $profile?->services->sortBy('sort')->pluck('name')->values()->all());
         $this->assertSame(4500, $profile?->price_from_cents);
+    }
+
+    public function test_the_online_prices_need_the_same_durations_as_their_kind_of_session()
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                // 60 and 90 minutes in "Seduta singola", only 60 online.
+                ...$this->profile(['sessions' => [$this->sessionType(['online_prices' => [['minutes' => '60', 'price_cents' => '3500']]])]]),
+            ])
+            ->assertSessionHasErrors('sessions.0.online_prices');
+
+        $this->assertSame(0, TrainerProfile::count());
+    }
+
+    public function test_more_kinds_of_session_each_with_its_name_and_prices()
+    {
+        $client = User::factory()->create();
+
+        $this->actingAs($client)
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile([
+                    'sessions' => [
+                        $this->sessionType(['name' => 'Calisthenics', 'prices' => [['minutes' => '60', 'price_cents' => '4000']], 'note' => 'al parco']),
+                        $this->sessionType([
+                            'name' => 'Crossfit',
+                            'prices' => [['minutes' => '60', 'price_cents' => '5000']],
+                            'note' => '',
+                            'online_prices' => [['minutes' => '60', 'price_cents' => '3000']],
+                        ]),
+                    ],
+                ]),
+            ])
+            ->assertSessionHasNoErrors();
+
+        $profile = $client->refresh()->trainerProfile;
+        $this->assertNotNull($profile);
+        $this->assertSame(
+            [
+                ['Prima seduta', 60, 3000, false],
+                ['Calisthenics', 60, 4000, false],
+                ['Crossfit', 60, 5000, false],
+                ['Crossfit', 60, 3000, true],
+            ],
+            $profile->services->sortBy('sort')->map(fn ($service) => [$service->name, $service->minutes, $service->price_cents, $service->online_only])->values()->all(),
+        );
+        // Online prices sent for one kind only: the other kind gets none.
+        $this->assertSame(3000, $profile->price_from_cents);
+
+        // The profile shows each kind as a service of its own.
+        $profile->forceFill(['status' => TrainerProfileStatus::Approved])->save();
+        $this->get(route('trainers.show', $profile->slug))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('trainer.services.0.name', 'Prima seduta')
+                ->where('trainer.services.1.name', 'Calisthenics')
+                ->where('trainer.services.1.note', 'al parco')
+                ->where('trainer.services.2.name', 'Crossfit')
+                ->where('trainer.services.2.priceCents', 5000)
+                ->where('trainer.services.3.name', 'Crossfit (online)')
+                ->has('trainer.services', 4)
+            );
+    }
+
+    public function test_the_names_of_the_kinds_of_session_are_checked()
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile([
+                    'sessions' => [
+                        $this->sessionType(['name' => 'Crossfit']),
+                        // The same name with other capitals, the name of the first session, no name.
+                        $this->sessionType(['name' => 'crossfit']),
+                        $this->sessionType(['name' => 'prima seduta']),
+                        $this->sessionType(['name' => '']),
+                    ],
+                ]),
+            ])
+            ->assertSessionHasErrors(['sessions.1.name', 'sessions.2.name', 'sessions.3.name']);
+
+        $this->assertSame(0, TrainerProfile::count());
     }
 
     public function test_prices_and_packages_are_checked()
@@ -298,16 +441,51 @@ class TrainerRegistrationTest extends TestCase
             ->post(route('trainer.register.store'), [
                 'terms' => '1',
                 ...$this->profile([
-                    'hourly_price_cents' => '50',
-                    'first_session' => ['name' => '', 'minutes' => '45', 'price_cents' => '-1'],
+                    // 50 cents, a duration that can't be chosen, the same duration twice.
+                    'sessions' => [$this->sessionType(['prices' => [
+                        ['minutes' => '60', 'price_cents' => '50'],
+                        ['minutes' => '45', 'price_cents' => '3000'],
+                        ['minutes' => '60', 'price_cents' => '4000'],
+                    ]])],
+                    'first_session' => ['minutes' => '45', 'price_cents' => '-1'],
                     'packages' => [$package, $package, $package, $package],
                 ]),
             ])
             ->assertSessionHasErrors([
-                'hourly_price_cents', 'first_session.name', 'first_session.minutes', 'first_session.price_cents', 'packages',
+                'sessions.0.prices.0.price_cents', 'sessions.0.prices.1.minutes', 'sessions.0.prices',
+                'first_session.minutes', 'first_session.price_cents', 'packages',
             ]);
 
         $this->assertSame(0, TrainerProfile::count());
+    }
+
+    public function test_every_price_can_be_at_most_10000_euros()
+    {
+        $tooMuch = '1000001';
+        $package = ['sessions' => '10', 'minutes' => '60', 'price_cents' => $tooMuch, 'note' => ''];
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile([
+                    'sessions' => [$this->sessionType(['prices' => [['minutes' => '60', 'price_cents' => $tooMuch]]])],
+                    'first_session' => ['minutes' => '60', 'price_cents' => $tooMuch],
+                    'packages' => [$package],
+                ]),
+            ])
+            ->assertSessionHasErrors(['sessions.0.prices.0.price_cents', 'first_session.price_cents', 'packages.0.price_cents']);
+
+        $this->assertSame(0, TrainerProfile::count());
+
+        // 10.000 € exactly is fine.
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile(['sessions' => [$this->sessionType(['prices' => [['minutes' => '60', 'price_cents' => '1000000']]])]]),
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(1, TrainerProfile::count());
     }
 
     public function test_an_online_only_trainer_needs_no_city()
@@ -357,7 +535,7 @@ class TrainerRegistrationTest extends TestCase
         $certificationId = $profile->documents->first()?->id;
         $this->post(route('trainer.register.store'), $this->profile([
             'headline' => 'Pilates e postura',
-            'certifications' => [['id' => $certificationId, 'title' => 'Laurea in Scienze Motorie', 'issuer' => '', 'year' => '']],
+            'certifications' => [['id' => $certificationId, 'title' => 'Laurea in Scienze Motorie', 'issuer' => 'Università di Milano', 'year' => '2016']],
         ]))->assertSessionHasNoErrors();
 
         $profile->refresh();

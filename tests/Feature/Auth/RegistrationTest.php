@@ -43,8 +43,9 @@ class RegistrationTest extends TestCase
         $this->assertNull($user->marketing_opt_in_at);
     }
 
-    public function test_prefix_and_phone_are_saved_together()
+    public function test_the_prefix_is_always_plus_39()
     {
+        // The "Prefisso" box can't be changed: a prefix sent anyway is ignored.
         $this->post(route('register.store'), $this->validData([
             'last_name' => 'De Simone',
             'phone_prefix' => '+41',
@@ -54,13 +55,12 @@ class RegistrationTest extends TestCase
         $user = User::firstOrFail();
         $this->assertSame('De Simone', $user->last_name);
         // Saved without spaces.
-        $this->assertSame('+413330000000', $user->phone);
+        $this->assertSame('+393330000000', $user->phone);
     }
 
     public function test_the_phone_is_required()
     {
         $this->post(route('register.store'), $this->validData([
-            'phone_prefix' => '+39',
             'phone' => '',
         ]))->assertSessionHasErrors('phone');
 
@@ -86,9 +86,9 @@ class RegistrationTest extends TestCase
             'email without @' => ['email', 'luca.example.com', 'email'],
             'phone with letters' => ['phone', 'chiamami', 'phone'],
             'phone too short' => ['phone', '12345', 'phone'],
+            'phone with 9 digits' => ['phone', '333 000 000', 'phone'],
+            'phone with 11 digits' => ['phone', '333 000 00000', 'phone'],
             'phone with the prefix inside' => ['phone', '+39 333 000 0000', 'phone'],
-            'prefix without +' => ['phone_prefix', '39', 'phone_prefix'],
-            'prefix too long' => ['phone_prefix', '+12345', 'phone_prefix'],
             'password too short' => ['password', 'Pass1', 'password'],
             'password without a capital letter' => ['password', 'password1', 'password'],
             'password without a lowercase letter' => ['password', 'PASSWORD1', 'password'],
@@ -102,16 +102,6 @@ class RegistrationTest extends TestCase
         $this->post(route('register.store'), $this->validData([
             $field => $value,
         ]))->assertSessionHasErrors($error);
-
-        $this->assertGuest();
-    }
-
-    public function test_a_phone_needs_a_prefix()
-    {
-        $this->post(route('register.store'), $this->validData([
-            'phone_prefix' => '',
-            'phone' => '333 000 0000',
-        ]))->assertSessionHasErrors('phone_prefix');
 
         $this->assertGuest();
     }
@@ -134,7 +124,6 @@ class RegistrationTest extends TestCase
             'first_name' => 'Luca',
             'last_name' => 'Moretti',
             'email' => 'test@example.com',
-            'phone_prefix' => '+39',
             'phone' => '333 000 0000',
             'password' => 'Password1',
             'terms' => '1',

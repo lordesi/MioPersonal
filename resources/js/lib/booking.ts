@@ -1,13 +1,29 @@
 import { formatDuration, formatPrice } from '@/lib/format';
-import type { AvailabilityDay, TrainerService } from '@/types';
+import type { AvailabilityDay, ServiceOption, TrainerService } from '@/types';
 
 /**
- * "Durate prenotabili" a trainer can offer, in minutes: from 30 minutes to
+ * The durations a trainer can offer, in minutes: from 30 minutes to
  * 3 hours. Same as TrainerProfile::SESSION_MINUTES.
  */
 export const SESSION_MINUTES = [30, 60, 90, 120, 150, 180];
 
-/** "45 €/ora" for hourly services, "30 €" for fixed ones, "Gratis" for 0. */
+/** The durations of a service, shortest first. */
+export function serviceDurations(service: TrainerService): number[] {
+    return service.options.map((option) => option.minutes);
+}
+
+/** The option of the chosen duration (the first one if it isn't offered). */
+export function serviceOption(
+    service: TrainerService,
+    minutes: number,
+): ServiceOption {
+    return (
+        service.options.find((option) => option.minutes === minutes) ??
+        service.options[0]
+    );
+}
+
+/** "da 25 €" when the price depends on the duration, "30 €" otherwise, "Gratis" for 0. */
 export function servicePriceLabel(service: TrainerService): string {
     if (service.priceCents === 0) {
         return 'Gratis';
@@ -15,17 +31,15 @@ export function servicePriceLabel(service: TrainerService): string {
 
     const price = formatPrice(service.priceCents);
 
-    return service.perHour ? `${price}/ora` : price;
+    return service.options.length > 1 ? `da ${price}` : price;
 }
 
-/** Indicative total in cents for the chosen duration (whole cents). */
+/** Indicative total in cents for the chosen duration: its own price. */
 export function totalPriceCents(
     service: TrainerService,
     minutes: number,
 ): number {
-    return service.perHour
-        ? Math.round((service.priceCents * minutes) / 60)
-        : service.priceCents;
+    return serviceOption(service, minutes).priceCents;
 }
 
 /** The total as text: "67,50 €", or "Gratis" for a free first session. */
@@ -43,9 +57,10 @@ export function serviceSummary(
     service: TrainerService,
     minutes: number,
 ): string {
-    const duration = service.perHour
-        ? formatDuration(minutes)
-        : service.durationLabel;
+    const duration =
+        service.options.length > 1
+            ? formatDuration(minutes)
+            : service.durationLabel;
 
     return `${duration} · ${service.name.toLowerCase()}`;
 }

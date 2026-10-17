@@ -12,7 +12,6 @@ export type AccountField =
     | 'first_name'
     | 'last_name'
     | 'email'
-    | 'phone_prefix'
     | 'phone'
     | 'password';
 
@@ -137,39 +136,52 @@ export default function AccountFields({
     );
 }
 
+/** Italian mobiles: always +39 and 10 digits, as on the server. */
+const PHONE_PREFIX = '+39';
+const PHONE_DIGITS = 10;
+
 /**
- * "Prefisso" (+39, can be changed) and "Telefono" in two boxes: the server
- * saves them together, e.g. +393330000000. Required: the trainer calls the
+ * Only the digits, at most 10. A leading +39 or 0039 is dropped first, e.g.
+ * when the browser autofills or someone pastes the full number.
+ */
+export function cleanPhone(value: string): string {
+    return value
+        .trim()
+        .replace(/^(\+|00)39/, '')
+        .replace(/\D/g, '')
+        .slice(0, PHONE_DIGITS);
+}
+
+/**
+ * "Prefisso" (+39, can't be changed) and "Telefono" in two boxes: the server
+ * adds +39 and saves e.g. +393330000000. Required: the trainer calls the
  * client after confirming a booking.
  */
 export function PhoneFields({
     errors,
     hint,
     bind,
+    defaultPhone,
 }: {
-    errors: Partial<Record<'phone_prefix' | 'phone', string>>;
+    errors: Partial<Record<'phone', string>>;
     hint?: string;
     bind?: Bind;
+    /** Starting number inside a <Form>, e.g. the saved one in the settings. */
+    defaultPhone?: string;
 }) {
+    const phoneBinding = bind?.('phone');
+
     return (
         <div className="flex items-start gap-2">
             <div className="w-24 shrink-0">
-                <FormField label="Prefisso" error={errors.phone_prefix}>
-                    {({ id, describedBy }) => (
+                <FormField label="Prefisso">
+                    {({ id }) => (
+                        // Disabled: it can't be changed and it isn't sent.
                         <Input
                             id={id}
-                            aria-describedby={describedBy}
-                            aria-invalid={!!errors.phone_prefix}
-                            type="tel"
-                            name="phone_prefix"
-                            required
-                            defaultValue={bind ? undefined : '+39'}
-                            pattern="\+[0-9]{1,4}"
-                            data-pattern-message="Prefisso non valido, es. +39."
-                            maxLength={5}
-                            autoComplete="tel-country-code"
+                            value={PHONE_PREFIX}
+                            disabled
                             className={inputClass}
-                            {...bind?.('phone_prefix')}
                         />
                     )}
                 </FormField>
@@ -184,13 +196,25 @@ export function PhoneFields({
                             type="tel"
                             name="phone"
                             required
-                            pattern="[0-9]( ?[0-9]){5,11}"
-                            data-pattern-message="Solo cifre (da 6 a 12), es. 333 000 0000."
+                            defaultValue={
+                                bind
+                                    ? undefined
+                                    : cleanPhone(defaultPhone ?? '')
+                            }
+                            pattern={`[0-9]{${PHONE_DIGITS}}`}
+                            data-pattern-message="Inserisci un cellulare di 10 cifre, es. 3330000000."
                             inputMode="numeric"
                             autoComplete="tel-national"
-                            placeholder="333 000 0000"
+                            placeholder="3330000000"
                             className={inputClass}
-                            {...bind?.('phone')}
+                            {...phoneBinding}
+                            onChange={(event) => {
+                                // Letters, spaces and an 11th digit never show up.
+                                event.target.value = cleanPhone(
+                                    event.target.value,
+                                );
+                                phoneBinding?.onChange(event);
+                            }}
                         />
                     )}
                 </FormField>

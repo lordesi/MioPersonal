@@ -10,15 +10,19 @@ import { sessionsLabel } from '@/lib/calendar';
 type CloseTrainerProfileSectionProps = {
     /** Confirmed sessions and requests that get cancelled. */
     upcoming: { sessions: number; requests: number };
+    /** "Metti in pausa" is on; null before the registration is sent (no button). */
+    paused: boolean | null;
 };
 
 /**
  * The trainer stops working on MioPersonal but stays a client: the server
- * deletes the profile and opens the client settings.
+ * deletes the profile and opens the client settings. Next to it, "Metti in
+ * pausa" hides the profile without deleting anything, until "Riattiva profilo".
  * TODO (step 5): the message goes to the clients whose bookings are cancelled.
  */
 export default function CloseTrainerProfileSection({
     upcoming,
+    paused,
 }: CloseTrainerProfileSectionProps) {
     const [step, setStep] = useState<'idle' | 'confirm'>('idle');
     const [acknowledged, setAcknowledged] = useState(false);
@@ -26,6 +30,17 @@ export default function CloseTrainerProfileSection({
         'Mi dispiace, smetto di allenare su MioPersonal. Grazie a tutti!',
     );
     const [processing, setProcessing] = useState(false);
+
+    const togglePause = () =>
+        router.patch(
+            TrainerProfileSettingsController.updatePause.url(),
+            { paused: !paused },
+            {
+                preserveScroll: true,
+                onStart: () => setProcessing(true),
+                onFinish: () => setProcessing(false),
+            },
+        );
 
     const close = () =>
         router.delete(TrainerProfileSettingsController.close.url(), {
@@ -56,9 +71,16 @@ export default function CloseTrainerProfileSection({
                     >
                         Chiudi il profilo
                     </Button>
-                    <span className="self-center text-[13px] text-muted-foreground">
-                        Vuoi solo una pausa? Usa «Metti in pausa» qui sopra.
-                    </span>
+                    {paused !== null && (
+                        <Button
+                            type="button"
+                            className="h-10"
+                            disabled={processing}
+                            onClick={togglePause}
+                        >
+                            {paused ? 'Riattiva profilo' : 'Metti in pausa'}
+                        </Button>
+                    )}
                 </div>
             )}
 

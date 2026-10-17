@@ -16,7 +16,7 @@ use Inertia\Inertia;
 
 /**
  * The trainer sections of "Impostazioni account": "Visibilità del profilo",
- * "Contatti per i clienti" and "Chiudi il profilo".
+ * "Contatti per i clienti" and "Chiudi il profilo" (with "Metti in pausa").
  */
 class TrainerProfileSettingsController extends Controller
 {
@@ -61,6 +61,29 @@ class TrainerProfileSettingsController extends Controller
         return back();
     }
 
+    /**
+     * "Metti in pausa" / "Riattiva profilo": a pause without an end. The
+     * profile leaves the search and nobody can book until it is turned back on.
+     */
+    public function updatePause(Request $request): RedirectResponse
+    {
+        $profile = $this->profile($request);
+
+        $paused = $request->validate(['paused' => ['required', 'boolean']])['paused'];
+
+        $profile->forceFill(['paused_at' => $paused ? ($profile->paused_at ?? now()) : null])->save();
+
+        // No free slots while paused: the search reads the first one.
+        TrainerSlots::refresh($profile);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $paused ? 'Profilo in pausa.' : 'Profilo riattivato.',
+        ]);
+
+        return back();
+    }
+
     public function updateContacts(Request $request): RedirectResponse
     {
         $profile = $this->profile($request);
@@ -68,7 +91,6 @@ class TrainerProfileSettingsController extends Controller
         $data = $request->validate([
             'show_phone' => ['required', 'boolean'],
             'show_email' => ['required', 'boolean'],
-            'show_whatsapp' => ['required', 'boolean'],
             'arrival_notes' => ['nullable', 'string', 'max:500'],
         ], [
             'arrival_notes.max' => 'Le indicazioni possono avere al massimo 500 caratteri.',
