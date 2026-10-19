@@ -208,7 +208,7 @@ export default function Calendar({
                 <>
                     <section
                         aria-label={`Settimana ${period.label}`}
-                        className="hidden rounded-xl border bg-card p-4 md:block"
+                        className="hidden rounded-[20px] border bg-card p-5 md:block"
                     >
                         <WeekGrid days={days} items={items} today={today} />
                     </section>

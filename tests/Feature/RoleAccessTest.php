@@ -14,17 +14,19 @@ class RoleAccessTest extends TestCase
 
     /** @var list<string> */
     private const CLIENT_PAGES = [
+        // 'client.bookings' only leads to client.home: see ClientHomeTest.
         'client.home',
-        'client.bookings',
         'client.favorites',
         'account.settings',
         'client.complete-profile',
+        'client.profile',
     ];
 
     /** @var list<string> */
     private const TRAINER_PAGES = [
         'trainer.today',
         'trainer.calendar',
+        'trainer.requests',
         'trainer.clients',
         'trainer.availability',
         'trainer.reviews',

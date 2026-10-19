@@ -5,11 +5,13 @@ import { cn } from '@/lib/utils';
 import { home } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
 import { cookies, privacy, terms } from '@/routes/legal';
+import { register as trainerRegister } from '@/routes/trainer';
 
 const platformLinks = [
     { title: 'Cerca trainer', href: searchUrl() },
-    { title: 'Per i trainer', href: `${home.url()}#per-i-trainer` },
+    { title: 'Per i trainer', href: trainerRegister.url() },
     { title: 'Come funziona', href: `${home.url()}#come-funziona` },
+    { title: 'FAQ', href: `${home.url()}#faq` },
 ];
 
 const legalLinks = [
@@ -93,7 +95,7 @@ export default function PublicFooter({
                 <div className="flex max-w-80 flex-col gap-3">
                     <BrandLogo linkToHome={false} />
                     <p className="text-sm text-muted-foreground">
-                        Personal trainer in tutta Italia, in presenza e online.
+                        Personal trainer in presenza e online.
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-16">

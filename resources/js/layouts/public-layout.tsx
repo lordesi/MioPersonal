@@ -11,6 +11,8 @@ type PublicLayoutProps = {
     /** Set from the page: `Page.layout = { section: 'search' }`. */
     section?: PublicSection;
     nav?: PublicNav;
+    /** 'hero' = the dark header of the home: `Home.layout = { header: 'hero' }`. */
+    header?: 'default' | 'hero';
     footer?: 'full' | 'compact';
     /** For pages with their own mobile header, like the trainer profile. */
     hideHeaderOnMobile?: boolean;
@@ -21,6 +23,7 @@ export default function PublicLayout({
     children,
     section,
     nav,
+    header = 'default',
     footer = 'full',
     hideHeaderOnMobile = false,
 }: PublicLayoutProps) {
@@ -29,6 +32,7 @@ export default function PublicLayout({
             <PublicHeader
                 section={section}
                 nav={nav}
+                variant={header}
                 className={hideHeaderOnMobile ? 'hidden md:block' : undefined}
             />
             <main className="flex flex-1 flex-col">{children}</main>

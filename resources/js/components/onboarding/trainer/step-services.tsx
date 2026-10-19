@@ -764,6 +764,7 @@ function durationsService(
 
     return {
         id,
+        packageId: null,
         name,
         durationLabel: durationsLabel(options.map((option) => option.minutes)),
         note,
@@ -783,6 +784,7 @@ function fixedService(
 ): TrainerService {
     return {
         id,
+        packageId: null,
         name,
         durationLabel,
         note,

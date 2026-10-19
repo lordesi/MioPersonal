@@ -37,7 +37,7 @@ export default function BookingAside({
                     {totalPriceLabel(service, minutes)}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                    {serviceSummary(service, minutes)} · indicativo
+                    {serviceSummary(service, minutes)}
                 </span>
             </div>
 

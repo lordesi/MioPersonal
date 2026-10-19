@@ -5,6 +5,7 @@ namespace App\Actions\Bookings;
 use App\Enums\BookingStatus;
 use App\Enums\PlaceType;
 use App\Models\Booking;
+use App\Models\ClientPackage;
 use App\Models\Service;
 use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
@@ -30,46 +31,92 @@ class CreateBooking
     /** PostgreSQL error code of an exclusion constraint (`bookings_no_overlap`). */
     private const EXCLUSION_VIOLATION = '23P01';
 
+    /**
+     * A session of a service. A package service also creates the package:
+     * this booking is its first session.
+     */
     public function handle(User $client, TrainerProfile $profile, Service $service, CarbonImmutable $start, int $minutes): Booking
     {
         $this->ensureDurationIsAllowed($service, $minutes);
+
+        return $this->book($client, $profile, $start, $minutes, function () use ($client, $profile, $service) {
+            // Inside the lock: two requests of the same client can't both be "the first".
+            $this->ensureFirstSessionIsFirst($profile, $service, $client);
+
+            return [
+                'service_id' => $service->id,
+                'client_package_id' => $service->kind === 'package' ? $this->newPackage($client, $profile, $service)->id : null,
+                'service_name' => $service->displayName(),
+                'price_cents' => $service->price_cents,
+                'place_label' => $this->placeLabel($profile, $service->online_only),
+            ];
+        });
+    }
+
+    /**
+     * "Il tuo pacchetto": one more session of a package the client bought.
+     * Free, it was paid with the package.
+     */
+    public function fromPackage(User $client, ClientPackage $package, CarbonImmutable $start): Booking
+    {
+        $profile = $package->trainerProfile;
+
+        return $this->book($client, $profile, $start, $package->minutes, function () use ($client, $package, $profile) {
+            // Counted inside the lock: two requests can't both take the last session.
+            $booked = $package->activeBookings()->count();
+
+            if ($package->client_id !== $client->id || $package->bought_at === null || $booked >= $package->sessions_total) {
+                throw ValidationException::withMessages(['client_package_id' => 'Questo pacchetto non ha più sedute da prenotare.']);
+            }
+
+            return [
+                'service_id' => $package->service_id,
+                'client_package_id' => $package->id,
+                'service_name' => $package->name,
+                'price_cents' => 0,
+                'place_label' => $this->placeLabel($profile, false),
+            ];
+        });
+    }
+
+    /**
+     * The part every booking shares: the checks, the lock on the trainer, the
+     * free slot and the automatic confirmation.
+     *
+     * @param  callable(): array<string, mixed>  $details  run inside the lock: what is booked
+     */
+    private function book(User $client, TrainerProfile $profile, CarbonImmutable $start, int $minutes, callable $details): Booking
+    {
         $this->ensureNotPaused($profile);
         $this->ensureAcceptsClient($profile, $client);
 
         try {
-            $booking = DB::transaction(function () use ($client, $profile, $service, $start, $minutes) {
+            $booking = DB::transaction(function () use ($client, $profile, $start, $minutes, $details) {
                 // One booking at a time for this trainer, until the transaction ends.
                 TrainerProfile::whereKey($profile->id)->lockForUpdate()->first();
-
-                // Inside the lock: two requests of the same client can't both be "the first".
-                $this->ensureFirstSessionIsFirst($profile, $service, $client);
 
                 if (! TrainerSlots::isFree($profile, $start, $minutes)) {
                     throw ValidationException::withMessages(['start' => self::SLOT_TAKEN]);
                 }
 
                 $end = $start->addMinutes($minutes);
-                $confirmed = $profile->auto_confirm;
 
                 $booking = Booking::create([
+                    ...$details(),
                     'client_id' => $client->id,
                     'trainer_profile_id' => $profile->id,
-                    'service_id' => $service->id,
                     'starts_at' => $start->utc(),
                     'ends_at' => $end->utc(),
                     'blocked_until' => $end->addMinutes($profile->break_minutes)->utc(),
-                    'service_name' => $service->displayName(),
-                    'price_cents' => $service->price_cents,
-                    'place_label' => $this->placeLabel($profile, $service),
-                    'status' => $confirmed ? BookingStatus::Confirmed : BookingStatus::Pending,
-                    'expires_at' => $confirmed ? null : now()->addHours($profile->confirm_hours),
-                    'confirmed_at' => $confirmed ? now() : null,
+                    'status' => BookingStatus::Pending,
+                    'expires_at' => now()->addHours($profile->confirm_hours),
                 ]);
 
                 $booking->record('requested', $client);
 
-                if ($confirmed) {
-                    $booking->record('confirmed');
+                // "Conferma automatica": confirmed right away, and the package is bought.
+                if ($profile->auto_confirm) {
+                    $booking->confirm();
                 }
 
                 return $booking;
@@ -86,6 +133,19 @@ class CreateBooking
         TrainerSlots::refresh($profile);
 
         return $booking;
+    }
+
+    /** Bought when its first session (this booking) is confirmed. */
+    private function newPackage(User $client, TrainerProfile $profile, Service $service): ClientPackage
+    {
+        return $profile->clientPackages()->create([
+            'client_id' => $client->id,
+            'service_id' => $service->id,
+            'name' => $service->displayName(),
+            'price_cents' => $service->price_cents,
+            'sessions_total' => $service->package_sessions ?? 1,
+            'minutes' => $service->minutes,
+        ]);
     }
 
     /**
@@ -129,9 +189,9 @@ class CreateBooking
      * The profile page doesn't ask where: "Online" for online services, the
      * place when the trainer has only one, otherwise they agree on it.
      */
-    private function placeLabel(TrainerProfile $profile, Service $service): string
+    private function placeLabel(TrainerProfile $profile, bool $online): string
     {
-        if ($service->online_only) {
+        if ($online) {
             return PlaceType::Online->label();
         }
 

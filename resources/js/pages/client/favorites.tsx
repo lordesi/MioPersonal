@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { Heart } from 'lucide-react';
 import { useState } from 'react';
 import FavoriteTrainerCard from '@/components/client/favorite-trainer-card';
+import PageHeading from '@/components/trainer/area/page-heading';
 import { Button } from '@/components/ui/button';
 import { saveFavorite } from '@/hooks/use-favorite';
 import { searchUrl } from '@/lib/search';
@@ -35,19 +36,12 @@ export default function Favorites({ trainers }: FavoritesProps) {
 
     return (
         <>
-            <Head title="Preferiti" />
+            <Head title="Trainer preferiti" />
 
-            <div className="flex flex-col gap-1">
-                <h1 className="text-[28px] leading-8.5 font-bold tracking-tight md:text-4xl md:leading-10">
-                    Preferiti
-                </h1>
-                <p className="text-muted-foreground tabular-nums">
-                    {countLabel}
-                </p>
-            </div>
+            <PageHeading title="Trainer preferiti" description={countLabel} />
 
             {allRemoved ? (
-                <div className="flex flex-col items-center gap-2.5 rounded-xl border border-dashed border-input px-4 py-12 text-center">
+                <div className="flex flex-col items-center gap-2.5 rounded-[20px] border border-dashed border-input bg-card px-4 py-12 text-center">
                     <span className="flex size-12 items-center justify-center rounded-full bg-muted">
                         <Heart aria-hidden="true" className="size-5" />
                     </span>
@@ -78,4 +72,4 @@ export default function Favorites({ trainers }: FavoritesProps) {
     );
 }
 
-Favorites.layout = { section: 'favorites', wide: true };
+Favorites.layout = { section: 'favorites' };

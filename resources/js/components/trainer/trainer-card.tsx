@@ -11,38 +11,67 @@ import type { TrainerSummary } from '@/types';
 /*
  * Classes for each layout, written out in full so Tailwind can find them.
  * responsive: compact row below md (search results), vertical card from md.
- * vertical: always a vertical card (home "Trainer in evidenza" carousel).
+ * vertical: always a vertical card (client area).
+ * featured: vertical card with the first free slot on its own row and a
+ * bigger price (home "Trainer in evidenza" carousel).
  */
 const layouts = {
     responsive: {
         link: 'gap-3 p-3 md:flex-col md:gap-0 md:p-0',
         photo: 'size-22 rounded-lg text-2xl md:aspect-4/3 md:size-auto md:w-full md:rounded-none md:text-[40px] md:leading-11',
         onlineOnPhoto: 'hidden md:block',
+        onlineBadge: 'h-9 px-3',
         body: 'gap-1.5 md:gap-3 md:p-4',
         zoneUnderName: 'hidden md:flex',
         zoneRow: 'flex md:hidden',
         shortRating: 'md:hidden',
         fullRating: 'hidden md:flex',
-        slotShort: 'md:hidden',
-        slotLong: 'hidden md:inline',
+        slotRow: 'flex md:hidden',
+        slotPrefix: 'Primo slot',
+        slotInPriceRow: 'hidden md:inline-flex',
         priceRow: 'md:mt-auto md:border-t md:pt-3',
+        price: 'text-lg leading-7 md:text-xl',
+        priceNote: 'text-xs',
         onlineInPriceRow: 'md:hidden',
-        favorite: 'top-1 left-1 md:top-2.5 md:right-2.5 md:left-auto',
+        favorite: 'top-1 left-1 md:top-3 md:right-3 md:left-auto',
     },
     vertical: {
         link: 'flex-col',
         photo: 'h-45 w-full text-4xl md:aspect-4/3 md:h-auto md:text-[40px] md:leading-11',
         onlineOnPhoto: 'block',
+        onlineBadge: 'h-9 px-3',
         body: 'gap-2.5 p-3.5 md:gap-3 md:p-4',
         zoneUnderName: 'flex',
         zoneRow: 'hidden',
         shortRating: 'hidden',
         fullRating: 'flex',
-        slotShort: 'hidden',
-        slotLong: 'inline',
+        slotRow: 'hidden',
+        slotPrefix: 'Primo slot',
+        slotInPriceRow: 'inline-flex',
         priceRow: 'mt-auto border-t pt-2.5 md:pt-3',
+        price: 'text-lg leading-7 md:text-xl',
+        priceNote: 'text-xs',
         onlineInPriceRow: 'hidden',
-        favorite: 'top-2.5 right-2.5',
+        favorite: 'top-3 right-3',
+    },
+    featured: {
+        link: 'flex-col',
+        photo: 'aspect-4/3 w-full text-[40px] leading-11',
+        onlineOnPhoto: 'block',
+        onlineBadge: 'h-6 px-2',
+        body: 'gap-3 p-4',
+        zoneUnderName: 'flex',
+        zoneRow: 'hidden',
+        shortRating: 'hidden',
+        fullRating: 'flex',
+        slotRow: 'flex',
+        slotPrefix: 'Primo slot libero',
+        slotInPriceRow: 'hidden',
+        priceRow: 'mt-auto border-t pt-3',
+        price: 'text-2xl leading-8',
+        priceNote: 'text-[13px] leading-[18px]',
+        onlineInPriceRow: 'hidden',
+        favorite: 'top-3 right-3',
     },
 } as const;
 
@@ -60,11 +89,22 @@ type TrainerCardProps = {
 
 const pill = 'h-5.5 rounded-full px-2 text-xs font-medium';
 
-function OnlineBadge({ online }: { online: 'also' | 'only' }) {
+const onlineLabels = { also: 'Anche online', only: 'Solo online' } as const;
+
+function OnlineBadge({
+    online,
+    className,
+}: {
+    online: 'also' | 'only';
+    className?: string;
+}) {
     return (
-        <Badge variant="outline" className={cn(pill, 'gap-1 bg-background')}>
+        <Badge
+            variant="outline"
+            className={cn(pill, 'gap-1 bg-background', className)}
+        >
             <Video aria-hidden="true" />
-            {online === 'also' ? 'Anche online' : 'Solo online'}
+            {onlineLabels[online]}
         </Badge>
     );
 }
@@ -78,6 +118,12 @@ export default function TrainerCard({
     const getInitials = useInitials();
     const price = formatPrice(trainer.priceFromCents);
     const styles = layouts[layout];
+    // "oggi 19:30" → "Oggi 19:30" when it stands alone, next to the price.
+    const slot = trainer.nextSlotLabel
+        ? trainer.nextSlotLabel.charAt(0).toUpperCase() +
+          trainer.nextSlotLabel.slice(1)
+        : 'Nessuno slot';
+    const online = trainer.online ? `${onlineLabels[trainer.online]}, ` : '';
 
     const zone = (
         <>
@@ -90,7 +136,7 @@ export default function TrainerCard({
         <div className={cn('relative', className)}>
             <Link
                 href={trainer.href}
-                aria-label={`${trainer.name}, ${trainer.city}, da ${price} a seduta`}
+                aria-label={`${trainer.name}, ${trainer.city}, ${online}da ${price} a seduta`}
                 className={cn(
                     'flex h-full overflow-hidden rounded-xl border bg-card text-foreground',
                     styles.link,
@@ -110,16 +156,6 @@ export default function TrainerCard({
                         />
                     ) : (
                         getInitials(trainer.name)
-                    )}
-                    {trainer.online && (
-                        <span
-                            className={cn(
-                                'absolute top-3 left-3',
-                                styles.onlineOnPhoto,
-                            )}
-                        >
-                            <OnlineBadge online={trainer.online} />
-                        </span>
                     )}
                 </span>
 
@@ -180,21 +216,16 @@ export default function TrainerCard({
                         ))}
                     </span>
 
-                    <span className="flex items-center gap-1.5 text-[13px] leading-[18px] font-semibold tabular-nums">
-                        <Clock aria-hidden="true" className="size-3.5" />
-                        {trainer.nextSlotLabel ? (
-                            <span>
-                                <span className={styles.slotShort}>
-                                    Primo slot:
-                                </span>
-                                <span className={styles.slotLong}>
-                                    Primo slot libero:
-                                </span>{' '}
-                                {trainer.nextSlotLabel}
-                            </span>
-                        ) : (
-                            <span>Nessuno slot nei prossimi giorni</span>
+                    <span
+                        className={cn(
+                            'items-center gap-1.5 text-[13px] leading-[18px] font-semibold tabular-nums',
+                            styles.slotRow,
                         )}
+                    >
+                        <Clock aria-hidden="true" className="size-3.5" />
+                        {trainer.nextSlotLabel
+                            ? `${styles.slotPrefix}: ${trainer.nextSlotLabel}`
+                            : 'Nessuno slot nei prossimi giorni'}
                     </span>
 
                     <span
@@ -204,13 +235,28 @@ export default function TrainerCard({
                         )}
                     >
                         <span className="flex items-baseline gap-1 whitespace-nowrap tabular-nums">
-                            <span className="text-xs text-muted-foreground">
+                            <span
+                                className={cn(
+                                    'text-muted-foreground',
+                                    styles.priceNote,
+                                )}
+                            >
                                 da
                             </span>
-                            <span className="text-lg leading-7 font-bold tracking-tight md:text-xl">
+                            <span
+                                className={cn(
+                                    'font-bold tracking-tight',
+                                    styles.price,
+                                )}
+                            >
                                 {price}
                             </span>
-                            <span className="text-xs text-muted-foreground">
+                            <span
+                                className={cn(
+                                    'text-muted-foreground',
+                                    styles.priceNote,
+                                )}
+                            >
                                 / seduta
                             </span>
                         </span>
@@ -219,19 +265,45 @@ export default function TrainerCard({
                                 <OnlineBadge online={trainer.online} />
                             </span>
                         )}
-                        <span className="hidden h-8 items-center rounded-lg border border-input bg-background px-3 text-sm font-medium shadow-xs md:inline-flex">
-                            Vedi profilo
+                        <span
+                            className={cn(
+                                'items-center gap-1.5 text-[13px] leading-[18px] font-semibold tabular-nums',
+                                styles.slotInPriceRow,
+                            )}
+                        >
+                            <Clock aria-hidden="true" className="size-3.5" />
+                            {slot}
                         </span>
                     </span>
                 </span>
             </Link>
+
+            {/*
+             * On the photo, outside the link like the heart: both measured from
+             * the card edge, 12px from the top, and as tall, so they line up.
+             * Hidden from screen readers: the link's name already says it.
+             */}
+            {trainer.online && (
+                <span
+                    aria-hidden="true"
+                    className={cn(
+                        'pointer-events-none absolute top-3 left-3',
+                        styles.onlineOnPhoto,
+                    )}
+                >
+                    <OnlineBadge
+                        online={trainer.online}
+                        className={styles.onlineBadge}
+                    />
+                </span>
+            )}
 
             {favorite && (
                 <FavoriteButton
                     trainerName={trainer.name}
                     pressed={favorite.pressed}
                     onPressedChange={favorite.onPressedChange}
-                    className={cn('absolute', styles.favorite)}
+                    className={cn('absolute md:size-9', styles.favorite)}
                 />
             )}
         </div>

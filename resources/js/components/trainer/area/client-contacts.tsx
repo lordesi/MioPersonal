@@ -20,7 +20,7 @@ export default function ClientContacts({
     return (
         <section
             aria-labelledby="client-contacts-title"
-            className="flex flex-col gap-3 rounded-xl border bg-card p-4 md:p-5"
+            className="flex flex-col gap-3 rounded-[20px] border bg-card p-5 md:p-6"
         >
             <h2 id="client-contacts-title" className="text-lg font-semibold">
                 Contatti

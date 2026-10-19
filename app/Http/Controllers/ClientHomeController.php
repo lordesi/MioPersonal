@@ -15,13 +15,18 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * "Home" of the client area, the first page after the login: the next session,
- * the requests waiting for an answer, the favorites and a few trainers to try.
- * The full lists stay in "Le mie prenotazioni" and "Preferiti".
+ * "Le mie prenotazioni", the dashboard of the client area and the first page
+ * after the login (docs/design/cliente-dashboard.html): the next session, the
+ * other ones, the requests waiting for an answer, the sessions done (with the
+ * review), the packages and the client's trainers. A new account sees every
+ * section empty, and a few trainers to try instead of "I tuoi trainer".
  */
 class ClientHomeController extends Controller
 {
     private const RECOMMENDED = 3;
+
+    /** "Sedute svolte": the most recent ones are enough. */
+    private const PAST_LIMIT = 20;
 
     public function __invoke(Request $request): Response
     {
@@ -30,25 +35,30 @@ class ClientHomeController extends Controller
         $preference = $client->clientPreference;
 
         $bookings = $client->bookings()
-            ->with(['trainerProfile.user', 'trainerProfile.disciplines'])
-            // Past sessions are only in "Le mie prenotazioni".
-            ->where('ends_at', '>', now())
+            ->with(ClientBookingData::RELATIONS)
             ->orderBy('starts_at')
             ->get();
 
-        $upcoming = $bookings->filter(ClientBookingData::isUpcoming(...));
-        $next = $upcoming->first();
+        $upcoming = $bookings->filter(ClientBookingData::isUpcoming(...))->values();
+        $trainers = ClientBookingData::trainers($client, $bookings);
 
         return Inertia::render('client/home', [
             'firstName' => $client->first_name,
-            'upcomingCount' => $upcoming->count(),
-            'nextBooking' => $next === null ? null : ClientBookingData::upcoming($next),
+            // The first one is "La tua prossima seduta", the others "Più avanti".
+            'upcoming' => $upcoming->map(ClientBookingData::upcoming(...))->all(),
             'pending' => $bookings
                 ->filter(ClientBookingData::isPending(...))
                 ->map(ClientBookingData::pending(...))
                 ->values()->all(),
-            'favorites' => ClientBookingData::favorites($client),
-            'recommended' => $this->recommended($client, $preference),
+            'past' => ClientBookingData::past($client, $bookings
+                ->filter(ClientBookingData::isDone(...))
+                ->sortByDesc('starts_at')
+                ->take(self::PAST_LIMIT)
+                ->values()),
+            'packages' => ClientBookingData::packages($client),
+            'trainers' => $trainers,
+            // Only for a client without trainers yet: one query less for the others.
+            'recommended' => $trainers === [] ? $this->recommended($client, $preference) : [],
             'hasPreferences' => $preference !== null,
             // "Prenota una seduta" opens the search in the client's city (not a switched-off one: 404).
             'citySlug' => $preference?->city?->is_active ? $preference->city->slug : null,

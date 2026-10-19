@@ -4,7 +4,6 @@ namespace App\Actions\Trainer;
 
 use App\Enums\PlaceType;
 use App\Enums\TrainerProfileStatus;
-use App\Jobs\GeocodeTrainerPlace;
 use App\Models\City;
 use App\Models\Discipline;
 use App\Models\TrainerDocument;
@@ -162,33 +161,23 @@ class SaveTrainerProfile
     }
 
     /**
-     * One row per studio, then one for home, park and online. A studio keeps
-     * its coordinates while its address stays the same; a new address is
-     * looked up on the map after the response (GeocodeTrainerPlace).
+     * One row per studio, then one for home, park and online.
      *
      * @param  list<PlaceType>  $places
      * @param  list<array{name: string, address: string}>  $studios
      */
     private function savePlaces(TrainerProfile $profile, array $places, array $studios, ?int $cityId): void
     {
-        $coordinates = [];
-
-        foreach ($profile->places()->whereNotNull('lat')->get() as $place) {
-            $coordinates[$place->city_id.'|'.$place->address] = ['lat' => $place->lat, 'lng' => $place->lng];
-        }
-
         $profile->places()->delete();
         $rows = [];
 
         if (in_array(PlaceType::Studio, $places, true)) {
             foreach ($studios as $studio) {
-                $address = trim($studio['address']);
                 $rows[] = [
                     'type' => PlaceType::Studio,
                     'name' => trim($studio['name']),
-                    'address' => $address,
+                    'address' => trim($studio['address']),
                     'city_id' => $cityId,
-                    ...($coordinates[$cityId.'|'.$address] ?? []),
                 ];
             }
         }
@@ -200,11 +189,7 @@ class SaveTrainerProfile
         }
 
         foreach ($rows as $index => $row) {
-            $place = $profile->places()->create([...$row, 'sort' => $index]);
-
-            if ($place->type === PlaceType::Studio && $place->lat === null) {
-                GeocodeTrainerPlace::dispatchAfterResponse($place->id);
-            }
+            $profile->places()->create([...$row, 'sort' => $index]);
         }
     }
 

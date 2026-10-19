@@ -25,6 +25,10 @@ export function serviceOption(
 
 /** "da 25 €" when the price depends on the duration, "30 €" otherwise, "Gratis" for 0. */
 export function servicePriceLabel(service: TrainerService): string {
+    if (service.packageId !== null) {
+        return 'Incluso';
+    }
+
     if (service.priceCents === 0) {
         return 'Gratis';
     }
@@ -47,6 +51,10 @@ export function totalPriceLabel(
     service: TrainerService,
     minutes: number,
 ): string {
+    if (service.packageId !== null) {
+        return 'Incluso';
+    }
+
     const cents = totalPriceCents(service, minutes);
 
     return cents === 0 ? 'Gratis' : formatPrice(cents);
@@ -62,7 +70,12 @@ export function serviceSummary(
             ? formatDuration(minutes)
             : service.durationLabel;
 
-    return `${duration} · ${service.name.toLowerCase()}`;
+    // "Il tuo pacchetto": already paid, the price is not indicative.
+    if (service.packageId !== null) {
+        return `${formatDuration(minutes)} · inclusa nel ${service.note.toLowerCase()}`;
+    }
+
+    return `${duration} · ${service.name.toLowerCase()} · indicativo`;
 }
 
 /** Start times of a day that can host a session of `minutes`. */

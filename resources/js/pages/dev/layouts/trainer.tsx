@@ -11,7 +11,7 @@ export default function TrainerLayoutPreview() {
                 Buongiorno Giulia
             </h1>
             <p className="text-muted-foreground">
-                Contenuto di esempio. Su schermo stretto il menu laterale
+                Contenuto di esempio. Su schermo stretto il menu laterale nero
                 diventa la barra di schede in basso.
             </p>
             {[1, 2, 3, 4].map((n) => (
@@ -25,8 +25,6 @@ TrainerLayoutPreview.layout = (page: ReactNode) => (
     <TrainerLayout
         section="today"
         pendingCount={3}
-        notificationCount={3}
-        notificationsEnabled={false}
         publicProfileHref="#"
         userName="Giulia Rossi"
     >

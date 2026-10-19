@@ -6,13 +6,15 @@ export type BookingStatus =
     | 'expired'
     | 'completed';
 
-/** A confirmed session in "Le mie prenotazioni" → "Prossime". */
+/** A confirmed session not over yet: "La tua prossima seduta" and "Più avanti". */
 export type ClientUpcomingBooking = {
     id: number;
     trainerName: string;
     trainerFirstName: string;
     trainerHref: string;
     discipline: string;
+    /** "Seduta singola", or "Pacchetto 10 sedute · seduta 1 di 10". */
+    serviceLabel: string;
     /** ISO UTC string. */
     start: string;
     hours: number;
@@ -20,6 +22,8 @@ export type ClientUpcomingBooking = {
     status: 'confirmed';
     /** ISO UTC string: after this moment cancelling is no longer free. */
     freeCancellationUntil: string;
+    /** The .ics file of "Aggiungi al calendario". */
+    calendarHref: string;
 };
 
 /** The request just sent, on the "Prenotazione inviata" page. */
@@ -60,28 +64,47 @@ export type ClientPendingBooking = {
     expiresAt: string | null;
 };
 
+/** "Il tuo pacchetto": counted from its bookings, see docs/database/analisi.md §3.4. */
 export type ClientPackage = {
     id: number;
     name: string;
     trainerName: string;
     trainerHref: string;
-    /** Counted from the package's bookings: see docs/database/analisi.md §3.4. */
-    used: number;
     total: number;
+    /** Sessions done. */
+    done: number;
+    /** Sessions that take a place: done, confirmed or waiting for an answer. */
+    booked: number;
+    /** ISO UTC string of the next session already booked, if any. */
+    nextStart: string | null;
 };
 
-export type FavoriteTrainer = {
+/** A row of "I tuoi trainer". */
+export type ClientTrainer = {
     name: string;
     href: string;
+    /** The first discipline, shown for the trainers already booked. */
+    discipline: string | null;
     /** ISO UTC string of the first free slot, null without free slots. */
     nextSlotStart: string | null;
+    favorite: boolean;
+    /** At least one confirmed session with this trainer. */
+    booked: boolean;
 };
 
+/** A session done, in "Sedute svolte". */
 export type ClientPastSession = {
     id: number;
     trainerName: string;
+    trainerFirstName: string;
     trainerHref: string;
+    discipline: string;
+    /** ISO UTC string. */
     start: string;
+    hours: number;
     serviceName: string;
+    /** The client's review, null until it is written. */
     review: { rating: number; text: string } | null;
+    /** "Lascia una recensione": not reviewed yet and not marked "Saltata". */
+    canReview: boolean;
 };

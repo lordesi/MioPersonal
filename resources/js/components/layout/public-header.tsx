@@ -2,7 +2,6 @@ import { Link, usePage } from '@inertiajs/react';
 import { Menu } from 'lucide-react';
 import AccountMenu from '@/components/layout/account-menu';
 import BrandLogo from '@/components/layout/brand-logo';
-import ThemeToggle from '@/components/shared/theme-toggle';
 import { Button } from '@/components/ui/button';
 import {
     Sheet,
@@ -15,6 +14,7 @@ import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
 import { home, login, register } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
+import { register as trainerRegister } from '@/routes/trainer';
 
 export type PublicSection =
     | 'search'
@@ -36,7 +36,7 @@ const searchItem: NavItem = {
 const forTrainersItem: NavItem = {
     section: 'for-trainers',
     title: 'Per i trainer',
-    href: `${home.url()}#per-i-trainer`,
+    href: trainerRegister.url(),
 };
 
 const navs: Record<PublicNav, NavItem[]> = {
@@ -60,17 +60,24 @@ type PublicHeaderProps = {
     /** Highlights the matching link with aria-current="page". */
     section?: PublicSection;
     nav?: PublicNav;
+    /** 'hero' = dark, without links: it is the top of the home hero. */
+    variant?: 'default' | 'hero';
     className?: string;
 };
 
 export default function PublicHeader({
     section,
     nav = 'main',
+    variant = 'default',
     className,
 }: PublicHeaderProps) {
     const navItems = navs[nav];
     // Missing on Laravel's own error responses, e.g. the 404 of an unknown URL.
     const user = usePage().props.auth?.user;
+
+    if (variant === 'hero') {
+        return <HeroHeader className={className} />;
+    }
 
     return (
         <header className={cn('border-b bg-background', className)}>
@@ -99,7 +106,6 @@ export default function PublicHeader({
                 </nav>
 
                 <div className="ml-auto flex items-center gap-1 md:gap-2">
-                    <ThemeToggle className="hidden md:flex" />
                     {user ? (
                         <AccountMenu
                             variant={
@@ -158,12 +164,6 @@ export default function PublicHeader({
                                 ))}
                             </nav>
                             <div className="mt-auto flex flex-col gap-4 p-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium">
-                                        Tema
-                                    </span>
-                                    <ThemeToggle />
-                                </div>
                                 {!user && (
                                     <Button asChild>
                                         <Link href={register()}>
@@ -174,6 +174,59 @@ export default function PublicHeader({
                             </div>
                         </SheetContent>
                     </Sheet>
+                </div>
+            </div>
+        </header>
+    );
+}
+
+/** Light outline on the dark background, the "Sei un trainer?" look. */
+const heroButton =
+    'inline-flex h-11 items-center rounded-lg text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-primary-foreground/50';
+
+/**
+ * Home header: same color as the hero below, so they look like one block.
+ * Only the logo and the two buttons, like the design.
+ */
+function HeroHeader({ className }: { className?: string }) {
+    const user = usePage().props.auth?.user;
+
+    return (
+        <header className={cn('bg-primary text-primary-foreground', className)}>
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-2.5 md:px-8 md:py-5">
+                <BrandLogo className="text-primary-foreground" />
+
+                <div className="ml-auto flex flex-wrap items-center gap-3">
+                    {user ? (
+                        <AccountMenu
+                            variant={
+                                user.role === 'trainer' ? 'trainer' : 'client'
+                            }
+                            userName={user.name}
+                            headerHeight={16}
+                        />
+                    ) : (
+                        <>
+                            <Link
+                                href={trainerRegister()}
+                                className={cn(
+                                    heroButton,
+                                    'border border-primary-foreground px-4.5 font-medium hover:bg-primary-foreground/10',
+                                )}
+                            >
+                                Sei un trainer?
+                            </Link>
+                            <Link
+                                href={login()}
+                                className={cn(
+                                    heroButton,
+                                    'bg-primary-foreground px-5 font-semibold text-primary hover:bg-primary-foreground/90',
+                                )}
+                            >
+                                Accedi
+                            </Link>
+                        </>
+                    )}
                 </div>
             </div>
         </header>

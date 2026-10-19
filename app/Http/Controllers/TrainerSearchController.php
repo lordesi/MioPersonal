@@ -26,15 +26,19 @@ class TrainerSearchController extends Controller
     /** "Disponibilità": the first free slot must be at most this many days from today. */
     private const AVAILABILITY_DAYS = ['oggi' => 0, '3-giorni' => 2, 'settimana' => 6];
 
-    /** "Prezzo a seduta": [min, max] in cents. */
+    /** "Prezzo a seduta": [min, max] in cents, null = no maximum. */
     private const PRICE_RANGES = [
         'fino-35' => [0, 3500],
         '35-45' => [3500, 4500],
         '45-60' => [4500, 6000],
-        'oltre-60' => [6001, PHP_INT_MAX],
+        'oltre-60' => [6001, null],
     ];
 
-    private const MIN_TOP_RATING = 4.5;
+    /**
+     * "★ 4,5 e più", in tenths of a star: PostgreSQL compares the integer
+     * columns with integers only (4.5 would be an error).
+     */
+    private const MIN_TOP_RATING_TENTHS = 45;
 
     public function __invoke(Request $request, ?City $city = null): Response
     {
@@ -130,12 +134,14 @@ class TrainerSearchController extends Controller
         }
 
         if ($filters['prezzo'] !== null) {
-            $query->whereBetween('price_from_cents', self::PRICE_RANGES[$filters['prezzo']]);
+            [$min, $max] = self::PRICE_RANGES[$filters['prezzo']];
+            $query->where('price_from_cents', '>=', $min)
+                ->when($max !== null, fn (Builder $price) => $price->where('price_from_cents', '<=', $max));
         }
 
         if ($filters['valutazione'] !== null) {
-            // The average is rating_sum / rating_count: compared without dividing.
-            $query->where('rating_count', '>', 0)->whereRaw('rating_sum >= ? * rating_count', [self::MIN_TOP_RATING]);
+            // The average is rating_sum / rating_count: compared without dividing, in tenths.
+            $query->where('rating_count', '>', 0)->whereRaw('rating_sum * 10 >= ? * rating_count', [self::MIN_TOP_RATING_TENTHS]);
         }
 
         if ($filters['domicilio'] !== null) {

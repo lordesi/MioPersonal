@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\BookingStatus;
 use App\Http\Controllers\Concerns\BuildsPlaceholderData;
 use App\Models\Booking;
+use App\Models\ClientPackage;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\ClientAttendance;
+use App\Support\TrainerSessions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -16,8 +18,9 @@ use Inertia\Response;
 
 /**
  * "Clienti" of the trainer: everyone with at least one confirmed session.
- * A client who booked several slots shows up once, with all of them.
- * Requests still waiting for an answer are in "Oggi", not here.
+ * A client who booked several slots shows up once, with all of them, and
+ * with the package still in progress. Requests still waiting for an answer
+ * are in "Richieste", not here.
  */
 class TrainerClientsController extends Controller
 {
@@ -49,14 +52,15 @@ class TrainerClientsController extends Controller
             ->where('status', BookingStatus::Confirmed)
             // Deleted accounts: the past sessions stay, but there is nobody to show.
             ->whereNotNull('client_id')
-            ->with('client')
+            ->with(TrainerSessions::WITH)
             ->orderBy('starts_at')
             ->get();
         $attendance = ClientAttendance::forClients($bookings->pluck('client_id'), $profile);
+        $packages = $this->packages($profile);
 
         return $bookings
             ->groupBy('client_id')
-            ->map(fn (Collection $bookings, int $clientId) => $this->client($bookings, $now, $attendance[$clientId]))
+            ->map(fn (Collection $bookings, int $clientId) => $this->client($bookings, $now, $attendance[$clientId], $packages->get($clientId)))
             ->sort(function (array $a, array $b) {
                 if ($a['nextSession'] !== null || $b['nextSession'] !== null) {
                     // Who has a next session comes first, the closest one on top.
@@ -70,52 +74,57 @@ class TrainerClientsController extends Controller
     }
 
     /**
-     * @param  Collection<int, Booking>  $bookings  of one client, in order
-     * @param  array<string, mixed>  $attendance  from ClientAttendance
-     * @return array{id: int|null, name: string, sessions: int, lastSession: string|null, nextSession: string|null, attendance: array<string, mixed>, upcoming: array<int, array<string, mixed>>, recent: array<int, array<string, mixed>>}
+     * The package of each client not all done yet: the most recent one.
+     *
+     * @return Collection<int, ClientPackage> by client id
      */
-    private function client(Collection $bookings, CarbonImmutable $now, array $attendance): array
+    private function packages(TrainerProfile $profile): Collection
     {
-        // A group always has at least one booking.
-        $first = $bookings->firstOrFail();
-        $last = $bookings->filter(fn (Booking $booking) => $booking->starts_at <= $now)->last();
-        $upcoming = $bookings->filter(fn (Booking $booking) => $booking->starts_at > $now)->values();
-        $next = $upcoming->first();
-        $name = $first->client->name ?? '';
-
-        return [
-            'id' => $first->client_id,
-            'name' => $name,
-            'sessions' => $bookings->count(),
-            'lastSession' => $last === null ? null : $this->iso($last->starts_at),
-            'nextSession' => $next === null ? null : $this->iso($next->starts_at),
-            'attendance' => $attendance,
-            // Every slot still to come, in the format of the sessions of "Oggi".
-            'upcoming' => $upcoming->map(fn (Booking $booking) => $this->session($booking, $name))->all(),
-            // Over, and still in time for "Saltata": the most recent first.
-            'recent' => $bookings
-                ->filter(fn (Booking $booking) => $booking->canChangeNoShow())
-                ->reverse()
-                ->map(fn (Booking $booking) => $this->session($booking, $name))
-                ->values()
-                ->all(),
-        ];
+        return $profile->clientPackages()
+            ->bought()
+            ->whereNotNull('client_id')
+            ->withSessionCounts()
+            ->oldest('bought_at')
+            ->get()
+            ->filter(fn (ClientPackage $package) => ($package->done_count ?? 0) < $package->sessions_total)
+            // The last one of each client wins.
+            ->keyBy('client_id');
     }
 
     /**
+     * @param  Collection<int, Booking>  $bookings  of one client, in order
+     * @param  array<string, mixed>  $attendance  from ClientAttendance
      * @return array<string, mixed>
      */
-    private function session(Booking $booking, string $clientName): array
+    private function client(Collection $bookings, CarbonImmutable $now, array $attendance, ?ClientPackage $package): array
     {
+        // A group always has at least one booking.
+        $first = $bookings->firstOrFail();
+        $past = $bookings->filter(fn (Booking $booking) => $booking->ends_at <= $now);
+        $last = $bookings->filter(fn (Booking $booking) => $booking->starts_at <= $now)->last();
+        $upcoming = $bookings->filter(fn (Booking $booking) => $booking->starts_at > $now)->values();
+        $next = $upcoming->first();
+
         return [
-            'id' => $booking->id,
-            'clientId' => $booking->client_id,
-            'clientName' => $clientName,
-            'start' => $this->iso($booking->starts_at),
-            'hours' => $booking->starts_at->diffInMinutes($booking->ends_at) / 60,
-            'serviceName' => $booking->service_name,
-            'placeLabel' => $booking->place_label,
-            'noShow' => $booking->no_show_at !== null,
+            'id' => $first->client_id,
+            'name' => $first->client->name ?? '',
+            'sessions' => $bookings->count(),
+            'firstSession' => $this->iso($first->starts_at),
+            'lastSession' => $last === null ? null : $this->iso($last->starts_at),
+            'nextSession' => $next === null ? null : $this->iso($next->starts_at),
+            // Under the name: what they book, from the most recent session.
+            'lastService' => ($last ?? $first)->service_name,
+            'upcomingCount' => $upcoming->count(),
+            'done' => $past->whereNull('no_show_at')->count(),
+            'missed' => $past->whereNotNull('no_show_at')->count(),
+            'package' => $package === null ? null : [
+                'name' => $package->name,
+                'done' => $package->done_count ?? 0,
+                'total' => $package->sessions_total,
+            ],
+            'attendance' => $attendance,
+            // Every session still to come.
+            'upcoming' => $upcoming->map(TrainerSessions::row(...))->all(),
         ];
     }
 }

@@ -1,258 +1,188 @@
-import { Head, Link, router, setLayoutProps } from '@inertiajs/react';
-import { ArrowRight } from 'lucide-react';
-import { useEffect, useId, useState } from 'react';
-import { toast } from 'sonner';
-import type { RequestAnswer } from '@/components/trainer/dashboard/booking-request-card';
-import BookingRequestCard from '@/components/trainer/dashboard/booking-request-card';
+import { Head, Link } from '@inertiajs/react';
+import { Bell, Check, Clock } from 'lucide-react';
+import { useState } from 'react';
+import PageHeading from '@/components/trainer/area/page-heading';
+import Panel from '@/components/trainer/area/panel';
+import ActivePackages from '@/components/trainer/dashboard/active-packages';
+import NextSessionCard from '@/components/trainer/dashboard/next-session-card';
+import PastSessionList from '@/components/trainer/dashboard/past-session-list';
+import PendingRequestsSummary from '@/components/trainer/dashboard/pending-requests-summary';
 import type { StatCard } from '@/components/trainer/dashboard/stat-cards';
 import StatCards from '@/components/trainer/dashboard/stat-cards';
-import type { SessionTiming } from '@/components/trainer/dashboard/today-session-row';
-import TodaySessionRow from '@/components/trainer/dashboard/today-session-row';
-import PastSessionList from '@/components/trainer/dashboard/past-session-list';
-import UpcomingSessions from '@/components/trainer/dashboard/upcoming-sessions';
-import { formatTime } from '@/lib/format';
-import { pastSessions } from '@/routes/trainer';
-import { accept, decline } from '@/routes/trainer/requests';
+import WeekAgenda from '@/components/trainer/dashboard/week-agenda';
+import { Button } from '@/components/ui/button';
+import { romeParts } from '@/lib/calendar';
+import { formatDayLong } from '@/lib/format';
+import {
+    availability,
+    pastSessions,
+    requests as requestsPage,
+} from '@/routes/trainer';
 import type {
     TrainerBookingRequest,
+    TrainerPackage,
     TrainerPastSession,
+    TrainerSession,
     TrainerStats,
-    TrainerTodaySession,
 } from '@/types';
 
 type TodayProps = {
     firstName: string;
-    today: TrainerTodaySession[];
-    /** Confirmed sessions from tomorrow on. */
-    upcoming: TrainerTodaySession[];
+    /** The confirmed session going on now, or the next one. */
+    next: TrainerSession | null;
+    /** Confirmed and waiting, from today to the 7th day. */
+    agenda: TrainerSession[];
+    /** The first requests waiting: all of them are in "Richieste". */
+    requests: TrainerBookingRequest[];
+    packages: TrainerPackage[];
     /** Over in the last 7 days, before today; the most recent first. */
     past: TrainerPastSession[];
-    requests: TrainerBookingRequest[];
     stats: TrainerStats;
 };
 
-const timingOrder: Record<SessionTiming, number> = {
-    next: 0,
-    later: 1,
-    past: 2,
-};
-
+/** "Panoramica": the trainer's dashboard (docs/design/trainer-dashboard.html). */
 export default function Today({
     firstName,
-    today,
-    upcoming,
-    past,
+    next,
+    agenda,
     requests,
+    packages,
+    past,
     stats,
 }: TodayProps) {
-    const todayTitleId = useId();
-    const requestsTitleId = useId();
-    const pastTitleId = useId();
     const [now] = useState(() => new Date());
-
-    // The answers given on this page: the card shows them until the next visit.
-    const [answers, setAnswers] = useState<Record<number, RequestAnswer>>({});
-
-    const pendingRequests = requests.filter(
-        (request) => (answers[request.id] ?? 'pending') === 'pending',
-    );
-    const pendingCount = pendingRequests.length;
-
-    const answer = (
-        request: TrainerBookingRequest,
-        value: Exclude<RequestAnswer, 'pending'>,
-    ) => {
-        const action = value === 'confirmed' ? accept : decline;
-
-        router.post(
-            action.url(request.id),
-            {},
-            {
-                preserveScroll: true,
-                // The answered card stays on the page with its message.
-                only: ['today', 'upcoming', 'stats'],
-                onSuccess: () =>
-                    setAnswers((current) => ({
-                        ...current,
-                        [request.id]: value,
-                    })),
-                // Expired or cancelled meanwhile: say it and show the real list.
-                onError: (errors) => {
-                    toast.error(errors.booking ?? 'Riprova tra poco.');
-                    router.reload({ only: ['requests'] });
-                },
-            },
-        );
-    };
-
-    useEffect(() => {
-        // The badge follows the answers given on this page.
-        setLayoutProps({ pendingCount });
-    }, [pendingCount]);
-
-    const sessions = withTiming(today, now).sort(
-        (a, b) => timingOrder[a.timing] - timingOrder[b.timing],
-    );
-    const next = sessions.find((session) => session.timing === 'next');
+    const parts = romeParts(now);
 
     const statCards: StatCard[] = [
         {
             label: 'Richieste da confermare',
-            value: String(pendingCount),
+            value: String(stats.pending),
+            detail:
+                stats.pending === 0 ? (
+                    <span className="flex items-center gap-1.5 text-foreground">
+                        <Check
+                            aria-hidden="true"
+                            className="size-3.5"
+                            strokeWidth={2.5}
+                        />
+                        Tutto in ordine
+                    </span>
+                ) : (
+                    <Link
+                        href={requestsPage()}
+                        className="font-semibold text-foreground underline"
+                    >
+                        Rispondi entro 24 ore
+                    </Link>
+                ),
         },
         {
-            label: 'Sedute questa settimana',
-            value: String(stats.sessionsThisWeek),
+            label: 'Sedute nei prossimi 7 giorni',
+            value: String(stats.weekSessions),
+            detail: `${hoursLabel(stats.weekHours)} in agenda · ${stats.weekClients === 1 ? '1 cliente' : `${stats.weekClients} clienti`}`,
         },
     ];
 
     return (
         <>
-            <Head title="Le tue prenotazioni" />
+            <Head title="Panoramica" />
 
-            <div className="flex flex-col gap-0.5 md:gap-1">
-                <h1 className="text-[28px] leading-8.5 font-bold tracking-tight md:text-3xl">
-                    Buongiorno {firstName}
-                </h1>
-                {next && (
-                    <p className="text-sm text-muted-foreground tabular-nums md:hidden">
-                        Prossima seduta alle {formatTime(next.session.start)}{' '}
-                        con {next.session.clientName}
-                    </p>
-                )}
+            <PageHeading
+                eyebrow={formatDayLong(parts.date)}
+                title={`${greeting(parts.hour)}, ${firstName}`}
+                action={
+                    <div className="hidden flex-wrap gap-2 md:flex">
+                        <Button
+                            asChild
+                            variant="outline"
+                            size="icon"
+                            className="relative size-11 rounded-xl bg-card"
+                        >
+                            <Link
+                                href={requestsPage()}
+                                aria-label={`Richieste da confermare: ${stats.pending}`}
+                            >
+                                <Bell aria-hidden="true" className="size-4.5" />
+                                {stats.pending > 0 && (
+                                    <span className="absolute -top-1 -right-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground tabular-nums">
+                                        {stats.pending}
+                                    </span>
+                                )}
+                            </Link>
+                        </Button>
+                        <Button
+                            asChild
+                            className="h-11 rounded-xl px-4.5 font-semibold"
+                        >
+                            <Link href={availability()}>
+                                <Clock aria-hidden="true" />
+                                Gestisci disponibilità
+                            </Link>
+                        </Button>
+                    </div>
+                }
+            />
+
+            <div className="flex flex-wrap gap-4">
+                <NextSessionCard session={next} now={now} />
+                <StatCards stats={statCards} />
             </div>
 
-            <StatCards stats={statCards} />
+            <div className="flex flex-wrap items-start gap-4">
+                <WeekAgenda sessions={agenda} today={parts.date} />
 
-            <div className="flex flex-col gap-6">
-                <section
-                    id="oggi"
-                    aria-labelledby={todayTitleId}
-                    className="flex scroll-mt-4 flex-col gap-2 md:gap-2.5"
-                >
-                    <h2
-                        id={todayTitleId}
-                        className="text-lg font-semibold tracking-tight md:text-xl"
-                    >
-                        Oggi
-                    </h2>
-                    {sessions.length === 0 && (
-                        <p className="text-sm text-muted-foreground">
-                            Nessuna seduta oggi.
-                        </p>
-                    )}
-                    {sessions.map(({ session, timing }) => (
-                        <TodaySessionRow
-                            key={session.id}
-                            session={session}
-                            timing={timing}
-                        />
-                    ))}
-                </section>
-
-                <UpcomingSessions sessions={upcoming} />
-
-                <section
-                    id="prenotazioni"
-                    aria-labelledby={requestsTitleId}
-                    className="flex scroll-mt-4 flex-col gap-2 md:gap-2.5"
-                >
-                    <div className="flex flex-col gap-0.5">
-                        <h2
-                            id={requestsTitleId}
-                            className="text-lg font-semibold tracking-tight tabular-nums md:text-xl"
-                        >
-                            {requestsTitle(pendingCount)}
-                        </h2>
-                        <span className="hidden text-[13px] leading-4.5 text-muted-foreground md:block">
-                            Lo slot resta bloccato per il cliente finché non
-                            rispondi, al massimo 24 ore.
-                        </span>
-                    </div>
-                    {requests.map((request) => (
-                        <BookingRequestCard
-                            key={request.id}
-                            request={request}
-                            answer={answers[request.id] ?? 'pending'}
-                            onAnswer={(value) => answer(request, value)}
-                        />
-                    ))}
-                </section>
-
-                <section
-                    id="passate"
-                    aria-labelledby={pastTitleId}
-                    className="flex scroll-mt-4 flex-col gap-2 md:gap-2.5"
-                >
-                    <div className="flex items-end justify-between gap-3">
-                        <div className="flex flex-col gap-0.5">
-                            <h2
-                                id={pastTitleId}
-                                className="text-lg font-semibold tracking-tight md:text-xl"
+                <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-4">
+                    <PendingRequestsSummary
+                        requests={requests}
+                        total={stats.pending}
+                    />
+                    <ActivePackages packages={packages} />
+                    <Panel
+                        title="Ultimi 7 giorni"
+                        className="gap-2.5"
+                        action={
+                            <Link
+                                href={pastSessions()}
+                                className="inline-flex min-h-11 items-center text-sm font-medium hover:underline"
                             >
-                                Ultimi 7 giorni
-                            </h2>
-                            <span className="hidden text-[13px] leading-4.5 text-muted-foreground md:block">
-                                Le sedute risultano effettuate: segna «Saltata»
-                                se il cliente non si è presentato.
+                                Vedi tutte
+                            </Link>
+                        }
+                    >
+                        {past.length === 0 ? (
+                            <span className="text-[15px] leading-5.5 font-medium">
+                                Nessuna seduta svolta.
                             </span>
-                        </div>
-                        <Link
-                            href={pastSessions()}
-                            className="inline-flex min-h-11 shrink-0 items-center gap-1 text-sm font-medium md:min-h-0"
-                        >
-                            Vedi tutte
-                            <ArrowRight aria-hidden="true" className="size-4" />
-                        </Link>
-                    </div>
-                    {past.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                            Nessuna seduta negli ultimi 7 giorni.
-                        </p>
-                    ) : (
-                        <PastSessionList sessions={past} />
-                    )}
-                </section>
+                        ) : (
+                            <PastSessionList sessions={past} />
+                        )}
+                        <span className="text-[13px] leading-4.5 text-muted-foreground">
+                            Le sedute passate risultano effettuate: segna
+                            «Saltata» se il cliente non si è presentato.
+                        </span>
+                    </Panel>
+                </div>
             </div>
         </>
     );
 }
 
-/** "3 prenotazioni da confermare", "1 prenotazione…" or "Nessuna…" */
-function requestsTitle(count: number): string {
-    if (count === 0) {
-        return 'Nessuna prenotazione da confermare';
+/** "Buongiorno" until 13, "Buon pomeriggio" until 18, then "Buonasera" (Rome time). */
+function greeting(hour: number): string {
+    if (hour < 13) {
+        return 'Buongiorno';
     }
 
-    return count === 1
-        ? '1 prenotazione da confermare'
-        : `${count} prenotazioni da confermare`;
+    return hour < 18 ? 'Buon pomeriggio' : 'Buonasera';
 }
 
-/** Finished sessions are "past"; the first one not finished yet is "next". */
-function withTiming(
-    sessions: TrainerTodaySession[],
-    now: Date,
-): { session: TrainerTodaySession; timing: SessionTiming }[] {
-    let nextFound = false;
+/** 3 → "3 ore", 1 → "1 ora", 2.5 → "2,5 ore" */
+function hoursLabel(hours: number): string {
+    if (hours === 1) {
+        return '1 ora';
+    }
 
-    return [...sessions]
-        .sort((a, b) => a.start.localeCompare(b.start))
-        .map((session) => {
-            const end =
-                new Date(session.start).getTime() +
-                session.hours * 60 * 60 * 1000;
-            let timing: SessionTiming = 'later';
-
-            if (end <= now.getTime()) {
-                timing = 'past';
-            } else if (!nextFound) {
-                timing = 'next';
-                nextFound = true;
-            }
-
-            return { session, timing };
-        });
+    return `${hours.toLocaleString('it-IT', { maximumFractionDigits: 1 })} ore`;
 }
 
 Today.layout = { section: 'today' };

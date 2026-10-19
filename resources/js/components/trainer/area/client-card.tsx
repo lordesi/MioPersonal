@@ -1,45 +1,104 @@
 import { Link } from '@inertiajs/react';
+import { Calendar, MapPin } from 'lucide-react';
 import { useId } from 'react';
 import UserAvatar from '@/components/shared/user-avatar';
-import AttendanceLabel from '@/components/trainer/attendance-label';
-import { nextSessionLabel } from '@/components/trainer/area/client-list';
-import NoShowButton from '@/components/trainer/no-show-button';
+import PackageProgress from '@/components/trainer/package-progress';
 import { Button } from '@/components/ui/button';
-import { sessionsLabel } from '@/lib/calendar';
-import { formatDayShort, formatTimeRange } from '@/lib/format';
+import { romeParts } from '@/lib/calendar';
+import { dateBlockParts, formatDayLong, formatTime } from '@/lib/format';
+import { calendar } from '@/routes/trainer';
 import { show as showClient } from '@/routes/trainer/clients';
 import type { TrainerClient } from '@/types';
 
 /**
- * Details of the selected client: how often they show up, every slot still to
- * come, the last week's sessions with "Saltata", link to the profile.
+ * Details of the client selected in "Clienti": the numbers, the package in
+ * progress, every session still to come, the links to the profile and to
+ * the calendar.
  */
 export default function ClientCard({ client }: { client: TrainerClient }) {
     const titleId = useId();
-    const recentTitleId = useId();
+    const upcomingTitleId = useId();
+    const places = new Set(
+        client.upcoming.map((session) => session.placeLabel),
+    );
+    // One place for every session: said once, under the list.
+    const samePlace = places.size === 1 ? [...places][0] : null;
+
+    const numbers = [
+        { label: 'In programma', value: client.upcomingCount },
+        { label: 'Svolte', value: client.done },
+        { label: 'Saltate', value: client.missed },
+    ];
 
     return (
-        <aside
-            aria-label="Scheda cliente"
-            className="flex flex-[1_1_300px] flex-col gap-3.5 rounded-xl border bg-card p-4 md:p-5"
+        <section
+            aria-labelledby={titleId}
+            className="flex min-w-0 flex-[2_1_340px] flex-col overflow-hidden rounded-[20px] border bg-card"
         >
-            <div className="flex items-center gap-3">
-                <UserAvatar name={client.name} size="lg" />
-                <div className="flex flex-col">
-                    <span className="text-lg font-bold">{client.name}</span>
-                    <span className="text-[13px] leading-4.5 text-muted-foreground tabular-nums">
-                        {sessionsLabel(client.sessions)} · prossima{' '}
-                        {nextSessionLabel(client)}
+            <div className="flex flex-col gap-5 bg-sidebar p-6 text-sidebar-foreground">
+                <div className="flex items-center gap-3.5">
+                    <UserAvatar
+                        name={client.name}
+                        size="xl"
+                        className="size-14 text-lg [&_[data-slot=avatar-fallback]]:bg-sidebar-primary [&_[data-slot=avatar-fallback]]:text-sidebar-primary-foreground"
+                    />
+                    <span className="flex min-w-0 flex-col">
+                        <h2
+                            id={titleId}
+                            className="text-[22px] leading-7 font-bold tracking-[-0.02em]"
+                        >
+                            {client.name}
+                        </h2>
+                        <span className="text-sm text-sidebar-muted-foreground">
+                            Prima seduta:{' '}
+                            {formatDayLong(
+                                romeParts(client.firstSession).date,
+                            ).toLowerCase()}
+                        </span>
                     </span>
-                    <AttendanceLabel attendance={client.attendance} />
                 </div>
+
+                <dl className="grid grid-cols-3 gap-2">
+                    {numbers.map((number) => (
+                        <div
+                            key={number.label}
+                            className="flex flex-col-reverse gap-0.5 rounded-xl bg-sidebar-accent p-3"
+                        >
+                            <dt className="text-xs text-sidebar-muted-foreground">
+                                {number.label}
+                            </dt>
+                            <dd className="text-2xl font-bold tabular-nums">
+                                {number.value}
+                            </dd>
+                        </div>
+                    ))}
+                </dl>
+
+                {client.package && (
+                    <div className="flex flex-col gap-2">
+                        <div className="flex justify-between gap-2 text-[13px] leading-4.5">
+                            <span className="text-sidebar-foreground/80">
+                                {client.package.name}
+                            </span>
+                            <span className="font-bold tabular-nums">
+                                {client.package.done} di {client.package.total}{' '}
+                                svolte
+                            </span>
+                        </div>
+                        <PackageProgress
+                            done={client.package.done}
+                            total={client.package.total}
+                            tone="dark"
+                        />
+                    </div>
+                )}
             </div>
 
-            <section
-                aria-labelledby={titleId}
-                className="flex flex-col gap-1.5"
-            >
-                <h3 id={titleId} className="text-sm font-semibold">
+            <div className="flex flex-col gap-3.5 px-6 pt-5 pb-6">
+                <h3
+                    id={upcomingTitleId}
+                    className="text-[15px] leading-5.5 font-semibold"
+                >
                     Prossime sedute
                 </h3>
                 {client.upcoming.length === 0 ? (
@@ -47,64 +106,83 @@ export default function ClientCard({ client }: { client: TrainerClient }) {
                         Nessuna seduta in programma.
                     </p>
                 ) : (
-                    <ul className="overflow-hidden rounded-lg border">
-                        {client.upcoming.map((session) => (
-                            <li
-                                key={session.id}
-                                className="flex flex-col border-b px-3 py-2 last:border-b-0"
-                            >
-                                <span className="text-sm font-semibold tabular-nums">
-                                    {formatDayShort(session.start)} ·{' '}
-                                    {formatTimeRange(
-                                        session.start,
-                                        session.hours,
-                                    )}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                    {session.serviceName} · {session.placeLabel}
-                                </span>
-                            </li>
-                        ))}
+                    <ul
+                        aria-labelledby={upcomingTitleId}
+                        className="flex flex-col gap-2"
+                    >
+                        {client.upcoming.map((session) => {
+                            const day = dateBlockParts(session.start);
+
+                            return (
+                                <li
+                                    key={session.id}
+                                    className="flex items-center gap-3 rounded-[14px] border bg-secondary/50 p-2.5"
+                                >
+                                    <span className="flex h-12.5 w-11.5 flex-none flex-col items-center justify-center rounded-[10px] bg-foreground text-background">
+                                        <span className="text-[10px] leading-3 font-bold tracking-[0.06em] uppercase">
+                                            {day.weekday.replace('.', '')}
+                                        </span>
+                                        <span className="text-lg leading-5.5 font-bold tabular-nums">
+                                            {day.day}
+                                        </span>
+                                    </span>
+                                    <span className="flex min-w-0 flex-1 flex-col">
+                                        <span className="text-sm font-bold tabular-nums">
+                                            {formatTime(session.start)} –{' '}
+                                            {formatTime(session.end)}
+                                        </span>
+                                        <span className="text-[13px] leading-4.5 text-muted-foreground">
+                                            {session.serviceName}
+                                            {samePlace === null &&
+                                                ` · ${session.placeLabel}`}
+                                        </span>
+                                    </span>
+                                </li>
+                            );
+                        })}
                     </ul>
                 )}
-            </section>
 
-            {client.recent.length > 0 && (
-                <section
-                    aria-labelledby={recentTitleId}
-                    className="flex flex-col gap-1.5"
-                >
-                    <h3 id={recentTitleId} className="text-sm font-semibold">
-                        Ultime sedute
-                    </h3>
-                    <ul className="overflow-hidden rounded-lg border">
-                        {client.recent.map((session) => (
-                            <li
-                                key={session.id}
-                                className="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2 last:border-b-0"
-                            >
-                                <span className="flex flex-col">
-                                    <span className="text-sm font-semibold tabular-nums">
-                                        {formatDayShort(session.start)} ·{' '}
-                                        {formatTimeRange(
-                                            session.start,
-                                            session.hours,
-                                        )}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                        {session.serviceName}
-                                    </span>
-                                </span>
-                                <NoShowButton session={session} />
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-            )}
+                {samePlace && (
+                    <span className="flex items-center gap-2 text-[13px] leading-4.5 text-muted-foreground">
+                        <MapPin aria-hidden="true" className="size-3.5" />
+                        {client.upcoming.length === 1
+                            ? samePlace
+                            : `${samePlace} per tutte le sedute`}
+                    </span>
+                )}
 
-            <Button asChild variant="outline" className="self-start">
-                <Link href={showClient(client.id)}>Apri la scheda</Link>
-            </Button>
-        </aside>
+                <div className="mt-1 flex flex-wrap gap-2">
+                    <Button
+                        asChild
+                        className="h-11 rounded-[10px] px-4.5 font-semibold"
+                    >
+                        <Link href={showClient(client.id)}>Apri la scheda</Link>
+                    </Button>
+                    <Button
+                        asChild
+                        variant="outline"
+                        className="h-11 rounded-[10px] px-4"
+                    >
+                        <Link
+                            href={calendar(
+                                client.nextSession
+                                    ? {
+                                          query: {
+                                              giorno: romeParts(
+                                                  client.nextSession,
+                                              ).date,
+                                          },
+                                      }
+                                    : undefined,
+                            )}
+                        >
+                            <Calendar aria-hidden="true" />
+                            Vedi nel calendario
+                        </Link>
+                    </Button>
+                </div>
+            </div>
+        </section>
     );
 }

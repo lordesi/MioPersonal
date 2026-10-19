@@ -42,7 +42,7 @@ export default function BookingRequestCard({
     return (
         <article
             aria-label={`Prenotazione di ${request.clientName}`}
-            className="flex flex-col gap-2.5 rounded-xl border bg-card p-3.5 md:gap-3 md:p-4"
+            className="flex flex-col gap-2.5 rounded-[20px] border bg-card p-4 md:gap-3 md:p-6"
         >
             <div className="flex items-center gap-2.5 md:gap-3">
                 <UserAvatar

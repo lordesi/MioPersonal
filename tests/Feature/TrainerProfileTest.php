@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\City;
 use App\Models\Review;
 use App\Models\TrainerProfile;
 use App\Models\User;
@@ -29,8 +28,6 @@ class TrainerProfileTest extends TestCase
 
     public function test_trainer_profile_renders_with_its_data()
     {
-        $milano = City::where('slug', 'milano')->firstOrFail();
-
         $this->get(route('trainers.show', 'giulia-rossi'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
@@ -39,8 +36,6 @@ class TrainerProfileTest extends TestCase
                     ->where('name', 'Giulia Rossi')
                     ->where('city', ['slug' => 'milano', 'name' => 'Milano'])
                     ->whereType('cities', 'array')
-                    // The map is centered on the city, not on the trainer's address.
-                    ->where('areaCenter', fn ($center) => $center->all() === ['lat' => $milano->lat, 'lng' => $milano->lng])
                     // The first session on top, then "Seduta singola" with a price for each duration, and its online prices.
                     ->where('services.0.name', 'Prima seduta')
                     ->where('services.1.name', 'Seduta singola')

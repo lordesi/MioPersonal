@@ -17,11 +17,21 @@ export function ratingLabel(rating: number): string {
 type ReviewFormProps = {
     onCancel: () => void;
     onPublish: (review: { rating: number; text: string }) => void;
+    /** True while the review is being saved. */
+    processing?: boolean;
+    /** The server's answer when the review can't be saved. */
+    error?: string;
 };
 
 /** Star picker and text box to review a completed session. */
-export default function ReviewForm({ onCancel, onPublish }: ReviewFormProps) {
+export default function ReviewForm({
+    onCancel,
+    onPublish,
+    processing = false,
+    error,
+}: ReviewFormProps) {
     const textId = useId();
+    const errorId = useId();
     const [rating, setRating] = useState(0);
     const [text, setText] = useState('');
 
@@ -66,9 +76,17 @@ export default function ReviewForm({ onCancel, onPublish }: ReviewFormProps) {
                 <Textarea
                     id={textId}
                     rows={3}
+                    maxLength={1000}
                     value={text}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={error ? errorId : undefined}
                     onChange={(event) => setText(event.target.value)}
                 />
+                {error && (
+                    <p id={errorId} className="text-sm text-destructive">
+                        {error}
+                    </p>
+                )}
             </div>
 
             <div className="flex gap-2">
@@ -83,7 +101,7 @@ export default function ReviewForm({ onCancel, onPublish }: ReviewFormProps) {
                 <Button
                     type="button"
                     className="h-10 px-3.5"
-                    disabled={rating === 0}
+                    disabled={rating === 0 || text.trim() === '' || processing}
                     onClick={() => onPublish({ rating, text })}
                 >
                     Pubblica

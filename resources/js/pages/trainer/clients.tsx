@@ -1,24 +1,49 @@
 import { Head } from '@inertiajs/react';
 import { Search, Users } from 'lucide-react';
 import { useState } from 'react';
-import PageHeading from '@/components/trainer/area/page-heading';
-import ClientCard from '@/components/trainer/area/client-card';
 import EmptyState from '@/components/states/empty-state';
+import ClientCard from '@/components/trainer/area/client-card';
+import type { ClientFilter } from '@/components/trainer/area/client-filters';
+import ClientFilters, {
+    clientFilters,
+} from '@/components/trainer/area/client-filters';
 import ClientList from '@/components/trainer/area/client-list';
+import PageHeading from '@/components/trainer/area/page-heading';
+import { Button } from '@/components/ui/button';
+import { sessionsLabel } from '@/lib/calendar';
 import type { TrainerClient } from '@/types';
 
 type ClientsProps = {
     clients: TrainerClient[];
 };
 
+/** "Clienti" (docs/design/trainer-clienti.html): list on the left, card on the right. */
 export default function Clients({ clients }: ClientsProps) {
     const [query, setQuery] = useState('');
+    const [filter, setFilter] = useState<ClientFilter>('all');
     const [selectedId, setSelectedId] = useState(clients[0]?.id ?? null);
 
-    const visible = clients.filter((client) =>
-        client.name.toLowerCase().includes(query.trim().toLowerCase()),
+    const current =
+        clientFilters.find((item) => item.value === filter) ?? clientFilters[0];
+    const visible = clients
+        .filter(current.matches)
+        .filter((client) =>
+            client.name.toLowerCase().includes(query.trim().toLowerCase()),
+        );
+    // The card follows the list: the first visible client when the selected one is hidden.
+    const selected =
+        visible.find((client) => client.id === selectedId) ?? visible[0];
+
+    const active = clients.filter((client) => client.upcomingCount > 0).length;
+    const upcoming = clients.reduce(
+        (total, client) => total + client.upcomingCount,
+        0,
     );
-    const selected = clients.find((client) => client.id === selectedId);
+
+    const reset = () => {
+        setQuery('');
+        setFilter('all');
+    };
 
     return (
         <>
@@ -26,28 +51,28 @@ export default function Clients({ clients }: ClientsProps) {
 
             <PageHeading
                 title="Clienti"
-                description={
-                    <span className="hidden md:inline">
-                        {clients.length === 1
-                            ? '1 cliente attivo'
-                            : `${clients.length} clienti attivi`}
-                    </span>
-                }
+                description={`${active === 1 ? '1 cliente attivo' : `${active} clienti attivi`} · ${upcoming === 0 ? 'nessuna seduta in programma' : `${sessionsLabel(upcoming)} in programma`}`}
                 action={
-                    <label className="flex h-10 w-full items-center gap-2 rounded-lg border border-input bg-background px-3 focus-within:ring-[3px] focus-within:ring-ring/50 md:w-auto md:min-w-65">
-                        <Search
-                            aria-hidden="true"
-                            className="size-4 text-muted-foreground"
-                        />
-                        <span className="sr-only">Cerca un cliente</span>
-                        <input
-                            type="search"
-                            placeholder="Cerca per nome"
-                            value={query}
-                            onChange={(event) => setQuery(event.target.value)}
-                            className="min-w-0 flex-1 bg-transparent text-[15px] outline-none"
-                        />
-                    </label>
+                    clients.length > 0 && (
+                        <label className="flex h-11.5 w-full items-center gap-2.5 rounded-xl border bg-card px-3.5 focus-within:border-foreground focus-within:ring-[3px] focus-within:ring-foreground/10 md:w-80">
+                            <Search
+                                aria-hidden="true"
+                                className="size-4.5 text-muted-foreground"
+                            />
+                            <span className="sr-only">
+                                Cerca un cliente per nome
+                            </span>
+                            <input
+                                type="search"
+                                placeholder="Cerca per nome"
+                                value={query}
+                                onChange={(event) =>
+                                    setQuery(event.target.value)
+                                }
+                                className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none"
+                            />
+                        </label>
+                    )
                 }
             />
 
@@ -55,20 +80,47 @@ export default function Clients({ clients }: ClientsProps) {
                 <EmptyState
                     icon={Users}
                     title="Ancora nessun cliente"
-                    description="Chi prenota una seduta con te compare qui, con le sue sedute."
+                    description="I nuovi clienti compaiono qui dopo la prima richiesta che confermi."
                     bordered
+                    className="rounded-[20px] bg-card"
                 />
             ) : (
-                <div className="flex flex-wrap items-start gap-5">
-                    <ClientList
-                        clients={visible}
-                        selectedId={selectedId}
-                        onSelect={setSelectedId}
+                <>
+                    <ClientFilters
+                        clients={clients}
+                        value={filter}
+                        onChange={setFilter}
                     />
-                    {selected && (
-                        <ClientCard key={selected.id} client={selected} />
-                    )}
-                </div>
+                    <div className="flex flex-wrap items-start gap-5">
+                        <ClientList
+                            clients={visible}
+                            selectedId={selected?.id ?? null}
+                            onSelect={setSelectedId}
+                            empty={
+                                <div className="flex flex-col items-center gap-1.5 px-4 py-10 text-center">
+                                    <span className="text-[15px] leading-5.5 font-semibold">
+                                        Nessun cliente trovato
+                                    </span>
+                                    <span className="text-sm text-muted-foreground">
+                                        Prova con un altro nome o togli il
+                                        filtro.
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={reset}
+                                        className="mt-1.5 h-10 rounded-[10px]"
+                                    >
+                                        Mostra tutti
+                                    </Button>
+                                </div>
+                            }
+                        />
+                        {selected && (
+                            <ClientCard key={selected.id} client={selected} />
+                        )}
+                    </div>
+                </>
             )}
         </>
     );

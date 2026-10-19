@@ -235,6 +235,16 @@ class TrainerProfile extends Model
     }
 
     /**
+     * The packages the clients bought (or are buying) from this trainer.
+     *
+     * @return HasMany<ClientPackage, $this>
+     */
+    public function clientPackages(): HasMany
+    {
+        return $this->hasMany(ClientPackage::class);
+    }
+
+    /**
      * The clients' reviews, hidden ones included: use notHidden() for the public ones.
      *
      * @return HasMany<Review, $this>

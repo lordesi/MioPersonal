@@ -213,7 +213,7 @@ function ProfileForm({
 /** One step of the registration, as a card of the page. */
 function Card({ errors, children }: { errors: string[]; children: ReactNode }) {
     return (
-        <section className="flex flex-col gap-5 rounded-xl border bg-card p-4 md:p-5">
+        <section className="flex flex-col gap-5 rounded-[20px] border bg-card p-5 md:p-6">
             <StepErrors errors={errors} />
             {children}
         </section>

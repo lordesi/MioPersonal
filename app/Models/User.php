@@ -169,6 +169,16 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
+     * The packages of sessions bought (or being bought) as a client.
+     *
+     * @return HasMany<ClientPackage, $this>
+     */
+    public function clientPackages(): HasMany
+    {
+        return $this->hasMany(ClientPackage::class, 'client_id');
+    }
+
+    /**
      * The trainers saved with the heart, last saved first.
      *
      * @return BelongsToMany<TrainerProfile, $this>

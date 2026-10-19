@@ -15,24 +15,23 @@ type TrainerLayoutProps = {
     /** Set from the page: `Page.layout = { section: 'calendar' }`. */
     section?: TrainerSection;
     /**
-     * Bookings waiting for the trainer's answer (badge on "Oggi").
+     * Bookings waiting for the trainer's answer (badge on "Richieste").
      * Defaults to the `trainerArea` prop every trainer page receives.
      */
     pendingCount?: number;
-    notificationCount?: number;
-    notificationsEnabled?: boolean;
     publicProfileHref?: string;
     /** Defaults to the logged-in user's name. */
     userName?: string;
 };
 
-/** Trainer area: header, side menu on desktop, bottom tabs on mobile. */
+/**
+ * Trainer area. From md up: black side menu and the page on the right
+ * (at most 1120 px). On mobile: header on top, tabs at the bottom.
+ */
 export default function TrainerLayout({
     children,
     section,
     pendingCount,
-    notificationCount,
-    notificationsEnabled = true,
     publicProfileHref,
     userName,
 }: TrainerLayoutProps) {
@@ -40,24 +39,26 @@ export default function TrainerLayout({
         .props;
     const pending = pendingCount ?? trainerArea?.pendingCount ?? 0;
     const items = trainerNavItems(section, pending);
+    const name = userName ?? auth?.user?.name ?? '';
+    const profileHref =
+        publicProfileHref ?? trainerArea?.publicProfileHref ?? undefined;
 
     return (
-        <div className="flex min-h-screen flex-col bg-secondary">
-            <TrainerHeader
-                userName={userName ?? auth?.user?.name ?? ''}
-                notificationCount={notificationCount ?? pending}
-                publicProfileHref={
-                    publicProfileHref ??
-                    trainerArea?.publicProfileHref ??
-                    undefined
-                }
+        <div className="flex min-h-screen bg-secondary">
+            <TrainerSidebar
+                items={items}
+                userName={name}
+                publicProfileHref={profileHref}
             />
-            <div className="mx-auto flex w-full max-w-340 flex-1 items-start gap-7 px-4 pt-5 pb-7 md:px-8 md:pt-7 md:pb-16">
-                <TrainerSidebar
-                    items={items}
-                    notificationsEnabled={notificationsEnabled}
-                />
-                <main className="flex min-w-0 flex-1 flex-col gap-6">
+            <div className="flex min-w-0 flex-1 flex-col">
+                <div className="md:hidden">
+                    <TrainerHeader
+                        userName={name}
+                        notificationCount={pending}
+                        publicProfileHref={profileHref}
+                    />
+                </div>
+                <main className="mx-auto flex w-full max-w-280 flex-1 flex-col gap-6 px-4 pt-5 pb-8 md:px-10 md:pt-8 md:pb-12">
                     {trainerArea?.profile && (
                         <ProfileStatusNotice
                             {...trainerArea.profile}
@@ -66,8 +67,8 @@ export default function TrainerLayout({
                     )}
                     {children}
                 </main>
+                <TrainerTabBar items={items} pendingCount={pending} />
             </div>
-            <TrainerTabBar items={items} />
         </div>
     );
 }

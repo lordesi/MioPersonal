@@ -6,6 +6,7 @@ use App\Actions\Bookings\CreateBooking;
 use App\Enums\BookingActor;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
+use App\Models\ClientPackage;
 use App\Models\Service;
 use App\Models\TrainerProfile;
 use App\Models\User;
@@ -41,6 +42,35 @@ class BookingController extends Controller
 
         abort_if($profile === null || ! $profile->isApproved(), 404);
 
+        /** @var User $client */
+        $client = $request->user();
+
+        // "Il tuo pacchetto": a session of a package bought from this trainer.
+        if ($request->filled('client_package_id')) {
+            $request->validate([
+                'client_package_id' => [
+                    'integer',
+                    Rule::exists(ClientPackage::class, 'id')->where('client_id', $client->id)->where('trainer_profile_id', $profile->id),
+                ],
+                'start' => ['required', 'date'],
+            ], [
+                'client_package_id.*' => 'Questo pacchetto non è tuo o non è di questo trainer.',
+                'start.*' => 'Scegli giorno e orario.',
+            ]);
+
+            $package = ClientPackage::findOrFail($request->integer('client_package_id'))
+                // The profile already loaded, with its working hours.
+                ->setRelation('trainerProfile', $profile);
+
+            $booking = $createBooking->fromPackage(
+                $client,
+                $package,
+                CarbonImmutable::parse($request->string('start')->value()),
+            );
+
+            return to_route('client.bookings.sent', $booking);
+        }
+
         $request->validate([
             'service_id' => [
                 'required', 'integer',
@@ -53,9 +83,6 @@ class BookingController extends Controller
             'start.*' => 'Scegli giorno e orario.',
             'minutes.*' => 'Scegli la durata della seduta.',
         ]);
-
-        /** @var User $client */
-        $client = $request->user();
 
         $booking = $createBooking->handle(
             $client,

@@ -8,9 +8,9 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 
 /**
- * Helpers for the placeholder data of the pages that don't read the database
- * yet (calendar, clients and reviews of the trainer, admin), and the data of
- * the trainer layout. TODO: delete once every page reads from the database.
+ * Date helpers and the data of the trainer layout, for the trainer area; the
+ * admin pages still use them for their placeholder data.
+ * TODO: rename once the admin pages read from the database.
  */
 trait BuildsPlaceholderData
 {
@@ -36,7 +36,7 @@ trait BuildsPlaceholderData
      * link to the public profile and its status, for the notice at the top
      * ("In revisione", "Modifiche richieste"…).
      *
-     * pendingCount: the bookings waiting for an answer, for the badge of "Oggi".
+     * pendingCount: the bookings waiting for an answer, for the badge of "Richieste".
      *
      * @return array{pendingCount: int, publicProfileHref: string|null, profile: array{status: string, message: string|null}}
      */

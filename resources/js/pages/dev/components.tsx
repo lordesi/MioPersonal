@@ -3,13 +3,11 @@ import { CircleAlert, Clock, SearchX } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
-import AppearanceToggleTab from '@/components/appearance-tabs';
 import BookingStatusBadge from '@/components/booking/booking-status-badge';
 import BookingSummary from '@/components/booking/booking-summary';
 import BrandLogo from '@/components/layout/brand-logo';
-import ClientHeader, {
-    clientTabItems,
-} from '@/components/layout/client-header';
+import ClientHeader from '@/components/layout/client-header';
+import { clientNavItems } from '@/components/layout/client-nav';
 import MinimalHeader from '@/components/layout/minimal-header';
 import MobileTabBar from '@/components/layout/mobile-tab-bar';
 import PublicFooter from '@/components/layout/public-footer';
@@ -157,10 +155,9 @@ export default function DevComponents() {
                         </h1>
                         <p className="text-muted-foreground">
                             Pagina visibile solo in locale. Confronta ogni
-                            blocco con le schermate in docs/design, in tema
-                            chiaro e scuro e restringendo la finestra.
+                            blocco con le schermate in docs/design, anche
+                            restringendo la finestra.
                         </p>
-                        <AppearanceToggleTab className="self-start" />
                         <nav
                             aria-label="Anteprime dei layout"
                             className="flex flex-wrap gap-2"
@@ -243,14 +240,11 @@ export default function DevComponents() {
                     </Showcase>
 
                     <Showcase
-                        title="Header area cliente"
-                        screens="Le mie prenotazioni"
+                        title="Header area cliente (mobile)"
+                        screens="Le mie prenotazioni mobile"
                         flush
                     >
-                        <ClientHeader
-                            userName="Luca Moretti"
-                            section="bookings"
-                        />
+                        <ClientHeader userName="Luca Moretti" />
                     </Showcase>
 
                     <Showcase
@@ -266,7 +260,9 @@ export default function DevComponents() {
                         />
                         <MobileTabBar
                             label="Navigazione principale"
-                            items={clientTabItems('bookings')}
+                            items={clientNavItems('bookings').filter(
+                                (item) => !item.desktopOnly,
+                            )}
                             className="static max-w-sm rounded-lg border md:grid"
                         />
                         <p className="text-sm text-muted-foreground">

@@ -14,9 +14,10 @@ use App\Http\Controllers\Admin\AdminVerificationController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BookingSentController;
-use App\Http\Controllers\ClientBookingsController;
+use App\Http\Controllers\ClientCalendarController;
 use App\Http\Controllers\ClientFavoritesController;
 use App\Http\Controllers\ClientHomeController;
+use App\Http\Controllers\ClientReviewController;
 use App\Http\Controllers\CompleteProfileController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\FavoriteController;
@@ -34,6 +35,7 @@ use App\Http\Controllers\TrainerProfileController;
 use App\Http\Controllers\TrainerProfileEditController;
 use App\Http\Controllers\TrainerProfileSettingsController;
 use App\Http\Controllers\TrainerRegistrationController;
+use App\Http\Controllers\TrainerRequestsController;
 use App\Http\Controllers\TrainerReviewsController;
 use App\Http\Controllers\TrainerSearchController;
 use App\Http\Controllers\TrainerServicesController;
@@ -79,6 +81,7 @@ Route::middleware(['auth', 'role:client'])->group(function () {
         Route::get('completa-profilo', 'show')->name('client.complete-profile');
         Route::put('completa-profilo', 'update')->name('client.complete-profile.update');
         Route::post('completa-profilo/foto', 'updatePhoto')->name('client.complete-profile.photo');
+        Route::delete('completa-profilo/foto', 'destroyPhoto')->name('client.complete-profile.photo.destroy');
     });
 
     // Booking right after sign-up is allowed: "Prenotazione inviata" asks to verify the email.
@@ -91,6 +94,10 @@ Route::middleware(['auth', 'role:client'])->group(function () {
     Route::patch('prenotazioni/{booking}/annulla', [BookingController::class, 'cancel'])
         ->whereNumber('booking')
         ->name('client.bookings.cancel');
+    // "Aggiungi al calendario": the .ics file of a confirmed session.
+    Route::get('prenotazioni/{booking}/calendario', ClientCalendarController::class)
+        ->whereNumber('booking')
+        ->name('client.bookings.calendar');
 
     // The heart on search cards and profiles.
     Route::post('preferiti/{slug}', [FavoriteController::class, 'store'])->name('client.favorites.store');
@@ -108,10 +115,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // A wrong role is sent to its own area (see EnsureUserHasRole).
     Route::middleware('role:client')->group(function () {
-        // The first page after the login.
+        // "Le mie prenotazioni", the first page after the login.
         Route::get('area-cliente', ClientHomeController::class)->name('client.home');
-        Route::get('prenotazioni', ClientBookingsController::class)->name('client.bookings');
+        // The old address of "Le mie prenotazioni", still in the links already sent.
+        Route::get('prenotazioni', fn () => to_route('client.home'))->name('client.bookings');
+        // Public on the trainer's profile: only with a verified email.
+        Route::post('prenotazioni/{booking}/recensione', [ClientReviewController::class, 'store'])
+            ->whereNumber('booking')
+            ->middleware('throttle:10,1')
+            ->name('client.bookings.review');
         Route::get('preferiti', ClientFavoritesController::class)->name('client.favorites');
+        // "Modifica il mio profilo": the answers of "Completa il tuo profilo", inside the client area.
+        Route::controller(CompleteProfileController::class)->group(function () {
+            Route::get('profilo', 'edit')->name('client.profile');
+            Route::put('profilo', 'update')->name('client.profile.update');
+        });
         Route::get('impostazioni', [AccountSettingsController::class, 'show'])->name('account.settings');
     });
 
@@ -123,14 +141,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('role:trainer')->prefix('area-trainer')->name('trainer.')->group(function () {
         Route::get('/', TrainerDashboardController::class)->name('today');
-        // "Vedi tutte" of the last 7 days in "Le tue prenotazioni".
+        // "Vedi tutte" of the last 7 days in "Panoramica".
         Route::get('sedute-passate', TrainerPastSessionsController::class)->name('past-sessions');
-        // The answer to a booking request, from "Oggi".
+        Route::get('richieste', TrainerRequestsController::class)->name('requests');
+        // The answer to a booking request, from "Richieste".
         Route::controller(TrainerBookingRequestController::class)->prefix('richieste/{booking}')->whereNumber('booking')->group(function () {
             Route::post('accetta', 'accept')->name('requests.accept');
             Route::post('rifiuta', 'decline')->name('requests.decline');
         });
-        // "Saltata" on a finished session, from "Oggi" and "Clienti" (within 7 days).
+        // "Saltata" on a finished session, from "Panoramica" and "Sedute passate" (within 7 days).
         Route::controller(TrainerNoShowController::class)->prefix('sedute/{booking}/saltata')->whereNumber('booking')->group(function () {
             Route::post('/', 'store')->name('sessions.no-show');
             Route::delete('/', 'destroy')->name('sessions.no-show.destroy');
@@ -158,7 +177,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/', 'store')->name('store');
             Route::delete('{photo}', 'destroy')->whereNumber('photo')->name('destroy');
         });
-        Route::get('recensioni', TrainerReviewsController::class)->name('reviews');
+        Route::controller(TrainerReviewsController::class)->group(function () {
+            Route::get('recensioni', 'show')->name('reviews');
+            // The public reply under a review.
+            Route::post('recensioni/{review}/risposta', 'reply')->whereNumber('review')->name('reviews.reply');
+        });
         Route::get('impostazioni', TrainerSettingsController::class)->name('settings');
         Route::controller(TrainerProfileSettingsController::class)->group(function () {
             Route::patch('impostazioni/visibilita', 'updateVisibility')->name('visibility.update');

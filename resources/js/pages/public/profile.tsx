@@ -12,7 +12,6 @@ import ServicePicker from '@/components/profile/service-picker';
 import SimilarTrainers from '@/components/profile/similar-trainers';
 import SlotPicker from '@/components/profile/slot-picker';
 import TrainingPlaces from '@/components/profile/training-places';
-import ZoneMap from '@/components/profile/zone-map';
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -156,7 +155,10 @@ export default function Profile({
 
         router.post(
             book.url(trainer.slug),
-            { service_id: serviceId, start, minutes },
+            // "Il tuo pacchetto": the package says service and duration.
+            service.packageId !== null
+                ? { client_package_id: service.packageId, start }
+                : { service_id: serviceId, start, minutes },
             {
                 preserveScroll: true,
                 onStart: () => setBooking(true),
@@ -164,6 +166,7 @@ export default function Profile({
                 onError: (errors) => {
                     toast.error(
                         errors.start ??
+                            errors.client_package_id ??
                             errors.minutes ??
                             errors.service_id ??
                             'Riprova tra poco.',
@@ -338,16 +341,6 @@ export default function Profile({
                                 <div className="order-5">
                                     <Certifications
                                         certifications={trainer.certifications}
-                                    />
-                                </div>
-                            )}
-                            {/* Online only: there is no area to show. */}
-                            {trainer.online !== 'only' && (
-                                <div className="order-6">
-                                    <ZoneMap
-                                        areaLabel={trainer.areaLabel}
-                                        center={trainer.areaCenter}
-                                        radius={trainer.areaRadius}
                                     />
                                 </div>
                             )}

@@ -5,7 +5,7 @@ import SectionLabel from '@/components/shared/section-label';
 import { Button } from '@/components/ui/button';
 import { searchUrl } from '@/lib/search';
 import { home } from '@/routes';
-import { bookings } from '@/routes/client';
+import { home as clientHome } from '@/routes/client';
 import { show as contactPage } from '@/routes/contact';
 
 const usefulLinks = [
@@ -22,7 +22,7 @@ const usefulLinks = [
     {
         title: 'Le mie prenotazioni',
         hint: 'Se avevi un link a una prenotazione',
-        href: bookings.url(),
+        href: clientHome.url(),
     },
     {
         title: 'Centro assistenza',

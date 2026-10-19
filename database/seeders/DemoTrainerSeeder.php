@@ -3,12 +3,16 @@
 namespace Database\Seeders;
 
 use App\Actions\Trainer\SaveTrainerProfile;
+use App\Enums\BookingStatus;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\TrainerReviewDecision;
 use App\Enums\UserRole;
+use App\Models\Booking;
 use App\Models\Service;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\TrainerSlots;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use Random\Engine\Mt19937;
@@ -21,7 +25,8 @@ use Random\Randomizer;
  * Emails are …@demo.miopersonal.test, the password is "password".
  *
  * The approved trainers get example reviews, written by 12 demo clients and
- * not linked to a booking, with the average of the search design.
+ * not linked to a booking, with the average of the search design. Giulia
+ * Rossi also gets bookings and a package, for her area trainer.
  */
 class DemoTrainerSeeder extends Seeder
 {
@@ -63,6 +68,7 @@ class DemoTrainerSeeder extends Seeder
         }
 
         $this->giuliaServices();
+        $this->giuliaBookings($clients);
 
         // name, city, disciplines, status, days since sent, bio
         $waiting = [
@@ -307,5 +313,80 @@ class DemoTrainerSeeder extends Seeder
 
         // "da 45 €" on the cards, as in the design (the evaluation at 30 € is a one-off).
         $profile->forceFill(['price_from_cents' => 4500])->save();
+    }
+
+    /**
+     * Giulia Rossi's area trainer, as in docs/design: the next sessions, a
+     * request to answer, a package in progress, the last 7 days and a client
+     * who hasn't booked for a while. Replaced at every run.
+     *
+     * @param  list<User>  $clients
+     */
+    private function giuliaBookings(array $clients): void
+    {
+        $profile = User::where('email', 'giulia-rossi@demo.miopersonal.test')->firstOrFail()->trainerProfile;
+
+        if ($profile === null) {
+            return;
+        }
+
+        $profile->bookings()->delete();
+        $profile->clientPackages()->delete();
+
+        $today = CarbonImmutable::now('Europe/Rome')->startOfDay();
+        $single = $profile->services()->where('name', 'Seduta singola')->where('minutes', 60)->where('online_only', false)->firstOrFail();
+        $package = $profile->services()->where('kind', 'package')->firstOrFail();
+        [$anna, $paolo, $martina, $luca] = $clients;
+
+        $book = function (User $client, CarbonImmutable $start, array $attributes = []) use ($profile, $single): Booking {
+            $end = $start->addHour();
+
+            return $profile->bookings()->forceCreate([
+                'client_id' => $client->id,
+                'service_id' => $single->id,
+                'starts_at' => $start->utc(),
+                'ends_at' => $end->utc(),
+                'blocked_until' => $end->utc(),
+                'service_name' => $single->name,
+                'price_cents' => $single->price_cents,
+                'place_label' => 'Da concordare con il trainer',
+                'status' => BookingStatus::Confirmed,
+                'confirmed_at' => now(),
+                ...$attributes,
+            ]);
+        };
+
+        // Anna: "Pacchetto 10 sedute", one done, two booked.
+        $annaPackage = $profile->clientPackages()->create([
+            'client_id' => $anna->id,
+            'service_id' => $package->id,
+            'name' => $package->name,
+            'price_cents' => $package->price_cents,
+            'sessions_total' => 10,
+            'minutes' => 60,
+            'bought_at' => now()->subDays(5),
+        ]);
+        $inPackage = ['client_package_id' => $annaPackage->id, 'service_name' => $package->name, 'service_id' => $package->id];
+        $book($anna, $today->subDays(3)->setTime(18, 0), [...$inPackage, 'price_cents' => $package->price_cents]);
+        $book($anna, $today->addDay()->setTime(14, 0), [...$inPackage, 'price_cents' => 0]);
+        $book($anna, $today->addDays(3)->setTime(18, 0), [...$inPackage, 'price_cents' => 0]);
+
+        // Paolo: single sessions, one marked "Saltata".
+        $book($paolo, $today->addDay()->setTime(13, 0));
+        $book($paolo, $today->subDays(2)->setTime(19, 0));
+        $book($paolo, $today->subDays(5)->setTime(19, 0), ['no_show_at' => now()->subDays(5)]);
+
+        // Martina: a request waiting for the answer.
+        $book($martina, $today->addDays(2)->setTime(18, 0), [
+            'status' => BookingStatus::Pending,
+            'confirmed_at' => null,
+            'expires_at' => now()->addHours(20),
+            'client_note' => 'Vorrei lavorare sulla postura, lavoro molte ore seduta.',
+        ]);
+
+        // Luca: nothing booked for three weeks ("Inattivi").
+        $book($luca, $today->subDays(20)->setTime(18, 0));
+
+        TrainerSlots::refresh($profile->load('workingHours'));
     }
 }

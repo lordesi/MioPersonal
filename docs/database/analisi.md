@@ -150,7 +150,8 @@ Tabelle collegate:
 - 👁 Profilo, prenotazione, ricerca (prezzo minimo).
 
 **`client_packages`**: un pacchetto comprato. Campi: `client_id`, `trainer_profile_id`,
-`service_id`, `name` e `price_cents` (copie), `sessions_total`, `valid_until`.
+`service_id`, `name`, `price_cents` e `minutes` (copie), `sessions_total`, `bought_at` (la prima
+seduta è confermata). Ogni seduta del pacchetto ha `bookings.client_package_id`.
 
 - Le sedute usate **si contano** dalle prenotazioni collegate: niente contatore da tenere
   allineato.
@@ -412,15 +413,23 @@ Ogni passo funziona da solo, ha i suoi test e sostituisce i dati d'esempio di al
     - ✅ pulsante Prenota (`App\Actions\Bookings\CreateBooking`), Prenotazione inviata, Le mie
       prenotazioni, annullamento, scadenza (`bookings:expire`, ogni minuto), Conferma/Rifiuta in
       Oggi; gli slot liberi tolgono le prenotazioni attive;
-    - da fare: `client_packages`, Calendario, Clienti, Admin · Prenotazioni.
+    - ✅ `client_packages` (`2026_10_18_000000_create_client_packages_table`) e
+      `bookings.client_package_id`: prenotare un pacchetto lo crea con la prima seduta, è comprato
+      (`bought_at`) quando quella seduta è confermata; «Il tuo pacchetto» nel profilo prenota le
+      altre a 0 €. Niente `valid_until`: i pacchetti non scadono;
+    - ✅ area trainer: Panoramica, Richieste, Calendario, Clienti leggono dal database;
+    - da fare: Admin · Prenotazioni.
 6. **Dopo la seduta** (in parte):
     - ✅ `favorites` (`2026_10_15_000001_create_favorites_table`): il cuore e la pagina Preferiti;
     - ✅ `reviews` (`2026_10_17_000001_create_reviews_table`), per ora solo in lettura: il profilo
       pubblico mostra le ultime 3, le barre per stella (che filtrano) e tutte le recensioni
       ordinabili. `TrainerProfile::refreshRating()` ricalcola `rating_count` / `rating_sum`. Le
       recensioni d'esempio le crea `DemoTrainerSeeder`, senza prenotazione (`booking_id` vuoto);
-    - da fare: «Svolta / Assente» del trainer, il cliente che scrive la recensione, la risposta
-      del trainer, Admin · Recensioni, `trainer_client_notes`.
+    - ✅ il cliente scrive la recensione da «Le mie prenotazioni» (`ClientReviewController`): una per
+      seduta svolta e non segnata «Saltata»; numeri di telefono, link ed email finiscono in
+      `flag_reason` per il team;
+    - da fare: «Svolta / Assente» del trainer, la risposta del trainer, Admin · Recensioni,
+      `trainer_client_notes`.
 7. **Il resto**:
     - tabelle `client_preferences`, `contact_messages`, `contact_message_replies`,
       `admin_activity_log`, `settings`, `trainer_profile_views`, `notifications`,

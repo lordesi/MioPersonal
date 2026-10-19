@@ -1,5 +1,9 @@
 import { ArrowUpDown, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
+import ActiveFilters from '@/components/search/active-filters';
+import type { ActiveChip } from '@/components/search/active-filters';
 import FilterSelect from '@/components/search/filter-select';
+import OptionsMenu from '@/components/search/options-menu';
+import SearchBar from '@/components/search/search-bar';
 import ChoiceChips, { chipClassName } from '@/components/shared/choice-chips';
 import SegmentedControl from '@/components/shared/segmented-control';
 import { Button } from '@/components/ui/button';
@@ -28,7 +32,8 @@ type Option<Key extends keyof ActiveFilters> = {
     label: string;
 };
 
-const availabilityOptions: Option<'disponibilita'>[] = [
+/** "Quando": also used by the home search bar. */
+export const availabilityOptions: Option<'disponibilita'>[] = [
     { value: 'oggi', label: 'Oggi' },
     { value: '3-giorni', label: 'Prossimi 3 giorni' },
     { value: 'settimana', label: 'Questa settimana' },
@@ -45,10 +50,6 @@ const ratingOptions: Option<'valutazione'>[] = [
     { value: '4-5', label: '4,5 e più' },
 ];
 
-const homeOptions: Option<'domicilio'>[] = [
-    { value: '1', label: 'Viene a domicilio' },
-];
-
 const sortOptions: Option<'ordina'>[] = [
     { value: 'slot', label: 'Primo slot libero' },
     { value: 'prezzo', label: 'Prezzo più basso' },
@@ -61,20 +62,16 @@ const modeOptions = [
     { value: 'online', label: 'Online' },
 ] as const;
 
-/** The value after `current` in the list, back to "not set" after the last one. */
-function cycle<T>(options: { value: T }[], current: T | null): T | null {
-    const values = [null, ...options.map((option) => option.value)];
-
-    return values[(values.indexOf(current) + 1) % values.length];
-}
-
 function labelOf<T>(
     options: { value: T; label: string }[],
     value: T | null,
-    noneLabel: string,
-): string {
-    return options.find((option) => option.value === value)?.label ?? noneLabel;
+): string | undefined {
+    return options.find((option) => option.value === value)?.label;
 }
+
+/** Pill look of the "Prezzo" menu; black while a price is chosen. */
+const pillClassName =
+    'inline-flex h-9 shrink-0 items-center rounded-full border text-sm font-medium whitespace-nowrap md:h-10';
 
 type FilterBarProps = {
     filters: ActiveFilters;
@@ -82,9 +79,8 @@ type FilterBarProps = {
     cities: SearchOption[];
     /** Slug of the city in the URL, null = all of Italy. */
     city: string | null;
-    onChange: (changes: SearchFilters) => void;
-    /** The city is in the URL path, not in the filters. */
-    onCityChange: (city: string | null) => void;
+    /** `city` left out = same city; the city is in the URL path, not in the filters. */
+    onChange: (changes: SearchFilters, city?: string | null) => void;
     onReset: () => void;
 };
 
@@ -94,11 +90,42 @@ export default function FilterBar({
     cities,
     city,
     onChange,
-    onCityChange,
     onReset,
 }: FilterBarProps) {
-    const hasFilters = Object.entries(filters).some(
-        ([name, value]) => name !== 'ordina' && value !== null,
+    const sortLabel = labelOf(sortOptions, filters.ordina) ?? 'Più pertinenti';
+    const priceLabel = labelOf(priceOptions, filters.prezzo);
+
+    /** One chip per filter in "Filtri attivi", in the order of the design. */
+    const chips: ActiveChip[] = [];
+    const addChip = (
+        name: string,
+        label: string | undefined,
+        onClear: () => void,
+    ) => {
+        if (label) {
+            chips.push({ name, label, onClear });
+        }
+    };
+
+    addChip('disciplina', labelOf(disciplines, filters.disciplina), () =>
+        onChange({ disciplina: null }),
+    );
+    addChip('citta', labelOf(cities, city), () => onChange({}, null));
+    addChip('prezzo', priceLabel, () => onChange({ prezzo: null }));
+    addChip(
+        'disponibilita',
+        labelOf(availabilityOptions, filters.disponibilita),
+        () => onChange({ disponibilita: null }),
+    );
+    addChip('valutazione', labelOf(ratingOptions, filters.valutazione), () =>
+        onChange({ valutazione: null }),
+    );
+    // No "Luogo" filter on screen for now: shown only if an old link has it.
+    addChip('domicilio', filters.domicilio ? 'A domicilio' : undefined, () =>
+        onChange({ domicilio: null }),
+    );
+    addChip('modalita', labelOf([...modeOptions], filters.modalita), () =>
+        onChange({ modalita: null }),
     );
 
     const mode = (
@@ -108,106 +135,134 @@ export default function FilterBar({
             onChange={(value) =>
                 onChange({ modalita: value === 'tutte' ? null : value })
             }
-            aria-labelledby="filtro-modalita"
-            className="md:h-9"
+            aria-label="Modalità"
+            // "In presenza" on one line; on desktop each option as wide as its text.
+            className="*:whitespace-nowrap md:*:flex-none"
         />
     );
 
-    /** The menus shared by the desktop row and the mobile "Filtri" panel. */
-    const fields = (prefix: string, inRow: boolean) => (
-        <>
-            <FilterSelect
-                id={`${prefix}-disciplina`}
-                label="Disciplina"
-                noneLabel="Tutte le discipline"
-                options={disciplines}
-                value={filters.disciplina}
-                onChange={(disciplina) => onChange({ disciplina })}
-                className={cn(inRow && 'max-w-65 flex-[1_1_200px]')}
-            />
-            <FilterSelect
-                id={`${prefix}-citta`}
-                label="Città"
-                noneLabel="Tutta Italia"
-                options={cities}
-                value={city}
-                onChange={onCityChange}
-                className={cn(inRow && 'max-w-65 flex-[1_1_200px]')}
-            />
-            <FilterSelect
-                id={`${prefix}-disponibilita`}
-                label="Disponibilità"
-                noneLabel="Qualsiasi giorno"
-                options={availabilityOptions}
-                value={filters.disponibilita}
-                onChange={(disponibilita) => onChange({ disponibilita })}
-                className={cn(inRow && 'max-w-52.5 flex-[1_1_160px]')}
-            />
-            <FilterSelect
-                id={`${prefix}-prezzo`}
+    const price = (
+        <div
+            className={cn(
+                pillClassName,
+                priceLabel
+                    ? 'border-primary bg-primary pr-1 pl-3.5 text-primary-foreground'
+                    : 'border-input bg-background px-3.5 text-foreground hover:bg-accent',
+            )}
+        >
+            <OptionsMenu
                 label="Prezzo a seduta"
                 noneLabel="Qualsiasi prezzo"
                 options={priceOptions}
                 value={filters.prezzo}
                 onChange={(prezzo) => onChange({ prezzo })}
-                className={cn(inRow && 'max-w-52.5 flex-[1_1_160px]')}
+                className="min-w-57.5"
+                trigger={
+                    <button
+                        type="button"
+                        aria-label={`Prezzo a seduta: ${priceLabel ?? 'qualsiasi'}`}
+                        className="inline-flex h-full items-center gap-1.5 rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    >
+                        {priceLabel ?? (
+                            <>
+                                Prezzo
+                                <ChevronDown
+                                    aria-hidden="true"
+                                    className="size-4"
+                                />
+                            </>
+                        )}
+                    </button>
+                }
             />
-            <FilterSelect
-                id={`${prefix}-valutazione`}
-                label="Valutazione"
-                noneLabel="Qualsiasi"
-                options={ratingOptions}
-                value={filters.valutazione}
-                onChange={(valutazione) => onChange({ valutazione })}
-                className={cn(inRow && 'max-w-52.5 flex-[1_1_130px]')}
-            />
-            <FilterSelect
-                id={`${prefix}-luogo`}
-                label="Luogo"
-                noneLabel="Qualsiasi luogo"
-                options={homeOptions}
-                value={filters.domicilio}
-                onChange={(domicilio) => onChange({ domicilio })}
-                className={cn(inRow && 'max-w-52.5 flex-[1_1_160px]')}
-            />
-        </>
+            {priceLabel && (
+                <button
+                    type="button"
+                    onClick={() => onChange({ prezzo: null })}
+                    aria-label="Rimuovi filtro Prezzo"
+                    className="ml-0.5 flex size-7 items-center justify-center rounded-full outline-none hover:bg-primary-foreground/15 focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                >
+                    <X
+                        aria-hidden="true"
+                        strokeWidth={2.5}
+                        className="size-3.5"
+                    />
+                </button>
+            )}
+        </div>
     );
 
-    const priceLabel = labelOf(
-        priceOptions,
-        filters.prezzo,
-        'Prezzo: qualsiasi',
+    const topRating = (
+        <Toggle
+            pressed={filters.valutazione !== null}
+            onPressedChange={(on) =>
+                onChange({ valutazione: on ? '4-5' : null })
+            }
+            className={cn(chipClassName, 'shrink-0 text-[13px]')}
+        >
+            ★ 4,5 e più
+        </Toggle>
     );
-    const sortLabel = labelOf(sortOptions, filters.ordina, 'Più pertinenti');
 
     return (
         <div
             role="search"
             aria-label="Filtri"
-            className="flex flex-col gap-3 border-b pb-4 md:pb-6"
+            className="flex flex-col gap-4 border-b pb-4 md:pb-6"
         >
-            {/* Desktop: one row of menus. */}
-            <div className="hidden flex-wrap items-end gap-3 md:flex">
-                {fields('filtro', true)}
-                <div className="flex shrink-0 flex-col gap-1.5">
-                    <span
-                        id="filtro-modalita"
-                        className="text-sm leading-none font-medium"
-                    >
-                        Modalità
-                    </span>
-                    {mode}
-                </div>
-                <FilterSelect
-                    id="filtro-ordina"
-                    label="Ordina per"
-                    noneLabel="Più pertinenti"
-                    options={sortOptions}
-                    value={filters.ordina}
-                    onChange={(ordina) => onChange({ ordina })}
-                    highlight={false}
-                    className="ml-auto min-w-45"
+            {/* Desktop: "Cosa · Dove · Quando", then the other filters in one row. */}
+            <div className="hidden flex-col gap-4 md:flex">
+                <SearchBar
+                    // A new key when the applied filters change: the pill starts again from them.
+                    key={`${filters.disciplina}|${city}|${filters.disponibilita}`}
+                    disciplines={disciplines}
+                    cities={cities}
+                    availabilityOptions={availabilityOptions}
+                    applied={{
+                        disciplina: filters.disciplina,
+                        city,
+                        disponibilita: filters.disponibilita,
+                    }}
+                    onSearch={({ disciplina, disponibilita, city: nextCity }) =>
+                        onChange({ disciplina, disponibilita }, nextCity)
+                    }
                 />
+                <div className="flex flex-wrap items-center gap-2">
+                    {mode}
+                    <span
+                        aria-hidden="true"
+                        className="mx-1 h-7 w-px bg-border"
+                    />
+                    {price}
+                    {topRating}
+                    <div className="ml-auto">
+                        <OptionsMenu
+                            label="Ordina per"
+                            noneLabel="Più pertinenti"
+                            options={sortOptions}
+                            value={filters.ordina}
+                            onChange={(ordina) => onChange({ ordina })}
+                            align="end"
+                            className="min-w-55"
+                            trigger={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    aria-label={`Ordina per: ${sortLabel}`}
+                                    className="h-10 gap-1.5 px-2.5 font-normal"
+                                >
+                                    <span className="text-muted-foreground">
+                                        Ordina:
+                                    </span>
+                                    <strong className="font-semibold">
+                                        {sortLabel}
+                                    </strong>
+                                    <ChevronDown aria-hidden="true" />
+                                </Button>
+                            }
+                        />
+                    </div>
+                </div>
             </div>
 
             {/* Mobile: chips that scroll sideways, every menu in the "Filtri" panel. */}
@@ -234,7 +289,54 @@ export default function FilterBar({
                                 <SheetTitle>Filtri</SheetTitle>
                             </SheetHeader>
                             <div className="flex flex-col gap-4 px-4 pb-6">
-                                {fields('pannello', false)}
+                                <FilterSelect
+                                    id="pannello-disciplina"
+                                    label="Disciplina"
+                                    noneLabel="Tutte le discipline"
+                                    options={disciplines}
+                                    value={filters.disciplina}
+                                    onChange={(disciplina) =>
+                                        onChange({ disciplina })
+                                    }
+                                />
+                                <FilterSelect
+                                    id="pannello-citta"
+                                    label="Città"
+                                    noneLabel="Tutta Italia"
+                                    options={cities}
+                                    value={city}
+                                    onChange={(nextCity) =>
+                                        onChange({}, nextCity)
+                                    }
+                                />
+                                <FilterSelect
+                                    id="pannello-disponibilita"
+                                    label="Disponibilità"
+                                    noneLabel="Qualsiasi giorno"
+                                    options={availabilityOptions}
+                                    value={filters.disponibilita}
+                                    onChange={(disponibilita) =>
+                                        onChange({ disponibilita })
+                                    }
+                                />
+                                <FilterSelect
+                                    id="pannello-prezzo"
+                                    label="Prezzo a seduta"
+                                    noneLabel="Qualsiasi prezzo"
+                                    options={priceOptions}
+                                    value={filters.prezzo}
+                                    onChange={(prezzo) => onChange({ prezzo })}
+                                />
+                                <FilterSelect
+                                    id="pannello-valutazione"
+                                    label="Valutazione"
+                                    noneLabel="Qualsiasi"
+                                    options={ratingOptions}
+                                    value={filters.valutazione}
+                                    onChange={(valutazione) =>
+                                        onChange({ valutazione })
+                                    }
+                                />
                             </div>
                         </SheetContent>
                     </Sheet>
@@ -273,80 +375,44 @@ export default function FilterBar({
                             })
                         }
                     />
-                    <Toggle
-                        pressed={filters.domicilio !== null}
-                        onPressedChange={(on) =>
-                            onChange({ domicilio: on ? '1' : null })
-                        }
-                        className={cn(chipClassName, 'shrink-0')}
-                    >
-                        Viene a domicilio
-                    </Toggle>
-                    <Toggle
-                        pressed={filters.valutazione !== null}
-                        onPressedChange={(on) =>
-                            onChange({ valutazione: on ? '4-5' : null })
-                        }
-                        className={cn(chipClassName, 'shrink-0')}
-                    >
-                        ★ 4,5 e più
-                    </Toggle>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        aria-label={`Fascia di prezzo: ${priceLabel}. Tocca per cambiare`}
-                        onClick={() =>
-                            onChange({
-                                prezzo: cycle(priceOptions, filters.prezzo),
-                            })
-                        }
-                        className={cn(
-                            'h-9 shrink-0 rounded-full px-3.5',
-                            filters.prezzo &&
-                                'border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground',
-                        )}
-                    >
-                        {priceLabel}
-                        <ChevronDown aria-hidden="true" />
-                    </Button>
+                    {topRating}
+                    {price}
                 </div>
 
                 <div className="flex items-center justify-between px-4">
                     <span className="text-[13px] text-muted-foreground">
                         Ordina
                     </span>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        aria-label={`Ordina per: ${sortLabel}. Tocca per cambiare`}
-                        onClick={() =>
-                            onChange({
-                                ordina: cycle(sortOptions, filters.ordina),
-                            })
+                    <OptionsMenu
+                        label="Ordina per"
+                        noneLabel="Più pertinenti"
+                        options={sortOptions}
+                        value={filters.ordina}
+                        onChange={(ordina) => onChange({ ordina })}
+                        align="end"
+                        className="min-w-55"
+                        trigger={
+                            <Button
+                                type="button"
+                                variant="outline"
+                                aria-label={`Ordina per: ${sortLabel}`}
+                                className="h-10 rounded-full px-3"
+                            >
+                                {sortLabel}
+                                <ArrowUpDown aria-hidden="true" />
+                            </Button>
                         }
-                        className="h-10 rounded-full px-3"
-                    >
-                        {sortLabel}
-                        <ArrowUpDown aria-hidden="true" />
-                    </Button>
+                    />
                 </div>
 
                 <div className="px-4">{mode}</div>
-
-                {hasFilters && (
-                    <div className="px-4">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={onReset}
-                            className="px-1"
-                        >
-                            <X aria-hidden="true" />
-                            Rimuovi filtri
-                        </Button>
-                    </div>
-                )}
             </div>
+
+            <ActiveFilters
+                chips={chips}
+                onClearAll={onReset}
+                className="px-4 md:px-0"
+            />
         </div>
     );
 }

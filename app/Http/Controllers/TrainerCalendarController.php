@@ -6,6 +6,8 @@ use App\Enums\BookingStatus;
 use App\Http\Controllers\Concerns\BuildsPlaceholderData;
 use App\Models\Booking;
 use App\Models\User;
+use App\Support\BookingLabels;
+use App\Support\TrainerSessions;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -59,7 +61,7 @@ class TrainerCalendarController extends Controller
                     ->orWhere(fn (Builder $query) => $query->awaitingAnswer()))
                 ->where('starts_at', '>=', $from->utc())
                 ->where('starts_at', '<', $to->utc())
-                ->with('client')
+                ->with(TrainerSessions::WITH)
                 ->orderBy('starts_at')
                 ->get()
                 ->map(fn (Booking $booking) => [
@@ -69,7 +71,8 @@ class TrainerCalendarController extends Controller
                     // For the link to the client's profile; null once the account is deleted.
                     'clientId' => $booking->client_id,
                     'clientName' => $booking->client->name ?? 'Account eliminato',
-                    'serviceName' => $booking->service_name,
+                    // "Pacchetto 10 sedute · seduta 2 di 10" for the sessions of a package.
+                    'serviceName' => BookingLabels::service($booking),
                     'placeLabel' => $booking->place_label,
                     'kind' => $booking->status === BookingStatus::Confirmed ? 'confirmed' : 'pending',
                 ])

@@ -32,7 +32,10 @@ export type ServiceOption = {
  * duration (one option each); the first session and packages have one option.
  */
 export type TrainerService = {
+    /** Negative for "Il tuo pacchetto": never the id of a service. */
     id: number;
+    /** "Il tuo pacchetto": a package the client bought, sessions already paid. */
+    packageId: number | null;
     name: string;
     /** e.g. "da 30 min a 2 ore", "1 ora", "10 × 1 ora" */
     durationLabel: string;
@@ -88,11 +91,6 @@ export type TrainerProfile = {
     city: { slug: string; name: string } | null;
     /** Every city where the trainer trains in person. */
     cities: string[];
-    areaLabel: string;
-    /** Center of the map circle: the first studio, or the main city. Null for online-only trainers. */
-    areaCenter: { lat: number; lng: number } | null;
-    /** Radius of the map circle, in meters. */
-    areaRadius: number;
     online: 'also' | 'only' | null;
     disciplines: string[];
     /** The profile photo, for the circle next to the name; null = the initials. */
@@ -128,6 +126,32 @@ export type TrainerTodaySession = {
     noShow: boolean;
 };
 
+/**
+ * A session in Panoramica, Richieste and Clienti (App\Support\TrainerSessions).
+ * serviceName says which session of a package it is: "Pacchetto 10 sedute · seduta 2 di 10".
+ */
+export type TrainerSession = TrainerTodaySession & {
+    /** ISO UTC string. */
+    end: string;
+    /** 'pending' = waiting for the trainer's answer. */
+    kind: 'confirmed' | 'pending';
+};
+
+/** "Pacchetti attivi": bought, not all the sessions done yet. */
+export type TrainerPackage = {
+    id: number;
+    clientId: number | null;
+    clientName: string;
+    name: string;
+    total: number;
+    /** Confirmed, over and not "Saltata". */
+    done: number;
+    /** Confirmed or waiting, past and future. */
+    booked: number;
+    /** ISO UTC string of the next session of the package, null when none is booked. */
+    nextStart: string | null;
+};
+
 /** A finished session: "Ultimi 7 giorni" and "Sedute passate". */
 export type TrainerPastSession = TrainerTodaySession & {
     /** Within 7 days from the end: "Saltata" can still be set or taken back. */
@@ -146,14 +170,7 @@ export type ClientAttendance = {
 };
 
 /** A booking waiting for the trainer's answer. */
-export type TrainerBookingRequest = {
-    id: number;
-    clientId: number | null;
-    clientName: string;
-    start: string;
-    hours: number;
-    serviceName: string;
-    placeLabel: string;
+export type TrainerBookingRequest = TrainerSession & {
     note: string | null;
     /** ISO UTC string: after this the request decays and the slot is freed. */
     expiresAt: string;
@@ -177,8 +194,14 @@ export type TrainerClientProfile = {
     contacts: { email: string; phone: string | null } | null;
 };
 
+/** The numbers of "Panoramica". */
 export type TrainerStats = {
-    sessionsThisWeek: number;
+    /** Requests waiting for an answer. */
+    pending: number;
+    /** Confirmed sessions from today to the 7th day, their hours and their clients. */
+    weekSessions: number;
+    weekHours: number;
+    weekClients: number;
 };
 
 /** Sent by every page of the trainer area, read by the trainer layout. */
@@ -215,13 +238,21 @@ export type TrainerClient = {
     /** Confirmed sessions, past and future. */
     sessions: number;
     /** ISO UTC strings; null when there is none. */
+    firstSession: string;
     lastSession: string | null;
     nextSession: string | null;
+    /** The service of the most recent session, under the name. */
+    lastService: string;
+    /** Confirmed sessions still to come. */
+    upcomingCount: number;
+    /** Over: done, or marked "Saltata". */
+    done: number;
+    missed: number;
+    /** The package in progress, null when there is none. */
+    package: { name: string; done: number; total: number } | null;
     attendance: ClientAttendance;
     /** Every confirmed slot still to come, in order. */
-    upcoming: TrainerTodaySession[];
-    /** Over in the last 7 days, still in time for "Saltata"; most recent first. */
-    recent: TrainerTodaySession[];
+    upcoming: TrainerSession[];
 };
 
 /** "Regole di prenotazione" of step 5 and of "Disponibilità". */
@@ -247,7 +278,8 @@ export type TrainerAreaReview = {
     id: number;
     authorName: string;
     rating: number;
-    serviceName: string;
+    /** The booked service; null for the reviews not linked to a session. */
+    serviceName: string | null;
     /** ISO UTC string. */
     date: string;
     text: string;

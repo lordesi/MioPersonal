@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 /**
- * "Accetta" and "Rifiuta" of the requests in the trainer's "Oggi" page.
+ * "Conferma" and "Rifiuta" of the requests in the trainer's "Richieste" page.
  * Only the trainer's own requests, still waiting for an answer.
  */
 class TrainerBookingRequestController extends Controller
@@ -20,12 +20,10 @@ class TrainerBookingRequestController extends Controller
     {
         $this->ensureCanAnswer($request, $booking);
 
-        $booking->forceFill([
-            'status' => BookingStatus::Confirmed,
-            'confirmed_at' => now(),
-            'expires_at' => null,
-        ])->save();
-        $booking->record('confirmed', $request->user());
+        /** @var User $trainer */
+        $trainer = $request->user();
+        // The first session of a package also buys it.
+        $booking->confirm($trainer);
 
         return back();
     }

@@ -25,7 +25,7 @@ final class TrainerPastSessions
             ->whereBelongsTo($profile)
             ->where('status', BookingStatus::Confirmed)
             ->where('ends_at', '<=', now())
-            ->with('client')
+            ->with(TrainerSessions::WITH)
             ->orderByDesc('starts_at');
     }
 
@@ -44,7 +44,7 @@ final class TrainerPastSessions
             // UTC: the browser shows it in Europe/Rome.
             'start' => $booking->starts_at->utc()->format('Y-m-d\TH:i:s\Z'),
             'hours' => $booking->starts_at->diffInMinutes($booking->ends_at) / 60,
-            'serviceName' => $booking->service_name,
+            'serviceName' => BookingLabels::service($booking),
             'placeLabel' => $booking->place_label,
             'noShow' => $booking->no_show_at !== null,
             // After 7 days the session stays as it is.

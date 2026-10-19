@@ -24,7 +24,7 @@ export default function ClientPreview({
     return (
         <section
             aria-label="Anteprima per i clienti"
-            className="flex flex-col gap-3 rounded-xl border bg-card p-4.5"
+            className="flex flex-col gap-3 rounded-[20px] border bg-card p-5"
         >
             <span className="text-xs font-semibold tracking-[0.08em] text-muted-foreground">
                 COSÌ TI VEDONO I CLIENTI

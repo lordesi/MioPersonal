@@ -76,7 +76,7 @@ function AvailabilityForm({
         <form onSubmit={submit} className="flex flex-col gap-5">
             <section
                 aria-label="Orari di lavoro"
-                className="flex flex-col gap-4 rounded-xl border bg-card p-4 md:p-5"
+                className="flex flex-col gap-4 rounded-[20px] border bg-card p-5 md:p-6"
             >
                 <div className="flex flex-col gap-1">
                     <h2 className="text-lg font-semibold">Orari di lavoro</h2>
@@ -96,7 +96,7 @@ function AvailabilityForm({
 
             <section
                 aria-label="Regole di prenotazione"
-                className="flex flex-col gap-4 rounded-xl border bg-card p-4 md:p-5"
+                className="flex flex-col gap-4 rounded-[20px] border bg-card p-5 md:p-6"
             >
                 <div className="flex flex-col gap-1">
                     <h2 className="text-lg font-semibold">

@@ -15,22 +15,21 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * "Completa il tuo profilo": right after the client sign-up, and again from
- * Account to change the answers. Saved in `client_preferences` and, for the
- * photo, in `users.avatar_path`.
+ * "Completa il tuo profilo": right after the client sign-up (full screen), and
+ * "Modifica il mio profilo" in the client area to change the answers later.
+ * Saved in `client_preferences` and, for the photo, in `users.avatar_path`.
  */
 class CompleteProfileController extends Controller
 {
     public function show(Request $request): Response
     {
-        /** @var User $user */
-        $user = $request->user();
+        return Inertia::render('onboarding/complete-profile', $this->pageData($request));
+    }
 
-        return Inertia::render('onboarding/complete-profile', [
-            'disciplines' => CatalogOptions::disciplines(),
-            'cities' => CatalogOptions::citiesWithCoordinates(),
-            'preferences' => $this->savedPreferences($user->clientPreference),
-        ]);
+    /** "Modifica il mio profilo": the same form, inside the client area. */
+    public function edit(Request $request): Response
+    {
+        return Inertia::render('client/edit-profile', $this->pageData($request));
     }
 
     public function update(ClientPreferencesRequest $request): RedirectResponse
@@ -53,6 +52,13 @@ class CompleteProfileController extends Controller
             'budget_max_cents' => $request->filled('budget_max_cents') ? $request->integer('budget_max_cents') : null,
         ]);
 
+        // "Modifica il mio profilo" stays on the page; the sign-up goes on to the dashboard.
+        if ($request->routeIs('client.profile.update')) {
+            Inertia::flash('toast', ['type' => 'success', 'message' => 'Profilo aggiornato.']);
+
+            return back();
+        }
+
         return to_route('client.home');
     }
 
@@ -66,7 +72,8 @@ class CompleteProfileController extends Controller
             'photo.image' => 'La foto deve essere un’immagine JPG o PNG.',
             'photo.mimes' => 'La foto deve essere un’immagine JPG o PNG.',
             'photo.max' => 'La foto può pesare al massimo 5 MB.',
-            'photo.uploaded' => 'Non siamo riusciti a caricare la foto: riprova.',
+            // Almost always a file over the PHP limit (upload_max_filesize).
+            'photo.uploaded' => 'La foto è troppo pesante: massimo 5 MB.',
         ]);
 
         /** @var User $user */
@@ -84,6 +91,37 @@ class CompleteProfileController extends Controller
         }
 
         return back();
+    }
+
+    /** The X on the photo: deleted right away, the avatars show the initials again. */
+    public function destroyPhoto(Request $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($user->avatar_path !== null) {
+            Storage::disk(User::AVATAR_DISK)->delete($user->avatar_path);
+            $user->forceFill(['avatar_path' => null])->save();
+        }
+
+        return back();
+    }
+
+    /**
+     * Props of both pages.
+     *
+     * @return array<string, mixed>
+     */
+    private function pageData(Request $request): array
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return [
+            'disciplines' => CatalogOptions::disciplines(),
+            'cities' => CatalogOptions::citiesWithCoordinates(),
+            'preferences' => $this->savedPreferences($user->clientPreference),
+        ];
     }
 
     /**

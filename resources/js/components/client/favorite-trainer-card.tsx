@@ -25,7 +25,7 @@ export default function FavoriteTrainerCard({
         <article
             aria-label={trainer.name}
             className={cn(
-                'relative flex flex-col overflow-hidden rounded-xl border bg-card',
+                'relative flex flex-col overflow-hidden rounded-[20px] border bg-card',
                 // Only as tall as the "tolto dai preferiti" line, not the whole grid row.
                 removed && 'self-start',
             )}

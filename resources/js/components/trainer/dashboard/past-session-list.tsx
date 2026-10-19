@@ -21,7 +21,7 @@ export default function PastSessionList({
             <h3 className="text-sm font-semibold text-muted-foreground">
                 {formatDayLong(date)}
             </h3>
-            <ul className="overflow-hidden rounded-xl border bg-card">
+            <ul className="overflow-hidden rounded-[14px] border bg-card">
                 {daySessions.map((session) => (
                     <li
                         key={session.id}

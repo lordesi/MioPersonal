@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $client_id null once the client deleted the account
  * @property int $trainer_profile_id
  * @property int|null $service_id
+ * @property int|null $client_package_id the package this session buys or uses
  * @property CarbonImmutable $starts_at
  * @property CarbonImmutable $ends_at
  * @property CarbonImmutable $blocked_until end + the trainer's break
@@ -39,9 +40,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $updated_at
  * @property-read User|null $client
  * @property-read TrainerProfile $trainerProfile
+ * @property-read ClientPackage|null $clientPackage
  */
 #[Fillable([
-    'client_id', 'trainer_profile_id', 'service_id',
+    'client_id', 'trainer_profile_id', 'service_id', 'client_package_id',
     'starts_at', 'ends_at', 'blocked_until',
     'service_name', 'price_cents', 'place_label',
     'status', 'expires_at', 'confirmed_at', 'client_note',
@@ -87,6 +89,14 @@ class Booking extends Model
     public function trainerProfile(): BelongsTo
     {
         return $this->belongsTo(TrainerProfile::class);
+    }
+
+    /**
+     * @return BelongsTo<ClientPackage, $this>
+     */
+    public function clientPackage(): BelongsTo
+    {
+        return $this->belongsTo(ClientPackage::class);
     }
 
     /**
@@ -148,6 +158,25 @@ class Booking extends Model
     public function record(string $type, ?User $actor = null): void
     {
         $this->events()->create(['type' => $type, 'actor_id' => $actor?->id]);
+    }
+
+    /**
+     * The trainer said yes (or confirms automatically: then `$actor` is null).
+     * The first session of a package also buys the package.
+     */
+    public function confirm(?User $actor = null): void
+    {
+        $this->forceFill([
+            'status' => BookingStatus::Confirmed,
+            'confirmed_at' => now(),
+            'expires_at' => null,
+        ])->save();
+
+        $this->record('confirmed', $actor);
+
+        if ($this->client_package_id !== null) {
+            ClientPackage::whereKey($this->client_package_id)->whereNull('bought_at')->update(['bought_at' => now()]);
+        }
     }
 
     /** Frees the slot; the history says who did it. */

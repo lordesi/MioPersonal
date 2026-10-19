@@ -3,7 +3,8 @@ import AccessSection from '@/components/account/access-section';
 import DeleteAccountSection from '@/components/account/delete-account-section';
 import PersonalDataSection from '@/components/account/personal-data-section';
 import SettingsNav from '@/components/account/settings-nav';
-import { completeProfile } from '@/routes/client';
+import PageHeading from '@/components/trainer/area/page-heading';
+import { profile } from '@/routes/client';
 import type { AccountSettings } from '@/types';
 
 type SettingsProps = {
@@ -25,23 +26,23 @@ export default function Settings({
         <>
             <Head title="Impostazioni account" />
 
-            <div className="mx-auto flex w-full max-w-264 flex-col gap-4 md:gap-7">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-[28px] leading-8.5 font-bold tracking-tight md:text-4xl md:leading-10">
-                        Impostazioni account
-                    </h1>
-                    <p className="text-sm text-muted-foreground md:text-base">
-                        Le preferenze per trovare trainer (zona, obiettivi,
-                        orari) sono nel{' '}
-                        <Link
-                            href={completeProfile()}
-                            className="text-foreground underline"
-                        >
-                            tuo profilo
-                        </Link>
-                        .
-                    </p>
-                </div>
+            <div className="flex w-full flex-col gap-4 md:gap-7">
+                <PageHeading
+                    title="Impostazioni account"
+                    description={
+                        <>
+                            Le preferenze per trovare trainer (zona, obiettivi,
+                            orari) sono in{' '}
+                            <Link
+                                href={profile()}
+                                className="text-foreground underline"
+                            >
+                                Modifica il mio profilo
+                            </Link>
+                            .
+                        </>
+                    }
+                />
 
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-10">
                     <SettingsNav sections={sections} />
@@ -68,5 +69,3 @@ export default function Settings({
         </>
     );
 }
-
-Settings.layout = { section: 'account', wide: true };

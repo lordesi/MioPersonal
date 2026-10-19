@@ -9,7 +9,7 @@ type ClientProfileProps = {
     client: TrainerClientProfile;
 };
 
-/** A client's profile, opened from "Oggi": who they are and their contacts. */
+/** A client's profile, opened from "Panoramica" and "Clienti": who they are and their contacts. */
 export default function ClientProfile({ client }: ClientProfileProps) {
     const sessions =
         client.sessions === 1
@@ -28,7 +28,7 @@ export default function ClientProfile({ client }: ClientProfileProps) {
                         size="xl"
                     />
                     <div className="flex min-w-0 flex-col gap-0.5">
-                        <h1 className="text-[28px] leading-8.5 font-bold tracking-tight md:text-3xl">
+                        <h1 className="text-[28px] leading-8.5 font-bold tracking-[-0.03em] md:text-[34px] md:leading-10">
                             {client.name}
                         </h1>
                         {client.joinedAt && (

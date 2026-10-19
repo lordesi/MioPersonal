@@ -43,7 +43,7 @@ export default function MonthCalendar({
     return (
         <section
             aria-label="Mese"
-            className="flex flex-wrap gap-6 rounded-xl border bg-card p-4 md:p-5"
+            className="flex flex-wrap gap-6 rounded-[20px] border bg-card p-5 md:p-6"
         >
             <div className="flex min-w-0 flex-[3_1_460px] flex-col gap-1.5">
                 <div

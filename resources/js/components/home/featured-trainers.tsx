@@ -89,15 +89,20 @@ export default function FeaturedTrainers({ trainers }: FeaturedTrainersProps) {
         <section
             aria-labelledby="featured-title"
             aria-roledescription="carousel"
-            className="mx-auto flex w-full max-w-7xl flex-col gap-4 pb-10 md:gap-8 md:py-20"
+            className="mx-auto flex w-full max-w-7xl flex-col gap-4 py-10 md:gap-7 md:py-18"
         >
-            <div className="flex flex-wrap items-center justify-between gap-3 px-4 md:items-end md:px-8">
-                <h2
-                    id="featured-title"
-                    className="text-2xl font-semibold tracking-tight md:text-3xl"
-                >
-                    Trainer in evidenza
-                </h2>
+            <div className="flex flex-wrap items-end justify-between gap-3 px-4 md:gap-4 md:px-8">
+                <div className="flex flex-col gap-1.5">
+                    <h2
+                        id="featured-title"
+                        className="text-2xl font-semibold tracking-tight md:text-3xl"
+                    >
+                        Trainer in evidenza
+                    </h2>
+                    <p className="text-muted-foreground">
+                        Con il primo orario libero già in vista.
+                    </p>
+                </div>
                 <div className="flex items-center gap-3">
                     <Link
                         href={searchUrl()}
@@ -140,7 +145,7 @@ export default function FeaturedTrainers({ trainers }: FeaturedTrainersProps) {
                     <TrainerCard
                         key={trainer.slug}
                         trainer={trainer}
-                        layout="vertical"
+                        layout="featured"
                         // Three cards and two gaps fill the row on desktop.
                         className="w-68 shrink-0 snap-start md:w-80 lg:w-[calc((100%-3rem)/3)]"
                     />

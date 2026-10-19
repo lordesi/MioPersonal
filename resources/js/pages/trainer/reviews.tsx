@@ -43,12 +43,17 @@ export default function Reviews({ summary, reviews }: ReviewsProps) {
                     title="Ancora nessuna recensione"
                     description="Dopo una seduta svolta il cliente può lasciarti una recensione: la trovi qui e puoi rispondere."
                     bordered
+                    className="rounded-[20px] bg-card"
                 />
             )}
 
-            {reviews.map((review) => (
-                <ReviewReplyCard key={review.id} review={review} />
-            ))}
+            {reviews.length > 0 && (
+                <div className="flex max-w-3xl flex-col gap-3">
+                    {reviews.map((review) => (
+                        <ReviewReplyCard key={review.id} review={review} />
+                    ))}
+                </div>
+            )}
         </>
     );
 }

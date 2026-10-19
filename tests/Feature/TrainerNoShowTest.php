@@ -96,7 +96,7 @@ class TrainerNoShowTest extends TestCase
         $booking->forceFill(['no_show_at' => now()])->save();
 
         $this->actingAs($booking->client)
-            ->get(route('client.bookings'))
+            ->get(route('client.home'))
             ->assertInertia(fn (Assert $page) => $page
                 ->has('past', 1)
                 ->missing('past.0.noShow')
@@ -104,7 +104,7 @@ class TrainerNoShowTest extends TestCase
             );
     }
 
-    public function test_oggi_shows_the_mark_and_the_attendance_of_the_requests()
+    public function test_panoramica_shows_the_mark_and_the_attendance_of_the_requests()
     {
         $booking = $this->finishedSession();
         $booking->forceFill(['no_show_at' => now()])->save();
@@ -115,7 +115,8 @@ class TrainerNoShowTest extends TestCase
         $this->actingAs($trainer->user)
             ->get(route('trainer.today'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('today.0.noShow', true)
+                // Today's sessions are in the agenda, the finished ones too.
+                ->where('agenda.0.noShow', true)
                 ->where('requests.0.attendance', [
                     'platform' => ['rate' => 0, 'sessions' => 1],
                     'withYou' => ['rate' => 0, 'sessions' => 1],
@@ -123,27 +124,25 @@ class TrainerNoShowTest extends TestCase
             );
     }
 
-    public function test_clienti_lists_the_sessions_still_in_time_and_the_attendance()
+    public function test_clienti_counts_the_missed_sessions_and_the_attendance()
     {
         $trainer = TrainerProfile::factory()->approved()->create();
         $client = User::factory()->create();
-        $recent = Booking::factory()->for($trainer)->for($client, 'client')->confirmed()->at($this->now->subDays(2))->create();
-        // Over 7 days ago: done for good, no longer in "Ultime sedute".
+        Booking::factory()->for($trainer)->for($client, 'client')->confirmed()->at($this->now->subDays(2))->create(['no_show_at' => now()]);
         Booking::factory()->for($trainer)->for($client, 'client')->confirmed()->at($this->now->subDays(10))->create();
 
         $this->actingAs($trainer->user)
             ->get(route('trainer.clients'))
             ->assertInertia(fn (Assert $page) => $page
-                ->has('clients.0.recent', 1)
-                ->where('clients.0.recent.0.id', $recent->id)
-                ->where('clients.0.recent.0.noShow', false)
-                ->where('clients.0.attendance.withYou', ['rate' => 100, 'sessions' => 2])
+                ->where('clients.0.done', 1)
+                ->where('clients.0.missed', 1)
+                ->where('clients.0.attendance.withYou', ['rate' => 50, 'sessions' => 2])
             );
 
         $this->actingAs($trainer->user)
             ->get(route('trainer.clients.show', $client))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('client.attendance.platform', ['rate' => 100, 'sessions' => 2])
+                ->where('client.attendance.platform', ['rate' => 50, 'sessions' => 2])
             );
     }
 }

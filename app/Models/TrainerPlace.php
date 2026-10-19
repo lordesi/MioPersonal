@@ -16,12 +16,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $name
  * @property string|null $address
  * @property int|null $city_id
- * @property float|null $lat studios only, found from the address
- * @property float|null $lng
  * @property int $sort
  * @property-read City|null $city
  */
-#[Fillable(['type', 'name', 'address', 'city_id', 'lat', 'lng', 'sort'])]
+#[Fillable(['type', 'name', 'address', 'city_id', 'sort'])]
 class TrainerPlace extends Model
 {
     /**
@@ -31,8 +29,6 @@ class TrainerPlace extends Model
     {
         return [
             'type' => PlaceType::class,
-            'lat' => 'float',
-            'lng' => 'float',
             'sort' => 'integer',
         ];
     }

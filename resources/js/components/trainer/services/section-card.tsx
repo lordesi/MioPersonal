@@ -20,7 +20,7 @@ export default function SectionCard({
     children,
 }: SectionCardProps) {
     return (
-        <section className="flex flex-col gap-4 rounded-xl border bg-card p-4 md:p-5">
+        <section className="flex flex-col gap-4 rounded-[20px] border bg-card p-5 md:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-col gap-0.5">
                     <h2 className="text-[17px] leading-6 font-semibold tracking-tight">

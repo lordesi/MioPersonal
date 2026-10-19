@@ -2,12 +2,13 @@ import { Link } from '@inertiajs/react';
 import { Bell } from 'lucide-react';
 import AccountMenu from '@/components/layout/account-menu';
 import BrandLogo from '@/components/layout/brand-logo';
-import ThemeToggle from '@/components/shared/theme-toggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { requests } from '@/routes/trainer';
 
 type TrainerHeaderProps = {
     userName: string;
+    /** Requests waiting for an answer: the bell opens "Richieste". */
     notificationCount?: number;
     /** Link to the trainer's public profile; hidden on mobile. */
     publicProfileHref?: string;
@@ -42,20 +43,23 @@ export default function TrainerHeader({
                         </Button>
                     )}
                     <Button
-                        type="button"
+                        asChild
                         variant="ghost"
                         size="icon"
-                        aria-label={`Notifiche, ${notificationCount} da leggere`}
                         className="relative size-11 rounded-full"
                     >
-                        <Bell className="size-5" />
-                        {notificationCount > 0 && (
-                            <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] leading-3 font-bold text-primary-foreground tabular-nums">
-                                {notificationCount}
-                            </span>
-                        )}
+                        <Link
+                            href={requests()}
+                            aria-label={`Richieste da confermare: ${notificationCount}`}
+                        >
+                            <Bell className="size-5" />
+                            {notificationCount > 0 && (
+                                <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] leading-3 font-bold text-primary-foreground tabular-nums">
+                                    {notificationCount}
+                                </span>
+                            )}
+                        </Link>
                     </Button>
-                    <ThemeToggle />
                     <AccountMenu
                         variant="trainer"
                         userName={userName}

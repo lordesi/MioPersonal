@@ -68,7 +68,7 @@ export default function GalleryPhotos({ photos, max }: GalleryPhotosProps) {
     return (
         <section
             aria-labelledby="gallery-title"
-            className="flex flex-col gap-4 rounded-xl border bg-card p-4 md:p-5"
+            className="flex flex-col gap-4 rounded-[20px] border bg-card p-5 md:p-6"
         >
             <h2 id="gallery-title" className="text-lg font-semibold">
                 Foto della galleria{' '}

@@ -75,7 +75,8 @@ export default function Search({
         );
     };
 
-    const resetFilters = () => visit({ ordina: filters.ordina });
+    // Back to all of Italy, keeping only the sort order.
+    const resetFilters = () => visit({ ordina: filters.ordina }, null);
 
     return (
         <>
@@ -119,7 +120,9 @@ export default function Search({
                         Personal trainer {place}
                     </h1>
                     <p className="text-sm text-muted-foreground tabular-nums md:text-base">
-                        {total} trainer · profili approvati dal nostro team
+                        {total > 0
+                            ? `Risultato: ${total} trainer`
+                            : 'Non risultano trainer con queste caratteristiche, prova a cambiare i filtri'}
                     </p>
                 </div>
 
@@ -128,8 +131,9 @@ export default function Search({
                     disciplines={disciplines}
                     cities={cities}
                     city={city?.slug ?? null}
-                    onChange={(changes) => visit({ ...filters, ...changes })}
-                    onCityChange={(nextCity) => visit(filters, nextCity)}
+                    onChange={(changes, nextCity) =>
+                        visit({ ...filters, ...changes }, nextCity)
+                    }
                     onReset={resetFilters}
                 />
 
@@ -174,7 +178,6 @@ export default function Search({
                         bordered
                         icon={SearchIcon}
                         title="Nessun trainer con questi filtri"
-                        description="Prova a togliere un filtro o a scegliere un'altra città. Stiamo aggiungendo nuovi trainer ogni settimana."
                         action={
                             <Button
                                 type="button"
@@ -182,7 +185,7 @@ export default function Search({
                                 className="max-md:h-11"
                                 onClick={resetFilters}
                             >
-                                Rimuovi filtri
+                                Cancella i filtri
                             </Button>
                         }
                         className="m-4 md:m-0"

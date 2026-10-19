@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\PlaceType;
+use App\Models\ClientPackage;
 use App\Models\Review;
 use App\Models\Service;
 use App\Models\TrainerDocument;
@@ -29,11 +30,6 @@ class TrainerProfileController extends Controller
 
     /** Reviews shown before "Mostra tutte le recensioni". */
     private const REVIEWS_PREVIEW = 3;
-
-    /** Radius of the "Zona" circle, in meters: around the studio, or the whole city. */
-    private const STUDIO_RADIUS = 300;
-
-    private const CITY_RADIUS = 3000;
 
     public function __invoke(Request $request, string $slug): Response
     {
@@ -80,7 +76,6 @@ class TrainerProfileController extends Controller
             'reviewCount' => $profile->rating_count,
             'city' => $profile->city === null ? null : ['slug' => $profile->city->slug, 'name' => $profile->city->name],
             'cities' => $cities ?: ['Solo online'],
-            ...$this->area($profile),
             'online' => TrainerCard::online($profile),
             'disciplines' => $profile->disciplines->pluck('name')->all(),
             // The profile photo goes in the circle next to the name, not in the carousel.
@@ -172,9 +167,54 @@ class TrainerProfileController extends Controller
      * The first session is only for a client's first booking: who already
      * booked this trainer doesn't see it.
      *
-     * @return list<array{id: int, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int}>}>
+     * A client with a package of this trainer finds it first, "Il tuo
+     * pacchetto": its sessions are already paid.
+     *
+     * @return list<array{id: int, packageId: int|null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int}>}>
      */
     private function services(TrainerProfile $profile, ?User $viewer): array
+    {
+        return [...$this->packages($profile, $viewer), ...$this->bookableServices($profile, $viewer)];
+    }
+
+    /**
+     * The viewer's bought packages with sessions still to book. The id is
+     * negative, so it never matches the id of a service.
+     *
+     * @return list<array{id: int, packageId: int, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int}>}>
+     */
+    private function packages(TrainerProfile $profile, ?User $viewer): array
+    {
+        if ($viewer === null) {
+            return [];
+        }
+
+        return array_values($profile->clientPackages()
+            ->whereBelongsTo($viewer, 'client')
+            ->bought()
+            ->withSessionCounts()
+            ->oldest('bought_at')
+            ->get()
+            ->filter(fn (ClientPackage $package) => $package->remaining() > 0)
+            ->map(function (ClientPackage $package) {
+                $remaining = $package->remaining();
+
+                return [
+                    'id' => -$package->id,
+                    'packageId' => $package->id,
+                    'name' => 'Il tuo pacchetto',
+                    'durationLabel' => ($remaining === 1 ? '1 seduta rimasta' : "{$remaining} sedute rimaste").' · '.self::minutesLabel($package->minutes),
+                    'note' => $package->name,
+                    'priceCents' => 0,
+                    'options' => [['serviceId' => -$package->id, 'minutes' => $package->minutes, 'priceCents' => 0]],
+                ];
+            })->all());
+    }
+
+    /**
+     * @return list<array{id: int, packageId: null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int}>}>
+     */
+    private function bookableServices(TrainerProfile $profile, ?User $viewer): array
     {
         $groups = [];
         $booked = $viewer !== null && $profile->hasBookingFrom($viewer);
@@ -203,6 +243,7 @@ class TrainerProfileController extends Controller
 
             return [
                 'id' => $first->id,
+                'packageId' => null,
                 'name' => $first->displayName(),
                 'durationLabel' => $this->durationLabel($first, $longest),
                 'note' => $first->note ?? '',
@@ -265,31 +306,6 @@ class TrainerProfileController extends Controller
                 PlaceType::Online => 'In videochiamata',
                 default => implode(', ', $cities),
             },
-        ];
-    }
-
-    /**
-     * The "Zona" map: a small circle on the first studio found on the map
-     * (its address is already public), otherwise a big one on the city center.
-     *
-     * @return array{areaLabel: string, areaCenter: array{lat: float, lng: float}|null, areaRadius: int}
-     */
-    private function area(TrainerProfile $profile): array
-    {
-        $studio = $profile->places->first(fn (TrainerPlace $place) => $place->type === PlaceType::Studio && $place->lat !== null && $place->lng !== null);
-
-        if ($studio !== null) {
-            return [
-                'areaLabel' => $studio->name ?? 'Studio',
-                'areaCenter' => ['lat' => (float) $studio->lat, 'lng' => (float) $studio->lng],
-                'areaRadius' => self::STUDIO_RADIUS,
-            ];
-        }
-
-        return [
-            'areaLabel' => $profile->city->name ?? 'Online',
-            'areaCenter' => $profile->city === null ? null : ['lat' => $profile->city->lat, 'lng' => $profile->city->lng],
-            'areaRadius' => self::CITY_RADIUS,
         ];
     }
 

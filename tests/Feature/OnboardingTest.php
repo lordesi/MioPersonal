@@ -139,6 +139,37 @@ class OnboardingTest extends TestCase
         $this->assertSame(TrainingGoal::Fitness, $client->clientPreference()->firstOrFail()->goal);
     }
 
+    public function test_edit_profile_page_shows_the_saved_answers_in_the_client_area()
+    {
+        $client = User::factory()->create();
+        $client->clientPreference()->create(['goal' => TrainingGoal::Strength]);
+
+        $this->actingAs($client)
+            ->get(route('client.profile'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('client/edit-profile')
+                ->where('preferences.goal', 'strength')
+                ->has('disciplines')
+                ->has('cities')
+            );
+    }
+
+    public function test_edit_profile_saves_and_stays_on_the_page()
+    {
+        $client = User::factory()->create();
+
+        $this->actingAs($client)
+            ->from(route('client.profile'))
+            ->put(route('client.profile.update'), ['goal' => 'wellbeing', 'mode' => 'online'])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('client.profile'));
+
+        $preference = $client->clientPreference()->firstOrFail();
+        $this->assertSame(TrainingGoal::Wellbeing, $preference->goal);
+        $this->assertSame(TrainingMode::Online, $preference->mode);
+    }
+
     public function test_complete_profile_rejects_unknown_values()
     {
         City::factory()->create(['slug' => 'nascosta', 'is_active' => false]);
@@ -178,6 +209,27 @@ class OnboardingTest extends TestCase
 
         Storage::disk(User::AVATAR_DISK)->assertMissing($first);
         Storage::disk(User::AVATAR_DISK)->assertExists((string) $client->refresh()->avatar_path);
+    }
+
+    public function test_the_x_deletes_the_photo_and_its_file()
+    {
+        Storage::fake(User::AVATAR_DISK);
+        $client = User::factory()->create();
+
+        $this->actingAs($client)
+            ->post(route('client.complete-profile.photo'), ['photo' => UploadedFile::fake()->image('io.jpg', 400, 400)]);
+        $path = (string) $client->refresh()->avatar_path;
+
+        $this->from(route('client.profile'))
+            ->delete(route('client.complete-profile.photo.destroy'))
+            ->assertRedirect(route('client.profile'));
+
+        Storage::disk(User::AVATAR_DISK)->assertMissing($path);
+        $this->assertNull($client->refresh()->avatar_path);
+        $this->assertNull($client->avatar);
+
+        // Without a photo nothing happens.
+        $this->delete(route('client.complete-profile.photo.destroy'))->assertRedirect();
     }
 
     public function test_the_photo_must_be_an_image()

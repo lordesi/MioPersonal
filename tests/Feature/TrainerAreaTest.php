@@ -16,6 +16,7 @@ class TrainerAreaTest extends TestCase
     private const PAGES = [
         'trainer.today' => 'trainer/today',
         'trainer.calendar' => 'trainer/calendar',
+        'trainer.requests' => 'trainer/requests',
         'trainer.clients' => 'trainer/clients',
         'trainer.availability' => 'trainer/availability',
         'trainer.reviews' => 'trainer/reviews',

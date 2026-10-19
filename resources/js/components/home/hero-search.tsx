@@ -1,76 +1,28 @@
 import { router } from '@inertiajs/react';
-import { Check, Search } from 'lucide-react';
+import { LayoutGrid, MapPin, Video } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
-import type { FormEvent } from 'react';
-import SegmentedControl from '@/components/shared/segmented-control';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { availabilityOptions } from '@/components/search/filter-bar';
+import SearchBar from '@/components/search/search-bar';
+import type { SearchChoices } from '@/components/search/search-bar';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { searchUrl } from '@/lib/search';
 import type { CatalogOption } from '@/types';
 
 type Mode = 'tutte' | 'presenza' | 'online';
 
-const modes: { value: Mode; label: string }[] = [
-    { value: 'tutte', label: 'Tutte' },
-    { value: 'presenza', label: 'In presenza' },
-    { value: 'online', label: 'Online' },
+const modes: { value: Mode; label: string; icon: LucideIcon }[] = [
+    { value: 'tutte', label: 'Tutte', icon: LayoutGrid },
+    { value: 'presenza', label: 'In presenza', icon: MapPin },
+    { value: 'online', label: 'Online', icon: Video },
 ];
 
-const ALL = 'all';
-
-const benefits = [
-    'Gratis per chi cerca un trainer',
-    'Ogni profilo è approvato dal nostro team',
-    'Recensioni solo da sedute svolte davvero',
-];
-
-function FilterSelect({
-    id,
-    label,
-    allLabel,
-    options,
-    value,
-    onChange,
-}: {
-    id: string;
-    label: string;
-    allLabel: string;
-    options: { value: string; label: string }[];
-    value: string;
-    onChange: (value: string) => void;
-}) {
-    return (
-        <div className="flex flex-col gap-1.5">
-            <Label htmlFor={id}>{label}</Label>
-            <Select
-                value={value}
-                onValueChange={(v) => onChange(v === ALL ? '' : v)}
-            >
-                <SelectTrigger
-                    id={id}
-                    className="w-full bg-background text-base data-[size=default]:h-11"
-                >
-                    <SelectValue placeholder={allLabel} />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value={ALL}>{allLabel}</SelectItem>
-                    {options.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-        </div>
-    );
-}
+/** Nothing chosen yet: "Tutte le discipline", "Tutta Italia", "Qualsiasi giorno". */
+const noChoices: SearchChoices = {
+    disciplina: null,
+    city: null,
+    disponibilita: null,
+};
 
 type HeroSearchProps = {
     /** From the catalog (App\Support\CatalogOptions). */
@@ -78,93 +30,79 @@ type HeroSearchProps = {
     cities: CatalogOption[];
 };
 
-/** Home hero: headline, benefits and the search form. */
+/**
+ * Dark home hero, right under the dark header: headline, the
+ * "Cosa · Dove · Quando" bar and the mode switch.
+ */
 export default function HeroSearch({ disciplines, cities }: HeroSearchProps) {
-    const [discipline, setDiscipline] = useState('');
-    const [city, setCity] = useState('');
     const [mode, setMode] = useState<Mode>('tutte');
 
-    const submit = (event: FormEvent) => {
-        event.preventDefault();
+    const search = ({ disciplina, city, disponibilita }: SearchChoices) =>
         router.get(
             searchUrl(
                 {
-                    disciplina: discipline,
+                    disciplina,
+                    disponibilita,
                     modalita: mode === 'tutte' ? null : mode,
                 },
                 city,
             ),
         );
-    };
 
     return (
-        <section className="mx-auto grid w-full max-w-7xl gap-5 px-4 pt-8 pb-10 md:px-8 lg:grid-cols-2 lg:content-center lg:gap-x-16 lg:gap-y-6 lg:pt-20 lg:pb-0">
-            <div className="flex flex-col gap-5 lg:col-start-1 lg:row-start-1 lg:gap-6 lg:self-end">
-                <h1 className="text-4xl leading-10 font-bold tracking-tight md:text-5xl md:leading-[52px]">
+        <section
+            aria-labelledby="hero-title"
+            className="bg-primary text-primary-foreground"
+        >
+            <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pt-8 pb-14 md:px-8 md:pt-12 md:pb-18">
+                <h1
+                    id="hero-title"
+                    className="max-w-195 text-[38px] leading-[42px] font-bold tracking-[-0.03em] md:text-[56px] md:leading-[60px]"
+                >
                     Trova il personal trainer giusto, vicino a te.
                 </h1>
-                <p className="max-w-130 text-base text-muted-foreground md:text-lg md:leading-7">
-                    Cerca per disciplina e città, confronta profili e prezzi
-                    indicativi, richiedi una seduta in pochi minuti. Gratis.
-                </p>
-            </div>
 
-            <form
-                role="search"
-                aria-label="Cerca un personal trainer"
-                onSubmit={submit}
-                className="flex flex-col gap-3.5 rounded-xl border bg-card p-4 shadow-sm md:gap-4 md:p-6 lg:col-start-2 lg:row-span-2 lg:row-start-1"
-            >
-                <h2 className="hidden text-xl font-semibold tracking-tight md:block">
-                    Trova il trainer perfetto per te!
-                </h2>
-                <FilterSelect
-                    id="hero-discipline"
-                    label="Disciplina"
-                    allLabel="Tutte le discipline"
-                    options={disciplines}
-                    value={discipline}
-                    onChange={setDiscipline}
-                />
-                <FilterSelect
-                    id="hero-city"
-                    label="Città"
-                    allLabel="Tutta Italia"
-                    options={cities}
-                    value={city}
-                    onChange={setCity}
-                />
-                <div className="flex flex-col gap-1.5">
-                    <span
-                        id="hero-mode"
-                        className="text-sm leading-none font-medium"
-                    >
-                        Modalità
-                    </span>
-                    <SegmentedControl
-                        aria-labelledby="hero-mode"
-                        options={modes}
-                        value={mode}
-                        onChange={setMode}
-                    />
+                <div className="flex flex-col gap-5">
+                    <div role="search" aria-label="Cerca un personal trainer">
+                        <SearchBar
+                            variant="hero"
+                            disciplines={disciplines}
+                            cities={cities}
+                            availabilityOptions={availabilityOptions}
+                            applied={noChoices}
+                            onSearch={search}
+                        />
+                    </div>
+
+                    <div className="flex flex-col items-center gap-3.5">
+                        <ToggleGroup
+                            type="single"
+                            aria-label="Modalità"
+                            value={mode}
+                            // Clicking the chosen option again gives '': keep it.
+                            onValueChange={(value) =>
+                                value && setMode(value as Mode)
+                            }
+                            className="w-full max-w-150 gap-1 rounded-full border border-primary-foreground/15 bg-primary-foreground/10 p-1"
+                        >
+                            {modes.map((option) => (
+                                <ToggleGroupItem
+                                    key={option.value}
+                                    value={option.value}
+                                    className="h-11 flex-1 rounded-full px-4 text-[15px] whitespace-nowrap text-primary-foreground/80 first:rounded-full last:rounded-full hover:bg-primary-foreground/10 hover:text-primary-foreground focus-visible:ring-primary-foreground/50 data-[state=on]:bg-primary-foreground data-[state=on]:font-semibold data-[state=on]:text-primary data-[state=on]:shadow-sm data-[state=on]:hover:bg-primary-foreground data-[state=on]:hover:text-primary"
+                                >
+                                    <option.icon aria-hidden="true" />
+                                    {option.label}
+                                </ToggleGroupItem>
+                            ))}
+                        </ToggleGroup>
+                        <p className="text-center text-[13px] leading-[18px] text-primary-foreground/70">
+                            Gratis per chi si allena · per guardare i profili
+                            non serve registrarsi
+                        </p>
+                    </div>
                 </div>
-                <Button type="submit" className="h-11 px-6">
-                    <Search />
-                    Cerca trainer
-                </Button>
-                <p className="text-center text-xs font-medium text-muted-foreground">
-                    Per guardare i profili non serve registrarsi.
-                </p>
-            </form>
-
-            <ul className="flex flex-col gap-2.5 text-sm lg:col-start-1 lg:row-start-2 lg:self-start">
-                {benefits.map((benefit) => (
-                    <li key={benefit} className="flex items-center gap-2.5">
-                        <Check aria-hidden="true" className="size-4 shrink-0" />
-                        {benefit}
-                    </li>
-                ))}
-            </ul>
+            </div>
         </section>
     );
 }

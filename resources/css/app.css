@@ -5,6 +5,9 @@
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
+/* Light theme only. The `dark:` classes (in the shadcn/ui components) only turn on
+   under a `.dark` class that the app never sets. Without this line Tailwind would
+   turn them on when the operating system is in dark mode. */
 @custom-variant dark (&:is(.dark *));
 
 @theme {
@@ -60,6 +63,7 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
 }
 
 /* Colors of the original design (tokens.css, commit 0895b19). Values not in the design
@@ -90,71 +94,29 @@
     --chart-4: oklch(0.828 0.189 84.429);
     --chart-5: oklch(0.769 0.188 70.08);
     --radius: 0.625rem;
-    --sidebar: #fafafa;
-    --sidebar-foreground: #0a0a0a;
-    --sidebar-primary: #171717;
-    --sidebar-primary-foreground: #fafafa;
-    --sidebar-accent: #f5f5f5;
-    --sidebar-accent-foreground: #171717;
-    --sidebar-border: #e5e5e5;
-    --sidebar-ring: #a3a3a3;
-    /* Map palette (resources/js/lib/map.ts), soft colors like Apple Maps and Airbnb.
-       In hex: MapLibre doesn't read oklch. */
-    --map-land: #f5f3ee;
-    --map-park: #d8ecd0;
-    --map-water: #b9dcf2;
-    --map-building: #e9e6df;
-    --map-road: #ffffff;
-    --map-road-casing: #e3e0d8;
-    --map-label: #4a4a4a;
-    --map-label-halo: #ffffff;
-    --map-water-label: #5b8db8;
-    /* The "Zona" circle: follows the theme, dark included. */
-    --map-area: var(--primary);
+    /* The dark surfaces of the trainer area (docs/design): the side menu and the
+       cards in evidence ("Prossima seduta", the client's card). `accent` is the
+       layer on black, `primary` the active link, white on black. */
+    --sidebar: #0a0a0a;
+    --sidebar-foreground: #fafafa;
+    --sidebar-muted-foreground: #a3a3a3;
+    --sidebar-primary: #ffffff;
+    --sidebar-primary-foreground: #0a0a0a;
+    --sidebar-accent: #171717;
+    --sidebar-accent-foreground: #fafafa;
+    --sidebar-border: #262626;
+    --sidebar-ring: #ffffff;
 }
 
-.dark {
-    --background: #0a0a0a;
-    --foreground: #fafafa;
-    --card: #171717;
-    --card-foreground: #fafafa;
-    --popover: #171717;
-    --popover-foreground: #fafafa;
-    --primary: #e5e5e5;
-    --primary-foreground: #171717;
-    --secondary: #262626;
-    --secondary-foreground: #fafafa;
-    --muted: #262626;
-    --muted-foreground: #a3a3a3;
-    --accent: #262626;
-    --accent-foreground: #fafafa;
-    --destructive: oklch(0.396 0.141 25.723);
-    --destructive-foreground: oklch(0.637 0.237 25.331);
-    --border: rgba(255, 255, 255, 0.1);
-    --input: rgba(255, 255, 255, 0.15);
-    --ring: #737373;
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: #171717;
-    --sidebar-foreground: #fafafa;
-    --sidebar-primary: #e5e5e5;
-    --sidebar-primary-foreground: #171717;
-    --sidebar-accent: #262626;
-    --sidebar-accent-foreground: #fafafa;
-    --sidebar-border: rgba(255, 255, 255, 0.1);
-    --sidebar-ring: #737373;
-    --map-land: #1c1c1e;
-    --map-park: #1f2b22;
-    --map-water: #0f2333;
-    --map-building: #2a2a2c;
-    --map-road: #3a3a3c;
-    --map-road-casing: #2c2c2e;
-    --map-label: #d1d1d6;
-    --map-label-halo: #1c1c1e;
-    --map-water-label: #6e9cc2;
+/* Thin, rounded scrollbar for lists inside menus (e.g. the cities of "Dove"),
+   darker under the mouse. Use it as a class: `scrollbar-soft`. */
+@utility scrollbar-soft {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+
+    &:hover {
+        scrollbar-color: var(--ring) transparent;
+    }
 }
 
 @layer base {

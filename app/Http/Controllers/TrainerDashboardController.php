@@ -5,23 +5,32 @@ namespace App\Http\Controllers;
 use App\Enums\BookingStatus;
 use App\Http\Controllers\Concerns\BuildsPlaceholderData;
 use App\Models\Booking;
+use App\Models\ClientPackage;
 use App\Models\TrainerProfile;
 use App\Models\User;
-use App\Support\ClientAttendance;
+use App\Support\TrainerBookingRequests;
 use App\Support\TrainerPastSessions;
+use App\Support\TrainerSessions;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * "Le tue prenotazioni", the trainer's dashboard: today's sessions, the next
- * ones, the last 7 days, the requests to answer and a few numbers. A new
- * trainer sees an empty dashboard.
+ * "Panoramica", the trainer's dashboard: the next session, the agenda of the
+ * next 7 days, the requests to answer, the active packages and the last 7
+ * days. A new trainer sees an empty dashboard.
  */
 class TrainerDashboardController extends Controller
 {
     use BuildsPlaceholderData;
+
+    /** Days of the agenda, today included. */
+    public const AGENDA_DAYS = 7;
+
+    /** Requests in the summary: the others are in "Richieste". */
+    public const REQUESTS_PREVIEW = 3;
 
     public function __invoke(Request $request): Response
     {
@@ -33,98 +42,109 @@ class TrainerDashboardController extends Controller
             'firstName' => Str::before($trainer->name, ' '),
             'trainerArea' => $this->trainerArea(),
             // No profile yet (registration not sent): nothing to show.
-            ...($profile === null ? ['today' => [], 'upcoming' => [], 'past' => [], 'requests' => [], 'stats' => ['sessionsThisWeek' => 0]] : $this->bookings($profile)),
+            ...($profile === null ? self::empty() : $this->dashboard($profile)),
         ]);
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function bookings(TrainerProfile $profile): array
+    private static function empty(): array
+    {
+        return [
+            'next' => null,
+            'agenda' => [],
+            'requests' => [],
+            'packages' => [],
+            'past' => [],
+            'stats' => ['pending' => 0, 'weekSessions' => 0, 'weekHours' => 0, 'weekClients' => 0],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function dashboard(TrainerProfile $profile): array
     {
         $today = $this->romeNow()->startOfDay();
-        $week = $today->startOfWeek();
+
+        // Confirmed and waiting, from today to the 7th day.
+        $agenda = $profile->bookings()
+            ->active()
+            ->whereBetween('starts_at', [$today->utc(), $today->addDays(self::AGENDA_DAYS)->utc()])
+            ->with(TrainerSessions::WITH)
+            ->orderBy('starts_at')
+            ->get();
+        $confirmed = $agenda->where('status', BookingStatus::Confirmed);
+
+        $next = $profile->bookings()
+            ->where('status', BookingStatus::Confirmed)
+            ->where('ends_at', '>', now())
+            ->with(TrainerSessions::WITH)
+            ->orderBy('starts_at')
+            ->first();
 
         return [
-            'today' => $profile->bookings()
-                ->where('status', BookingStatus::Confirmed)
-                ->whereBetween('starts_at', [$today->utc(), $today->addDay()->utc()])
-                ->with('client')
-                ->orderBy('starts_at')
-                ->get()
-                ->map(fn (Booking $booking) => $this->row($booking))
-                ->all(),
-            // "Prossime prenotazioni": every confirmed session from tomorrow on.
-            'upcoming' => $profile->bookings()
-                ->where('status', BookingStatus::Confirmed)
-                ->where('starts_at', '>=', $today->addDay()->utc())
-                ->with('client')
-                ->orderBy('starts_at')
-                ->get()
-                ->map(fn (Booking $booking) => $this->row($booking))
-                ->all(),
-            // "Ultimi 7 giorni": over before today and still in time for "Saltata"
-            // (today's are already in "Oggi"). "Vedi tutte" opens every one.
+            // The one going on now, or the next one.
+            'next' => $next === null ? null : TrainerSessions::row($next),
+            'agenda' => $agenda->map(TrainerSessions::row(...))->values()->all(),
+            'requests' => TrainerBookingRequests::rows(
+                TrainerBookingRequests::query($profile)->limit(self::REQUESTS_PREVIEW)->get(),
+                $profile,
+            ),
+            'packages' => $this->packages($profile),
+            // "Ultimi 7 giorni": over before today and still in time for "Saltata".
+            // "Vedi tutte" opens every one.
             'past' => TrainerPastSessions::query($profile)
                 ->where('ends_at', '>', now()->subDays(Booking::NO_SHOW_DAYS))
                 ->where('starts_at', '<', $today->utc())
                 ->get()
                 ->map(TrainerPastSessions::row(...))
                 ->all(),
-            'requests' => $this->requests($profile),
             'stats' => [
-                'sessionsThisWeek' => $profile->bookings()
-                    ->where('status', BookingStatus::Confirmed)
-                    ->whereBetween('starts_at', [$week->utc(), $week->addWeek()->utc()])
-                    ->count(),
+                'pending' => TrainerBookingRequests::query($profile)->count(),
+                // "Sedute nei prossimi 7 giorni": only the confirmed ones.
+                'weekSessions' => $confirmed->count(),
+                'weekHours' => $confirmed->sum(fn (Booking $booking) => $booking->starts_at->diffInMinutes($booking->ends_at)) / 60,
+                'weekClients' => $confirmed->pluck('client_id')->filter()->unique()->count(),
             ],
         ];
     }
 
     /**
-     * Waiting for an answer, the ones expiring first on top, with how often
-     * the client shows up: it helps to decide.
+     * "Pacchetti attivi": bought and not all done yet, with the next session.
      *
-     * @return array<int, array<string, mixed>>
+     * @return list<array<string, mixed>>
      */
-    private function requests(TrainerProfile $profile): array
+    private function packages(TrainerProfile $profile): array
     {
-        $requests = $profile->bookings()
-            ->awaitingAnswer()
-            ->with('client')
-            ->orderBy('expires_at')
+        /** @var Collection<int, ClientPackage> $packages */
+        $packages = $profile->clientPackages()
+            ->bought()
+            // Deleted accounts: nobody to show.
+            ->whereNotNull('client_id')
+            ->withSessionCounts()
+            ->with(['client', 'bookings' => fn ($bookings) => $bookings->active()->where('ends_at', '>', now())->orderBy('starts_at')])
+            ->oldest('bought_at')
             ->get();
-        $attendance = ClientAttendance::forClients($requests->pluck('client_id'), $profile);
 
-        return $requests
-            ->map(fn (Booking $booking) => [
-                ...$this->row($booking),
-                'note' => $booking->client_note,
-                'expiresAt' => $booking->expires_at === null ? null : $this->iso($booking->expires_at),
-                // null once the client deleted the account.
-                'attendance' => $booking->client_id === null ? null : $attendance[$booking->client_id],
-            ])
-            ->values()
-            ->all();
-    }
+        return array_values($packages
+            ->filter(fn (ClientPackage $package) => ($package->done_count ?? 0) < $package->sessions_total)
+            ->map(function (ClientPackage $package) {
+                /** @var Booking|null $next */
+                $next = $package->bookings->first();
 
-    /**
-     * @return array{id: int, clientId: int|null, clientName: string, start: string, hours: float, serviceName: string, placeLabel: string, noShow: bool}
-     */
-    private function row(Booking $booking): array
-    {
-        return [
-            'id' => $booking->id,
-            // For the link to the client's profile; null once the account is deleted.
-            'clientId' => $booking->client_id,
-            // Clients are told the trainer sees their first and last name.
-            'clientName' => $booking->client->name ?? 'Account eliminato',
-            'start' => $this->iso($booking->starts_at),
-            'hours' => $booking->starts_at->diffInMinutes($booking->ends_at) / 60,
-            'serviceName' => $booking->service_name,
-            'placeLabel' => $booking->place_label,
-            // Marked "Saltata" by the trainer; otherwise done once it ends.
-            'noShow' => $booking->no_show_at !== null,
-        ];
+                return [
+                    'id' => $package->id,
+                    'clientId' => $package->client_id,
+                    'clientName' => $package->client->name ?? '',
+                    'name' => $package->name,
+                    'total' => $package->sessions_total,
+                    'done' => $package->done_count ?? 0,
+                    'booked' => $package->bookedCount(),
+                    'nextStart' => $next === null ? null : $this->iso($next->starts_at),
+                ];
+            })
+            ->all());
     }
 }

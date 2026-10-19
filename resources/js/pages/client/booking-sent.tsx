@@ -18,7 +18,7 @@ import {
     formatTimeRange,
 } from '@/lib/format';
 import { searchUrl } from '@/lib/search';
-import { bookings } from '@/routes/client';
+import { home } from '@/routes/client';
 import type { SentBooking } from '@/types';
 
 type BookingSentProps = {
@@ -147,7 +147,7 @@ export default function BookingSent({ booking }: BookingSentProps) {
                         variant="ghost"
                         className="h-10 px-3.5 underline"
                     >
-                        <Link href={bookings()}>Annulla la prenotazione</Link>
+                        <Link href={home()}>Annulla la prenotazione</Link>
                     </Button>
                 </BookingSummary>
 
@@ -161,7 +161,7 @@ export default function BookingSent({ booking }: BookingSentProps) {
                         asChild
                         className="h-12 flex-[1_1_200px] rounded-[10px] text-base font-semibold"
                     >
-                        <Link href={bookings()}>Vai alle mie prenotazioni</Link>
+                        <Link href={home()}>Vai alle mie prenotazioni</Link>
                     </Button>
                     <Button
                         asChild

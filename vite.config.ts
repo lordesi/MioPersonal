@@ -62,6 +62,7 @@ export default defineConfig({
             'node_modules/**',
             'public/**',
             'bootstrap/ssr/**',
+            'docs/design/**',
             'tailwind.config.js',
             'resources/js/actions/**',
             'resources/js/components/ui/*',

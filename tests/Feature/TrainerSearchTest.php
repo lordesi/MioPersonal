@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\TrainerProfile;
+use Carbon\CarbonImmutable;
 use Database\Seeders\CatalogSeeder;
 use Database\Seeders\DemoTrainerSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -98,8 +100,92 @@ class TrainerSearchTest extends TestCase
         $this->get(route('trainers.search', ['prezzo' => 'fino-35']))
             ->assertInertia(fn (Assert $page) => $page->where('total', 2));
 
+        // Giulia and Luca (45 €), Marco (50 €), Francesca (55 €).
+        $this->get(route('trainers.search', ['prezzo' => '45-60']))
+            ->assertInertia(fn (Assert $page) => $page->where('total', 4));
+
+        // No maximum: nobody of the demo trainers costs more than 60 €.
+        $this->get(route('trainers.search', ['prezzo' => 'oltre-60']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('total', 0));
+
         $this->get(route('trainers.search', ['domicilio' => '1']))
             ->assertInertia(fn (Assert $page) => $page->where('total', 5));
+    }
+
+    /**
+     * Wednesday 14 October 2026, 10:00 in Rome. The first free slots are set by
+     * hand, so the test doesn't depend on the day it runs.
+     */
+    private function freezeFirstFreeSlots(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-10-14 10:00', 'Europe/Rome'));
+
+        TrainerProfile::query()->update(['next_free_slot_at' => null]);
+
+        $slots = [
+            'giulia-rossi' => '2026-10-14 18:00', // today
+            'chiara-galli' => '2026-10-16 23:30', // last evening of the 3 days (21:30 UTC)
+            'andrea-conti' => '2026-10-17 00:30', // just after the 3 days, still in the week
+            'elena-ricci' => '2026-10-20 09:00', // last day of the week
+            'sara-colombo' => '2026-10-21 09:00', // after the week
+        ];
+
+        foreach ($slots as $slug => $time) {
+            TrainerProfile::query()->where('slug', $slug)->update([
+                'next_free_slot_at' => CarbonImmutable::parse($time, 'Europe/Rome')->utc(),
+            ]);
+        }
+    }
+
+    public function test_the_availability_filter_counts_whole_days_in_rome()
+    {
+        $this->freezeFirstFreeSlots();
+
+        $this->get(route('trainers.search', ['disponibilita' => 'oggi']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('filters.disponibilita', 'oggi')
+                ->where('total', 1)
+                ->where('trainers.0.name', 'Giulia Rossi')
+            );
+
+        // Giulia and Chiara.
+        $this->get(route('trainers.search', ['disponibilita' => '3-giorni']))
+            ->assertInertia(fn (Assert $page) => $page->where('total', 2));
+
+        // Giulia, Chiara, Andrea and Elena.
+        $this->get(route('trainers.search', ['disponibilita' => 'settimana']))
+            ->assertInertia(fn (Assert $page) => $page->where('total', 4));
+    }
+
+    public function test_the_home_search_bar_combines_city_discipline_availability_and_mode()
+    {
+        $this->freezeFirstFreeSlots();
+
+        // What the home sends: Cosa = Pilates, Dove = Milano, Quando, In presenza.
+        // Giulia (Milano) and Elena (Monza, also Milano); Sara is online only.
+        $this->get(route('trainers.search', [
+            'city' => 'milano',
+            'disciplina' => 'pilates',
+            'disponibilita' => 'settimana',
+            'modalita' => 'presenza',
+        ]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('city', ['slug' => 'milano', 'name' => 'Milano'])
+                ->where('total', 2)
+            );
+
+        $this->get(route('trainers.search', [
+            'city' => 'milano',
+            'disciplina' => 'pilates',
+            'disponibilita' => 'oggi',
+            'modalita' => 'presenza',
+        ]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('total', 1)
+                ->where('trainers.0.name', 'Giulia Rossi')
+            );
     }
 
     public function test_sort_by_price_puts_the_cheapest_first()

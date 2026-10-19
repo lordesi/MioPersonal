@@ -2,11 +2,11 @@ import { Link, router, usePage } from '@inertiajs/react';
 import {
     Calendar,
     ChevronDown,
+    ChevronsUpDown,
     CircleHelp,
     Dumbbell,
     Eye,
     Heart,
-    House,
     LayoutDashboard,
     LogOut,
     Settings,
@@ -34,12 +34,7 @@ import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { cn } from '@/lib/utils';
 import { logout } from '@/routes';
 import { settings } from '@/routes/account';
-import {
-    bookings,
-    completeProfile,
-    favorites,
-    home as clientHome,
-} from '@/routes/client';
+import { favorites, home as clientHome } from '@/routes/client';
 import { show as contactPage } from '@/routes/contact';
 import {
     register as trainerRegister,
@@ -68,6 +63,11 @@ type AccountMenuProps = {
     publicProfileHref?: string;
     /** The mobile menu opens right under the header: pass its height. */
     headerHeight?: 15 | 16;
+    /**
+     * 'sidebar': the button at the bottom of the black side menu (trainer and client areas)
+     * (desktop only), with the name; the menu opens above it.
+     */
+    placement?: 'header' | 'sidebar';
 };
 
 /** Groups of links, split by separators; «Esci» is added after the last one. */
@@ -116,10 +116,9 @@ function menuGroups({
 
     return [
         [
-            { title: 'Home', href: clientHome.url(), icon: House },
             {
                 title: 'Le mie prenotazioni',
-                href: bookings.url(),
+                href: clientHome.url(),
                 icon: Calendar,
             },
             {
@@ -128,7 +127,6 @@ function menuGroups({
                 icon: Heart,
                 badge: favoritesCount,
             },
-            { title: 'Profilo', href: completeProfile.url(), icon: User },
             {
                 title: 'Impostazioni account',
                 href: settings.url(),
@@ -158,7 +156,12 @@ const avatarOpen =
  * Desktop: dropdown under the avatar. Mobile: panel sliding from the top.
  */
 export default function AccountMenu(props: AccountMenuProps) {
-    const { variant, userName, headerHeight = 15 } = props;
+    const {
+        variant,
+        userName,
+        headerHeight = 15,
+        placement = 'header',
+    } = props;
     const { auth } = usePage().props;
     const email = auth?.user?.email ?? '';
     // The photo of "Completa il tuo profilo"; without it, the initials.
@@ -225,6 +228,84 @@ export default function AccountMenu(props: AccountMenuProps) {
         </>
     );
 
+    const menuContent = (
+        <DropdownMenuContent
+            align={placement === 'sidebar' ? 'start' : 'end'}
+            side={placement === 'sidebar' ? 'top' : 'bottom'}
+            sideOffset={8}
+            className="w-72 rounded-xl bg-card p-1.5 shadow-xl"
+        >
+            <DropdownMenuLabel className="p-0 font-normal">
+                {header}
+            </DropdownMenuLabel>
+            {groups.map((group, index) => (
+                <Fragment key={group[0].title}>
+                    <DropdownMenuSeparator
+                        className={cn(
+                            '-mx-1.5',
+                            index === 0 ? 'mt-0 mb-1.5' : 'my-1.5',
+                        )}
+                    />
+                    <DropdownMenuGroup>
+                        {group.map((item) => (
+                            <DropdownMenuItem
+                                key={item.title}
+                                asChild
+                                className={cn(
+                                    'min-h-10 cursor-pointer gap-2.5 rounded-lg px-2.5 text-sm font-medium [&_svg]:text-foreground!',
+                                    item.hint && 'py-2',
+                                )}
+                            >
+                                <Link href={item.href}>
+                                    {itemContent(item)}
+                                </Link>
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuGroup>
+                </Fragment>
+            ))}
+            <DropdownMenuSeparator className="-mx-1.5 my-1.5" />
+            <DropdownMenuItem
+                asChild
+                className="h-10 w-full cursor-pointer gap-2.5 rounded-lg px-2.5 text-sm font-medium [&_svg]:text-foreground!"
+            >
+                <Link href={logout()} as="button" onClick={handleLogout}>
+                    {logoutContent}
+                </Link>
+            </DropdownMenuItem>
+        </DropdownMenuContent>
+    );
+
+    if (placement === 'sidebar') {
+        return (
+            <DropdownMenu open={desktopOpen} onOpenChange={setDesktopOpen}>
+                <DropdownMenuTrigger
+                    aria-label={label}
+                    className="flex w-full items-center gap-3 rounded-xl bg-sidebar-accent p-2.5 text-left text-sidebar-foreground"
+                >
+                    <UserAvatar
+                        name={userName}
+                        src={avatar}
+                        size="md"
+                        className="[&_[data-slot=avatar-fallback]]:bg-sidebar-primary [&_[data-slot=avatar-fallback]]:text-sidebar-primary-foreground"
+                    />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate text-sm font-semibold">
+                            {userName}
+                        </span>
+                        <span className="text-xs text-sidebar-muted-foreground">
+                            {variant === 'trainer'
+                                ? 'Personal trainer'
+                                : 'Il mio account'}
+                        </span>
+                    </span>
+                    <ChevronsUpDown aria-hidden="true" className="size-4" />
+                </DropdownMenuTrigger>
+                {menuContent}
+            </DropdownMenu>
+        );
+    }
+
     return (
         <>
             {/* Desktop (md and up). */}
@@ -240,54 +321,7 @@ export default function AccountMenu(props: AccountMenuProps) {
                     />
                     <ChevronDown aria-hidden="true" className="size-3.5" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent
-                    align="end"
-                    sideOffset={8}
-                    className="w-72 rounded-xl bg-card p-1.5 shadow-xl"
-                >
-                    <DropdownMenuLabel className="p-0 font-normal">
-                        {header}
-                    </DropdownMenuLabel>
-                    {groups.map((group, index) => (
-                        <Fragment key={group[0].title}>
-                            <DropdownMenuSeparator
-                                className={cn(
-                                    '-mx-1.5',
-                                    index === 0 ? 'mt-0 mb-1.5' : 'my-1.5',
-                                )}
-                            />
-                            <DropdownMenuGroup>
-                                {group.map((item) => (
-                                    <DropdownMenuItem
-                                        key={item.title}
-                                        asChild
-                                        className={cn(
-                                            'min-h-10 cursor-pointer gap-2.5 rounded-lg px-2.5 text-sm font-medium [&_svg]:text-foreground!',
-                                            item.hint && 'py-2',
-                                        )}
-                                    >
-                                        <Link href={item.href}>
-                                            {itemContent(item)}
-                                        </Link>
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuGroup>
-                        </Fragment>
-                    ))}
-                    <DropdownMenuSeparator className="-mx-1.5 my-1.5" />
-                    <DropdownMenuItem
-                        asChild
-                        className="h-10 w-full cursor-pointer gap-2.5 rounded-lg px-2.5 text-sm font-medium [&_svg]:text-foreground!"
-                    >
-                        <Link
-                            href={logout()}
-                            as="button"
-                            onClick={handleLogout}
-                        >
-                            {logoutContent}
-                        </Link>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
+                {menuContent}
             </DropdownMenu>
 
             {/* Mobile: the header stays visible above the panel. */}

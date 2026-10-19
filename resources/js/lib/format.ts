@@ -258,6 +258,25 @@ export function formatDayRelative(iso: string, now = new Date()): string {
     return formatDayShort(iso);
 }
 
+/** ISO UTC → "oggi", "domani" or "lunedì 19 ottobre" */
+export function formatDayRelativeLong(iso: string, now = new Date()): string {
+    const day = formatDayRelative(iso, now);
+
+    return day === 'Oggi' || day === 'Domani'
+        ? day.toLowerCase()
+        : formatDateLong(iso).toLowerCase();
+}
+
+/** ISO UTC → "oggi alle 13:00", "domani alle 15:00" or "lunedì 19 ottobre alle 14:00" */
+export function formatDayTimeRelative(iso: string, now = new Date()): string {
+    return `${formatDayRelativeLong(iso, now)} alle ${formatTime(iso)}`;
+}
+
+/** ISO UTC start + hours → "13:00 – 14:00", the spaced range of the client dashboard */
+export function formatTimeSpan(start: string, hours: number): string {
+    return `${formatTime(start)} – ${formatTime(addHours(start, hours))}`;
+}
+
 /** ISO UTC → "oggi", "ieri", "2 giorni fa" within a week, then "luglio 2026" */
 export function formatPastDate(iso: string, now = new Date()): string {
     const date = new Date(iso);
