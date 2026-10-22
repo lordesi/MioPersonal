@@ -1,38 +1,40 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import type { ReactNode } from 'react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import TrainerProfileEditController from '@/actions/App/Http/Controllers/TrainerProfileEditController';
 import type { TrainerDraft } from '@/components/onboarding/trainer/draft';
 import {
-    isProfileComplete,
     isCertificationValid,
+    isProfileComplete,
+    MAX_GOALS,
     needsCity,
     stepOfField,
     toProfilePayload,
 } from '@/components/onboarding/trainer/draft';
-import StepCertifications from '@/components/onboarding/trainer/step-certifications';
-import StepErrors from '@/components/onboarding/trainer/step-errors';
-import StepPlaces from '@/components/onboarding/trainer/step-places';
-import StepProfile from '@/components/onboarding/trainer/step-profile';
-import { EditingProfileContext } from '@/components/onboarding/trainer/step-title';
+import { usePhotoPreview } from '@/components/onboarding/trainer/step-profile';
 import ConfirmDialog from '@/components/shared/confirm-dialog';
 import PageHeading from '@/components/trainer/area/page-heading';
+import CertificationsSection from '@/components/trainer/profile/certifications-section';
 import GalleryPhotos from '@/components/trainer/profile/gallery-photos';
 import type { GalleryPhoto } from '@/components/trainer/profile/gallery-photos';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import ProfilePreview, {
+    profileChecks,
+} from '@/components/trainer/profile/profile-preview';
+import PublicProfileSection from '@/components/trainer/profile/public-profile-section';
+import SearchSection from '@/components/trainer/profile/search-section';
 import { register } from '@/routes/trainer';
 import type { CatalogOption, CityOption } from '@/types';
 
 type ProfileProps = {
     /** null until the team approves the profile: it is changed from "Diventa trainer". */
     draft: Omit<TrainerDraft, 'photo'> | null;
-    /** Options of "Discipline, luoghi e città", from the catalog. */
+    /** Options of "Discipline, obiettivi, luoghi e città", from the catalog. */
     disciplines: CatalogOption[];
     cities: CityOption[];
     /** "Foto della galleria", saved one action at a time. */
     gallery: GalleryPhoto[];
     maxGalleryPhotos: number;
+    /** "Nuovo" (value null) or the stars, in the preview. */
+    rating: { value: number | null; count: number } | null;
 };
 
 export default function Profile({
@@ -41,17 +43,15 @@ export default function Profile({
     cities,
     gallery,
     maxGalleryPhotos,
+    rating,
 }: ProfileProps) {
     return (
         <>
-            <Head title="Modifica profilo" />
+            <Head title="Il mio profilo" />
 
-            <PageHeading
-                title="Modifica profilo"
-                description="Le modifiche sono visibili sul tuo profilo pubblico appena le salvi."
-            />
+            <PageHeading title="Il mio profilo" />
 
-            {draft === null ? (
+            {draft === null || rating === null ? (
                 <p className="text-sm text-muted-foreground">
                     Finché il profilo non è approvato lo modifichi dalla{' '}
                     <Link
@@ -67,12 +67,9 @@ export default function Profile({
                     saved={draft}
                     disciplines={disciplines}
                     cities={cities}
-                    gallery={
-                        <GalleryPhotos
-                            photos={gallery}
-                            max={maxGalleryPhotos}
-                        />
-                    }
+                    gallery={gallery}
+                    maxGalleryPhotos={maxGalleryPhotos}
+                    rating={rating}
                 />
             )}
         </>
@@ -80,26 +77,32 @@ export default function Profile({
 }
 
 /**
- * Steps 2, 3 and 6 of "Diventa trainer" on one page, saved with one
- * button. The steps edit one draft, as in the registration. The services
- * (step 4) are changed from "Servizi".
+ * The four sections on the left (steps 2, 3 and 6 of "Diventa trainer"),
+ * the preview with "Salva modifiche" on the right. The fields are saved
+ * with one button, public right away; the gallery photos are saved one
+ * action at a time. The services are changed from "Servizi".
  */
 function ProfileForm({
     saved,
     disciplines,
     cities,
     gallery,
+    maxGalleryPhotos,
+    rating,
 }: {
     saved: Omit<TrainerDraft, 'photo'>;
     disciplines: CatalogOption[];
     cities: CityOption[];
-    /** Shown after the profile photo; its buttons don't submit this form. */
-    gallery: ReactNode;
+    gallery: GalleryPhoto[];
+    maxGalleryPhotos: number;
+    rating: { value: number | null; count: number };
 }) {
+    const userName = usePage().props.auth?.user?.name ?? '';
     const [draft, setDraft] = useState<TrainerDraft>({
         ...saved,
         photo: null,
     });
+    const photo = usePhotoPreview(draft);
     // Only the request: the fields live in `draft`.
     const form = useForm({});
     const [changed, setChanged] = useState(false);
@@ -111,11 +114,18 @@ function ProfileForm({
         setChanged(true);
     };
 
-    // The same checks that let the registration go on, step by step.
+    // The same checks as the server (TrainerProfileUpdateRequest).
     const complete =
         isProfileComplete(draft) &&
         draft.disciplines.length > 0 &&
+        draft.goals.length > 0 &&
+        draft.goals.length <= MAX_GOALS &&
         draft.places.length > 0 &&
+        (!draft.places.includes('studio') ||
+            draft.studios.every(
+                (studio) =>
+                    studio.name.trim() !== '' && studio.address.trim() !== '',
+            )) &&
         (!needsCity(draft) || draft.city !== '') &&
         draft.certifications.every(isCertificationValid);
 
@@ -128,7 +138,7 @@ function ProfileForm({
     const askToSave = (event: React.FormEvent) => {
         event.preventDefault();
 
-        if (complete && !form.processing) {
+        if (changed && complete && !form.processing) {
             setConfirming(true);
         }
     };
@@ -154,49 +164,62 @@ function ProfileForm({
         });
     };
 
+    // null when nothing changed: the preview shows no status.
+    let status: string | null = 'Modifiche non salvate';
+
+    if (form.processing) {
+        status = 'Salvataggio…';
+    } else if (!changed) {
+        status = null;
+    } else if (!complete) {
+        status = 'Completa i campi obbligatori';
+    }
+
     return (
-        <EditingProfileContext.Provider value={true}>
+        <>
             <form
                 noValidate
                 onSubmit={askToSave}
-                className="flex flex-col gap-5"
+                className="flex flex-wrap items-start gap-5"
             >
-                <Card errors={errorsOf(2)}>
-                    <StepProfile draft={draft} update={update} />
-                </Card>
-                {gallery}
-                <Card errors={errorsOf(3)}>
-                    <StepPlaces
+                <div className="flex min-w-0 flex-[3_1_560px] flex-col gap-4">
+                    <PublicProfileSection
+                        draft={draft}
+                        update={update}
+                        photo={photo}
+                        userName={userName}
+                        errors={errorsOf(2)}
+                    />
+                    {/* Its buttons don't submit this form: each action is saved right away. */}
+                    <GalleryPhotos photos={gallery} max={maxGalleryPhotos} />
+                    <SearchSection
                         draft={draft}
                         update={update}
                         disciplines={disciplines}
                         cities={cities}
+                        errors={errorsOf(3)}
                     />
-                </Card>
-                <Card errors={errorsOf(6)}>
-                    <StepCertifications draft={draft} update={update} />
-                </Card>
-
-                <div className="flex flex-wrap items-center gap-3">
-                    <Button
-                        type="submit"
-                        disabled={!complete || form.processing}
-                        className="h-10 font-semibold"
-                    >
-                        {form.processing && <Spinner />}
-                        Salva modifiche
-                    </Button>
-                    {!complete && (
-                        <span className="text-sm text-muted-foreground">
-                            Completa i campi obbligatori per salvare.
-                        </span>
-                    )}
-                    {form.recentlySuccessful && !changed && (
-                        <span role="status" className="text-sm">
-                            ✓ Salvato
-                        </span>
-                    )}
+                    <CertificationsSection
+                        draft={draft}
+                        update={update}
+                        errors={errorsOf(6)}
+                    />
                 </div>
+                <aside className="min-w-0 flex-[2_1_320px] lg:sticky lg:top-6">
+                    <ProfilePreview
+                        draft={draft}
+                        userName={userName}
+                        photo={photo}
+                        rating={rating}
+                        disciplines={disciplines}
+                        cities={cities}
+                        checks={profileChecks(draft, photo, gallery.length)}
+                        status={status}
+                        changed={changed}
+                        canSave={changed && complete}
+                        saving={form.processing}
+                    />
+                </aside>
             </form>
             <ConfirmDialog
                 open={confirming}
@@ -206,16 +229,6 @@ function ProfileForm({
                 confirmLabel="Salva"
                 onConfirm={save}
             />
-        </EditingProfileContext.Provider>
-    );
-}
-
-/** One step of the registration, as a card of the page. */
-function Card({ errors, children }: { errors: string[]; children: ReactNode }) {
-    return (
-        <section className="flex flex-col gap-5 rounded-[20px] border bg-card p-5 md:p-6">
-            <StepErrors errors={errors} />
-            {children}
-        </section>
+        </>
     );
 }

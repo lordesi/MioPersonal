@@ -21,7 +21,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                 Ricordi la password?
                 <Link
                     href={login()}
-                    className="font-medium text-foreground underline"
+                    className="font-medium text-primary-foreground underline"
                 >
                     Accedi
                 </Link>

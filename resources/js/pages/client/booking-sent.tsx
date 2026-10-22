@@ -118,18 +118,23 @@ export default function BookingSent({ booking }: BookingSentProps) {
                             label: 'Quando',
                             value: `${formatDateMedium(booking.start)}, ${formatTimeRange(booking.start, booking.hours)}`,
                         },
-                        {
-                            label: 'Dove',
-                            value: (
-                                <>
-                                    {booking.placeLabel}
-                                    <br />
-                                    <span className="font-normal text-muted-foreground">
-                                        Indirizzo dopo la conferma
-                                    </span>
-                                </>
-                            ),
-                        },
+                        // No place when the trainer has more than one: the row is left out.
+                        ...(booking.placeLabel
+                            ? [
+                                  {
+                                      label: 'Dove',
+                                      value: (
+                                          <>
+                                              {booking.placeLabel}
+                                              <br />
+                                              <span className="font-normal text-muted-foreground">
+                                                  Indirizzo dopo la conferma
+                                              </span>
+                                          </>
+                                      ),
+                                  },
+                              ]
+                            : []),
                         {
                             label: 'Prezzo indicativo',
                             value: `${formatPrice(booking.priceCents)}, da pagare a ${trainer.firstName}`,

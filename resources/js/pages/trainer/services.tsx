@@ -145,6 +145,9 @@ function ServicesForm({
         });
     };
 
+    // "Online" (only for who trains both ways) comes right after the price list.
+    const firstStep = asksOnlinePrice ? 3 : 2;
+
     let status = 'Modifiche non salvate';
 
     if (form.processing) {
@@ -159,9 +162,9 @@ function ServicesForm({
         <form
             noValidate
             onSubmit={save}
-            className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]"
+            className="flex flex-wrap items-start gap-5"
         >
-            <div className="flex min-w-0 flex-col gap-4">
+            <div className="flex min-w-0 flex-[3_1_560px] flex-col gap-4">
                 <PriceListSection
                     sessions={pricing.sessions}
                     onChange={(sessions) => update({ sessions })}
@@ -175,6 +178,7 @@ function ServicesForm({
                 />
                 {asksOnlinePrice && (
                     <OnlinePricesSection
+                        step={2}
                         sessions={pricing.sessions}
                         onChange={(sessions) => update({ sessions })}
                         samePrice={pricing.onlineSamePrice}
@@ -186,6 +190,7 @@ function ServicesForm({
                     />
                 )}
                 <FirstSessionSection
+                    step={firstStep}
                     mode={firstMode}
                     onModeChange={changeFirstMode}
                     firstSession={pricing.firstSession}
@@ -202,16 +207,18 @@ function ServicesForm({
                     )}
                 />
                 <PackagesSection
+                    step={firstStep + 1}
                     packages={pricing.packages}
                     onChange={(packages) => update({ packages })}
                     sessions={pricing.sessions}
                     errors={errorsOf((field) => field.startsWith('packages'))}
                 />
             </div>
-            <aside className="xl:sticky xl:top-4">
+            <aside className="min-w-0 flex-[2_1_320px] lg:sticky lg:top-6">
                 <ClientPreview
                     rows={previewRows(toSave, firstMode, ownOnline)}
                     status={status}
+                    changed={changed}
                     canSave={changed && complete}
                     saving={form.processing}
                 />

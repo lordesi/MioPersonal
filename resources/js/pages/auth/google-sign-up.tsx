@@ -35,7 +35,7 @@ export default function GoogleSignUp({ email, firstName, lastName }: Props) {
                 Hai già un account?
                 <Link
                     href={login()}
-                    className="font-medium text-foreground underline"
+                    className="font-medium text-primary-foreground underline"
                 >
                     Accedi
                 </Link>

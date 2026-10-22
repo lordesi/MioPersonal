@@ -39,5 +39,3 @@ export default function Contacts({ email, ...form }: ContactsProps) {
         </div>
     );
 }
-
-Contacts.layout = { nav: 'info', section: 'contacts', footer: 'compact' };

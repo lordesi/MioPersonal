@@ -33,7 +33,7 @@ export default function ResetPassword({ token, email }: Props) {
                 Ricordi la password?
                 <Link
                     href={login()}
-                    className="font-medium text-foreground underline"
+                    className="font-medium text-primary-foreground underline"
                 >
                     Accedi
                 </Link>

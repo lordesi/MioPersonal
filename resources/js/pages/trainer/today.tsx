@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { Bell, Check, Clock } from 'lucide-react';
+import { Bell, Clock } from 'lucide-react';
 import { useState } from 'react';
 import PageHeading from '@/components/trainer/area/page-heading';
 import Panel from '@/components/trainer/area/panel';
@@ -57,29 +57,18 @@ export default function Today({
         {
             label: 'Richieste da confermare',
             value: String(stats.pending),
-            detail:
-                stats.pending === 0 ? (
-                    <span className="flex items-center gap-1.5 text-foreground">
-                        <Check
-                            aria-hidden="true"
-                            className="size-3.5"
-                            strokeWidth={2.5}
-                        />
-                        Tutto in ordine
-                    </span>
-                ) : (
-                    <Link
-                        href={requestsPage()}
-                        className="font-semibold text-foreground underline"
-                    >
-                        Rispondi entro 24 ore
-                    </Link>
-                ),
+            detail: stats.pending > 0 && (
+                <Link
+                    href={requestsPage()}
+                    className="font-semibold text-foreground underline"
+                >
+                    Rispondi entro 24 ore
+                </Link>
+            ),
         },
         {
             label: 'Sedute nei prossimi 7 giorni',
             value: String(stats.weekSessions),
-            detail: `${hoursLabel(stats.weekHours)} in agenda · ${stats.weekClients === 1 ? '1 cliente' : `${stats.weekClients} clienti`}`,
         },
     ];
 
@@ -174,15 +163,6 @@ function greeting(hour: number): string {
     }
 
     return hour < 18 ? 'Buon pomeriggio' : 'Buonasera';
-}
-
-/** 3 → "3 ore", 1 → "1 ora", 2.5 → "2,5 ore" */
-function hoursLabel(hours: number): string {
-    if (hours === 1) {
-        return '1 ora';
-    }
-
-    return `${hours.toLocaleString('it-IT', { maximumFractionDigits: 1 })} ore`;
 }
 
 Today.layout = { section: 'today' };

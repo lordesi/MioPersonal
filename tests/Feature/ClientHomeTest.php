@@ -93,7 +93,6 @@ class ClientHomeTest extends TestCase
                 ->where('upcoming.0.trainerName', $trainer->user->name)
                 ->where('upcoming.0.start', $tomorrow->utc()->format('Y-m-d\TH:i:s\Z'))
                 ->where('upcoming.0.freeCancellationUntil', $tomorrow->subDay()->utc()->format('Y-m-d\TH:i:s\Z'))
-                ->where('upcoming.0.calendarHref', route('client.bookings.calendar', $next, false))
                 ->where('upcoming.1.id', $later->id)
                 ->has('pending', 3)
                 ->where('pending.0.status', 'pending')
@@ -189,6 +188,21 @@ class ClientHomeTest extends TestCase
                 ->has('recommended', 2)
                 ->where('recommended.0.slug', $yogaInMilano->slug)
                 ->where('recommended.1.slug', $boxeInMilano->slug)
+            );
+    }
+
+    public function test_the_highest_budget_means_no_limit()
+    {
+        $client = User::factory()->create();
+        $client->clientPreference()->create(['budget_max_cents' => 10000]);
+
+        $expensive = TrainerProfile::factory()->approved()->create(['price_from_cents' => 12000]);
+
+        $this->actingAs($client)
+            ->get(route('client.home'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('recommended', 1)
+                ->where('recommended.0.slug', $expensive->slug)
             );
     }
 

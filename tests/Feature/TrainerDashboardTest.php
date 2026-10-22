@@ -36,7 +36,7 @@ class TrainerDashboardTest extends TestCase
                 ->has('requests', 0)
                 ->has('packages', 0)
                 ->has('past', 0)
-                ->where('stats', ['pending' => 0, 'weekSessions' => 0, 'weekHours' => 0, 'weekClients' => 0])
+                ->where('stats', ['pending' => 0, 'weekSessions' => 0])
                 ->where('trainerArea.pendingCount', 0)
             );
     }
@@ -66,10 +66,8 @@ class TrainerDashboardTest extends TestCase
                 ->where('agenda.1.kind', 'confirmed')
                 ->where('agenda.2.id', $request->id)
                 ->where('agenda.2.kind', 'pending')
-                // Only the confirmed ones count: 1 hour + 1 hour and a half, one client.
+                // Only the confirmed ones count.
                 ->where('stats.weekSessions', 2)
-                ->where('stats.weekHours', 2.5)
-                ->where('stats.weekClients', 1)
                 ->where('stats.pending', 1)
             );
     }

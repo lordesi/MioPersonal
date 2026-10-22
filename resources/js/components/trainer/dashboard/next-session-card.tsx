@@ -5,8 +5,7 @@ import UserAvatar from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
 import { romeParts } from '@/lib/calendar';
 import { formatDayLong, formatDayRelative, formatTime } from '@/lib/format';
-import { availability, calendar } from '@/routes/trainer';
-import { show as showClient } from '@/routes/trainer/clients';
+import { availability, calendar, clients } from '@/routes/trainer';
 import type { TrainerSession } from '@/types';
 
 type NextSessionCardProps = {
@@ -70,7 +69,9 @@ export default function NextSessionCard({
                                 {session.clientName}
                             </span>
                             <span className="text-sm text-sidebar-muted-foreground">
-                                {session.serviceName} · {session.placeLabel}
+                                {session.serviceName}
+                                {session.placeLabel &&
+                                    ` · ${session.placeLabel}`}
                             </span>
                         </span>
                     </div>
@@ -80,7 +81,11 @@ export default function NextSessionCard({
                                 asChild
                                 className="h-11 rounded-[10px] bg-sidebar-primary px-4.5 font-semibold text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
                             >
-                                <Link href={showClient(session.clientId)}>
+                                <Link
+                                    href={clients({
+                                        query: { cliente: session.clientId },
+                                    })}
+                                >
                                     Vedi dettagli
                                 </Link>
                             </Button>

@@ -1,13 +1,12 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Search as SearchIcon } from 'lucide-react';
 import { useState } from 'react';
-import FilterBar from '@/components/search/filter-bar';
+import FilterBar, { SearchControls } from '@/components/search/filter-bar';
 import type {
     ActiveFilters,
     SearchOption,
 } from '@/components/search/filter-bar';
 import SearchPagination from '@/components/search/search-pagination';
-import EmptyState from '@/components/states/empty-state';
 import TrainerCard from '@/components/trainer/trainer-card';
 import {
     Breadcrumb,
@@ -24,6 +23,31 @@ import type { SearchFilters } from '@/lib/search';
 import { home, login } from '@/routes';
 import type { TrainerSummary } from '@/types';
 
+/**
+ * No trainer matches every filter: similar profiles, found leaving out
+ * more and more filters (TrainerSearchController::suggestions).
+ * some = at least one of the chosen disciplines and goals;
+ * fewer-filters = also without price, availability, rating…;
+ * city = every trainer of the city.
+ */
+type Suggestions = {
+    step: 'some' | 'fewer-filters' | 'city';
+    trainers: TrainerSummary[];
+};
+
+/** The filters the "fewer-filters" suggestions leave out, as in the sentence. */
+const minorFilterNames: Partial<Record<keyof ActiveFilters, string>> = {
+    prezzo: 'prezzo',
+    disponibilita: 'disponibilità',
+    valutazione: 'valutazione',
+    domicilio: 'a domicilio',
+    preferiti: 'solo preferiti',
+};
+
+/** "a, b e c". */
+const joinNames = (names: string[]) =>
+    new Intl.ListFormat('it', { type: 'conjunction' }).format(names);
+
 type SearchProps = {
     /** The city in the URL; null = all of Italy. */
     city: { slug: string; name: string } | null;
@@ -33,9 +57,14 @@ type SearchProps = {
     total: number;
     pagination: { currentPage: number; lastPage: number };
     filters: ActiveFilters;
+    /** Only when nothing matches; null if not even these. */
+    suggestions: Suggestions | null;
     disciplines: SearchOption[];
     cities: SearchOption[];
 };
+
+/** Light links on the dark block. */
+const crumbLink = 'text-primary-foreground/60 hover:text-primary-foreground';
 
 export default function Search({
     city,
@@ -43,6 +72,7 @@ export default function Search({
     total,
     pagination,
     filters,
+    suggestions,
     disciplines,
     cities,
 }: SearchProps) {
@@ -62,6 +92,9 @@ export default function Search({
             { preserveState: true, preserveScroll: true, replace: true },
         );
 
+    const changeFilters = (changes: SearchFilters, nextCity?: string | null) =>
+        visit({ ...filters, ...changes }, nextCity);
+
     const toggleFavorite = (slug: string, pressed: boolean) => {
         if (!auth?.user) {
             router.visit(login());
@@ -78,122 +111,205 @@ export default function Search({
     // Back to all of Italy, keeping only the sort order.
     const resetFilters = () => visit({ ordina: filters.ordina }, null);
 
+    /** The cards with the heart (for clients and guests). */
+    const trainerGrid = (list: TrainerSummary[]) => (
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-5">
+            {list.map((trainer) => (
+                <li key={trainer.href} className="flex">
+                    <TrainerCard
+                        trainer={trainer}
+                        className="flex-1"
+                        favorite={
+                            canSave
+                                ? {
+                                      pressed:
+                                          saved[trainer.slug] ??
+                                          trainer.favorite ??
+                                          false,
+                                      onPressedChange: (pressed) =>
+                                          toggleFavorite(trainer.slug, pressed),
+                                  }
+                                : undefined
+                        }
+                    />
+                </li>
+            ))}
+        </ul>
+    );
+
+    /** Under "Nessun trainer…": why the profiles below are there. */
+    const emptyHint = (() => {
+        switch (suggestions?.step) {
+            case 'some':
+                return `Nessuno fa tutto quello che hai scelto ${place}: questi profili ne fanno almeno una parte.`;
+            case 'fewer-filters': {
+                const left = Object.entries(minorFilterNames)
+                    .filter(([name]) => filters[name as keyof ActiveFilters])
+                    .map(([, name]) => name as string);
+
+                return `Questi profili sono simili, ma senza ${left.length === 1 ? 'il filtro' : 'i filtri'} ${joinNames(left)}.`;
+            }
+            case 'city':
+                return `Nessuno ${place} fa quello che hai scelto: ecco gli altri trainer ${place}.`;
+            default:
+                return 'Prova a togliere un filtro o ad allargare la zona.';
+        }
+    })();
+
     return (
         <>
             <Head title={`Personal trainer ${place}`} />
 
-            <div className="mx-auto flex w-full max-w-7xl flex-col md:gap-6 md:px-8 md:pt-8 md:pb-20">
-                <Breadcrumb aria-label="Percorso" className="hidden md:block">
-                    <BreadcrumbList className="gap-2 sm:gap-2">
-                        <BreadcrumbItem>
-                            <BreadcrumbLink asChild>
-                                <Link href={home()}>Home</Link>
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>
-                        <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                        {city ? (
-                            <>
-                                <BreadcrumbItem>
-                                    <BreadcrumbLink asChild>
-                                        <Link href={searchUrl()}>
-                                            Personal trainer
-                                        </Link>
-                                    </BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                                <BreadcrumbItem>
-                                    <BreadcrumbPage>{city.name}</BreadcrumbPage>
-                                </BreadcrumbItem>
-                            </>
-                        ) : (
+            <section
+                aria-labelledby="search-title"
+                className="bg-primary text-primary-foreground"
+            >
+                <div className="mx-auto flex w-full max-w-7xl flex-col gap-5.5 px-4 pt-6 pb-10 md:px-8">
+                    <Breadcrumb aria-label="Percorso">
+                        <BreadcrumbList className="gap-2 text-[13px] leading-[18px] text-primary-foreground/60 sm:gap-2">
                             <BreadcrumbItem>
-                                <BreadcrumbPage>
-                                    Personal trainer
-                                </BreadcrumbPage>
+                                <BreadcrumbLink asChild className={crumbLink}>
+                                    <Link href={home()}>Home</Link>
+                                </BreadcrumbLink>
                             </BreadcrumbItem>
-                        )}
-                    </BreadcrumbList>
-                </Breadcrumb>
+                            <BreadcrumbSeparator>/</BreadcrumbSeparator>
+                            {city ? (
+                                <>
+                                    <BreadcrumbItem>
+                                        <BreadcrumbLink
+                                            asChild
+                                            className={crumbLink}
+                                        >
+                                            <Link href={searchUrl()}>
+                                                Personal trainer
+                                            </Link>
+                                        </BreadcrumbLink>
+                                    </BreadcrumbItem>
+                                    <BreadcrumbSeparator>/</BreadcrumbSeparator>
+                                    <BreadcrumbItem>
+                                        <BreadcrumbPage className="text-primary-foreground">
+                                            {city.name}
+                                        </BreadcrumbPage>
+                                    </BreadcrumbItem>
+                                </>
+                            ) : (
+                                <BreadcrumbItem>
+                                    <BreadcrumbPage className="text-primary-foreground">
+                                        Personal trainer
+                                    </BreadcrumbPage>
+                                </BreadcrumbItem>
+                            )}
+                        </BreadcrumbList>
+                    </Breadcrumb>
 
-                <div className="flex flex-col gap-1 px-4 pt-6 pb-4 md:p-0">
-                    <h1 className="text-3xl font-semibold tracking-tight md:text-4xl md:leading-10">
-                        Personal trainer {place}
-                    </h1>
-                    <p className="text-sm text-muted-foreground tabular-nums md:text-base">
-                        {total > 0
-                            ? `Risultato: ${total} trainer`
-                            : 'Non risultano trainer con queste caratteristiche, prova a cambiare i filtri'}
-                    </p>
-                </div>
-
-                <FilterBar
-                    filters={filters}
-                    disciplines={disciplines}
-                    cities={cities}
-                    city={city?.slug ?? null}
-                    onChange={(changes, nextCity) =>
-                        visit({ ...filters, ...changes }, nextCity)
-                    }
-                    onReset={resetFilters}
-                />
-
-                {trainers.length > 0 ? (
-                    <div className="flex flex-col pb-8 md:pb-0">
-                        <ul className="flex flex-col gap-3 p-4 md:grid md:grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] md:gap-6 md:p-0">
-                            {trainers.map((trainer) => (
-                                <li key={trainer.href} className="flex">
-                                    <TrainerCard
-                                        trainer={trainer}
-                                        className="flex-1"
-                                        favorite={
-                                            canSave
-                                                ? {
-                                                      pressed:
-                                                          saved[trainer.slug] ??
-                                                          trainer.favorite ??
-                                                          false,
-                                                      onPressedChange: (
-                                                          pressed,
-                                                      ) =>
-                                                          toggleFavorite(
-                                                              trainer.slug,
-                                                              pressed,
-                                                          ),
-                                                  }
-                                                : undefined
-                                        }
-                                    />
-                                </li>
-                            ))}
-                        </ul>
-                        <SearchPagination
-                            {...pagination}
-                            pageUrl={(pagina) =>
-                                searchUrl({ ...filters, pagina }, city?.slug)
-                            }
-                        />
+                    <div className="flex flex-col gap-1.5">
+                        <h1
+                            id="search-title"
+                            className="text-[34px] leading-10 font-bold tracking-[-0.03em] md:text-[44px] md:leading-12"
+                        >
+                            Personal trainer {place}
+                        </h1>
+                        <p
+                            aria-live="polite"
+                            className="text-base text-primary-foreground/60 tabular-nums"
+                        >
+                            {total === 1
+                                ? '1 trainer disponibile'
+                                : `${total} trainer disponibili`}
+                        </p>
                     </div>
-                ) : (
-                    <EmptyState
-                        bordered
-                        icon={SearchIcon}
-                        title="Nessun trainer con questi filtri"
-                        action={
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="max-md:h-11"
-                                onClick={resetFilters}
-                            >
-                                Cancella i filtri
-                            </Button>
-                        }
-                        className="m-4 md:m-0"
+
+                    <SearchControls
+                        filters={filters}
+                        disciplines={disciplines}
+                        cities={cities}
+                        city={city?.slug ?? null}
+                        onChange={changeFilters}
                     />
-                )}
+                </div>
+            </section>
+
+            <div className="flex-1 bg-muted">
+                <div className="mx-auto flex w-full max-w-7xl flex-col gap-4.5 px-4 pt-6 pb-16 md:px-8">
+                    <FilterBar
+                        filters={filters}
+                        disciplines={disciplines}
+                        cities={cities}
+                        city={city?.slug ?? null}
+                        favorites={
+                            canSave
+                                ? {
+                                      count: auth?.favoritesCount ?? 0,
+                                      guest: !auth?.user,
+                                  }
+                                : undefined
+                        }
+                        onChange={changeFilters}
+                        onReset={resetFilters}
+                    />
+
+                    {trainers.length > 0 ? (
+                        <>
+                            {trainerGrid(trainers)}
+                            <SearchPagination
+                                {...pagination}
+                                pageUrl={(pagina) =>
+                                    searchUrl(
+                                        { ...filters, pagina },
+                                        city?.slug,
+                                    )
+                                }
+                            />
+                        </>
+                    ) : (
+                        <>
+                            {/* A short strip on top: the similar profiles stay in sight. */}
+                            <div
+                                role="status"
+                                className="flex flex-wrap items-center gap-3.5 rounded-2xl border bg-card px-4 py-3.5 sm:px-5"
+                            >
+                                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                                    <SearchIcon
+                                        aria-hidden="true"
+                                        className="size-5"
+                                    />
+                                </span>
+                                <div className="flex min-w-0 flex-[1_1_240px] flex-col gap-0.5">
+                                    <h2 className="text-base leading-6 font-semibold">
+                                        Nessun trainer con questi filtri
+                                    </h2>
+                                    <p className="text-sm text-muted-foreground">
+                                        {emptyHint}
+                                    </p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={resetFilters}
+                                    className="h-10 rounded-xl px-4 font-semibold"
+                                >
+                                    Cancella i filtri
+                                </Button>
+                            </div>
+
+                            {suggestions && (
+                                <section
+                                    aria-labelledby="suggestions-title"
+                                    className="flex flex-col gap-3.5"
+                                >
+                                    <h2
+                                        id="suggestions-title"
+                                        className="text-lg leading-6.5 font-semibold"
+                                    >
+                                        Profili simili
+                                    </h2>
+                                    {trainerGrid(suggestions.trainers)}
+                                </section>
+                            )}
+                        </>
+                    )}
+                </div>
             </div>
         </>
     );
 }
-
-Search.layout = { section: 'search' };

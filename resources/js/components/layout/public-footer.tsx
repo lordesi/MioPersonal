@@ -8,44 +8,55 @@ import { cookies, privacy, terms } from '@/routes/legal';
 import { register as trainerRegister } from '@/routes/trainer';
 
 const platformLinks = [
+    { title: 'Home', href: home.url() },
     { title: 'Cerca trainer', href: searchUrl() },
-    { title: 'Per i trainer', href: trainerRegister.url() },
-    { title: 'Come funziona', href: `${home.url()}#come-funziona` },
-    { title: 'FAQ', href: `${home.url()}#faq` },
+    { title: 'Sei un trainer?', href: trainerRegister.url() },
+    { title: 'Contatti', href: contactPage.url() },
 ];
 
 const legalLinks = [
     { title: 'Privacy policy', href: privacy.url() },
     { title: 'Cookie policy', href: cookies.url() },
     { title: 'Termini e condizioni', href: terms.url() },
-    { title: 'Contatti', href: contactPage.url() },
 ];
 
-const copyright = `© ${new Date().getFullYear()} MioPersonal · Versione beta`;
-
-type PublicFooterProps = {
-    /** 'full' = home and search, 'compact' = one line (trainer profile). */
-    variant?: 'full' | 'compact';
-    className?: string;
-};
+/** White outline on the black background, as in the design. */
+const focusRing =
+    'rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring';
 
 function LinkList({
-    label,
+    id,
     title,
     links,
+    currentPath,
 }: {
-    label: string;
+    id: string;
     title: string;
     links: { title: string; href: string }[];
+    currentPath: string;
 }) {
     return (
-        <nav aria-label={label} className="flex flex-col gap-2.5 text-sm">
-            <span className="font-semibold">{title}</span>
+        <nav
+            aria-labelledby={id}
+            className="flex flex-col gap-3 text-[15px] leading-[22px]"
+        >
+            <h3
+                id={id}
+                className="mb-1 text-xs font-bold tracking-[0.08em] text-sidebar-primary uppercase"
+            >
+                {title}
+            </h3>
             {links.map((link) => (
                 <Link
                     key={link.title}
                     href={link.href}
-                    className="text-muted-foreground hover:text-foreground"
+                    aria-current={
+                        link.href === currentPath ? 'page' : undefined
+                    }
+                    className={cn(
+                        'text-sidebar-muted-foreground underline-offset-3 transition-colors hover:text-sidebar-primary hover:underline aria-[current=page]:text-sidebar-primary',
+                        focusRing,
+                    )}
                 >
                     {link.title}
                 </Link>
@@ -54,66 +65,37 @@ function LinkList({
     );
 }
 
-export default function PublicFooter({
-    variant = 'full',
-    className,
-}: PublicFooterProps) {
+/** Black footer of the public pages (docs/design/Footer · nero). */
+export default function PublicFooter({ className }: { className?: string }) {
     const currentPath = usePage().url.split(/[?#]/)[0];
 
-    if (variant === 'compact') {
-        return (
-            <footer className={cn('border-t bg-background', className)}>
-                <div className="mx-auto flex max-w-7xl flex-wrap justify-between gap-x-8 gap-y-4 px-4 py-6 text-xs text-muted-foreground md:p-8 md:text-sm">
-                    <span>{copyright}</span>
-                    <nav
-                        aria-label="Informazioni legali"
-                        className="flex flex-wrap gap-x-6 gap-y-2"
-                    >
-                        {legalLinks.map((link) => (
-                            <Link
-                                key={link.title}
-                                href={link.href}
-                                aria-current={
-                                    link.href === currentPath
-                                        ? 'page'
-                                        : undefined
-                                }
-                                className="hover:text-foreground aria-[current=page]:font-semibold aria-[current=page]:text-foreground"
-                            >
-                                {link.title}
-                            </Link>
-                        ))}
-                    </nav>
-                </div>
-            </footer>
-        );
-    }
-
     return (
-        <footer className={cn('border-t bg-background', className)}>
-            <div className="mx-auto flex max-w-7xl flex-wrap justify-between gap-12 px-4 py-12 md:px-8">
-                <div className="flex max-w-80 flex-col gap-3">
-                    <BrandLogo linkToHome={false} />
-                    <p className="text-sm text-muted-foreground">
-                        Personal trainer in presenza e online.
-                    </p>
-                </div>
-                <div className="flex flex-wrap gap-16">
-                    <LinkList
-                        label="Piattaforma"
-                        title="Piattaforma"
-                        links={platformLinks}
+        <footer className={cn('bg-primary text-primary-foreground', className)}>
+            <div className="mx-auto flex max-w-7xl flex-col gap-12 px-4 py-12 md:px-8">
+                <div className="flex flex-wrap justify-between gap-x-16 gap-y-10">
+                    <BrandLogo
+                        className={cn(
+                            'self-start text-sidebar-primary [&>span]:text-xl [&>span]:font-bold',
+                            focusRing,
+                        )}
                     />
-                    <LinkList
-                        label="Informazioni legali"
-                        title="Legale"
-                        links={legalLinks}
-                    />
+                    <div className="flex flex-wrap gap-x-18 gap-y-10">
+                        <LinkList
+                            id="footer-platform"
+                            title="Piattaforma"
+                            links={platformLinks}
+                            currentPath={currentPath}
+                        />
+                        <LinkList
+                            id="footer-legal"
+                            title="Legale"
+                            links={legalLinks}
+                            currentPath={currentPath}
+                        />
+                    </div>
                 </div>
-            </div>
-            <div className="mx-auto max-w-7xl px-4 pb-8 md:px-8">
-                <p className="border-t pt-6 text-xs text-muted-foreground">
-                    {copyright}
+                <p className="text-[13px] leading-[18px] text-sidebar-muted-foreground">
+                    © {new Date().getFullYear()} MioPersonal
                 </p>
             </div>
         </footer>

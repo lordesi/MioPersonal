@@ -172,36 +172,32 @@ export type ClientAttendance = {
 /** A booking waiting for the trainer's answer. */
 export type TrainerBookingRequest = TrainerSession & {
     note: string | null;
+    /** ISO UTC string: when the client asked. */
+    requestedAt: string;
     /** ISO UTC string: after this the request decays and the slot is freed. */
     expiresAt: string;
     /** null once the client deleted the account. */
     attendance: ClientAttendance | null;
 };
 
-/** A client's profile, seen by a trainer the client booked with. */
-export type TrainerClientProfile = {
-    id: number;
-    name: string;
-    firstName: string;
-    avatar: string | null;
-    /** ISO UTC strings. */
-    joinedAt: string | null;
-    /** Confirmed sessions with this trainer. */
-    sessions: number;
-    nextSession: string | null;
-    attendance: ClientAttendance;
-    /** null until the trainer confirms a booking of this client. */
-    contacts: { email: string; phone: string | null } | null;
+/** "Gestite" in "Richieste": a request the trainer already answered. */
+export type TrainerHandledRequest = TrainerSession & {
+    /** "Pacchetto 10 sedute" or "Seduta singola", without "· seduta 2 di 10". */
+    serviceType: string;
+    /** "Seduta 2 di 10": only confirmed sessions of a package. */
+    package: { position: number; total: number } | null;
+    /** 'expired' = no answer in time, declined automatically. */
+    answer: 'confirmed' | 'declined' | 'expired';
+    /** ISO UTC string: when it was answered, or when it expired. */
+    answeredAt: string;
 };
 
 /** The numbers of "Panoramica". */
 export type TrainerStats = {
     /** Requests waiting for an answer. */
     pending: number;
-    /** Confirmed sessions from today to the 7th day, their hours and their clients. */
+    /** Confirmed sessions from today to the 7th day. */
     weekSessions: number;
-    weekHours: number;
-    weekClients: number;
 };
 
 /** Sent by every page of the trainer area, read by the trainer layout. */
@@ -251,6 +247,8 @@ export type TrainerClient = {
     /** The package in progress, null when there is none. */
     package: { name: string; done: number; total: number } | null;
     attendance: ClientAttendance;
+    /** Always sent: everyone in "Clienti" has a confirmed session. */
+    contacts: { email: string; phone: string | null };
     /** Every confirmed slot still to come, in order. */
     upcoming: TrainerSession[];
 };
@@ -280,6 +278,8 @@ export type TrainerAreaReview = {
     rating: number;
     /** The booked service; null for the reviews not linked to a session. */
     serviceName: string | null;
+    /** Left after a booked session: "Seduta svolta". */
+    fromSession: boolean;
     /** ISO UTC string. */
     date: string;
     text: string;

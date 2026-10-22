@@ -36,6 +36,8 @@ class TrainerClientsController extends Controller
             'trainerArea' => $this->trainerArea(),
             // No profile yet (registration not sent): nobody could book.
             'clients' => $profile === null ? [] : $this->clients($profile),
+            // "?cliente=37" from Panoramica and Calendario: that client opens in the card.
+            'selectedId' => $request->integer('cliente') ?: null,
         ]);
     }
 
@@ -123,6 +125,11 @@ class TrainerClientsController extends Controller
                 'total' => $package->sessions_total,
             ],
             'attendance' => $attendance,
+            // Everyone here has a confirmed session: the contacts can be shown.
+            'contacts' => [
+                'email' => $first->client->email ?? '',
+                'phone' => $first->client?->phone,
+            ],
             // Every session still to come.
             'upcoming' => $upcoming->map(TrainerSessions::row(...))->all(),
         ];

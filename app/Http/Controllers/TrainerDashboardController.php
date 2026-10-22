@@ -57,7 +57,7 @@ class TrainerDashboardController extends Controller
             'requests' => [],
             'packages' => [],
             'past' => [],
-            'stats' => ['pending' => 0, 'weekSessions' => 0, 'weekHours' => 0, 'weekClients' => 0],
+            'stats' => ['pending' => 0, 'weekSessions' => 0],
         ];
     }
 
@@ -75,7 +75,6 @@ class TrainerDashboardController extends Controller
             ->with(TrainerSessions::WITH)
             ->orderBy('starts_at')
             ->get();
-        $confirmed = $agenda->where('status', BookingStatus::Confirmed);
 
         $next = $profile->bookings()
             ->where('status', BookingStatus::Confirmed)
@@ -104,9 +103,7 @@ class TrainerDashboardController extends Controller
             'stats' => [
                 'pending' => TrainerBookingRequests::query($profile)->count(),
                 // "Sedute nei prossimi 7 giorni": only the confirmed ones.
-                'weekSessions' => $confirmed->count(),
-                'weekHours' => $confirmed->sum(fn (Booking $booking) => $booking->starts_at->diffInMinutes($booking->ends_at)) / 60,
-                'weekClients' => $confirmed->pluck('client_id')->filter()->unique()->count(),
+                'weekSessions' => $agenda->where('status', BookingStatus::Confirmed)->count(),
             ],
         ];
     }

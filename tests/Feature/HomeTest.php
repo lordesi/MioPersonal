@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\TrainerProfile;
+use App\Models\User;
 use Database\Seeders\CatalogSeeder;
 use Database\Seeders\DemoTrainerSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -47,9 +49,24 @@ class HomeTest extends TestCase
                     ->whereType('nextSlotLabel', 'string')
                     ->has('online')
                     ->whereType('photoUrl', 'string|null')
+                    // Guests have no favorites: every heart is empty.
+                    ->where('favorite', false)
                 )
                 ->has('disciplines', 10)
                 ->has('cities', 109)
+            );
+    }
+
+    public function test_the_heart_is_full_for_the_trainers_the_client_saved()
+    {
+        $client = User::factory()->create();
+        $saved = TrainerProfile::query()->published()->orderBy('id')->firstOrFail();
+        $client->favoriteTrainers()->attach($saved, ['created_at' => now()]);
+
+        $this->actingAs($client)
+            ->get(route('home'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('featuredTrainers', fn ($trainers) => collect($trainers)->where('favorite', true)->pluck('slug')->all() === [$saved->slug])
             );
     }
 }

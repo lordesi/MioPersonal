@@ -28,6 +28,7 @@ use Illuminate\Support\Str;
  * @property string $headline
  * @property string $bio
  * @property TrainerExperience $experience
+ * @property list<string>|null $goals App\Enums\TrainingGoal values; null = not chosen yet
  * @property int|null $city_id
  * @property TrainerProfileStatus $status
  * @property CarbonImmutable|null $status_changed_at
@@ -61,7 +62,7 @@ use Illuminate\Support\Str;
  * @property-read City|null $city
  */
 #[Fillable([
-    'headline', 'bio', 'experience', 'city_id',
+    'headline', 'bio', 'experience', 'goals', 'city_id',
     'visible_in_search', 'accepts_new_clients', 'paused_until',
     'notice_hours', 'booking_window_days', 'break_minutes',
     'max_sessions_per_day', 'free_cancellation_hours', 'auto_confirm',
@@ -88,6 +89,7 @@ class TrainerProfile extends Model
     {
         return [
             'experience' => TrainerExperience::class,
+            'goals' => 'array',
             'status' => TrainerProfileStatus::class,
             'status_changed_at' => 'datetime',
             'approved_at' => 'datetime',

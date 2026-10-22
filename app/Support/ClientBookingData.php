@@ -70,8 +70,7 @@ final class ClientBookingData
             'hours' => self::hours($booking),
             'placeLabel' => $booking->place_label,
             'status' => 'confirmed',
-            'freeCancellationUntil' => self::iso($booking->starts_at->subHours($booking->trainerProfile->free_cancellation_hours)),
-            'calendarHref' => route('client.bookings.calendar', $booking, false),
+            'freeCancellationUntil' => self::iso($booking->freeCancellationEndsAt()),
         ];
     }
 

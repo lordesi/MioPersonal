@@ -27,6 +27,7 @@ final class TrainerDraft
             'experience' => $profile->experience->value,
             'photoUrl' => $profile->portrait?->url(),
             'disciplines' => $profile->disciplines->pluck('slug')->all(),
+            'goals' => $profile->goals ?? [],
             'places' => $profile->places->pluck('type')->unique()->map(fn (PlaceType $type) => $type->value)->values()->all(),
             'studios' => $profile->places
                 ->where('type', PlaceType::Studio)

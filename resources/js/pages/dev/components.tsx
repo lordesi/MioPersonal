@@ -185,7 +185,7 @@ export default function DevComponents() {
                         screens="Home, Ricerca, Profilo"
                         flush
                     >
-                        <PublicHeader section="search" />
+                        <PublicHeader />
                     </Showcase>
 
                     <Showcase
@@ -197,7 +197,7 @@ export default function DevComponents() {
                             Hai già un account?
                             <Link
                                 href="#"
-                                className="font-medium text-foreground underline"
+                                className="font-medium text-primary-foreground underline"
                             >
                                 Accedi
                             </Link>
@@ -206,7 +206,7 @@ export default function DevComponents() {
                             Hai già un account?
                             <Link
                                 href="#"
-                                className="font-medium text-foreground underline"
+                                className="font-medium text-primary-foreground underline"
                             >
                                 Accedi
                             </Link>
@@ -214,7 +214,7 @@ export default function DevComponents() {
                         <MinimalHeader logoLinksHome={false}>
                             <Link
                                 href="#"
-                                className="font-medium text-foreground"
+                                className="font-medium text-primary-foreground"
                             >
                                 Salta per ora
                             </Link>
@@ -272,19 +272,11 @@ export default function DevComponents() {
                     </Showcase>
 
                     <Showcase
-                        title="Footer pubblico — completo"
-                        screens="Home, Ricerca"
+                        title="Footer pubblico"
+                        screens="Tutte le pagine pubbliche"
                         flush
                     >
                         <PublicFooter />
-                    </Showcase>
-
-                    <Showcase
-                        title="Footer pubblico — compatto"
-                        screens="Profilo trainer"
-                        flush
-                    >
-                        <PublicFooter variant="compact" />
                     </Showcase>
 
                     <Showcase

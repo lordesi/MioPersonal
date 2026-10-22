@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Actions\Bookings\CreateBooking;
 use App\Enums\BookingActor;
-use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\ClientPackage;
 use App\Models\Service;
@@ -97,7 +96,8 @@ class BookingController extends Controller
 
     /**
      * "Annulla la prenotazione": a request still waiting, or a confirmed session
-     * not started yet. The card shows the result itself: no message on success.
+     * before the end of the free cancellation (Booking::canBeCancelledByClient).
+     * The card shows the result itself: no message on success.
      */
     public function cancel(Request $request, Booking $booking): RedirectResponse
     {
@@ -107,10 +107,7 @@ class BookingController extends Controller
         // Someone else's booking: as if it didn't exist.
         abort_unless($booking->client_id === $client->id, 404);
 
-        $cancellable = ($booking->isPending() || $booking->status === BookingStatus::Confirmed)
-            && $booking->starts_at->isFuture();
-
-        if (! $cancellable) {
+        if (! $booking->canBeCancelledByClient()) {
             throw ValidationException::withMessages(['booking' => 'Questa prenotazione non si può più annullare.']);
         }
 

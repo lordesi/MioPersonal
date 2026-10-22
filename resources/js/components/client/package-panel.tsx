@@ -1,25 +1,40 @@
 import { Link } from '@inertiajs/react';
+import type { ComponentProps } from 'react';
 import Panel from '@/components/trainer/area/panel';
 import PackageProgress from '@/components/trainer/package-progress';
 import { Button } from '@/components/ui/button';
 import { formatDayTimeRelative } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import type { ClientPackage } from '@/types';
 
-type PackagePanelProps = {
+type PackagePanelProps = Omit<
+    ComponentProps<typeof Panel>,
+    'title' | 'children'
+> & {
     pack: ClientPackage;
     now: Date;
 };
 
 /**
  * "Il tuo pacchetto": the sessions left (not done yet) and the next one
- * booked. Packages don't expire.
+ * booked. Packages don't expire. The other props go to the Panel (the
+ * stack of packages uses them to place the card).
  */
-export default function PackagePanel({ pack, now }: PackagePanelProps) {
+export default function PackagePanel({
+    pack,
+    now,
+    className,
+    ...props
+}: PackagePanelProps) {
     const left = pack.total - pack.done;
     const toBook = pack.total - pack.booked;
 
     return (
-        <Panel title="Il tuo pacchetto" className="gap-3.5">
+        <Panel
+            title="Il tuo pacchetto"
+            className={cn('gap-3.5', className)}
+            {...props}
+        >
             {/* Right under the title, as in the design. */}
             <span className="-mt-3 text-sm text-muted-foreground">
                 {pack.name} con{' '}

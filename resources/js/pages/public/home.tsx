@@ -29,6 +29,3 @@ export default function Home({
         </>
     );
 }
-
-// The dark header continues into the hero.
-Home.layout = { header: 'hero' };

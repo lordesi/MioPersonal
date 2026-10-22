@@ -58,7 +58,7 @@ export default function CompleteProfile({
             <MinimalHeader logoLinksHome={false}>
                 <Link
                     href={clientHome()}
-                    className="font-medium text-foreground"
+                    className="font-medium text-primary-foreground"
                 >
                     Salta per ora
                 </Link>

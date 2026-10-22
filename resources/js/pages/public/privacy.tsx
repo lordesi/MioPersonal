@@ -171,5 +171,3 @@ export default function Privacy() {
         />
     );
 }
-
-Privacy.layout = { nav: 'info', footer: 'compact' };

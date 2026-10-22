@@ -26,7 +26,7 @@ export default function Register({
                 Hai già un account?
                 <Link
                     href={login()}
-                    className="font-medium text-foreground underline"
+                    className="font-medium text-primary-foreground underline"
                 >
                     Accedi
                 </Link>

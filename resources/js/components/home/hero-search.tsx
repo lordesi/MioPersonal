@@ -2,11 +2,16 @@ import { router } from '@inertiajs/react';
 import { LayoutGrid, MapPin, Video } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
-import { availabilityOptions } from '@/components/search/filter-bar';
+import {
+    availabilityOptions,
+    modeItemClassName,
+    modeTrackClassName,
+} from '@/components/search/filter-bar';
 import SearchBar from '@/components/search/search-bar';
 import type { SearchChoices } from '@/components/search/search-bar';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { searchUrl } from '@/lib/search';
+import { cn } from '@/lib/utils';
 import type { CatalogOption } from '@/types';
 
 type Mode = 'tutte' | 'presenza' | 'online';
@@ -19,7 +24,7 @@ const modes: { value: Mode; label: string; icon: LucideIcon }[] = [
 
 /** Nothing chosen yet: "Tutte le discipline", "Tutta Italia", "Qualsiasi giorno". */
 const noChoices: SearchChoices = {
-    disciplina: null,
+    disciplina: [],
     city: null,
     disponibilita: null,
 };
@@ -83,13 +88,16 @@ export default function HeroSearch({ disciplines, cities }: HeroSearchProps) {
                             onValueChange={(value) =>
                                 value && setMode(value as Mode)
                             }
-                            className="w-full max-w-150 gap-1 rounded-full border border-primary-foreground/15 bg-primary-foreground/10 p-1"
+                            className={cn(modeTrackClassName, 'max-w-150')}
                         >
                             {modes.map((option) => (
                                 <ToggleGroupItem
                                     key={option.value}
                                     value={option.value}
-                                    className="h-11 flex-1 rounded-full px-4 text-[15px] whitespace-nowrap text-primary-foreground/80 first:rounded-full last:rounded-full hover:bg-primary-foreground/10 hover:text-primary-foreground focus-visible:ring-primary-foreground/50 data-[state=on]:bg-primary-foreground data-[state=on]:font-semibold data-[state=on]:text-primary data-[state=on]:shadow-sm data-[state=on]:hover:bg-primary-foreground data-[state=on]:hover:text-primary"
+                                    className={cn(
+                                        modeItemClassName,
+                                        'h-11 px-4 text-[15px]',
+                                    )}
                                 >
                                     <option.icon aria-hidden="true" />
                                     {option.label}

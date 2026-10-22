@@ -1,7 +1,6 @@
 import { useId } from 'react';
 import type { Pricing } from '@/components/onboarding/trainer/draft';
 import ChoiceChips from '@/components/shared/choice-chips';
-import SegmentedControl from '@/components/shared/segmented-control';
 import EuroInput from '@/components/trainer/services/euro-input';
 import type { FirstSessionMode } from '@/components/trainer/services/pricing';
 import {
@@ -10,10 +9,12 @@ import {
 } from '@/components/trainer/services/pricing';
 import SectionCard from '@/components/trainer/services/section-card';
 import { formatDuration } from '@/lib/format';
+import { cn } from '@/lib/utils';
 
 type FirstSession = Pricing['firstSession'];
 
 type FirstSessionSectionProps = {
+    step: number;
     mode: FirstSessionMode;
     onModeChange: (mode: FirstSessionMode) => void;
     firstSession: FirstSession;
@@ -32,6 +33,7 @@ const modes: { value: FirstSessionMode; label: string }[] = [
  * price, only for a client's first booking with the trainer.
  */
 export default function FirstSessionSection({
+    step,
     mode,
     onModeChange,
     firstSession,
@@ -43,25 +45,45 @@ export default function FirstSessionSection({
 
     return (
         <SectionCard
+            step={step}
             title="Prima seduta per nuovi clienti"
-            description="Solo per chi prenota con te per la prima volta."
+            description="Solo per chi prenota con te per la prima volta. Aiuta chi è indeciso a provare."
             errors={errors}
-            action={
-                <SegmentedControl
-                    aria-label="Prima seduta"
-                    className="w-full sm:w-105"
-                    options={modes}
-                    value={mode}
-                    onChange={onModeChange}
-                />
-            }
         >
+            <div
+                role="radiogroup"
+                aria-label="Prima seduta"
+                className="grid grid-cols-3 gap-1 rounded-[14px] bg-secondary p-1"
+            >
+                {modes.map((option) => {
+                    const on = option.value === mode;
+
+                    return (
+                        <button
+                            key={option.value}
+                            type="button"
+                            role="radio"
+                            aria-checked={on}
+                            onClick={() => onModeChange(option.value)}
+                            className={cn(
+                                'h-10 rounded-[10px] px-2.5 text-sm leading-5 transition-colors',
+                                on
+                                    ? 'bg-foreground font-semibold text-background'
+                                    : 'font-medium text-muted-foreground hover:text-foreground',
+                            )}
+                        >
+                            {option.label}
+                        </button>
+                    );
+                })}
+            </div>
+
             {mode !== 'off' && (
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-                    <div className="flex flex-wrap items-center gap-4">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
+                    <div className="flex items-center gap-2.5">
                         <span
                             id={durationId}
-                            className="text-[13px] font-semibold"
+                            className="text-[13px] leading-4.5 font-semibold"
                         >
                             Durata
                         </span>
@@ -82,17 +104,17 @@ export default function FirstSessionSection({
                         />
                     </div>
                     {mode === 'paid' && (
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2.5">
                             <label
                                 htmlFor={priceId}
-                                className="text-[13px] font-semibold"
+                                className="text-[13px] leading-4.5 font-semibold"
                             >
                                 Prezzo
                             </label>
                             <EuroInput
                                 id={priceId}
                                 required
-                                className="w-32"
+                                className="h-10 w-30"
                                 value={firstSession.priceCents}
                                 onChange={(priceCents) =>
                                     onChange({ priceCents })

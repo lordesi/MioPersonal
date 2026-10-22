@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Actions\Fortify\CreateNewUser;
 use App\Enums\PlaceType;
 use App\Enums\TrainerExperience;
+use App\Enums\TrainingGoal;
 use App\Enums\UserRole;
 use App\Models\City;
 use App\Models\Discipline;
@@ -38,6 +39,9 @@ class TrainerProfileRequest extends FormRequest
     public const MAX_STUDIOS = 3;
 
     public const MAX_OTHER_CITIES = 2;
+
+    /** Step 3: the goals the trainer works on. */
+    public const MAX_GOALS = 3;
 
     /** Step 6: certifications are optional, at most 3. */
     public const MAX_CERTIFICATIONS = 3;
@@ -77,6 +81,8 @@ class TrainerProfileRequest extends FormRequest
             // Step 3
             'disciplines' => ['required', 'array', 'min:1', 'max:'.TrainerProfile::MAX_DISCIPLINES],
             'disciplines.*' => ['string', 'distinct', Rule::exists(Discipline::class, 'slug')->where('is_active', true)],
+            'goals' => ['required', 'array', 'min:1', 'max:'.self::MAX_GOALS],
+            'goals.*' => [Rule::enum(TrainingGoal::class), 'distinct'],
             'places' => ['required', 'array', 'min:1'],
             'places.*' => [Rule::enum(PlaceType::class), 'distinct'],
             'studios' => ['array', 'max:'.self::MAX_STUDIOS],
@@ -284,6 +290,12 @@ class TrainerProfileRequest extends FormRequest
                     $validator->errors()->add('city', 'Scegli la tua città principale.');
                 }
 
+                // With the hours (the registration, not "Modifica profilo"): at least one
+                // open hour, or nobody could book. "Disponibilità" can close them all later.
+                if (isset($this->rules()['hours']) && collect((array) $this->input('hours', []))->flatten()->isEmpty()) {
+                    $validator->errors()->add('hours', 'Apri almeno un’ora nella settimana.');
+                }
+
                 self::checkSessions($validator, (array) $this->input('sessions', []));
             },
         ];
@@ -327,6 +339,10 @@ class TrainerProfileRequest extends FormRequest
             'disciplines.min' => 'Scegli almeno una disciplina.',
             'disciplines.max' => 'Puoi scegliere al massimo 5 discipline.',
             'disciplines.*.*' => 'Una delle discipline scelte non è più disponibile.',
+            'goals.required' => 'Scegli almeno un obiettivo.',
+            'goals.min' => 'Scegli almeno un obiettivo.',
+            'goals.max' => 'Puoi scegliere al massimo 3 obiettivi.',
+            'goals.*.*' => 'Scegli gli obiettivi tra quelli proposti.',
             'places.required' => 'Scegli almeno un luogo in cui alleni.',
             'places.min' => 'Scegli almeno un luogo in cui alleni.',
             'places.*.*' => 'Scegli i luoghi tra quelli proposti.',

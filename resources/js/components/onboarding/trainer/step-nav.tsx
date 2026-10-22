@@ -1,18 +1,19 @@
 import { Check } from 'lucide-react';
-import ProgressBar from '@/components/shared/progress-bar';
 import { cn } from '@/lib/utils';
 
-export const stepLabels = [
-    'Account',
-    'Profilo pubblico',
-    'Discipline e città',
-    'Servizi e prezzi',
-    'Orari e regole',
-    'Certificazioni',
-    'Riepilogo',
+/** The 7 steps of "Diventa trainer": name and the line under it in the sidebar. */
+export const steps = [
+    { label: 'Account', hint: 'Email e termini' },
+    { label: 'Profilo pubblico', hint: 'Foto, titolo e presentazione' },
+    { label: 'Discipline e città', hint: 'Discipline, obiettivi e luoghi' },
+    { label: 'Servizi e prezzi', hint: 'Listino e pacchetti' },
+    { label: 'Orari e regole', hint: 'Disponibilità e prenotazioni' },
+    { label: 'Certificazioni', hint: 'Facoltativo' },
+    { label: 'Riepilogo', hint: 'Controlla e invia' },
 ];
 
 type StepNavProps = {
+    /** The open step; 8 after sending, when every step is done. */
     step: number;
     /** Highest step reached: the ones after it can't be opened yet. */
     reached: number;
@@ -21,7 +22,10 @@ type StepNavProps = {
     onSelect: (step: number) => void;
 };
 
-/** List of the 7 steps on desktop, progress bar with the step name on mobile. */
+/**
+ * The list of the 7 steps in the black sidebar: done (✓), open (white) or
+ * still closed (grey). Only the steps already reached can be opened.
+ */
 export default function StepNav({
     step,
     reached,
@@ -29,71 +33,77 @@ export default function StepNav({
     onSelect,
 }: StepNavProps) {
     return (
-        <>
-            <div className="flex w-full flex-col gap-2 md:hidden">
-                <div className="flex justify-between text-xs font-medium tabular-nums">
-                    <span className="text-muted-foreground">
-                        Passo {step} di 7
-                    </span>
-                    <span>{stepLabels[step - 1]}</span>
-                </div>
-                <ProgressBar
-                    value={step}
-                    max={7}
-                    label="Avanzamento della registrazione"
-                />
-            </div>
-
-            <nav
-                aria-label="Passi della registrazione"
-                className="hidden max-w-65 flex-[1_1_220px] flex-col gap-1 md:flex"
-            >
-                <span className="px-3 pb-3 text-xs font-medium text-muted-foreground uppercase tabular-nums">
-                    Passo {step} di 7
-                </span>
-                {stepLabels.map((label, index) => {
+        <nav aria-label="Passi della registrazione">
+            <ol className="flex flex-col gap-1">
+                {steps.map((item, index) => {
                     const number = index + 1;
                     const current = number === step;
                     const done = number < step;
+                    const open = number <= reached && number >= firstStep;
 
                     return (
-                        <button
-                            key={label}
-                            type="button"
-                            aria-current={current ? 'step' : undefined}
-                            disabled={number > reached || number < firstStep}
-                            onClick={() => onSelect(number)}
-                            className={cn(
-                                'flex min-h-11 items-center gap-3 rounded-lg px-3 text-left text-sm font-medium disabled:cursor-not-allowed',
-                                current
-                                    ? 'bg-background text-foreground shadow-xs'
-                                    : done
-                                      ? 'text-foreground'
-                                      : 'text-muted-foreground',
-                            )}
-                        >
-                            <span
+                        <li key={item.label}>
+                            <button
+                                type="button"
+                                aria-current={current ? 'step' : undefined}
+                                disabled={!open || current}
+                                onClick={() => onSelect(number)}
                                 className={cn(
-                                    'flex size-6 flex-none items-center justify-center rounded-full text-xs font-semibold',
-                                    current || done
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'border border-input',
+                                    'flex w-full items-center gap-3 rounded-[14px] px-3 py-2.5 text-left transition-colors disabled:cursor-default',
+                                    current
+                                        ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                                        : open || done
+                                          ? 'text-sidebar-foreground enabled:hover:bg-sidebar-foreground/6'
+                                          : 'text-muted-foreground',
                                 )}
                             >
-                                {done ? (
-                                    <Check
-                                        aria-label="completato"
-                                        className="size-3.5"
-                                    />
-                                ) : (
-                                    number
-                                )}
-                            </span>
-                            {label}
-                        </button>
+                                <span
+                                    aria-hidden="true"
+                                    className={cn(
+                                        'flex size-7 flex-none items-center justify-center rounded-full text-[13px] font-bold tabular-nums',
+                                        current
+                                            ? 'bg-sidebar-primary-foreground text-sidebar-primary'
+                                            : done
+                                              ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                                              : 'border-[1.5px] border-sidebar-border',
+                                    )}
+                                >
+                                    {done ? (
+                                        <Check
+                                            strokeWidth={3}
+                                            className="size-3.5"
+                                        />
+                                    ) : (
+                                        number
+                                    )}
+                                </span>
+                                <span className="flex min-w-0 flex-col">
+                                    <span className="text-sm font-semibold">
+                                        {item.label}
+                                        {done && (
+                                            <span className="sr-only">
+                                                , completato
+                                            </span>
+                                        )}
+                                    </span>
+                                    <span
+                                        className={cn(
+                                            'text-xs',
+                                            current
+                                                ? 'text-muted-foreground'
+                                                : done
+                                                  ? 'text-sidebar-muted-foreground'
+                                                  : 'text-muted-foreground',
+                                        )}
+                                    >
+                                        {item.hint}
+                                    </span>
+                                </span>
+                            </button>
+                        </li>
                     );
                 })}
-            </nav>
-        </>
+            </ol>
+        </nav>
     );
 }

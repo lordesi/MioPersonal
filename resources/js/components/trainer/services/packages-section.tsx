@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { formatDuration, formatPrice } from '@/lib/format';
 
 type PackagesSectionProps = {
+    step: number;
     packages: PricePackage[];
     onChange: (packages: PricePackage[]) => void;
     /** To compare each package with its sessions bought one by one. */
@@ -31,6 +32,7 @@ type PackagesSectionProps = {
 
 /** "Pacchetti": up to 3, sessions × duration at a total price. */
 export default function PackagesSection({
+    step,
     packages,
     onChange,
     sessions,
@@ -45,11 +47,12 @@ export default function PackagesSection({
 
     return (
         <SectionCard
+            step={step}
             title="Pacchetti"
             description="Facoltativi. Il risparmio per il cliente si calcola da solo."
             errors={errors}
             action={
-                <span className="text-xs text-muted-foreground tabular-nums">
+                <span className="inline-flex h-6.5 items-center rounded-full bg-secondary px-2.5 text-xs font-semibold tabular-nums">
                     {packages.length} di {MAX_PACKAGES}
                 </span>
             }
@@ -65,15 +68,21 @@ export default function PackagesSection({
                     }
                 />
             ))}
+            {packages.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-input p-4 text-sm text-muted-foreground">
+                    Nessun pacchetto. I pacchetti aiutano i clienti a impegnarsi
+                    per più sedute.
+                </p>
+            )}
             <div>
                 <Button
                     type="button"
                     variant="outline"
-                    className="h-10"
+                    className="h-11 rounded-xl border-input px-4 font-semibold shadow-none"
                     disabled={packages.length >= MAX_PACKAGES}
                     onClick={() => onChange([...packages, emptyPackage])}
                 >
-                    <Plus aria-hidden="true" />
+                    <Plus aria-hidden="true" strokeWidth={2.5} />
                     Aggiungi un pacchetto
                 </Button>
             </div>
@@ -101,79 +110,85 @@ function PackageCard({
     );
     const title = `Pacchetto ${item.sessions} sedute da ${formatDuration(item.minutes)}`;
 
-    let saving = '';
-
-    if (savingCents > 0) {
-        saving = `Il cliente risparmia ${formatPrice(savingCents)} (${percent}%)`;
-    } else if (separateCents !== null && item.priceCents !== null) {
-        saving = 'Il pacchetto costa quanto le sedute separate';
-    }
-
     return (
-        <div className="relative grid items-center gap-x-4 gap-y-3.5 rounded-xl border p-3.5 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
-            <span id={sessionsId} className="text-[13px] font-semibold">
-                Sedute
-            </span>
-            <ChoiceChips
-                aria-labelledby={sessionsId}
-                className="gap-1.5"
-                options={withCurrent(
-                    PACKAGE_SESSION_OPTIONS,
-                    item.sessions,
-                ).map((count) => ({
-                    value: String(count),
-                    label: `${count} sedute`,
-                }))}
-                value={String(item.sessions)}
-                onChange={(count) => onChange({ sessions: Number(count) })}
-            />
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                // On the phone in the top corner, from sm on at the end of the first row.
-                className="absolute top-2 right-2 text-muted-foreground sm:static sm:justify-self-end"
-                aria-label={`Elimina ${title}`}
-                onClick={onRemove}
-            >
-                <Trash2 />
-            </Button>
+        <div className="flex flex-col gap-3.5 rounded-[18px] border bg-secondary/50 p-4">
+            <div className="flex flex-wrap items-center gap-3">
+                <span
+                    id={sessionsId}
+                    className="w-16 text-[13px] leading-4.5 font-semibold"
+                >
+                    Sedute
+                </span>
+                <ChoiceChips
+                    aria-labelledby={sessionsId}
+                    className="gap-1.5"
+                    options={withCurrent(
+                        PACKAGE_SESSION_OPTIONS,
+                        item.sessions,
+                    ).map((count) => ({
+                        value: String(count),
+                        label: `${count} sedute`,
+                    }))}
+                    value={String(item.sessions)}
+                    onChange={(count) => onChange({ sessions: Number(count) })}
+                />
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="ml-auto size-10 text-muted-foreground"
+                    aria-label={`Elimina ${title}`}
+                    onClick={onRemove}
+                >
+                    <Trash2 />
+                </Button>
+            </div>
 
-            <span id={minutesId} className="text-[13px] font-semibold">
-                Durata
-            </span>
-            <ChoiceChips
-                aria-labelledby={minutesId}
-                className="gap-1.5 sm:col-span-2"
-                options={withCurrent(PACKAGE_MINUTES, item.minutes).map(
-                    (minutes) => ({
-                        value: String(minutes),
-                        label: shortDuration(minutes),
-                    }),
-                )}
-                value={String(item.minutes)}
-                onChange={(minutes) => onChange({ minutes: Number(minutes) })}
-            />
+            <div className="flex flex-wrap items-center gap-3">
+                <span
+                    id={minutesId}
+                    className="w-16 text-[13px] leading-4.5 font-semibold"
+                >
+                    Durata
+                </span>
+                <ChoiceChips
+                    aria-labelledby={minutesId}
+                    className="gap-1.5"
+                    options={withCurrent(PACKAGE_MINUTES, item.minutes).map(
+                        (minutes) => ({
+                            value: String(minutes),
+                            label: shortDuration(minutes),
+                        }),
+                    )}
+                    value={String(item.minutes)}
+                    onChange={(minutes) =>
+                        onChange({ minutes: Number(minutes) })
+                    }
+                />
+            </div>
 
-            <label htmlFor={priceId} className="text-[13px] font-semibold">
-                Prezzo
-            </label>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:col-span-2">
+            <div className="flex flex-wrap items-center gap-3">
+                <label
+                    htmlFor={priceId}
+                    className="w-16 text-[13px] leading-4.5 font-semibold"
+                >
+                    Prezzo
+                </label>
                 <EuroInput
                     id={priceId}
                     required
-                    className="w-32"
+                    className="w-33"
                     value={item.priceCents}
                     onChange={(priceCents) => onChange({ priceCents })}
                 />
-                <span className="text-xs text-muted-foreground tabular-nums">
+                <span className="text-[13px] leading-4.5 text-muted-foreground tabular-nums">
                     {separateCents !== null
                         ? `Separate costerebbero ${formatPrice(separateCents)}`
-                        : `Imposta prima il prezzo di ${formatDuration(item.minutes)}`}
+                        : `Imposta il prezzo da ${shortDuration(item.minutes)} nel listino per calcolare il risparmio`}
                 </span>
-                {saving && (
-                    <span className="text-[13px] font-semibold tabular-nums">
-                        {saving}
+                {savingCents > 0 && (
+                    <span className="inline-flex h-7 items-center rounded-full bg-foreground px-2.5 text-xs font-semibold text-background tabular-nums">
+                        {`Il cliente risparmia ${formatPrice(savingCents)} (${percent}%)`}
                     </span>
                 )}
             </div>

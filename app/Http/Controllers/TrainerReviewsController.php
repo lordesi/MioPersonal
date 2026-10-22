@@ -45,6 +45,8 @@ class TrainerReviewsController extends Controller
                     'rating' => $review->rating,
                     // The booked service; none for the demo reviews.
                     'serviceName' => $review->booking?->service_name,
+                    // Left after a booked session: the "Seduta svolta" chip.
+                    'fromSession' => $review->booking_id !== null,
                     'date' => $this->iso($review->created_at ?? now()->toImmutable()),
                     'text' => $review->text,
                     'reply' => $review->reply,

@@ -60,6 +60,7 @@ class TrainerRegistrationTest extends TestCase
             // Required for a new profile.
             'photo' => UploadedFile::fake()->image('ritratto.jpg', 600, 600),
             'disciplines' => ['pilates', 'functional'],
+            'goals' => ['posture', 'weight_loss'],
             'places' => ['studio', 'home', 'online'],
             'studios' => [['name' => 'Studio Città Studi', 'address' => 'Via Pascoli 10']],
             'city' => 'milano',
@@ -110,6 +111,7 @@ class TrainerRegistrationTest extends TestCase
         $this->assertSame(TrainerProfileStatus::Review, $profile->status);
         $this->assertSame('milano', $profile->city?->slug);
         $this->assertSame(['pilates', 'functional'], $profile->disciplines->pluck('slug')->all());
+        $this->assertSame(['posture', 'weight_loss'], $profile->goals);
         $this->assertSame(['monza'], $profile->otherCities->pluck('slug')->all());
         $this->assertSame([PlaceType::Studio, PlaceType::Home, PlaceType::Online], $profile->places->pluck('type')->all());
         $this->assertSame('Via Pascoli 10', $profile->places->first()?->address);
@@ -168,6 +170,8 @@ class TrainerRegistrationTest extends TestCase
                 ...$this->profile([
                     'bio' => 'Troppo corta',
                     'disciplines' => ['pilates', 'yoga', 'boxe', 'running', 'crossfit', 'functional'],
+                    // Training goals only: nothing else is accepted.
+                    'goals' => ['guarire'],
                     'studios' => [],
                     'city' => '',
                     'sessions' => [],
@@ -175,7 +179,7 @@ class TrainerRegistrationTest extends TestCase
                 ]),
             ])
             ->assertSessionHasErrors([
-                'bio', 'disciplines', 'studios', 'city', 'sessions', 'hours.0.0',
+                'bio', 'disciplines', 'goals.0', 'studios', 'city', 'sessions', 'hours.0.0',
             ]);
 
         $this->assertSame(UserRole::Client, $client->refresh()->role);
@@ -190,6 +194,30 @@ class TrainerRegistrationTest extends TestCase
                 ...$this->profile(['photo' => null, 'headline' => '', 'bio' => '', 'experience' => '']),
             ])
             ->assertSessionHasErrors(['photo', 'headline', 'bio', 'experience']);
+
+        $this->assertSame(0, TrainerProfile::count());
+    }
+
+    public function test_a_profile_needs_at_least_one_goal()
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile(['goals' => []]),
+            ])
+            ->assertSessionHasErrors(['goals' => 'Scegli almeno un obiettivo.']);
+
+        $this->assertSame(0, TrainerProfile::count());
+    }
+
+    public function test_a_profile_has_at_most_three_goals()
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile(['goals' => ['weight_loss', 'muscle', 'posture', 'athletic']]),
+            ])
+            ->assertSessionHasErrors(['goals' => 'Puoi scegliere al massimo 3 obiettivi.']);
 
         $this->assertSame(0, TrainerProfile::count());
     }
@@ -274,6 +302,18 @@ class TrainerRegistrationTest extends TestCase
             [['06:00', '08:00'], ['22:00', '24:00']],
             $profile?->workingHours->map(fn ($range) => [substr($range->starts_at, 0, 5), substr($range->ends_at, 0, 5)])->all(),
         );
+    }
+
+    public function test_the_registration_needs_at_least_one_open_hour()
+    {
+        $client = User::factory()->create();
+
+        // A week without hours: in the form the empty days are not sent at all.
+        $this->actingAs($client)
+            ->post(route('trainer.register.store'), ['terms' => '1', ...$this->profile(['hours' => []])])
+            ->assertSessionHasErrors(['hours' => 'Apri almeno un’ora nella settimana.']);
+
+        $this->assertSame(UserRole::Client, $client->refresh()->role);
     }
 
     public function test_services_and_prices_become_the_services_of_the_profile()

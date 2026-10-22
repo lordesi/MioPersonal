@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Booking;
 use App\Models\Review;
 use App\Models\TrainerProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -31,8 +32,23 @@ class TrainerReviewsTest extends TestCase
                 ->where('reviews.0.id', $new->id)
                 ->where('reviews.0.authorName', $new->client->name)
                 ->where('reviews.0.serviceName', null)
+                ->where('reviews.0.fromSession', false)
                 ->where('reviews.1.id', $old->id)
                 ->where('reviews.1.rating', 4)
+            );
+    }
+
+    public function test_a_review_left_after_a_session_says_so()
+    {
+        $trainer = TrainerProfile::factory()->approved()->create();
+        $booking = Booking::factory()->for($trainer)->confirmed()->create(['service_name' => 'Pacchetto 10 sedute']);
+        Review::factory()->for($trainer)->create(['booking_id' => $booking->id, 'client_id' => $booking->client_id]);
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.reviews'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('reviews.0.fromSession', true)
+                ->where('reviews.0.serviceName', 'Pacchetto 10 sedute')
             );
     }
 

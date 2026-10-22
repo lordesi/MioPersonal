@@ -1,18 +1,22 @@
 import type { ReactNode } from 'react';
 import StepErrors from '@/components/onboarding/trainer/step-errors';
+import NumberedSection from '@/components/trainer/area/numbered-section';
 
 type SectionCardProps = {
+    /** The number in the black circle. */
+    step: number;
     title: string;
     description: string;
-    /** On the right of the title, e.g. "1 di 3" or the first session choice. */
+    /** On the right of the title, e.g. "1 di 3". */
     action?: ReactNode;
     /** Messages from the server for this card. */
     errors?: string[];
     children: ReactNode;
 };
 
-/** A white card of "Servizi e prezzi": title, grey line under it, content. */
+/** A numbered card of "Servizi e prezzi", with the server's messages on top. */
 export default function SectionCard({
+    step,
     title,
     description,
     action,
@@ -20,20 +24,14 @@ export default function SectionCard({
     children,
 }: SectionCardProps) {
     return (
-        <section className="flex flex-col gap-4 rounded-[20px] border bg-card p-5 md:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-col gap-0.5">
-                    <h2 className="text-[17px] leading-6 font-semibold tracking-tight">
-                        {title}
-                    </h2>
-                    <p className="text-[13px] leading-5 text-muted-foreground">
-                        {description}
-                    </p>
-                </div>
-                {action}
-            </div>
+        <NumberedSection
+            step={step}
+            title={title}
+            description={description}
+            action={action}
+        >
             <StepErrors title="Da sistemare:" errors={errors} />
             {children}
-        </section>
+        </NumberedSection>
     );
 }

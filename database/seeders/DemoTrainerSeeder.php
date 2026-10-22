@@ -41,23 +41,23 @@ class DemoTrainerSeeder extends Seeder
 
     public function run(SaveTrainerProfile $saver): void
     {
-        // name, city, other cities, disciplines, rating, reviews, price in cents, places, times, headline
+        // name, city, other cities, disciplines, goals, rating, reviews, price in cents, places, times, headline
         $approved = [
-            ['Giulia Rossi', 'milano', ['monza'], ['functional', 'pilates', 'postura'], 4.9, 23, 4500, ['studio', 'home', 'park', 'online'], [], 'Functional training e Pilates'],
-            ['Marco Bianchi', 'milano', [], ['pesi-e-bodybuilding', 'preparazione-atletica'], 4.8, 31, 5000, ['studio'], ['lunch', 'afternoon', 'evening'], 'Forza e ipertrofia, anche per principianti'],
-            ['Sara Colombo', null, [], ['yoga', 'pilates'], 5.0, 12, 3000, ['online'], ['early-morning', 'lunch', 'evening'], 'Yoga e Pilates online'],
-            ['Luca Ferrari', 'torino', [], ['crossfit', 'functional'], 4.7, 18, 4500, ['studio', 'park'], ['early-morning', 'evening'], 'Crossfit e allenamento funzionale'],
-            ['Elena Ricci', 'monza', ['milano'], ['pilates', 'yoga'], null, 0, 4000, ['studio', 'home', 'online'], ['morning', 'afternoon'], 'Pilates e Yoga per tutti i livelli'],
-            ['Davide Greco', 'bergamo', [], ['boxe', 'functional'], 4.9, 9, 3500, ['studio', 'home'], ['afternoon', 'evening', 'weekend'], 'Boxe e preparazione fisica'],
-            ['Chiara Galli', 'roma', [], ['yoga'], 4.8, 27, 3800, ['park', 'online'], ['morning', 'weekend'], 'Yoga all’aperto e online'],
-            ['Andrea Conti', 'milano', [], ['calisthenics', 'pesi-e-bodybuilding'], 4.6, 14, 4000, ['home', 'park', 'online'], ['early-morning', 'evening', 'weekend'], 'Calisthenics a corpo libero'],
-            ['Francesca Marino', 'roma', [], ['preparazione-atletica', 'pesi-e-bodybuilding'], null, 0, 5500, ['studio', 'home'], ['early-morning', 'lunch'], 'Preparazione atletica per gare amatoriali'],
+            ['Giulia Rossi', 'milano', ['monza'], ['functional', 'pilates', 'postura'], ['weight_loss', 'posture', 'wellbeing'], 4.9, 23, 4500, ['studio', 'home', 'park', 'online'], [], 'Functional training e Pilates'],
+            ['Marco Bianchi', 'milano', [], ['pesi-e-bodybuilding', 'preparazione-atletica'], ['muscle', 'weight_loss'], 4.8, 31, 5000, ['studio'], ['lunch', 'afternoon', 'evening'], 'Forza e ipertrofia, anche per principianti'],
+            ['Sara Colombo', null, [], ['yoga', 'pilates'], ['wellbeing', 'posture'], 5.0, 12, 3000, ['online'], ['early-morning', 'lunch', 'evening'], 'Yoga e Pilates online'],
+            ['Luca Ferrari', 'torino', [], ['crossfit', 'functional'], ['weight_loss', 'muscle', 'athletic'], 4.7, 18, 4500, ['studio', 'park'], ['early-morning', 'evening'], 'Crossfit e allenamento funzionale'],
+            ['Elena Ricci', 'monza', ['milano'], ['pilates', 'yoga'], ['posture', 'wellbeing'], null, 0, 4000, ['studio', 'home', 'online'], ['morning', 'afternoon'], 'Pilates e Yoga per tutti i livelli'],
+            ['Davide Greco', 'bergamo', [], ['boxe', 'functional'], ['weight_loss', 'athletic'], 4.9, 9, 3500, ['studio', 'home'], ['afternoon', 'evening', 'weekend'], 'Boxe e preparazione fisica'],
+            ['Chiara Galli', 'roma', [], ['yoga'], ['wellbeing'], 4.8, 27, 3800, ['park', 'online'], ['morning', 'weekend'], 'Yoga all’aperto e online'],
+            ['Andrea Conti', 'milano', [], ['calisthenics', 'pesi-e-bodybuilding'], ['muscle', 'weight_loss'], 4.6, 14, 4000, ['home', 'park', 'online'], ['early-morning', 'evening', 'weekend'], 'Calisthenics a corpo libero'],
+            ['Francesca Marino', 'roma', [], ['preparazione-atletica', 'pesi-e-bodybuilding'], ['athletic', 'muscle'], null, 0, 5500, ['studio', 'home'], ['early-morning', 'lunch'], 'Preparazione atletica per gare amatoriali'],
         ];
 
         $clients = $this->clients();
 
-        foreach ($approved as [$name, $city, $otherCities, $disciplines, $rating, $reviews, $price, $places, $times, $headline]) {
-            $profile = $this->trainer($saver, $name, $city, $otherCities, $disciplines, $price, $places, $times, $headline);
+        foreach ($approved as [$name, $city, $otherCities, $disciplines, $goals, $rating, $reviews, $price, $places, $times, $headline]) {
+            $profile = $this->trainer($saver, $name, $city, $otherCities, $disciplines, $price, $places, $times, $headline, goals: $goals);
             $profile->forceFill([
                 'status' => TrainerProfileStatus::Approved,
                 'status_changed_at' => now()->subMonths(2),
@@ -100,8 +100,9 @@ class DemoTrainerSeeder extends Seeder
      * @param  list<string>  $disciplines
      * @param  list<string>  $places
      * @param  list<string>  $times  empty = the hours of the registration example
+     * @param  list<string>  $goals  App\Enums\TrainingGoal values
      */
-    private function trainer(SaveTrainerProfile $saver, string $name, ?string $city, array $otherCities, array $disciplines, int $price, array $places, array $times, string $headline, ?string $bio = null): TrainerProfile
+    private function trainer(SaveTrainerProfile $saver, string $name, ?string $city, array $otherCities, array $disciplines, int $price, array $places, array $times, string $headline, ?string $bio = null, array $goals = ['weight_loss']): TrainerProfile
     {
         [$firstName, $lastName] = explode(' ', $name, 2);
 
@@ -120,6 +121,7 @@ class DemoTrainerSeeder extends Seeder
             'bio' => $bio ?? $this->bio($firstName, $headline),
             'experience' => '5to10',
             'disciplines' => $disciplines,
+            'goals' => $goals,
             'places' => $places,
             'studios' => in_array('studio', $places, true) ? [['name' => "Studio {$lastName}", 'address' => 'Via Roma 10']] : [],
             'city' => $city,
@@ -349,7 +351,7 @@ class DemoTrainerSeeder extends Seeder
                 'blocked_until' => $end->utc(),
                 'service_name' => $single->name,
                 'price_cents' => $single->price_cents,
-                'place_label' => 'Da concordare con il trainer',
+                'place_label' => '',
                 'status' => BookingStatus::Confirmed,
                 'confirmed_at' => now(),
                 ...$attributes,

@@ -42,6 +42,10 @@ class TrainerProfileEditController extends Controller
                 ? $profile->galleryPhotos->map(fn (TrainerPhoto $photo) => ['id' => $photo->id, 'url' => $photo->url()])->values()->all()
                 : [],
             'maxGalleryPhotos' => TrainerProfile::MAX_GALLERY_PHOTOS,
+            // "Nuovo" or the stars in "Così ti vedono nella ricerca".
+            'rating' => $editable
+                ? ['value' => $profile->rating(), 'count' => $profile->rating_count]
+                : null,
         ]);
     }
 

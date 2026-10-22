@@ -1,4 +1,5 @@
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { useId } from 'react';
 import type { SessionType } from '@/components/onboarding/trainer/draft';
 import {
@@ -10,14 +11,12 @@ import {
 import ChoiceChips from '@/components/shared/choice-chips';
 import EuroInput from '@/components/trainer/services/euro-input';
 import {
-    addDuration,
     NEW_SESSION_NAME,
     removeDuration,
     shortDuration,
 } from '@/components/trainer/services/pricing';
 import SectionCard from '@/components/trainer/services/section-card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { SESSION_MINUTES } from '@/lib/booking';
 import { formatDuration } from '@/lib/format';
 
@@ -30,9 +29,20 @@ type PriceListSectionProps = {
     errors: string[];
 };
 
+/** The text fields of a row: white, black border when focused. */
+const fieldClassName =
+    'w-full min-w-0 rounded-[10px] border bg-card px-3 outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:ring-[3px] focus-visible:ring-foreground/10 aria-invalid:border-destructive';
+
+/** Name, one 104 px column per duration, the bin: header and rows line up. */
+function gridColumns(columns: number[]): CSSProperties {
+    return {
+        gridTemplateColumns: `minmax(0, 1fr) ${columns.map(() => '104px').join(' ')} 40px`,
+    };
+}
+
 /**
  * "Listino": one row for each kind of session, one column for each
- * duration. A cell is a price, or "Offri" when that duration isn't offered.
+ * duration. A cell is a price; an empty cell is a duration not offered.
  */
 export default function PriceListSection({
     sessions,
@@ -66,28 +76,26 @@ export default function PriceListSection({
         onColumnsChange(next);
     };
 
-    // A new row starts with the first column, its price to write.
+    // A new row starts empty: its prices are written in the cells.
     const addSession = () =>
         onChange([
             ...sessions,
-            {
-                name: '',
-                prices: [{ minutes: columns[0], priceCents: null }],
-                note: '',
-                online: [],
-                onlineNote: '',
-            },
+            { name: '', prices: [], note: '', online: [], onlineNote: '' },
         ]);
 
     return (
         <SectionCard
+            step={1}
             title="Listino"
             description="Una riga per ogni tipo di seduta, una colonna per ogni durata. Le celle vuote non compaiono sul profilo."
             errors={errors}
         >
-            <div className="flex flex-wrap items-center gap-2.5 rounded-lg bg-muted p-3">
-                <span id={columnsLabelId} className="text-[13px] font-semibold">
-                    Colonne:
+            <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-secondary p-3">
+                <span
+                    id={columnsLabelId}
+                    className="mr-1 text-[13px] leading-4.5 font-semibold"
+                >
+                    Durate offerte
                 </span>
                 <ChoiceChips
                     multiple
@@ -102,72 +110,61 @@ export default function PriceListSection({
                 />
             </div>
 
-            {/* relative: the sr-only header stays inside the scrolling box. */}
-            <div className="relative overflow-x-auto">
-                <table className="w-full border-collapse">
-                    <thead>
-                        <tr className="text-left text-xs text-muted-foreground">
-                            <th
-                                scope="col"
-                                className="min-w-48 pr-3 pb-2.5 font-semibold"
-                            >
-                                Tipo di seduta
-                            </th>
-                            {columns.map((minutes) => (
-                                <th
-                                    key={minutes}
-                                    scope="col"
-                                    className="px-2 pb-2.5 font-semibold tabular-nums"
-                                >
-                                    {shortDuration(minutes)}
-                                </th>
-                            ))}
-                            <th scope="col" className="pb-2.5">
-                                <span className="sr-only">Azioni</span>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sessions.map((session, index) => (
-                            <SessionRow
-                                key={index}
-                                session={session}
-                                columns={columns}
-                                nameError={
-                                    // Empty is only "required": no message while it's being written.
-                                    session.name.trim() === ''
-                                        ? null
-                                        : sessionNameError(sessions, index)
-                                }
-                                onChange={(next) => changeSession(index, next)}
-                                onRemove={
-                                    sessions.length > 1
-                                        ? () =>
-                                              onChange(
-                                                  sessions.filter(
-                                                      (_, i) => i !== index,
-                                                  ),
-                                              )
-                                        : undefined
-                                }
-                            />
+            <div className="overflow-x-auto">
+                <div className="flex min-w-115 flex-col gap-2.5">
+                    <div
+                        aria-hidden="true"
+                        className="grid gap-2.5 px-3.25 text-xs font-semibold tracking-[0.04em] text-muted-foreground"
+                        style={gridColumns(columns)}
+                    >
+                        <span>Tipo di seduta</span>
+                        {columns.map((minutes) => (
+                            <span key={minutes} className="text-right">
+                                {shortDuration(minutes)}
+                            </span>
                         ))}
-                    </tbody>
-                </table>
+                        <span />
+                    </div>
+
+                    {sessions.map((session, index) => (
+                        <SessionRow
+                            key={index}
+                            session={session}
+                            columns={columns}
+                            nameError={
+                                // Empty is only "required": no message while it's being written.
+                                session.name.trim() === ''
+                                    ? null
+                                    : sessionNameError(sessions, index)
+                            }
+                            onChange={(next) => changeSession(index, next)}
+                            onRemove={
+                                sessions.length > 1
+                                    ? () =>
+                                          onChange(
+                                              sessions.filter(
+                                                  (_, i) => i !== index,
+                                              ),
+                                          )
+                                    : undefined
+                            }
+                        />
+                    ))}
+                </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 pt-1">
+            <div className="flex flex-wrap items-center gap-3">
                 <Button
                     type="button"
                     variant="outline"
-                    className="h-10"
+                    className="h-11 rounded-xl border-input px-4 font-semibold shadow-none"
                     disabled={sessions.length >= MAX_SESSION_TYPES}
                     onClick={addSession}
                 >
-                    <Plus aria-hidden="true" />
+                    <Plus aria-hidden="true" strokeWidth={2.5} />
                     Aggiungi un tipo di seduta
                 </Button>
-                <span className="text-xs text-muted-foreground tabular-nums">
+                <span className="text-[13px] leading-4.5 text-muted-foreground tabular-nums">
                     {sessions.length} di {MAX_SESSION_TYPES} · es. calisthenics
                     e crossfit a prezzi diversi
                 </span>
@@ -176,7 +173,7 @@ export default function PriceListSection({
     );
 }
 
-/** A kind of session: name and note, then a cell for each column. */
+/** A kind of session: name and note, then a price cell for each column. */
 function SessionRow({
     session,
     columns,
@@ -193,25 +190,40 @@ function SessionRow({
 }) {
     const name = session.name.trim() || NEW_SESSION_NAME;
 
-    const setPrice = (minutes: number, priceCents: number | null) =>
+    // A written price offers the duration, an emptied cell takes it away.
+    const setPrice = (minutes: number, priceCents: number | null) => {
+        if (priceCents === null) {
+            onChange(removeDuration(session, minutes));
+
+            return;
+        }
+
+        const others = session.prices.filter(
+            (price) => price.minutes !== minutes,
+        );
+
         onChange({
             ...session,
-            prices: session.prices.map((price) =>
-                price.minutes === minutes ? { ...price, priceCents } : price,
+            prices: [...others, { minutes, priceCents }].sort(
+                (a, b) => a.minutes - b.minutes,
             ),
         });
+    };
 
     return (
-        <tr className="border-t align-top">
-            <td className="py-3 pr-3">
-                <div className="flex flex-col gap-1.5">
-                    <Input
+        <div className="rounded-2xl border bg-secondary/50 p-3">
+            <div
+                className="grid items-start gap-2.5"
+                style={gridColumns(columns)}
+            >
+                <div className="flex min-w-0 flex-col gap-2">
+                    <input
                         aria-label="Nome del tipo di seduta"
                         aria-invalid={nameError !== null}
                         required
                         maxLength={SESSION_NAME_MAX}
                         placeholder="Es. Calisthenics"
-                        className="h-10 text-[15px] font-semibold md:text-[15px]"
+                        className={`${fieldClassName} h-11 text-[15px] font-semibold`}
                         value={session.name}
                         onChange={(event) =>
                             onChange({ ...session, name: event.target.value })
@@ -220,88 +232,48 @@ function SessionRow({
                     {nameError && (
                         <p className="text-xs text-destructive">{nameError}</p>
                     )}
-                    <Input
-                        aria-label="Nota sotto il servizio"
+                    <input
+                        aria-label={`Nota sotto ${name}`}
                         maxLength={NOTE_MAX}
                         placeholder="Nota: es. a domicilio o al parco"
-                        className="h-8 text-[13px] text-muted-foreground md:text-[13px]"
+                        className={`${fieldClassName} h-9.5 text-[13px]`}
                         value={session.note}
                         onChange={(event) =>
                             onChange({ ...session, note: event.target.value })
                         }
                     />
                     {session.prices.length === 0 && (
-                        <p className="text-xs text-destructive">
-                            Offri almeno una durata.
+                        <p className="text-xs text-muted-foreground">
+                            Scrivi il prezzo di almeno una durata.
                         </p>
                     )}
                 </div>
-            </td>
-            {columns.map((minutes) => {
-                const price = session.prices.find(
-                    (item) => item.minutes === minutes,
-                );
-                const duration = formatDuration(minutes);
 
-                return (
-                    <td key={minutes} className="px-2 py-3">
-                        {price ? (
-                            <div className="flex items-center gap-1">
-                                <EuroInput
-                                    aria-label={`Prezzo ${name} ${duration}`}
-                                    required
-                                    className="w-22"
-                                    value={price.priceCents}
-                                    onChange={(cents) =>
-                                        setPrice(minutes, cents)
-                                    }
-                                />
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="size-7 text-muted-foreground"
-                                    aria-label={`Togli ${duration} da ${name}`}
-                                    onClick={() =>
-                                        onChange(
-                                            removeDuration(session, minutes),
-                                        )
-                                    }
-                                >
-                                    <X className="size-3.5" />
-                                </Button>
-                            </div>
-                        ) : (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="h-10 w-30 border-dashed bg-transparent text-[13px] font-normal text-muted-foreground shadow-none"
-                                aria-label={`Aggiungi ${duration} a ${name}`}
-                                onClick={() =>
-                                    onChange(addDuration(session, minutes))
-                                }
-                            >
-                                <Plus aria-hidden="true" />
-                                Offri
-                            </Button>
-                        )}
-                    </td>
-                );
-            })}
-            <td className="py-3 text-right">
-                {onRemove && (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-10 text-muted-foreground"
-                        aria-label={`Elimina ${name}`}
-                        onClick={onRemove}
-                    >
-                        <Trash2 />
-                    </Button>
-                )}
-            </td>
-        </tr>
+                {columns.map((minutes) => (
+                    <EuroInput
+                        key={minutes}
+                        aria-label={`Prezzo ${name} ${formatDuration(minutes)}`}
+                        value={
+                            session.prices.find(
+                                (price) => price.minutes === minutes,
+                            )?.priceCents ?? null
+                        }
+                        onChange={(cents) => setPrice(minutes, cents)}
+                    />
+                ))}
+
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-10 text-muted-foreground"
+                    aria-label={`Rimuovi ${name}`}
+                    disabled={!onRemove}
+                    onClick={onRemove}
+                >
+                    <Trash2 />
+                </Button>
+            </div>
+        </div>
     );
 }

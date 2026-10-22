@@ -1,6 +1,6 @@
 import ServicePicker from '@/components/profile/service-picker';
 import { Button } from '@/components/ui/button';
-import { serviceSummary, totalPriceLabel } from '@/lib/booking';
+import { totalPriceLabel } from '@/lib/booking';
 import { formatSlot } from '@/lib/format';
 import type { TrainerService } from '@/types';
 
@@ -32,14 +32,9 @@ export default function BookingAside({
             aria-label="Prenota una seduta"
             className="hidden flex-col gap-4 rounded-xl border bg-card p-6 shadow-sm lg:sticky lg:top-6 lg:flex"
         >
-            <div className="flex items-baseline gap-1.5 tabular-nums">
-                <span className="text-3xl font-bold tracking-tight">
-                    {totalPriceLabel(service, minutes)}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                    {serviceSummary(service, minutes)}
-                </span>
-            </div>
+            <span className="text-3xl font-bold tracking-tight tabular-nums">
+                {totalPriceLabel(service, minutes)}
+            </span>
 
             <ServicePicker
                 legend="Scegli il servizio"

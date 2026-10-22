@@ -51,7 +51,7 @@ export default function EuroInput({
     return (
         <div
             className={cn(
-                'flex h-10 items-center rounded-md border border-input bg-background shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 has-aria-invalid:border-destructive',
+                'flex h-11 items-center rounded-[10px] border bg-card transition-[border-color,box-shadow] focus-within:border-foreground focus-within:ring-[3px] focus-within:ring-foreground/10 has-aria-invalid:border-destructive',
                 className,
             )}
         >
@@ -60,8 +60,8 @@ export default function EuroInput({
                 type="text"
                 inputMode="decimal"
                 autoComplete="off"
-                placeholder={props.placeholder ?? '0'}
-                className="h-full w-full min-w-0 bg-transparent pr-1 pl-3 text-right text-base tabular-nums outline-none placeholder:text-muted-foreground"
+                placeholder={props.placeholder ?? '—'}
+                className="h-full w-full min-w-0 bg-transparent pr-1 pl-3 text-right text-[15px] font-semibold tabular-nums outline-none placeholder:font-normal placeholder:text-muted-foreground"
                 value={shown}
                 onChange={(event) => {
                     const next = event.target.value.trim();
@@ -83,7 +83,7 @@ export default function EuroInput({
             />
             <span
                 aria-hidden="true"
-                className="pr-3 pl-0.5 text-sm text-muted-foreground"
+                className="pr-3 pl-0.5 text-[13px] text-muted-foreground"
             >
                 €
             </span>

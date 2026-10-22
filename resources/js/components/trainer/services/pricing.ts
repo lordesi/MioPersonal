@@ -64,19 +64,6 @@ export function withCurrent(options: number[], current: number): number[] {
         : [...options, current].sort((a, b) => a - b);
 }
 
-/** A kind of session with a price for these minutes (still empty). */
-export function addDuration(
-    session: SessionType,
-    minutes: number,
-): SessionType {
-    return {
-        ...session,
-        prices: [...session.prices, { minutes, priceCents: null }].sort(
-            (a, b) => a.minutes - b.minutes,
-        ),
-    };
-}
-
 /** A kind of session without these minutes, online price too. */
 export function removeDuration(
     session: SessionType,
@@ -125,19 +112,26 @@ export function packageComparison(
 export type PreviewRow = {
     key: string;
     name: string;
-    /** "Nuovi clienti", "Risparmi". */
+    /** "Nuovi clienti", "Risparmi 20%". */
     badge?: string;
     meta: string;
     price: string;
 };
 
-/** "da 50 €", or "Prezzo da impostare" while no price is written. */
+/**
+ * "50 €" for one duration, "da 50 €" for more, or "Prezzo da impostare"
+ * while no price is written.
+ */
 function fromPrice(cents: (number | null)[]): string {
     const prices = cents.filter((price): price is number => price !== null);
 
-    return prices.length > 0
-        ? `da ${formatPrice(Math.min(...prices))}`
-        : 'Prezzo da impostare';
+    if (prices.length === 0) {
+        return 'Prezzo da impostare';
+    }
+
+    const lowest = formatPrice(Math.min(...prices));
+
+    return cents.length > 1 ? `da ${lowest}` : lowest;
 }
 
 /**
@@ -200,12 +194,15 @@ export function previewRows(
     });
 
     pricing.packages.forEach((item, index) => {
-        const { savingCents } = packageComparison(item, pricing.sessions);
+        const { savingCents, percent } = packageComparison(
+            item,
+            pricing.sessions,
+        );
 
         rows.push({
             key: `package-${index}`,
             name: `Pacchetto ${item.sessions} sedute da ${formatDuration(item.minutes)}`,
-            badge: savingCents > 0 ? 'Risparmi' : undefined,
+            badge: savingCents > 0 ? `Risparmi ${percent}%` : undefined,
             meta: item.priceCents
                 ? `${formatPrice(Math.round(item.priceCents / item.sessions))} a seduta`
                 : 'Prezzo da impostare',

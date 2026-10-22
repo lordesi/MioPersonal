@@ -21,19 +21,12 @@ export default function PendingRequestsSummary({
     return (
         <Panel title="Richieste in attesa" className="gap-3.5">
             {total === 0 ? (
-                <div className="flex gap-3.5">
+                <div className="flex items-center gap-3.5">
                     <span className="flex size-10 flex-none items-center justify-center rounded-xl bg-secondary">
                         <Inbox aria-hidden="true" className="size-4.5" />
                     </span>
-                    <span className="flex flex-col gap-1">
-                        <span className="text-[15px] leading-5.5 font-semibold">
-                            Nessuna richiesta da confermare
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                            Quando un cliente chiede una seduta la trovi qui. Lo
-                            slot resta bloccato finché non rispondi, al massimo
-                            24 ore.
-                        </span>
+                    <span className="text-[15px] leading-5.5 font-semibold">
+                        Nessuna richiesta da confermare
                     </span>
                 </div>
             ) : (

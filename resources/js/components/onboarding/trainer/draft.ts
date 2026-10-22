@@ -1,3 +1,4 @@
+import type { TrainingGoal } from '@/lib/goals';
 import type { BookingRules } from '@/types';
 
 /**
@@ -16,6 +17,8 @@ export type TrainerDraft = {
     photoUrl: string | null;
     /** Discipline slugs from the catalog. */
     disciplines: string[];
+    /** The goals the trainer works on, see lib/goals.ts. */
+    goals: TrainingGoal[];
     places: PlaceType[];
     studios: { name: string; address: string }[];
     /** Slug of the main city ('' = not chosen yet). Not needed for online only. */
@@ -102,6 +105,7 @@ export type PlaceType = 'studio' | 'home' | 'park' | 'online';
 
 /** Limits, the same as in TrainerProfileRequest. */
 export const MAX_DISCIPLINES = 5;
+export const MAX_GOALS = 3;
 export const MAX_STUDIOS = 3;
 export const MAX_OTHER_CITIES = 2;
 export const MAX_CERTIFICATIONS = 3;
@@ -129,7 +133,12 @@ export const placeOptions: {
         hint: 'Vai tu dal cliente',
         short: 'Domicilio',
     },
-    { value: 'park', label: 'Al parco', hint: 'All’aperto', short: 'Parco' },
+    {
+        value: 'park',
+        label: 'All’aperto',
+        hint: 'Al parco',
+        short: 'All’aperto',
+    },
     {
         value: 'online',
         label: 'Online',
@@ -140,8 +149,8 @@ export const placeOptions: {
 
 export const experienceOptions: { value: Experience; label: string }[] = [
     { value: 'lt2', label: 'Meno di 2 anni' },
-    { value: '2to5', label: 'Da 2 a 5 anni' },
-    { value: '5to10', label: 'Da 5 a 10 anni' },
+    { value: '2to5', label: '2–5 anni' },
+    { value: '5to10', label: '5–10 anni' },
     { value: 'gt10', label: 'Più di 10 anni' },
 ];
 
@@ -179,6 +188,7 @@ export const initialDraft: TrainerDraft = {
     photo: null,
     photoUrl: null,
     disciplines: [],
+    goals: [],
     places: [],
     studios: [{ name: '', address: '' }],
     city: '',
@@ -398,6 +408,7 @@ export function toPayload(draft: TrainerDraft) {
         experience: draft.experience,
         photo: draft.photo,
         disciplines: draft.disciplines,
+        goals: draft.goals,
         places: draft.places,
         studios: draft.places.includes('studio') ? draft.studios : [],
         city: needsCity(draft) ? draft.city : '',
@@ -501,6 +512,7 @@ const fieldSteps: [prefix: string, step: number][] = [
     ['experience', 2],
     ['photo', 2],
     ['disciplines', 3],
+    ['goals', 3],
     ['places', 3],
     ['studios', 3],
     ['city', 3],

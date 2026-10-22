@@ -4,7 +4,7 @@ import Panel from '@/components/trainer/area/panel';
 import PackageProgress from '@/components/trainer/package-progress';
 import { romeParts } from '@/lib/calendar';
 import { formatDayLong, formatTime } from '@/lib/format';
-import { show as showClient } from '@/routes/trainer/clients';
+import { clients } from '@/routes/trainer';
 import type { TrainerPackage } from '@/types';
 
 /** "Pacchetti attivi" of "Panoramica": the sessions done of each package. */
@@ -36,7 +36,11 @@ export default function ActivePackages({
                                             pack.clientName
                                         ) : (
                                             <Link
-                                                href={showClient(pack.clientId)}
+                                                href={clients({
+                                                    query: {
+                                                        cliente: pack.clientId,
+                                                    },
+                                                })}
                                                 className="hover:underline"
                                             >
                                                 {pack.clientName}

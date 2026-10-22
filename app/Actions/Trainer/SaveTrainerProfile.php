@@ -118,6 +118,7 @@ class SaveTrainerProfile
             'headline' => trim($data['headline']),
             'bio' => trim($data['bio']),
             'experience' => $data['experience'],
+            'goals' => array_values($data['goals']),
             'city_id' => $mainCityId,
         ]);
         $profile->forceFill([

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Actions\Bookings\CreateBooking;
 use App\Enums\BookingActor;
 use App\Enums\BookingStatus;
+use App\Enums\PlaceType;
 use App\Models\Booking;
 use App\Models\City;
 use App\Models\Service;
@@ -81,6 +82,18 @@ class BookingTest extends TestCase
 
         // The slot is taken now.
         $this->assertFalse(TrainerSlots::isFree($trainer->refresh(), CarbonImmutable::parse(self::SLOT), 60));
+    }
+
+    public function test_the_place_is_empty_when_the_trainer_has_more_than_one()
+    {
+        $trainer = $this->trainer();
+        $trainer->places()->create(['type' => PlaceType::Home, 'city_id' => $trainer->city_id, 'sort' => 1]);
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainers.book', $trainer->slug), $this->request($trainer))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('', Booking::sole()->place_label);
     }
 
     public function test_clients_can_book_before_verifying_the_email()
@@ -230,6 +243,47 @@ class BookingTest extends TestCase
         $this->assertSame(BookingStatus::Confirmed, $past->refresh()->status);
     }
 
+    public function test_a_confirmed_session_can_be_cancelled_only_while_cancelling_is_free()
+    {
+        // Free cancellation until 24 hours before; it's Monday 08:00.
+        $trainer = TrainerProfile::factory()->approved()->create(['free_cancellation_hours' => 24]);
+        $client = User::factory()->create();
+        $session = fn (string $start) => Booking::factory()->for($client, 'client')->for($trainer)->confirmed()
+            ->at(CarbonImmutable::parse($start, 'Europe/Rome'))
+            ->create();
+        // Tonight: free until yesterday at 18:00.
+        $tonight = $session('2026-10-19 18:00');
+        // Wednesday: free until Tuesday at 18:00.
+        $wednesday = $session('2026-10-21 18:00');
+
+        $this->actingAs($client)
+            ->patch(route('client.bookings.cancel', $tonight))
+            ->assertSessionHasErrors('booking');
+
+        $this->actingAs($client)
+            ->patch(route('client.bookings.cancel', $wednesday))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(BookingStatus::Confirmed, $tonight->refresh()->status);
+        $this->assertSame(BookingStatus::Cancelled, $wednesday->refresh()->status);
+    }
+
+    public function test_a_request_still_waiting_can_be_cancelled_until_it_starts()
+    {
+        $trainer = TrainerProfile::factory()->approved()->create(['free_cancellation_hours' => 24]);
+        $client = User::factory()->create();
+        // Tonight, past the free cancellation, but the trainer hasn't answered yet.
+        $request = Booking::factory()->for($client, 'client')->for($trainer)
+            ->at(CarbonImmutable::parse('2026-10-19 18:00', 'Europe/Rome'))
+            ->create();
+
+        $this->actingAs($client)
+            ->patch(route('client.bookings.cancel', $request))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(BookingStatus::Cancelled, $request->refresh()->status);
+    }
+
     public function test_requests_not_answered_in_time_expire()
     {
         $late = Booking::factory()->expired()->create();
@@ -240,6 +294,21 @@ class BookingTest extends TestCase
         $this->assertSame(BookingStatus::Expired, $late->refresh()->status);
         $this->assertSame(['expired'], $late->events()->pluck('type')->all());
         $this->assertSame(BookingStatus::Pending, $waiting->refresh()->status);
+    }
+
+    public function test_a_slot_whose_request_expired_can_be_booked_before_bookings_expire_runs()
+    {
+        $trainer = $this->trainer();
+        // Same slot, not answered in time, still "pending": bookings:expire hasn't run.
+        $late = Booking::factory()->for($trainer)->at(CarbonImmutable::parse(self::SLOT))->expired()->create();
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainers.book', $trainer->slug), $this->request($trainer))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(BookingStatus::Expired, $late->refresh()->status);
+        $this->assertSame(['expired'], $late->events()->pluck('type')->all());
+        $this->assertSame(1, $trainer->bookings()->where('status', BookingStatus::Pending)->count());
     }
 
     /** The first session of 1 hour (30 €), on top of the services, as SaveTrainerProfile writes it. */

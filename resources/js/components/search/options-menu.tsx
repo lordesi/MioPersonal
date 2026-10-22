@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 export type MenuOption<T extends string> = { value: T; label: string };
 
-type OptionsMenuProps<T extends string> = {
+type BaseProps<T extends string> = {
     /** The button that opens the menu. */
     trigger: ReactNode;
     /** Name of the list for screen readers, e.g. "Disciplina". */
@@ -19,8 +19,6 @@ type OptionsMenuProps<T extends string> = {
     /** First choice, the one without a filter, e.g. "Tutte le discipline". */
     noneLabel: string;
     options: MenuOption<T>[];
-    value: T | null;
-    onChange: (value: T | null) => void;
     /** Small heading at the top of the panel, e.g. "Scegli una città". */
     title?: string;
     /** Adds a search field above the list, e.g. "Cerca una città". */
@@ -38,6 +36,21 @@ type OptionsMenuProps<T extends string> = {
     className?: string;
 };
 
+type SingleProps<T extends string> = BaseProps<T> & {
+    multiple?: false;
+    value: T | null;
+    onChange: (value: T | null) => void;
+};
+
+/** More than one choice: the menu stays open while choosing. */
+type MultipleProps<T extends string> = BaseProps<T> & {
+    multiple: true;
+    value: T[];
+    onChange: (value: T[]) => void;
+};
+
+type OptionsMenuProps<T extends string> = SingleProps<T> | MultipleProps<T>;
+
 /** Lowercase and without accents, so "forli" finds "Forlì". */
 function normalize(text: string): string {
     return text
@@ -46,24 +59,28 @@ function normalize(text: string): string {
         .toLowerCase();
 }
 
-/** A dropdown list with a ✓ on the chosen option, e.g. "Prezzo" or "Ordina". */
-export default function OptionsMenu<T extends string>({
-    trigger,
-    label,
-    noneLabel,
-    options,
-    value,
-    onChange,
-    title,
-    searchPlaceholder,
-    matchTriggerWidth = false,
-    open,
-    onOpenChange,
-    modal = true,
-    onCloseAutoFocus,
-    align = 'start',
-    className,
-}: OptionsMenuProps<T>) {
+/**
+ * A dropdown list with a ✓ on the chosen option, e.g. "Prezzo" or "Ordina";
+ * with `multiple`, a ✓ on each chosen one, e.g. "Cosa" (disciplines).
+ */
+export default function OptionsMenu<T extends string>(
+    props: OptionsMenuProps<T>,
+) {
+    const {
+        trigger,
+        label,
+        noneLabel,
+        options,
+        title,
+        searchPlaceholder,
+        matchTriggerWidth = false,
+        open,
+        onOpenChange,
+        modal = true,
+        onCloseAutoFocus,
+        align = 'start',
+        className,
+    } = props;
     const [query, setQuery] = useState('');
     // Used only when nobody opens the menu from outside.
     const [ownOpen, setOwnOpen] = useState(false);
@@ -88,11 +105,40 @@ export default function OptionsMenu<T extends string>({
         ? visible
         : [{ value: null, label: noneLabel }, ...visible];
 
+    const isSelected = (value: T | null) =>
+        props.multiple
+            ? value === null
+                ? props.value.length === 0
+                : props.value.includes(value)
+            : value === props.value;
+
+    /** null = the first choice ("Tutte…"): no filter. */
+    const choose = (value: T | null) => {
+        if (!props.multiple) {
+            props.onChange(value);
+
+            return;
+        }
+
+        props.onChange(
+            value === null
+                ? []
+                : props.value.includes(value)
+                  ? props.value.filter((item) => item !== value)
+                  : [...props.value, value],
+        );
+    };
+
     // Enter in the search field picks the first match: "mil" + Enter = Milano.
     const pickFirst = () => {
         if (query && visible.length > 0) {
-            onChange(visible[0].value);
-            setOpen(false);
+            choose(visible[0].value);
+
+            if (props.multiple) {
+                setQuery('');
+            } else {
+                setOpen(false);
+            }
         }
     };
 
@@ -152,14 +198,25 @@ export default function OptionsMenu<T extends string>({
                     )}
                 >
                     {choices.map((choice) => {
-                        const selected = choice.value === value;
+                        const selected = isSelected(choice.value);
 
                         return (
                             <DropdownMenuItem
                                 key={choice.value ?? 'none'}
-                                role="menuitemradio"
+                                role={
+                                    props.multiple
+                                        ? 'menuitemcheckbox'
+                                        : 'menuitemradio'
+                                }
                                 aria-checked={selected}
-                                onSelect={() => onChange(choice.value)}
+                                onSelect={(event) => {
+                                    // More than one choice: the menu stays open.
+                                    if (props.multiple) {
+                                        event.preventDefault();
+                                    }
+
+                                    choose(choice.value);
+                                }}
                                 className={cn(
                                     'min-h-12 justify-between gap-3 rounded-xl px-3 text-[15px]',
                                     selected && 'font-semibold',
@@ -226,7 +283,9 @@ function SearchField({
             event.preventDefault();
             event.currentTarget
                 .closest('[role="menu"]')
-                ?.querySelector<HTMLElement>('[role="menuitemradio"]')
+                ?.querySelector<HTMLElement>(
+                    '[role="menuitemradio"], [role="menuitemcheckbox"]',
+                )
                 ?.focus();
         }
     };

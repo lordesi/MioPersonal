@@ -1,14 +1,16 @@
-import ResponsiveText from '@/components/shared/responsive-text';
-import { DaySessions } from '@/components/trainer/area/day-agenda';
-import { Button } from '@/components/ui/button';
 import type { CalendarItem } from '@/lib/calendar';
-import { hourLabel, monthCells, sessionsLabel } from '@/lib/calendar';
-import { formatDayNumber } from '@/lib/format';
+import {
+    hourLabel,
+    monthCells,
+    sessionsLabel,
+    shortName,
+} from '@/lib/calendar';
+import { formatDayLong, formatDayNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const weekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 
-/** Sessions written inside a day on large screens; the others become "+2 altre". */
+/** Sessions written inside a day; the others become "+2 altre". */
 const VISIBLE_PER_DAY = 3;
 
 type MonthCalendarProps = {
@@ -16,134 +18,142 @@ type MonthCalendarProps = {
     month: string;
     items: CalendarItem[];
     today: string;
-    selected: string;
-    onSelect: (date: string) => void;
-    onOpenWeek: () => void;
+    selectedDay: string;
+    /** A day of the month opens the "Giorno" view. */
+    onOpenDay: (date: string) => void;
 };
 
 /**
- * The month: on computers each day lists its sessions (time and client),
- * on phones only how many. The sessions of the chosen day are on the side.
+ * The month: each day lists its sessions (time and client; on phones only
+ * a dot for each). A day opens the "Giorno" view.
  */
 export default function MonthCalendar({
     month,
     items,
     today,
-    selected,
-    onSelect,
-    onOpenWeek,
+    selectedDay,
+    onOpenDay,
 }: MonthCalendarProps) {
     const [year, monthNumber] = month.split('-').map(Number);
     const cells = monthCells(year, monthNumber);
-    const dayItems = (date: string) =>
-        items
-            .filter((item) => item.date === date)
-            .sort((a, b) => a.from - b.from);
 
     return (
-        <section
-            aria-label="Mese"
-            className="flex flex-wrap gap-6 rounded-[20px] border bg-card p-5 md:p-6"
-        >
-            <div className="flex min-w-0 flex-[3_1_460px] flex-col gap-1.5">
-                <div
-                    aria-hidden="true"
-                    className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground"
-                >
-                    {weekdays.map((day) => (
-                        <span key={day}>
-                            <ResponsiveText
-                                mobile={day.charAt(0)}
-                                desktop={day}
-                            />
-                        </span>
-                    ))}
-                </div>
+        <div>
+            <div
+                aria-hidden="true"
+                className="grid grid-cols-7 bg-sidebar text-xs font-semibold text-sidebar-muted-foreground"
+            >
+                {weekdays.map((day) => (
+                    <span key={day} className="px-2 py-3 sm:px-3.5">
+                        <span className="sm:hidden">{day.charAt(0)}</span>
+                        <span className="hidden sm:inline">{day}</span>
+                    </span>
+                ))}
+            </div>
 
-                <div
-                    role="group"
-                    aria-label="Giorni del mese"
-                    className="grid grid-cols-7 gap-1"
-                >
-                    {cells.map((date, index) => {
-                        if (date === null) {
-                            return (
-                                <span
-                                    key={`blank-${index}`}
-                                    aria-hidden="true"
-                                />
-                            );
-                        }
+            <div className="grid grid-cols-7">
+                {cells.map((date, index) => {
+                    const sideClasses = cn(
+                        'min-h-18 border-t border-border/60 p-1.5 sm:min-h-27 sm:p-2',
+                        index % 7 !== 0 && 'border-l',
+                    );
 
-                        const sessions = dayItems(date);
-                        const hidden = sessions.length - VISIBLE_PER_DAY;
-
+                    if (date === null) {
                         return (
-                            <button
-                                key={date}
-                                type="button"
-                                aria-pressed={date === selected}
-                                aria-label={`${formatDayNumber(date)}: ${sessionsLabel(sessions.length).toLowerCase()}`}
-                                onClick={() => onSelect(date)}
+                            <span
+                                key={`blank-${index}`}
+                                className={cn(sideClasses, 'bg-secondary/50')}
+                            />
+                        );
+                    }
+
+                    const sessions = items
+                        .filter((item) => item.date === date)
+                        .sort((a, b) => a.from - b.from);
+                    const hidden = sessions.length - VISIBLE_PER_DAY;
+
+                    return (
+                        <button
+                            key={date}
+                            type="button"
+                            aria-label={`${formatDayLong(date)}, ${sessionsLabel(sessions.length).toLowerCase()}`}
+                            aria-current={date === today ? 'date' : undefined}
+                            onClick={() => onOpenDay(date)}
+                            className={cn(
+                                sideClasses,
+                                'flex flex-col items-start gap-1 bg-card text-left hover:bg-secondary/50',
+                                date === selectedDay &&
+                                    'shadow-[inset_0_0_0_2px_var(--foreground)]',
+                            )}
+                        >
+                            <span
                                 className={cn(
-                                    'flex h-14 min-w-0 flex-col gap-0.5 overflow-hidden rounded-lg border bg-background p-1 text-left md:h-24 md:p-1.5',
-                                    date === selected &&
-                                        'border-2 border-foreground',
+                                    'flex size-7 items-center justify-center rounded-full text-[13px] font-semibold tabular-nums',
                                     date === today &&
-                                        'outline-2 outline-offset-2 outline-muted-foreground outline-dashed',
+                                        'bg-foreground text-background',
                                 )}
                             >
-                                <span className="text-[13px] leading-4 font-semibold tabular-nums">
-                                    {formatDayNumber(date)}
+                                {formatDayNumber(date)}
+                            </span>
+
+                            {/* Phones: one dot for each session. */}
+                            {sessions.length > 0 && (
+                                <span
+                                    aria-hidden="true"
+                                    className="flex flex-wrap gap-0.75 px-1 sm:hidden"
+                                >
+                                    {sessions.map((item) => (
+                                        <span
+                                            key={item.key}
+                                            className={cn(
+                                                'size-1.5 rounded-full',
+                                                item.kind === 'confirmed'
+                                                    ? 'bg-foreground'
+                                                    : 'border border-foreground',
+                                            )}
+                                        />
+                                    ))}
                                 </span>
+                            )}
 
-                                {sessions.length > 0 && (
-                                    <span className="mt-auto self-end rounded-full bg-primary px-1.5 text-[11px] leading-4 font-semibold text-primary-foreground tabular-nums md:hidden">
-                                        {sessions.length}
-                                    </span>
-                                )}
-
-                                <span className="hidden min-w-0 flex-col gap-0.5 md:flex">
-                                    {sessions
-                                        .slice(0, VISIBLE_PER_DAY)
-                                        .map((item) => (
-                                            <span
-                                                key={item.key}
-                                                className={cn(
-                                                    'truncate rounded px-1 text-[11px] leading-4 tabular-nums',
-                                                    item.kind === 'confirmed'
-                                                        ? 'bg-primary text-primary-foreground'
-                                                        : 'border border-dashed border-foreground',
-                                                )}
-                                            >
-                                                {hourLabel(item.from)}{' '}
-                                                {item.title}
-                                            </span>
-                                        ))}
-                                    {hidden > 0 && (
-                                        <span className="px-1 text-[11px] leading-4 text-muted-foreground">
-                                            +{hidden}{' '}
-                                            {hidden === 1 ? 'altra' : 'altre'}
-                                        </span>
+                            {sessions.slice(0, VISIBLE_PER_DAY).map((item) => (
+                                <span
+                                    key={item.key}
+                                    aria-hidden="true"
+                                    className={cn(
+                                        'hidden h-5.5 w-full items-center gap-1 overflow-hidden rounded-md px-1.5 text-[11px] leading-3.5 font-semibold whitespace-nowrap sm:flex',
+                                        item.kind === 'confirmed'
+                                            ? 'bg-foreground text-background'
+                                            : 'border border-dashed border-foreground',
                                     )}
+                                >
+                                    <span className="tabular-nums">
+                                        {hourLabel(item.from)}
+                                    </span>
+                                    <span
+                                        className={cn(
+                                            'truncate font-normal',
+                                            item.kind === 'confirmed'
+                                                ? 'text-sidebar-muted-foreground'
+                                                : 'text-muted-foreground',
+                                        )}
+                                    >
+                                        {shortName(item.title)}
+                                    </span>
                                 </span>
-                            </button>
-                        );
-                    })}
-                </div>
+                            ))}
+                            {hidden > 0 && (
+                                <span
+                                    aria-hidden="true"
+                                    className="hidden px-1.5 text-[11px] font-semibold text-muted-foreground sm:block"
+                                >
+                                    +{hidden} {hidden === 1 ? 'altra' : 'altre'}
+                                </span>
+                            )}
+                        </button>
+                    );
+                })}
             </div>
-
-            <div className="flex flex-[1_1_240px] flex-col gap-2">
-                <DaySessions date={selected} items={items} />
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="mt-1 hidden self-start md:inline-flex"
-                    onClick={onOpenWeek}
-                >
-                    Apri la settimana
-                </Button>
-            </div>
-        </section>
+        </div>
     );
 }

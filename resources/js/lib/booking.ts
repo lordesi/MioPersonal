@@ -1,4 +1,4 @@
-import { formatDuration, formatPrice } from '@/lib/format';
+import { formatPrice } from '@/lib/format';
 import type { AvailabilityDay, ServiceOption, TrainerService } from '@/types';
 
 /**
@@ -58,24 +58,6 @@ export function totalPriceLabel(
     const cents = totalPriceCents(service, minutes);
 
     return cents === 0 ? 'Gratis' : formatPrice(cents);
-}
-
-/** "1 ora e mezza · seduta singola" or "10 × 1 ora · pacchetto 10 sedute" */
-export function serviceSummary(
-    service: TrainerService,
-    minutes: number,
-): string {
-    const duration =
-        service.options.length > 1
-            ? formatDuration(minutes)
-            : service.durationLabel;
-
-    // "Il tuo pacchetto": already paid, the price is not indicative.
-    if (service.packageId !== null) {
-        return `${formatDuration(minutes)} · inclusa nel ${service.note.toLowerCase()}`;
-    }
-
-    return `${duration} · ${service.name.toLowerCase()} · indicativo`;
 }
 
 /** Start times of a day that can host a session of `minutes`. */

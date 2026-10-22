@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { SessionType } from '@/components/onboarding/trainer/draft';
 import { NOTE_MAX, onlinePrices } from '@/components/onboarding/trainer/draft';
 import SwitchRow from '@/components/shared/switch-row';
@@ -7,10 +8,10 @@ import {
     shortDuration,
 } from '@/components/trainer/services/pricing';
 import SectionCard from '@/components/trainer/services/section-card';
-import { Input } from '@/components/ui/input';
 import { formatDuration } from '@/lib/format';
 
 type OnlinePricesSectionProps = {
+    step: number;
     sessions: SessionType[];
     onChange: (sessions: SessionType[]) => void;
     samePrice: boolean;
@@ -19,12 +20,20 @@ type OnlinePricesSectionProps = {
     errors: string[];
 };
 
+/** As the price list: name, one 104 px column per duration. */
+function gridColumns(columns: number[]): CSSProperties {
+    return {
+        gridTemplateColumns: `minmax(0, 1fr) ${columns.map(() => '104px').join(' ')}`,
+    };
+}
+
 /**
  * "Online", only for who trains both online and in person: online at the
  * same prices, or each kind of session with its own online price for the
  * same durations of the price list (not in the design: added for them).
  */
 export default function OnlinePricesSection({
+    step,
     sessions,
     onChange,
     samePrice,
@@ -56,6 +65,7 @@ export default function OnlinePricesSection({
 
     return (
         <SectionCard
+            step={step}
             title="Online"
             description="Per le sedute in videochiamata."
             errors={errors}
@@ -65,103 +75,87 @@ export default function OnlinePricesSection({
                 description="Spegnilo se in videochiamata chiedi prezzi diversi: li scrivi qui sotto."
                 checked={samePrice}
                 onCheckedChange={onSamePriceChange}
+                className="rounded-2xl bg-secondary/60 px-4.5 py-4"
             />
 
             {!samePrice && (
                 <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                        <thead>
-                            <tr className="text-left text-xs text-muted-foreground">
-                                <th
-                                    scope="col"
-                                    className="min-w-48 pr-3 pb-2.5 font-semibold"
+                    <div className="flex min-w-115 flex-col gap-2.5">
+                        <div
+                            aria-hidden="true"
+                            className="grid gap-2.5 px-3.25 text-xs font-semibold tracking-[0.04em] text-muted-foreground"
+                            style={gridColumns(columns)}
+                        >
+                            <span>Tipo di seduta</span>
+                            {columns.map((minutes) => (
+                                <span key={minutes} className="text-right">
+                                    {shortDuration(minutes)}
+                                </span>
+                            ))}
+                        </div>
+
+                        {sessions.map((session, index) => {
+                            const name =
+                                session.name.trim() || NEW_SESSION_NAME;
+                            const prices = onlinePrices(session);
+
+                            return (
+                                <div
+                                    key={index}
+                                    className="grid items-start gap-2.5 rounded-2xl border bg-secondary/50 p-3"
+                                    style={gridColumns(columns)}
                                 >
-                                    Tipo di seduta
-                                </th>
-                                {columns.map((minutes) => (
-                                    <th
-                                        key={minutes}
-                                        scope="col"
-                                        className="px-2 pb-2.5 font-semibold tabular-nums"
-                                    >
-                                        {shortDuration(minutes)}
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sessions.map((session, index) => {
-                                const name =
-                                    session.name.trim() || NEW_SESSION_NAME;
-                                const prices = onlinePrices(session);
+                                    <div className="flex min-w-0 flex-col gap-2">
+                                        <span className="flex min-h-11 items-center text-[15px] font-semibold break-words">
+                                            {name} (online)
+                                        </span>
+                                        <input
+                                            aria-label={`Nota online di ${name}`}
+                                            maxLength={NOTE_MAX}
+                                            placeholder="Nota: es. in videochiamata"
+                                            className="h-9.5 w-full min-w-0 rounded-[10px] border bg-card px-3 text-[13px] outline-none placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:ring-[3px] focus-visible:ring-foreground/10"
+                                            value={session.onlineNote}
+                                            onChange={(event) =>
+                                                changeSession(index, {
+                                                    onlineNote:
+                                                        event.target.value,
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                    {columns.map((minutes) => {
+                                        const price = prices.find(
+                                            (item) => item.minutes === minutes,
+                                        );
 
-                                return (
-                                    <tr
-                                        key={index}
-                                        className="border-t align-top"
-                                    >
-                                        <td className="py-3 pr-3">
-                                            <div className="flex flex-col gap-1.5">
-                                                <span className="flex min-h-10 items-center text-[15px] font-semibold break-words">
-                                                    {name} (online)
-                                                </span>
-                                                <Input
-                                                    aria-label={`Nota online di ${name}`}
-                                                    maxLength={NOTE_MAX}
-                                                    placeholder="Nota: es. in videochiamata"
-                                                    className="h-8 text-[13px] text-muted-foreground md:text-[13px]"
-                                                    value={session.onlineNote}
-                                                    onChange={(event) =>
-                                                        changeSession(index, {
-                                                            onlineNote:
-                                                                event.target
-                                                                    .value,
-                                                        })
-                                                    }
-                                                />
-                                            </div>
-                                        </td>
-                                        {columns.map((minutes) => {
-                                            const price = prices.find(
-                                                (item) =>
-                                                    item.minutes === minutes,
-                                            );
-
-                                            return (
-                                                <td
-                                                    key={minutes}
-                                                    className="px-2 py-3"
-                                                >
-                                                    {price ? (
-                                                        <EuroInput
-                                                            aria-label={`Prezzo online ${name} ${formatDuration(minutes)}`}
-                                                            required
-                                                            className="w-22"
-                                                            value={
-                                                                price.priceCents
-                                                            }
-                                                            onChange={(cents) =>
-                                                                setPrice(
-                                                                    index,
-                                                                    minutes,
-                                                                    cents,
-                                                                )
-                                                            }
-                                                        />
-                                                    ) : (
-                                                        // Not offered in the price list: not online either.
-                                                        <span className="flex h-10 w-22 items-center justify-center text-sm text-muted-foreground">
-                                                            —
-                                                        </span>
-                                                    )}
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                        return price ? (
+                                            <EuroInput
+                                                key={minutes}
+                                                aria-label={`Prezzo online ${name} ${formatDuration(minutes)}`}
+                                                required
+                                                value={price.priceCents}
+                                                onChange={(cents) =>
+                                                    setPrice(
+                                                        index,
+                                                        minutes,
+                                                        cents,
+                                                    )
+                                                }
+                                            />
+                                        ) : (
+                                            // Not offered in the price list: not online either.
+                                            <span
+                                                key={minutes}
+                                                className="flex h-11 items-center justify-end pr-3 text-sm text-muted-foreground"
+                                            >
+                                                —
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
         </SectionCard>

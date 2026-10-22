@@ -433,4 +433,4 @@ function savedChoice(
     return { service, minutes, weekIndex, date: day?.date ?? null, start };
 }
 
-Profile.layout = { footer: 'compact', hideHeaderOnMobile: true };
+Profile.layout = { hideHeaderOnMobile: true };

@@ -12,8 +12,7 @@ import {
     formatWeekdayShort,
 } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { availability, calendar, requests } from '@/routes/trainer';
-import { show as showClient } from '@/routes/trainer/clients';
+import { availability, calendar, clients, requests } from '@/routes/trainer';
 import type { TrainerSession } from '@/types';
 
 type WeekAgendaProps = {
@@ -174,7 +173,7 @@ function AgendaRow({ session }: { session: TrainerSession }) {
     const href = pending
         ? requests()
         : session.clientId !== null
-          ? showClient(session.clientId)
+          ? clients({ query: { cliente: session.clientId } })
           : null;
 
     const content = (
@@ -204,7 +203,8 @@ function AgendaRow({ session }: { session: TrainerSession }) {
                     {session.clientName}
                 </span>
                 <span className="text-[13px] leading-4.5 text-muted-foreground">
-                    {session.serviceName} · {session.placeLabel}
+                    {session.serviceName}
+                    {session.placeLabel && ` · ${session.placeLabel}`}
                 </span>
             </span>
             <span

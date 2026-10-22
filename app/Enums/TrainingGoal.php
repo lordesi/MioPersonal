@@ -2,12 +2,18 @@
 
 namespace App\Enums;
 
-/** The training goal of "Completa il tuo profilo", saved in `client_preferences.goal`. */
+/**
+ * A training goal: the client's one in `client_preferences.goal`, the trainer's
+ * list in `trainer_profiles.goals`, and the "Obiettivo" filter of the search.
+ * Training goals only: "Rientro post-infortunio" of the design is left out
+ * because it is health data.
+ */
 enum TrainingGoal: string
 {
-    case Fitness = 'fitness';
-    case Strength = 'strength';
+    case WeightLoss = 'weight_loss';
+    case Muscle = 'muscle';
     case Posture = 'posture';
-    case Sport = 'sport';
+    case Athletic = 'athletic';
+    case Endurance = 'endurance';
     case Wellbeing = 'wellbeing';
 }

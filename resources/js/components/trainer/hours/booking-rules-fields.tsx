@@ -1,5 +1,5 @@
-import ConsentCheckbox from '@/components/auth/consent-checkbox';
-import FormField from '@/components/auth/form-field';
+import { useId } from 'react';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -7,10 +7,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { formatHours } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import type { BookingRules, TrainerAvailability } from '@/types';
-
-const hoursLabel = (n: number) => (n === 1 ? '1 ora' : `${n} ore`);
-const minutesLabel = (n: number) => (n === 0 ? 'Nessuna' : `${n} minuti`);
 
 /** Radix Select doesn't accept null: "Nessun limite" uses this value. */
 const NO_LIMIT = 'none';
@@ -32,7 +31,7 @@ const rules: {
         label: 'Preavviso minimo',
         hint: 'Niente prenotazioni all’ultimo minuto.',
         options: [2, 6, 12, 24, 48],
-        format: hoursLabel,
+        format: formatHours,
     },
     {
         name: 'bookingWindowDays',
@@ -46,9 +45,9 @@ const rules: {
         name: 'breakMinutes',
         field: 'break_minutes',
         label: 'Pausa tra due sedute',
-        hint: 'Per rifiatare e preparare.',
+        hint: 'Per rifiatare e prepararti.',
         options: [0, 15, 30],
-        format: minutesLabel,
+        format: (n) => (n === 0 ? 'Nessuna' : `${n} min`),
     },
     {
         name: 'maxSessionsPerDay',
@@ -61,8 +60,8 @@ const rules: {
     {
         name: 'freeCancellationHours',
         field: 'free_cancellation_hours',
-        label: 'Cancellazione',
-        hint: 'La vedono i clienti prima di prenotare.',
+        label: 'Cancellazione gratuita',
+        hint: 'I clienti la vedono prima di prenotare.',
         options: [12, 24, 48],
         format: (n) => `Fino a ${n} ore prima`,
     },
@@ -87,75 +86,136 @@ export default function BookingRulesFields({
     onChange,
     errors = {},
 }: BookingRulesFieldsProps) {
+    const autoHintId = useId();
+
     return (
         <>
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-4">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-x-4 gap-y-4.5">
                 {rules.map((rule) => (
-                    <FormField
+                    <RuleField
                         key={rule.name}
-                        label={rule.label}
-                        hint={rule.hint}
+                        rule={rule}
+                        value={values[rule.name]}
                         error={errors[rule.field]}
-                    >
-                        {({ id, describedBy }) => (
-                            <Select
-                                value={String(values[rule.name] ?? NO_LIMIT)}
-                                onValueChange={(value) =>
-                                    onChange({
-                                        rules: {
-                                            ...values,
-                                            [rule.name]:
-                                                value === NO_LIMIT
-                                                    ? null
-                                                    : Number(value),
-                                        },
-                                    })
-                                }
-                            >
-                                <SelectTrigger
-                                    id={id}
-                                    aria-describedby={describedBy}
-                                    className="h-10 w-full tabular-nums"
-                                >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {rule.options.map((option) => (
-                                        <SelectItem
-                                            key={option ?? NO_LIMIT}
-                                            value={String(option ?? NO_LIMIT)}
-                                        >
-                                            {option === null
-                                                ? 'Nessun limite'
-                                                : rule.format(option)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        )}
-                    </FormField>
+                        onChange={(value) =>
+                            onChange({
+                                rules: { ...values, [rule.name]: value },
+                            })
+                        }
+                    />
                 ))}
             </div>
 
-            <div className="rounded-lg bg-muted p-3">
-                <ConsentCheckbox
-                    name="auto_confirm"
-                    checked={autoConfirm}
-                    onCheckedChange={(checked) =>
-                        onChange({ autoConfirm: checked })
-                    }
-                >
-                    <span className="flex flex-col">
-                        <span className="font-semibold">
-                            Conferma automatica
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                            Se attiva, le prenotazioni sono confermate subito.
-                            Se no, hai 24 ore per rispondere.
-                        </span>
+            <button
+                type="button"
+                role="switch"
+                aria-checked={autoConfirm}
+                aria-describedby={autoHintId}
+                onClick={() => onChange({ autoConfirm: !autoConfirm })}
+                className={cn(
+                    'flex w-full items-center justify-between gap-4 rounded-2xl border px-4.5 py-4 text-left transition-colors',
+                    autoConfirm
+                        ? 'border-foreground bg-foreground text-background'
+                        : 'bg-secondary/60 hover:bg-secondary',
+                )}
+            >
+                <span className="flex flex-col gap-0.5">
+                    <span className="text-[15px] leading-5.5 font-semibold">
+                        Conferma automatica
                     </span>
-                </ConsentCheckbox>
-            </div>
+                    <span
+                        id={autoHintId}
+                        className={cn(
+                            'text-[13px] leading-4.5',
+                            autoConfirm
+                                ? 'text-sidebar-muted-foreground'
+                                : 'text-muted-foreground',
+                        )}
+                    >
+                        Se attiva, le prenotazioni sono confermate subito. Se
+                        no, hai 24 ore per rispondere.
+                    </span>
+                </span>
+                <span
+                    aria-hidden="true"
+                    className={cn(
+                        'flex h-7 w-12 flex-none rounded-full p-0.75 transition-colors',
+                        autoConfirm
+                            ? 'justify-end bg-background'
+                            : 'justify-start bg-input',
+                    )}
+                >
+                    <span
+                        className={cn(
+                            'size-5.5 rounded-full shadow-sm',
+                            autoConfirm ? 'bg-foreground' : 'bg-background',
+                        )}
+                    />
+                </span>
+            </button>
         </>
+    );
+}
+
+/** A rule: label, menu with its options, hint and the server's error. */
+function RuleField({
+    rule,
+    value,
+    error,
+    onChange,
+}: {
+    rule: (typeof rules)[number];
+    value: number | null;
+    error?: string;
+    onChange: (value: number | null) => void;
+}) {
+    const id = useId();
+    const hintId = `${id}-hint`;
+    const errorId = `${id}-error`;
+
+    return (
+        <div className="flex flex-col gap-1.5">
+            <Label htmlFor={id} className="font-semibold">
+                {rule.label}
+            </Label>
+            <Select
+                value={String(value ?? NO_LIMIT)}
+                onValueChange={(next) =>
+                    onChange(next === NO_LIMIT ? null : Number(next))
+                }
+            >
+                <SelectTrigger
+                    id={id}
+                    aria-describedby={error ? `${hintId} ${errorId}` : hintId}
+                    aria-invalid={error ? true : undefined}
+                    className="w-full rounded-xl bg-card px-3.5 text-[15px] font-medium tabular-nums shadow-none focus-visible:border-foreground focus-visible:ring-foreground/10 data-[size=default]:h-11.5 [&_svg:not([class*='text-'])]:text-foreground"
+                >
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {rule.options.map((option) => (
+                        <SelectItem
+                            key={option ?? NO_LIMIT}
+                            value={String(option ?? NO_LIMIT)}
+                        >
+                            {option === null
+                                ? 'Nessun limite'
+                                : rule.format(option)}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <span
+                id={hintId}
+                className="text-[13px] leading-4.5 text-muted-foreground"
+            >
+                {rule.hint}
+            </span>
+            {error && (
+                <p id={errorId} className="text-sm text-destructive">
+                    {error}
+                </p>
+            )}
+        </div>
     );
 }

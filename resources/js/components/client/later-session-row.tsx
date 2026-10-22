@@ -14,7 +14,10 @@ type LaterSessionRowProps = {
     now: Date;
 };
 
-/** A confirmed session of "Più avanti": it can only be cancelled. */
+/**
+ * A confirmed session of "Più avanti": it can only be cancelled, and only
+ * until the end of the free cancellation.
+ */
 export default function LaterSessionRow({
     booking,
     now,
@@ -51,16 +54,16 @@ export default function LaterSessionRow({
                     </Link>{' '}
                     · {booking.serviceLabel}
                 </span>
-                <span
-                    role={cancelled ? 'status' : undefined}
-                    className="text-[13px] leading-4.5 text-muted-foreground tabular-nums"
-                >
-                    {cancelled
-                        ? `Seduta annullata. Abbiamo avvisato ${booking.trainerFirstName}.`
-                        : freeCancellation
-                          ? `Cancellazione gratuita fino a ${formatDayTimeRelative(booking.freeCancellationUntil, now)}`
-                          : 'Cancellazione gratuita scaduta'}
-                </span>
+                {(cancelled || freeCancellation) && (
+                    <span
+                        role={cancelled ? 'status' : undefined}
+                        className="text-[13px] leading-4.5 text-muted-foreground tabular-nums"
+                    >
+                        {cancelled
+                            ? `Seduta annullata. Abbiamo avvisato ${booking.trainerFirstName}.`
+                            : `Cancellazione gratuita fino a ${formatDayTimeRelative(booking.freeCancellationUntil, now)}`}
+                    </span>
+                )}
             </span>
 
             <span
@@ -74,7 +77,8 @@ export default function LaterSessionRow({
                 {cancelled ? 'Annullata' : 'Confermata'}
             </span>
 
-            {!cancelled && (
+            {/* Past the free cancellation it can't be cancelled any more. */}
+            {!cancelled && freeCancellation && (
                 <CancelBookingDialog
                     trainerFirstName={booking.trainerFirstName}
                     onConfirm={cancelBooking}

@@ -26,5 +26,5 @@ export default function PublicLayoutPreview() {
 }
 
 PublicLayoutPreview.layout = (page: ReactNode) => (
-    <PublicLayout section="search">{page}</PublicLayout>
+    <PublicLayout>{page}</PublicLayout>
 );

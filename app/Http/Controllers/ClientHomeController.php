@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\TrainingMode;
+use App\Http\Requests\ClientPreferencesRequest;
 use App\Models\ClientPreference;
 use App\Models\TrainerProfile;
 use App\Models\User;
@@ -90,6 +91,11 @@ class ClientHomeController extends Controller
 
         $disciplineIds = $preference->discipline_ids ?? [];
         $budget = $preference?->budget_max_cents;
+
+        // The end of the slider is "Nessun limite".
+        if ($budget !== null && $budget >= ClientPreferencesRequest::BUDGET_MAX_CENTS) {
+            $budget = null;
+        }
 
         /** @var Collection<int, TrainerProfile> $trainers */
         $trainers = (clone $base)

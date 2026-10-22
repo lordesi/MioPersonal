@@ -14,7 +14,6 @@ use App\Http\Controllers\Admin\AdminVerificationController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BookingSentController;
-use App\Http\Controllers\ClientCalendarController;
 use App\Http\Controllers\ClientFavoritesController;
 use App\Http\Controllers\ClientHomeController;
 use App\Http\Controllers\ClientReviewController;
@@ -25,7 +24,6 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\TrainerAvailabilityController;
 use App\Http\Controllers\TrainerBookingRequestController;
 use App\Http\Controllers\TrainerCalendarController;
-use App\Http\Controllers\TrainerClientProfileController;
 use App\Http\Controllers\TrainerClientsController;
 use App\Http\Controllers\TrainerDashboardController;
 use App\Http\Controllers\TrainerNoShowController;
@@ -94,10 +92,6 @@ Route::middleware(['auth', 'role:client'])->group(function () {
     Route::patch('prenotazioni/{booking}/annulla', [BookingController::class, 'cancel'])
         ->whereNumber('booking')
         ->name('client.bookings.cancel');
-    // "Aggiungi al calendario": the .ics file of a confirmed session.
-    Route::get('prenotazioni/{booking}/calendario', ClientCalendarController::class)
-        ->whereNumber('booking')
-        ->name('client.bookings.calendar');
 
     // The heart on search cards and profiles.
     Route::post('preferiti/{slug}', [FavoriteController::class, 'store'])->name('client.favorites.store');
@@ -156,8 +150,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
         Route::get('calendario', TrainerCalendarController::class)->name('calendar');
         Route::get('clienti', TrainerClientsController::class)->name('clients');
-        // Only clients who booked with this trainer (404 for the others).
-        Route::get('clienti/{client}', TrainerClientProfileController::class)->whereNumber('client')->name('clients.show');
         Route::controller(TrainerAvailabilityController::class)->group(function () {
             Route::get('disponibilita', 'show')->name('availability');
             Route::put('disponibilita', 'update')->name('availability.update');

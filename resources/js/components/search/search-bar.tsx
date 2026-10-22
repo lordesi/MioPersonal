@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils';
 type Availability = NonNullable<SearchFilters['disponibilita']>;
 
 export type SearchChoices = {
-    disciplina: string | null;
+    /** Discipline slugs: none, one or more. */
+    disciplina: string[];
     city: string | null;
     disponibilita: Availability | null;
 };
@@ -118,12 +119,14 @@ export default function SearchBar({
         <div className={cn('flex items-center rounded-full', styles.bar)}>
             <Field
                 label="Cosa"
-                title="Scegli una disciplina"
+                title="Scegli una o più discipline"
                 noneLabel="Tutte le discipline"
                 options={disciplines}
+                // More than one: the menu stays open, "Dove" is the next click.
+                multiple
                 value={draft.disciplina}
-                onChange={(disciplina) => choose({ disciplina }, 'dove')}
-                onClear={() => clear({ disciplina: null })}
+                onChange={(disciplina) => clear({ disciplina })}
+                onClear={() => clear({ disciplina: [] })}
                 styles={styles}
                 {...menu('cosa')}
             />
@@ -186,83 +189,105 @@ type FieldProps<T extends string> = {
     title: string;
     noneLabel: string;
     options: MenuOption<T>[];
-    value: T | null;
-    onChange: (value: T | null) => void;
     onClear: () => void;
     searchPlaceholder?: string;
     styles: Variant;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onCloseAutoFocus: (event: Event) => void;
-};
+} & (
+    | { multiple?: false; value: T | null; onChange: (value: T | null) => void }
+    | { multiple: true; value: T[]; onChange: (value: T[]) => void }
+);
 
-/** One part of the pill: name in bold, choice below, × to empty it. */
-function Field<T extends string>({
-    label,
-    title,
-    noneLabel,
-    options,
-    value,
-    onChange,
-    onClear,
-    searchPlaceholder,
-    styles,
-    open,
-    onOpenChange,
-    onCloseAutoFocus,
-}: FieldProps<T>) {
+/**
+ * One part of the pill: name in bold, choice below (more choices separated
+ * by commas), × to empty it.
+ */
+function Field<T extends string>(props: FieldProps<T>) {
+    const {
+        label,
+        title,
+        noneLabel,
+        options,
+        onClear,
+        searchPlaceholder,
+        styles,
+        open,
+        onOpenChange,
+        onCloseAutoFocus,
+    } = props;
     const trigger = useRef<HTMLButtonElement>(null);
+    const chosen = options.filter((option) =>
+        props.multiple
+            ? props.value.includes(option.value)
+            : option.value === props.value,
+    );
+    const hasValue = chosen.length > 0;
     const valueLabel =
-        options.find((option) => option.value === value)?.label ?? noneLabel;
+        chosen.map((option) => option.label).join(', ') || noneLabel;
+
+    const menu = {
+        label,
+        title,
+        noneLabel,
+        options,
+        searchPlaceholder,
+        matchTriggerWidth: true,
+        open,
+        onOpenChange,
+        // Another part of the pill can be clicked while this menu is open.
+        modal: false,
+        onCloseAutoFocus,
+        trigger: (
+            <button
+                ref={trigger}
+                type="button"
+                aria-label={`${label}: ${valueLabel}`}
+                className={cn(
+                    'flex w-full flex-col justify-center gap-px rounded-full text-left outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[state=open]:bg-accent',
+                    styles.field,
+                    hasValue && styles.fieldWithValue,
+                )}
+            >
+                <span className="text-xs font-bold">{label}</span>
+                <span
+                    className={cn(
+                        'truncate text-muted-foreground',
+                        styles.value,
+                    )}
+                >
+                    {valueLabel}
+                </span>
+            </button>
+        ),
+    };
 
     return (
         <div
             data-open={open || undefined}
             className="group relative min-w-0 flex-1"
         >
-            <OptionsMenu
-                label={label}
-                title={title}
-                noneLabel={noneLabel}
-                options={options}
-                value={value}
-                onChange={onChange}
-                searchPlaceholder={searchPlaceholder}
-                matchTriggerWidth
-                open={open}
-                onOpenChange={onOpenChange}
-                // Another part of the pill can be clicked while this menu is open.
-                modal={false}
-                onCloseAutoFocus={onCloseAutoFocus}
-                trigger={
-                    <button
-                        ref={trigger}
-                        type="button"
-                        aria-label={`${label}: ${valueLabel}`}
-                        className={cn(
-                            'flex w-full flex-col justify-center gap-px rounded-full text-left outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[state=open]:bg-accent',
-                            styles.field,
-                            value !== null && styles.fieldWithValue,
-                        )}
-                    >
-                        <span className="text-xs font-bold">{label}</span>
-                        <span
-                            className={cn(
-                                'truncate text-muted-foreground',
-                                styles.value,
-                            )}
-                        >
-                            {valueLabel}
-                        </span>
-                    </button>
-                }
-            />
+            {props.multiple ? (
+                <OptionsMenu
+                    {...menu}
+                    multiple
+                    value={props.value}
+                    onChange={props.onChange}
+                />
+            ) : (
+                <OptionsMenu
+                    {...menu}
+                    value={props.value}
+                    onChange={props.onChange}
+                />
+            )}
             {/*
              * Next to the button, not inside it: a button can't hold another one.
              * Seen on hover, with the menu open or with the keyboard focus;
              * always on touch screens, where there is no hover.
              */}
-            {value !== null && (
+            {hasValue && (
                 <button
                     type="button"
                     aria-label={`Cancella ${label}`}

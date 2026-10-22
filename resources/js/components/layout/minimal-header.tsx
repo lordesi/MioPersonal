@@ -21,19 +21,23 @@ export default function MinimalHeader({
     className,
 }: MinimalHeaderProps) {
     return (
-        <header className={cn('border-b bg-background', className)}>
-            <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center gap-4 px-4 py-3.5 md:px-8">
-                <BrandLogo linkToHome={logoLinksHome} />
+        // Dark like the public header, so every page starts the same way.
+        <header className={cn('bg-primary text-primary-foreground', className)}>
+            <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-2.5 md:px-8 md:py-5">
+                <BrandLogo
+                    linkToHome={logoLinksHome}
+                    className="text-primary-foreground"
+                />
                 {badge && (
                     <Badge
                         variant="outline"
-                        className="h-5.5 rounded-full px-2 text-xs font-medium"
+                        className="h-5.5 rounded-full border-primary-foreground/30 px-2 text-xs font-medium text-primary-foreground"
                     >
                         {badge}
                     </Badge>
                 )}
                 {children && (
-                    <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="ml-auto flex min-h-11 items-center gap-2 text-sm text-primary-foreground/70">
                         {children}
                     </div>
                 )}

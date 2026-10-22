@@ -180,5 +180,3 @@ export default function Terms() {
         />
     );
 }
-
-Terms.layout = { nav: 'info', footer: 'compact' };

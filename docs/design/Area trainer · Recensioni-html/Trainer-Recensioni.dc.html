@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Area trainer · Recensioni</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ds{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:#0a0a0a;-webkit-font-smoothing:antialiased}
+.ds button,.ds textarea{font-family:inherit}
+.tnum{font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}a:hover{text-decoration:underline}
+.nl:hover{text-decoration:none}
+.ds :focus-visible{outline:2px solid #0a0a0a;outline-offset:2px}
+.dk :focus-visible{outline-color:#ffffff}
+.sb a:hover{background:rgba(255,255,255,0.06);color:#ffffff;text-decoration:none}
+.sb a[aria-current="page"]:hover{background:#ffffff;color:#0a0a0a}
+.ghost:hover{background:#f4f4f5 !important}
+.ta:focus-visible{outline:none;border-color:#0a0a0a !important;box-shadow:0 0 0 3px rgba(10,10,10,0.08)}
+.ds button:disabled{cursor:default}
+</style>
+</helmet>
+<div class="ds" style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #f4f4f5">
+
+<aside class="sb dk" style="flex: 1 1 248px; max-width: 100%; box-sizing: border-box; background: #0a0a0a; color: #fafafa; padding: 24px 16px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 0 8px">
+<a href="Dash-Trainer-A.dc.html" class="nl" aria-label="MioPersonal, area trainer" style="display: flex; align-items: center; gap: 10px; color: #ffffff">
+<svg width="33" height="20" viewBox="0 0 420 254" aria-hidden="true" style="display: block"><path fill="currentColor" d="M41.1 253.3C3.5 246.1 -12.8 200.2 11.8 171.3C42.3 135.5 100.5 156.7 100.7 203.5C100.8 235.3 72.1 259.2 41.1 253.3ZM206 253.5C190.2 252.1 175.5 243 167.3 229.7C164.2 224.5 153.4 205.9 147.3 195C141.5 184.9 129.3 163.6 121.3 150C119.6 147.1 113.6 136.8 108 127C102.4 117.2 96.4 106.7 94.5 103.5C74.4 69 72.4 64.7 71.7 53.2C69.5 19.5 101.3 -6.9 133.8 1.7C150.2 6.1 159.9 15.3 172.7 39.2C174.1 41.7 175.8 44.7 176.5 45.8C177.2 46.8 179.6 50.9 181.8 54.8C184 58.6 188.9 67.2 192.7 73.8C196.5 80.3 201.4 88.8 203.5 92.5C205.6 96.2 208.3 100.7 209.3 102.5C210.4 104.3 214.9 111.9 219.3 119.5C223.6 127.1 229.1 136.6 231.5 140.8C233.9 144.9 237.6 151.3 239.8 155C246 165.8 245.7 165.8 251 154.8C257.3 141.8 261 128.4 261 118.6C261 115.3 260.9 115.1 256.7 107.8C254.3 103.6 250.7 97.3 248.6 93.8C246.6 90.2 243.8 85.4 242.5 83.2C235.7 72 232.9 64.7 231.9 56.6C226.6 9.7 281.9 -17.7 316.2 15C320.9 19.5 322 21 330.5 35.8C334.1 42.1 338.2 49.1 339.5 51.2C340.8 53.4 344.2 59.3 347 64.2C349.8 69.2 354 76.4 356.3 80.2C358.5 84.1 363.3 92.4 367 98.8C370.6 105.1 374.7 112.1 376 114.2C377.3 116.4 382.5 125.4 387.5 134.2C392.5 143.1 398.1 152.6 399.8 155.5C417.7 185.6 420 191.2 420 204.2C420 239.8 383.1 264.2 350.6 250.1C338.2 244.7 331.5 237.7 321.3 219.9C317.7 213.5 311.3 202.5 307.3 195.5C303.2 188.5 298.7 180.7 297.3 178.2C291.9 168.9 292.1 168.9 288.4 178C272.4 217.7 244.3 247.9 218.7 253C213.6 254.1 212.8 254.1 206 253.5Z"></path></svg>
+<span style="font-size: 18px; line-height: 28px; font-weight: 600; letter-spacing: -0.025em">MioPersonal</span>
+</a>
+<span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.08em; color: #a3a3a3">AREA TRAINER</span>
+</div>
+<nav aria-label="Area trainer" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="7">
+<a href="{{n.href}}" aria-current="{{n.current}}" style="{{n.style}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.d1}}"></path><path d="{{n.d2}}"></path></svg>
+<span style="flex: 1">{{n.label}}</span>
+</a>
+</sc-for>
+</nav>
+<div style="margin-top: auto; display: flex; flex-direction: column; gap: 12px">
+<a href="Profilo.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid #262626; color: #e5e5e5; font-size: 14px; line-height: 20px; font-weight: 500"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path><circle cx="12" cy="12" r="3"></circle></svg>Vedi profilo pubblico</a>
+<button type="button" aria-label="Menu account" style="display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px; border: 0; border-radius: 12px; background: #171717; color: #fafafa; text-align: left; cursor: pointer">
+<span style="flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: #ffffff; color: #0a0a0a; font-size: 13px; font-weight: 700">AS</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; line-height: 20px; font-weight: 600">Alessandro Siligato</span><span style="font-size: 12px; line-height: 16px; color: #a3a3a3">Personal trainer</span></span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"></path><path d="m7 9 5-5 5 5"></path></svg>
+</button>
+</div>
+</aside>
+
+<main style="flex: 999 1 640px; min-width: 0; box-sizing: border-box; padding: 32px 40px 48px">
+<div style="max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-size: 34px; line-height: 40px; font-weight: 700; letter-spacing: -0.03em">Recensioni</h1>
+
+</div>
+<div role="tablist" aria-label="Filtra recensioni" style="display: flex; gap: 2px; padding: 3px; border-radius: 12px; background: #e4e4e7">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="3"><button type="button" role="tab" aria-selected="{{f.selected}}" onClick="{{f.pick}}" style="{{f.style}}">{{f.label}}<span class="tnum" style="{{f.countStyle}}">{{f.count}}</span></button></sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<div style="flex: 3 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<sc-if value="{{showReview}}" hint-placeholder-val="{{true}}">
+<article aria-labelledby="rv-name" style="padding: 24px; border-radius: 24px; background: #ffffff; border: 1px solid #e4e4e7; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<span style="flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: #0a0a0a; color: #fafafa; font-size: 14px; font-weight: 700">GM</span>
+<span style="flex: 1; min-width: 180px; display: flex; flex-direction: column"><h2 id="rv-name" style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">Giorgio Montana</h2><span style="font-size: 13px; line-height: 18px; color: #525252">Pacchetto 10 sedute · oggi</span></span>
+<span style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 9999px; background: #f4f4f5; font-size: 12px; line-height: 16px; font-weight: 600"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Seduta svolta</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span role="img" aria-label="5 stelle su 5" style="display: flex; gap: 3px"><sc-for list="{{stars5}}" as="s" hint-placeholder-count="5"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0a0a0a" stroke="#0a0a0a" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"></path></svg></sc-for></span>
+<p style="margin: 0; font-size: 18px; line-height: 28px; font-weight: 500; letter-spacing: -0.01em">“Great zesty trainer”</p>
+</div>
+
+<sc-if value="{{hasReply}}" hint-placeholder-val="{{false}}">
+<div class="dk" style="display: flex; flex-direction: column; gap: 8px; padding: 16px 18px; border-radius: 16px; background: #0a0a0a; color: #fafafa">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+<span style="display: flex; align-items: center; gap: 8px"><span style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: #ffffff; color: #0a0a0a; font-size: 10px; font-weight: 700">AS</span><span style="font-size: 13px; line-height: 18px; font-weight: 600">La tua risposta</span></span>
+<button type="button" onClick="{{edit}}" style="height: 36px; padding: 0 12px; border: 1px solid #404040; border-radius: 9px; background: transparent; color: #fafafa; font-size: 13px; font-weight: 600; cursor: pointer">Modifica</button>
+</div>
+<p style="margin: 0; font-size: 14px; line-height: 21px; color: #e5e5e5; white-space: pre-wrap">{{reply}}</p>
+</div>
+</sc-if>
+
+<sc-if value="{{isWriting}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 16px; background: #f4f4f5">
+<label for="rp" style="font-size: 13px; line-height: 18px; font-weight: 600">Rispondi a Giorgio</label>
+<textarea id="rp" class="ta" rows="3" maxlength="500" value="{{draft}}" onInput="{{onDraft}}" placeholder="Ringrazia e aggiungi un dettaglio sulla seduta…" style="width: 100%; box-sizing: border-box; padding: 12px 14px; border: 1px solid #e4e4e7; border-radius: 12px; background: #ffffff; color: #0a0a0a; font-size: 14px; line-height: 21px; resize: vertical"></textarea>
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px">
+<span class="tnum" style="font-size: 12px; line-height: 16px; color: #737373">{{draftCount}} / 500</span>
+<span style="display: flex; gap: 8px">
+<button type="button" class="ghost" onClick="{{cancel}}" style="height: 40px; padding: 0 14px; border: 1px solid #d4d4d8; border-radius: 10px; background: #ffffff; color: #0a0a0a; font-size: 14px; font-weight: 600; cursor: pointer">Annulla</button>
+<button type="button" onClick="{{publish}}" disabled="{{draftEmpty}}" style="{{publishStyle}}">Pubblica risposta</button>
+</span>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{canReply}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; padding-top: 16px; border-top: 1px solid #f0f0f0">
+
+<button type="button" onClick="{{startReply}}" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: #0a0a0a; color: #fafafa; font-size: 14px; font-weight: 600; cursor: pointer; justify-content: flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>Rispondi</button>
+</div>
+</sc-if>
+</article>
+</sc-if>
+<sc-if value="{{emptyFilter}}" hint-placeholder-val="{{false}}">
+<div style="padding: 40px 24px; border-radius: 24px; background: #ffffff; border: 1px dashed #d4d4d8; text-align: center; font-size: 14px; line-height: 20px; color: #525252">{{emptyText}}</div>
+</sc-if>
+</div>
+
+<aside aria-labelledby="avg-t" class="dk" style="flex: 2 1 300px; min-width: 0; box-sizing: border-box; padding: 22px; border-radius: 24px; background: #0a0a0a; color: #fafafa; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<h2 id="avg-t" style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.08em; color: #a3a3a3">LA TUA MEDIA</h2>
+<div style="display: flex; align-items: baseline; gap: 10px"><span class="tnum" style="font-size: 52px; line-height: 56px; font-weight: 700; letter-spacing: -0.04em">5,0</span><span style="font-size: 14px; line-height: 20px; color: #a3a3a3">su 5</span></div>
+<span role="img" aria-label="5 stelle su 5" style="display: flex; gap: 3px"><sc-for list="{{stars5}}" as="s" hint-placeholder-count="5"><svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"></path></svg></sc-for></span>
+<span class="tnum" style="font-size: 14px; line-height: 20px; color: #d4d4d4">1 recensione · tutte da sedute svolte</span>
+</div>
+<div role="img" aria-label="Distribuzione: 5 stelle 1, 4 stelle 0, 3 stelle 0, 2 stelle 0, 1 stella 0" style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{dist}}" as="d" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; gap: 10px"><span class="tnum" style="width: 14px; font-size: 13px; line-height: 18px; font-weight: 600; color: #d4d4d4">{{d.n}}</span><span style="flex: 1; height: 8px; border-radius: 9999px; background: #262626; overflow: hidden"><span style="{{d.bar}}"></span></span><span class="tnum" style="width: 14px; text-align: right; font-size: 13px; line-height: 18px; color: #a3a3a3">{{d.c}}</span></div>
+</sc-for>
+</div>
+
+</aside>
+
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { filter: 'all', writing: false, draft: '', reply: '' }; }
+  renderVals() {
+    var self = this, st = this.state;
+    var NAV = [
+      ['Panoramica', 'Dash-Trainer-A.dc.html', 'm3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', 'M9 22V12h6v10'],
+      ['Richieste', 'Trainer-Richieste.dc.html', 'M22 12h-6l-2 3h-4l-2-3H2', 'M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z'],
+      ['Calendario', 'Trainer-Calendario-B.dc.html', 'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', 'M16 2v4M8 2v4M3 10h18'],
+      ['Clienti', 'Trainer-Clienti.dc.html', 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2', 'M9 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'],
+      ['Disponibilità', 'Trainer-Disponibilita.dc.html', 'M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z', 'M12 6v6l4 2'],
+      ['Servizi', 'Trainer-Servizi.dc.html', 'M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z', 'M7.5 7.5h.01'],
+      ['Recensioni', 'Trainer-Recensioni.dc.html', 'M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z', '']
+    ];
+    var nav = NAV.map(function (n, i) {
+      var on = i === 6;
+      return { label: n[0], href: n[1], d1: n[2], d2: n[3], current: on ? 'page' : 'false',
+        style: 'display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; font-size: 14px; line-height: 20px; ' + (on ? 'background: #ffffff; color: #0a0a0a; font-weight: 600' : 'background: transparent; color: #a3a3a3; font-weight: 500') };
+    });
+    var replied = !!st.reply;
+    var F = [['all', 'Tutte', 1], ['toreply', 'Da rispondere', replied ? 0 : 1], ['replied', 'Con risposta', replied ? 1 : 0]];
+    var filters = F.map(function (f) {
+      var on = st.filter === f[0];
+      return { label: f[1], count: String(f[2]), selected: on ? 'true' : 'false', pick: function () { self.setState({ filter: f[0] }); },
+        style: 'display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 8px 0 14px; border: 0; border-radius: 9px; font-size: 14px; line-height: 20px; cursor: pointer; ' + (on ? 'background: #0a0a0a; color: #fafafa; font-weight: 600' : 'background: transparent; color: #525252; font-weight: 500'),
+        countStyle: 'min-width: 22px; height: 22px; padding: 0 6px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; font-size: 12px; font-weight: 700; background: #ffffff; color: ' + (on ? '#0a0a0a' : '#525252') };
+    });
+    var show = st.filter === 'all' || (st.filter === 'toreply' && !replied) || (st.filter === 'replied' && replied);
+    var draftEmpty = !(st.draft || '').trim();
+    var dist = [[5, 1], [4, 0], [3, 0], [2, 0], [1, 0]].map(function (d) { return { n: String(d[0]), c: String(d[1]), bar: 'display: block; height: 100%; border-radius: 9999px; background: #ffffff; width: ' + (d[1] ? 100 : 0) + '%' }; });
+    return {
+      nav: nav, filters: filters, stars5: [1, 2, 3, 4, 5], dist: dist,
+      showReview: show, emptyFilter: !show,
+      emptyText: st.filter === 'toreply' ? 'Hai risposto a tutte le recensioni.' : 'Nessuna recensione con risposta, per ora.',
+      hasReply: replied && !st.writing, isWriting: st.writing, canReply: !replied && !st.writing,
+      reply: st.reply, draft: st.draft, draftCount: String((st.draft || '').length), draftEmpty: draftEmpty,
+      onDraft: function (e) { self.setState({ draft: e.target.value }); },
+      startReply: function () { self.setState({ writing: true, draft: '' }); },
+      edit: function () { self.setState({ writing: true, draft: self.state.reply }); },
+      cancel: function () { self.setState({ writing: false }); },
+      publish: function () { var t = (self.state.draft || '').trim(); if (t) self.setState({ reply: t, writing: false }); },
+      publishStyle: 'height: 40px; padding: 0 16px; border: 0; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; ' + (draftEmpty ? 'background: #d4d4d8; color: #737373' : 'background: #0a0a0a; color: #fafafa')
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -57,7 +57,7 @@ export default function PopularDisciplines({
                 {disciplines.slice(0, SHOWN).map((discipline) => (
                     <li key={discipline.value} className="flex">
                         <DisciplineLink
-                            href={searchUrl({ disciplina: discipline.value })}
+                            href={searchUrl({ disciplina: [discipline.value] })}
                             name={discipline.label}
                             description={descriptions[discipline.value]}
                         />

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import LaterSessionRow from '@/components/client/later-session-row';
 import NextSessionHero from '@/components/client/next-session-hero';
 import NoUpcomingSessions from '@/components/client/no-upcoming-sessions';
-import PackagePanel from '@/components/client/package-panel';
+import PackageStack from '@/components/client/package-stack';
 import PendingBookingCard from '@/components/client/pending-booking-card';
 import RecommendedTrainersPanel from '@/components/client/recommended-trainers-panel';
 import SessionHistory from '@/components/client/session-history';
@@ -13,7 +13,7 @@ import PageHeading from '@/components/trainer/area/page-heading';
 import Panel from '@/components/trainer/area/panel';
 import { Button } from '@/components/ui/button';
 import { romeParts } from '@/lib/calendar';
-import { formatDayLong, formatDayRelativeLong } from '@/lib/format';
+import { formatDayLong } from '@/lib/format';
 import { searchUrl } from '@/lib/search';
 import { profile } from '@/routes/client';
 import type {
@@ -68,7 +68,6 @@ export default function Home({
             <PageHeading
                 eyebrow={formatDayLong(romeParts(now).date)}
                 title={`Ciao ${firstName}`}
-                description={status(upcoming, now)}
                 action={
                     <Button
                         asChild
@@ -152,9 +151,9 @@ export default function Home({
                         </section>
                     )}
 
-                    {packages.map((pack) => (
-                        <PackagePanel key={pack.id} pack={pack} now={now} />
-                    ))}
+                    {packages.length > 0 && (
+                        <PackageStack packages={packages} now={now} />
+                    )}
 
                     {trainers.length > 0 ? (
                         <YourTrainersPanel trainers={trainers} />
@@ -170,20 +169,6 @@ export default function Home({
             </div>
         </>
     );
-}
-
-/** "Hai 3 sedute in programma. La prossima è domani." */
-function status(upcoming: ClientUpcomingBooking[], now: Date): string {
-    if (upcoming.length === 0) {
-        return 'Nessuna seduta in programma.';
-    }
-
-    const count =
-        upcoming.length === 1
-            ? 'Hai 1 seduta in programma.'
-            : `Hai ${upcoming.length} sedute in programma.`;
-
-    return `${count} La prossima è ${formatDayRelativeLong(upcoming[0].start, now)}.`;
 }
 
 Home.layout = { section: 'bookings' };

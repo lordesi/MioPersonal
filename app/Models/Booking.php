@@ -130,6 +130,16 @@ class Booking extends Model
         $query->where('status', BookingStatus::Pending)->where('expires_at', '>', now());
     }
 
+    /**
+     * Pending, but the time to answer is over: still to be marked as expired.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeOverdue(Builder $query): void
+    {
+        $query->where('status', BookingStatus::Pending)->where('expires_at', '<=', now());
+    }
+
     /** Pending, but the trainer did not answer in time. */
     public function isExpired(): bool
     {
@@ -141,6 +151,25 @@ class Booking extends Model
     public function isPending(): bool
     {
         return $this->status === BookingStatus::Pending && ! $this->isExpired();
+    }
+
+    /** "Cancellazione gratuita fino a…": the trainer's hours before the start. */
+    public function freeCancellationEndsAt(): CarbonImmutable
+    {
+        return $this->starts_at->subHours($this->trainerProfile->free_cancellation_hours);
+    }
+
+    /**
+     * The client can still cancel: a request waiting for the trainer until it
+     * starts, a confirmed session only while cancelling is free.
+     */
+    public function canBeCancelledByClient(): bool
+    {
+        return match (true) {
+            $this->isPending() => $this->starts_at->isFuture(),
+            $this->status === BookingStatus::Confirmed => $this->freeCancellationEndsAt()->isFuture(),
+            default => false,
+        };
     }
 
     /**
@@ -177,6 +206,17 @@ class Booking extends Model
         if ($this->client_package_id !== null) {
             ClientPackage::whereKey($this->client_package_id)->whereNull('bought_at')->update(['bought_at' => now()]);
         }
+    }
+
+    /**
+     * The trainer did not answer in time: declined automatically (no actor).
+     * Also frees the slot for the database rule against overlaps.
+     */
+    public function expire(): void
+    {
+        $this->forceFill(['status' => BookingStatus::Expired])->save();
+
+        $this->record('expired');
     }
 
     /** Frees the slot; the history says who did it. */

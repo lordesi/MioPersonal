@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
-/** "Calendario" of the trainer area: a week or a month of real bookings. */
+/** "Calendario" of the trainer area: a day, a week or a month of real bookings. */
 class TrainerCalendarTest extends TestCase
 {
     use RefreshDatabase;
@@ -52,19 +52,61 @@ class TrainerCalendarTest extends TestCase
             );
     }
 
-    public function test_the_month_shows_only_its_own_sessions()
+    /** November 2026 starts on Sunday 1: its weeks go from Monday 26 October to Sunday 6 December. */
+    public function test_the_month_shows_its_whole_weeks()
     {
         $trainer = TrainerProfile::factory()->approved()->create();
+        $october = Booking::factory()->for($trainer)->confirmed()->at(CarbonImmutable::parse('2026-10-26 10:00', 'Europe/Rome'))->create();
         $november = Booking::factory()->for($trainer)->confirmed()->at(CarbonImmutable::parse('2026-11-30 18:00', 'Europe/Rome'))->create();
-        Booking::factory()->for($trainer)->confirmed()->at(CarbonImmutable::parse('2026-12-01 10:00', 'Europe/Rome'))->create();
+        $december = Booking::factory()->for($trainer)->confirmed()->at(CarbonImmutable::parse('2026-12-06 10:00', 'Europe/Rome'))->create();
+        // Outside the weeks of the month.
+        Booking::factory()->for($trainer)->confirmed()->at(CarbonImmutable::parse('2026-10-25 10:00', 'Europe/Rome'))->create();
+        Booking::factory()->for($trainer)->confirmed()->at(CarbonImmutable::parse('2026-12-07 10:00', 'Europe/Rome'))->create();
 
         $this->actingAs($trainer->user)
             ->get(route('trainer.calendar', ['vista' => 'mese', 'giorno' => '2026-11-01']))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('view', 'month')
                 ->where('focus', '2026-11-01')
-                ->has('events', 1)
-                ->where('events.0.id', $november->id)
+                ->has('events', 3)
+                ->where('events.0.id', $october->id)
+                ->where('events.1.id', $november->id)
+                ->where('events.2.id', $december->id)
+            );
+    }
+
+    public function test_the_day_comes_with_its_week()
+    {
+        $trainer = TrainerProfile::factory()->approved()->create();
+        $monday = Booking::factory()->for($trainer)->confirmed()->at(CarbonImmutable::parse('2026-10-19 10:00', 'Europe/Rome'))->create();
+        $sunday = Booking::factory()->for($trainer)->confirmed()->at(CarbonImmutable::parse('2026-10-25 20:00', 'Europe/Rome'))->create();
+        Booking::factory()->for($trainer)->confirmed()->at(CarbonImmutable::parse('2026-10-26 10:00', 'Europe/Rome'))->create();
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.calendar', ['vista' => 'giorno', 'giorno' => '2026-10-21']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('view', 'day')
+                ->where('focus', '2026-10-21')
+                ->has('events', 2)
+                ->where('events.0.id', $monday->id)
+                ->where('events.1.id', $sunday->id)
+            );
+    }
+
+    public function test_today_count_is_the_sessions_of_today_whatever_is_shown()
+    {
+        $trainer = TrainerProfile::factory()->approved()->create();
+        Booking::factory()->for($trainer)->confirmed()->at($this->now->setTime(18, 0))->create();
+        Booking::factory()->for($trainer)->at($this->now->setTime(20, 0))->create();
+        // Not today, or not in the calendar.
+        Booking::factory()->for($trainer)->confirmed()->at($this->now->addDay()->setTime(10, 0))->create();
+        Booking::factory()->for($trainer)->confirmed()->status(BookingStatus::Cancelled)->at($this->now->setTime(12, 0))->create();
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.calendar', ['vista' => 'mese', 'giorno' => '2027-01-10']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('todayCount', 2)
+                ->has('events', 0)
             );
     }
 

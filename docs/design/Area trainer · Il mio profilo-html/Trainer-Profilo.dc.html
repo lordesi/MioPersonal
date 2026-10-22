@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Area trainer · Il mio profilo</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ds{font-family:'Geist',ui-sans-serif,system-ui,sans-serif;color:#0a0a0a;-webkit-font-smoothing:antialiased}
+.ds button,.ds input,.ds textarea,.ds select{font-family:inherit}
+.tnum{font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}a:hover{text-decoration:underline}
+.nl:hover{text-decoration:none}
+.ds :focus-visible{outline:2px solid #0a0a0a;outline-offset:2px}
+.dk :focus-visible{outline-color:#ffffff}
+.sb a:hover{background:rgba(255,255,255,0.06);color:#ffffff;text-decoration:none}
+.fld{transition:border-color .15s, box-shadow .15s}
+.fld:focus-within{border-color:#0a0a0a !important;box-shadow:0 0 0 3px rgba(10,10,10,0.08)}
+.fld input:focus-visible,.fld textarea:focus-visible,.fld select:focus-visible{outline:none}
+.ghost:hover{background:#f4f4f5 !important}
+.addtile:hover{border-color:#0a0a0a !important;color:#0a0a0a !important}
+.ds button:disabled{cursor:default}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</helmet>
+<div class="ds" style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #f4f4f5">
+
+<aside class="sb dk" style="flex: 1 1 248px; max-width: 100%; box-sizing: border-box; background: #0a0a0a; color: #fafafa; padding: 24px 16px; display: flex; flex-direction: column; gap: 28px">
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 0 8px">
+<a href="Dash-Trainer-A.dc.html" class="nl" aria-label="MioPersonal, area trainer" style="display: flex; align-items: center; gap: 10px; color: #ffffff">
+<svg width="33" height="20" viewBox="0 0 420 254" aria-hidden="true" style="display: block"><path fill="currentColor" d="M41.1 253.3C3.5 246.1 -12.8 200.2 11.8 171.3C42.3 135.5 100.5 156.7 100.7 203.5C100.8 235.3 72.1 259.2 41.1 253.3ZM206 253.5C190.2 252.1 175.5 243 167.3 229.7C164.2 224.5 153.4 205.9 147.3 195C141.5 184.9 129.3 163.6 121.3 150C119.6 147.1 113.6 136.8 108 127C102.4 117.2 96.4 106.7 94.5 103.5C74.4 69 72.4 64.7 71.7 53.2C69.5 19.5 101.3 -6.9 133.8 1.7C150.2 6.1 159.9 15.3 172.7 39.2C174.1 41.7 175.8 44.7 176.5 45.8C177.2 46.8 179.6 50.9 181.8 54.8C184 58.6 188.9 67.2 192.7 73.8C196.5 80.3 201.4 88.8 203.5 92.5C205.6 96.2 208.3 100.7 209.3 102.5C210.4 104.3 214.9 111.9 219.3 119.5C223.6 127.1 229.1 136.6 231.5 140.8C233.9 144.9 237.6 151.3 239.8 155C246 165.8 245.7 165.8 251 154.8C257.3 141.8 261 128.4 261 118.6C261 115.3 260.9 115.1 256.7 107.8C254.3 103.6 250.7 97.3 248.6 93.8C246.6 90.2 243.8 85.4 242.5 83.2C235.7 72 232.9 64.7 231.9 56.6C226.6 9.7 281.9 -17.7 316.2 15C320.9 19.5 322 21 330.5 35.8C334.1 42.1 338.2 49.1 339.5 51.2C340.8 53.4 344.2 59.3 347 64.2C349.8 69.2 354 76.4 356.3 80.2C358.5 84.1 363.3 92.4 367 98.8C370.6 105.1 374.7 112.1 376 114.2C377.3 116.4 382.5 125.4 387.5 134.2C392.5 143.1 398.1 152.6 399.8 155.5C417.7 185.6 420 191.2 420 204.2C420 239.8 383.1 264.2 350.6 250.1C338.2 244.7 331.5 237.7 321.3 219.9C317.7 213.5 311.3 202.5 307.3 195.5C303.2 188.5 298.7 180.7 297.3 178.2C291.9 168.9 292.1 168.9 288.4 178C272.4 217.7 244.3 247.9 218.7 253C213.6 254.1 212.8 254.1 206 253.5Z"></path></svg>
+<span style="font-size: 18px; line-height: 28px; font-weight: 600; letter-spacing: -0.025em">MioPersonal</span>
+</a>
+<span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.08em; color: #a3a3a3">AREA TRAINER</span>
+</div>
+<nav aria-label="Area trainer" style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="7">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; font-size: 14px; line-height: 20px; color: #a3a3a3; font-weight: 500">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.d1}}"></path><path d="{{n.d2}}"></path></svg>
+<span style="flex: 1">{{n.label}}</span>
+</a>
+</sc-for>
+</nav>
+<div style="margin-top: auto; display: flex; flex-direction: column; gap: 12px">
+<a href="Profilo.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid #262626; color: #e5e5e5; font-size: 14px; line-height: 20px; font-weight: 500"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path><circle cx="12" cy="12" r="3"></circle></svg>Vedi profilo pubblico</a>
+<a href="Trainer-Profilo.dc.html" aria-current="page" class="nl" style="display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; padding: 10px; border-radius: 12px; background: #ffffff; color: #0a0a0a">
+<span style="flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: #0a0a0a; color: #fafafa; font-size: 13px; font-weight: 700">AS</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; line-height: 20px; font-weight: 600">Alessandro Siligato</span><span style="font-size: 12px; line-height: 16px; color: #525252">Il mio profilo</span></span>
+</a>
+</div>
+</aside>
+
+<main style="flex: 999 1 640px; min-width: 0; box-sizing: border-box; padding: 32px 40px 48px">
+<div style="max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px">
+
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-size: 34px; line-height: 40px; font-weight: 700; letter-spacing: -0.03em">Il mio profilo</h1>
+<p style="margin: 0; font-size: 15px; line-height: 22px; color: #525252">È la prima cosa che vedono i clienti, anche da Google.</p>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<div style="flex: 3 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+<section aria-labelledby="s1" style="padding: 24px; border-radius: 24px; background: #ffffff; border: 1px solid #e4e4e7; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; gap: 14px">
+<span class="tnum" style="flex: none; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: #0a0a0a; color: #fafafa; font-size: 14px; font-weight: 700">1</span>
+<div style="display: flex; flex-direction: column; gap: 2px"><h2 id="s1" style="margin: 0; font-size: 19px; line-height: 26px; font-weight: 700; letter-spacing: -0.02em">Il tuo profilo pubblico</h2><p style="margin: 0; font-size: 14px; line-height: 20px; color: #525252">Tutti i campi di questa sezione sono obbligatori.</p></div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 18px; padding: 16px; border-radius: 18px; background: #fafafa; border: 1px solid #f0f0f0">
+<sc-if value="{{hasPhoto}}" hint-placeholder-val="{{true}}"><span class="dk" role="img" aria-label="Foto profilo" style="flex: none; width: 88px; height: 88px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: #0a0a0a; color: #fafafa; font-size: 28px; font-weight: 700; box-shadow: 0 0 0 4px #ffffff, 0 0 0 5px #e4e4e7">AS</span></sc-if>
+<sc-if value="{{noPhoto}}" hint-placeholder-val="{{false}}"><span style="flex: none; width: 88px; height: 88px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; border: 1.5px dashed #a3a3a3; color: #737373"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"></circle><path d="M20 21a8 8 0 0 0-16 0"></path></svg></span></sc-if>
+<div style="flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 10px">
+<span style="font-size: 15px; line-height: 22px; font-weight: 600">Foto profilo</span>
+<span style="font-size: 13px; line-height: 18px; color: #525252">JPG o PNG, almeno 400 × 400 px. Viso ben visibile, luce naturale.</span>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" onClick="{{setPhoto}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: #0a0a0a; color: #fafafa; font-size: 14px; font-weight: 600; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path><circle cx="12" cy="13" r="3"></circle></svg>{{photoBtn}}</button>
+<sc-if value="{{hasPhoto}}" hint-placeholder-val="{{true}}"><button type="button" class="ghost" onClick="{{removePhoto}}" style="height: 40px; padding: 0 14px; border: 1px solid #d4d4d8; border-radius: 10px; background: #ffffff; color: #0a0a0a; font-size: 14px; font-weight: 500; cursor: pointer">Rimuovi</button></sc-if>
+</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="pt" style="font-size: 14px; line-height: 20px; font-weight: 600">Titolo del profilo</label>
+<div class="fld" style="display: flex; align-items: center; height: 48px; padding: 0 14px; border: 1px solid #e4e4e7; border-radius: 12px; background: #ffffff"><input id="pt" type="text" maxlength="60" value="{{title}}" onInput="{{onTitle}}" placeholder="Es. Bodybuilding e preparazione atletica per principianti" style="flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: #0a0a0a; font-size: 15px"></div>
+<div style="display: flex; justify-content: space-between; gap: 8px; font-size: 13px; line-height: 18px; color: #737373"><span>Una riga. Compare sotto il tuo nome.</span><span class="tnum">{{titleCount}}/60</span></div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="pb" style="font-size: 14px; line-height: 20px; font-weight: 600">Chi sei e come lavori</label>
+<div class="fld" style="display: flex; padding: 12px 14px; border: 1px solid #e4e4e7; border-radius: 12px; background: #ffffff"><textarea id="pb" rows="5" maxlength="500" value="{{bio}}" onInput="{{onBio}}" placeholder="Racconta il tuo approccio, con chi lavori meglio e cosa può aspettarsi un cliente dalla prima seduta." style="flex: 1; min-width: 0; border: 0; background: transparent; color: #0a0a0a; font-size: 15px; line-height: 22px; resize: vertical"></textarea></div>
+<div style="display: flex; justify-content: space-between; gap: 8px; font-size: 13px; line-height: 18px"><span style="{{bioHintStyle}}">{{bioHint}}</span><span class="tnum" style="color: #737373">{{bioCount}}/500</span></div>
+<div style="height: 4px; border-radius: 9999px; background: #f0f0f0; overflow: hidden" aria-hidden="true"><div style="{{bioBar}}"></div></div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px; max-width: 280px">
+<label for="pe" style="font-size: 14px; line-height: 20px; font-weight: 600">Anni di esperienza</label>
+<div class="fld" style="position: relative; display: flex; align-items: center; height: 48px; border: 1px solid #e4e4e7; border-radius: 12px; background: #ffffff">
+<select id="pe" onChange="{{onExp}}" style="width: 100%; height: 100%; padding: 0 40px 0 14px; border: 0; border-radius: 12px; background: transparent; color: #0a0a0a; font-size: 15px; appearance: none; -webkit-appearance: none; cursor: pointer"><sc-for list="{{expOpts}}" as="o" hint-placeholder-count="4"><option value="{{o.value}}" selected="{{o.selected}}">{{o.label}}</option></sc-for></select>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="position: absolute; right: 14px; pointer-events: none"><path d="m6 9 6 6 6-6"></path></svg>
+</div>
+</div>
+</section>
+
+<section aria-labelledby="s2" style="padding: 24px; border-radius: 24px; background: #ffffff; border: 1px solid #e4e4e7; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; gap: 14px">
+<span class="tnum" style="flex: none; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: #0a0a0a; color: #fafafa; font-size: 14px; font-weight: 700">2</span>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><h2 id="s2" style="margin: 0; font-size: 19px; line-height: 26px; font-weight: 700; letter-spacing: -0.02em">Foto della galleria</h2><p style="margin: 0; font-size: 14px; line-height: 20px; color: #525252">JPG o PNG, almeno 800 × 500 px. Puoi sceglierne più di una insieme.</p></div>
+<span class="tnum" style="flex: none; align-self: flex-start; display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 9999px; background: #f4f4f5; font-size: 12px; line-height: 16px; font-weight: 600">{{galleryCount}} di 8</span>
+</div>
+<ul style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px">
+<sc-for list="{{gallery}}" as="g" hint-placeholder-count="2">
+<li class="dk" style="position: relative; aspect-ratio: 8 / 5; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: #171717; color: #737373">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
+<span class="tnum" style="position: absolute; left: 8px; bottom: 8px; font-size: 11px; line-height: 14px; font-weight: 600; color: #a3a3a3">{{g.label}}</span>
+<button type="button" aria-label="{{g.aria}}" onClick="{{g.remove}}" style="position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 9999px; background: #ffffff; color: #0a0a0a; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
+</li>
+</sc-for>
+<sc-if value="{{canAddPhoto}}" hint-placeholder-val="{{true}}">
+<li><button type="button" class="addtile" onClick="{{addPhoto}}" style="width: 100%; aspect-ratio: 8 / 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 1.5px dashed #d4d4d8; border-radius: 14px; background: #fafafa; color: #525252; font-size: 13px; font-weight: 600; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Aggiungi foto</button></li>
+</sc-if>
+</ul>
+<sc-if value="{{galleryEmpty}}" hint-placeholder-val="{{true}}"><p style="margin: 0; font-size: 13px; line-height: 18px; color: #525252">Facoltativa, ma i profili con qualche foto di allenamento o dello studio ispirano più fiducia.</p></sc-if>
+</section>
+
+<section aria-labelledby="s3" style="padding: 24px; border-radius: 24px; background: #ffffff; border: 1px solid #e4e4e7; display: flex; flex-direction: column; gap: 22px">
+<div style="display: flex; gap: 14px">
+<span class="tnum" style="flex: none; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: #0a0a0a; color: #fafafa; font-size: 14px; font-weight: 700">3</span>
+<div style="display: flex; flex-direction: column; gap: 2px"><h2 id="s3" style="margin: 0; font-size: 19px; line-height: 26px; font-weight: 700; letter-spacing: -0.02em">Discipline, obiettivi, luoghi e città</h2><p style="margin: 0; font-size: 14px; line-height: 20px; color: #525252">Servono a farti trovare dai clienti giusti nella ricerca.</p></div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px"><span id="dl" style="font-size: 14px; line-height: 20px; font-weight: 600">Discipline</span><span class="tnum" style="font-size: 13px; line-height: 18px; color: #737373">{{discCount}} di 5 al massimo</span></div>
+<div role="group" aria-labelledby="dl" style="display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{discs}}" as="d" hint-placeholder-count="10"><button type="button" aria-pressed="{{d.pressed}}" disabled="{{d.disabled}}" onClick="{{d.pick}}" style="{{d.style}}"><sc-if value="{{d.on}}" hint-placeholder-val="{{false}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></sc-if>{{d.label}}</button></sc-for></div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px"><span id="gl" style="font-size: 14px; line-height: 20px; font-weight: 600">Obiettivi su cui lavori</span><span class="tnum" style="font-size: 13px; line-height: 18px; color: #737373">{{goalCount}} di 3 al massimo</span></div>
+<div role="group" aria-labelledby="gl" style="display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{goals}}" as="d" hint-placeholder-count="7"><button type="button" aria-pressed="{{d.pressed}}" disabled="{{d.disabled}}" onClick="{{d.pick}}" style="{{d.style}}"><sc-if value="{{d.on}}" hint-placeholder-val="{{false}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></sc-if><sc-if value="{{d.off}}" hint-placeholder-val="{{true}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg></sc-if>{{d.label}}</button></sc-for></div>
+<span style="font-size: 13px; line-height: 18px; color: #737373">Le discipline sono come alleni, gli obiettivi sono cosa aiuti a raggiungere. I clienti possono cercarti per entrambi.</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span id="wl" style="font-size: 14px; line-height: 20px; font-weight: 600">Dove alleni</span>
+<div role="group" aria-labelledby="wl" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 10px">
+<sc-for list="{{places}}" as="p" hint-placeholder-count="4"><button type="button" aria-pressed="{{p.pressed}}" onClick="{{p.pick}}" style="{{p.style}}">
+<span style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%"><span style="font-size: 15px; line-height: 22px; font-weight: 600">{{p.label}}</span><span aria-hidden="true" style="{{p.check}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span></span>
+<span style="{{p.subStyle}}"><br></span>
+</button></sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<label for="pc" style="font-size: 14px; line-height: 20px; font-weight: 600">Città in cui alleni</label>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<sc-for list="{{cities}}" as="c" hint-placeholder-count="1"><span style="display: inline-flex; align-items: center; gap: 4px; height: 36px; padding: 0 4px 0 14px; border-radius: 9999px; background: #0a0a0a; color: #fafafa; font-size: 14px; font-weight: 500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right: 2px"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>{{c.label}}<button type="button" aria-label="{{c.aria}}" onClick="{{c.remove}}" style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 9999px; background: transparent; color: #fafafa; cursor: pointer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button></span></sc-for>
+<div class="fld" style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 4px 0 12px; border: 1px solid #e4e4e7; border-radius: 9999px; background: #ffffff">
+<input id="pc" type="text" value="{{cityDraft}}" onInput="{{onCity}}" onKeyDown="{{onCityKey}}" placeholder="Aggiungi una città" style="width: 150px; height: 100%; border: 0; background: transparent; color: #0a0a0a; font-size: 14px">
+<button type="button" onClick="{{addCity}}" style="height: 32px; padding: 0 12px; border: 0; border-radius: 9999px; background: #f4f4f5; color: #0a0a0a; font-size: 13px; font-weight: 600; cursor: pointer">Aggiungi</button>
+</div>
+</div>
+</div>
+</section>
+
+<section aria-labelledby="s4" style="padding: 24px; border-radius: 24px; background: #ffffff; border: 1px solid #e4e4e7; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; gap: 14px">
+<span class="tnum" style="flex: none; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: #f4f4f5; color: #0a0a0a; font-size: 14px; font-weight: 700">4</span>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><h2 id="s4" style="margin: 0; font-size: 19px; line-height: 26px; font-weight: 700; letter-spacing: -0.02em">Formazione e certificazioni <span style="font-size: 14px; font-weight: 500; color: #737373">· facoltativa</span></h2><p style="margin: 0; font-size: 14px; line-height: 20px; color: #525252">Al massimo 3. Compaiono sul profilo; gli attestati li vede solo il nostro team.</p></div>
+<span class="tnum" style="flex: none; align-self: flex-start; display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 9999px; background: #f4f4f5; font-size: 12px; line-height: 16px; font-weight: 600">{{certCount}} di 3</span>
+</div>
+<sc-for list="{{certs}}" as="c" hint-placeholder-count="1">
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 18px; border: 1px solid #e4e4e7; background: #fafafa">
+<div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) 96px 40px; gap: 10px; align-items: center">
+<label class="fld" style="display: flex; align-items: center; height: 44px; padding: 0 12px; border: 1px solid #e4e4e7; border-radius: 10px; background: #ffffff"><span class="vh">Titolo</span><input type="text" value="{{c.name}}" onInput="{{c.onName}}" placeholder="Es. Laurea in Scienze motorie" style="flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: #0a0a0a; font-size: 14px; font-weight: 600"></label>
+<label class="fld" style="display: flex; align-items: center; height: 44px; padding: 0 12px; border: 1px solid #e4e4e7; border-radius: 10px; background: #ffffff"><span class="vh">Ente</span><input type="text" value="{{c.org}}" onInput="{{c.onOrg}}" placeholder="Ente o federazione" style="flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: #0a0a0a; font-size: 14px"></label>
+<label class="fld" style="display: flex; align-items: center; height: 44px; padding: 0 12px; border: 1px solid #e4e4e7; border-radius: 10px; background: #ffffff"><span class="vh">Anno</span><input type="text" inputmode="numeric" maxlength="4" value="{{c.year}}" onInput="{{c.onYear}}" placeholder="Anno" class="tnum" style="flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: #0a0a0a; font-size: 14px"></label>
+<button type="button" class="ghost" aria-label="Elimina certificazione" onClick="{{c.remove}}" style="width: 40px; height: 44px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 10px; background: transparent; color: #525252; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+<button type="button" onClick="{{c.toggleFile}}" style="{{c.fileBtn}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.fileIcon}}"></path></svg>{{c.fileLabel}}</button>
+<span style="font-size: 12px; line-height: 16px; color: #737373">PDF, JPG o PNG. Privato, lo vede solo il nostro team.</span>
+</div>
+</div>
+</sc-for>
+<button type="button" class="ghost" onClick="{{addCert}}" disabled="{{certsFull}}" style="{{addCertStyle}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>Aggiungi una certificazione</button>
+</section>
+</div>
+
+<aside aria-labelledby="pv-t" class="dk" style="flex: 2 1 320px; min-width: 0; box-sizing: border-box; padding: 22px; border-radius: 24px; background: #0a0a0a; color: #fafafa; display: flex; flex-direction: column; gap: 18px">
+<h2 id="pv-t" style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.08em; color: #a3a3a3">COSÌ TI VEDONO NELLA RICERCA</h2>
+
+<div style="border-radius: 18px; background: #ffffff; color: #0a0a0a; overflow: hidden">
+<div style="position: relative; aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; background: #171717">
+<span style="font-size: 40px; line-height: 44px; font-weight: 700; letter-spacing: -0.03em; color: #fafafa">AS</span>
+<sc-if value="{{pvOnline}}" hint-placeholder-val="{{true}}"><span style="position: absolute; top: 10px; left: 10px; display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 9999px; background: #ffffff; font-size: 12px; line-height: 16px; font-weight: 600">{{pvOnlineLabel}}</span></sc-if>
+<sc-if value="{{noPhoto}}" hint-placeholder-val="{{false}}"><span style="position: absolute; right: 10px; bottom: 10px; display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 9999px; background: #ffffff; font-size: 12px; line-height: 16px; font-weight: 600">Foto mancante</span></sc-if>
+</div>
+<div style="padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; gap: 8px"><span style="font-size: 16px; line-height: 22px; font-weight: 600">Alessandro Siligato</span><span style="flex: none; display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 9999px; border: 1px solid #e4e4e7; font-size: 11px; line-height: 14px; font-weight: 600">Nuovo</span></div>
+<span style="{{pvTitleStyle}}">{{pvTitle}}</span>
+<span style="font-size: 13px; line-height: 18px; color: #525252">{{pvCity}}</span>
+<div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{pvDiscs}}" as="d" hint-placeholder-count="2"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 9999px; background: #f4f4f5; font-size: 12px; line-height: 16px; font-weight: 500">{{d}}</span></sc-for></div>
+<sc-if value="{{pvHasGoals}}" hint-placeholder-val="{{true}}"><span style="display: flex; align-items: flex-start; gap: 6px; font-size: 12px; line-height: 16px; color: #525252"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>{{pvGoals}}</span></sc-if>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px"><span style="font-size: 15px; line-height: 22px; font-weight: 600">Profilo completo</span><span class="tnum" style="font-size: 22px; line-height: 28px; font-weight: 700">{{pct}}%</span></div>
+<div role="progressbar" aria-label="Completamento del profilo" aria-valuenow="{{pct}}" aria-valuemin="0" aria-valuemax="100" style="height: 8px; border-radius: 9999px; background: #262626; overflow: hidden"><div style="{{pctBar}}"></div></div>
+<ul style="margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{checks}}" as="k" hint-placeholder-count="7">
+<li style="display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 20px"><span aria-hidden="true" style="{{k.dot}}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span><span style="display: flex; flex-direction: column"><span style="{{k.labelStyle}}">{{k.label}}</span><sc-if value="{{k.hasHint}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; line-height: 16px; color: #a3a3a3; display: none">{{k.hint}}</span></sc-if></span></li>
+</sc-for>
+</ul>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; padding-top: 16px; border-top: 1px solid #262626">
+
+<button type="button" onClick="{{save}}" disabled="{{clean}}" style="{{saveStyle}}">Salva modifiche</button>
+</div>
+</aside>
+
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { photo: true, title: 'Bodybuilding per principianti e intermedi', bio: '', exp: '0', gallery: [], gid: 1, discs: ['Bodybuilding'], goals: ['Massa muscolare e tonificazione'], places: { online: true }, cities: ['Milano'], cityDraft: '', certs: [], dirty: false };
+  }
+  renderVals() {
+    var self = this, st = this.state;
+    var upd = function (p) { self.setState(Object.assign({ dirty: true }, p)); };
+    var NAV = [
+      ['Panoramica', 'Dash-Trainer-A.dc.html', 'm3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', 'M9 22V12h6v10'],
+      ['Richieste', 'Trainer-Richieste.dc.html', 'M22 12h-6l-2 3h-4l-2-3H2', 'M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z'],
+      ['Calendario', 'Trainer-Calendario-B.dc.html', 'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', 'M16 2v4M8 2v4M3 10h18'],
+      ['Clienti', 'Trainer-Clienti.dc.html', 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2', 'M9 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'],
+      ['Disponibilità', 'Trainer-Disponibilita.dc.html', 'M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z', 'M12 6v6l4 2'],
+      ['Servizi', 'Trainer-Servizi.dc.html', 'M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z', 'M7.5 7.5h.01'],
+      ['Recensioni', 'Trainer-Recensioni.dc.html', 'M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z', '']
+    ];
+    var nav = NAV.map(function (n) { return { label: n[0], href: n[1], d1: n[2], d2: n[3] }; });
+    var bioLen = (st.bio || '').length, bioOk = bioLen >= 60;
+    var EXP = [['0', 'Meno di 2 anni'], ['2', '2–5 anni'], ['5', '5–10 anni'], ['10', 'Più di 10 anni']];
+    var D = ['Bodybuilding', 'Powerlifting', 'Functional e HIIT', 'Crossfit', 'Calisthenics', 'Pilates', 'Yoga', 'Mobilità e stretching', 'Sport da combattimento'];
+    var G = ['Dimagrimento', 'Massa muscolare e tonificazione', 'Postura', 'Preparazione atletica', 'Corsa e endurance', 'Rientro post-infortunio', 'Salute e benessere generale'];
+    var stGoals = st.goals || [], gFull = stGoals.length >= 3;
+    var goals = G.map(function (g) {
+      var on = stGoals.indexOf(g) >= 0, dis = !on && gFull;
+      return { label: g, on: on, off: !on, pressed: on ? 'true' : 'false', disabled: dis,
+        style: 'display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 9999px; font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer; ' + (on ? 'border: 1px solid #0a0a0a; background: #0a0a0a; color: #fafafa' : 'border: 1px dashed #a3a3a3; background: #ffffff; color: #0a0a0a') + (dis ? '; opacity: 0.4' : ''),
+        pick: function () { var a = (self.state.goals || []).slice(), i = a.indexOf(g); if (i >= 0) a.splice(i, 1); else if (a.length < 3) a.push(g); upd({ goals: a }); } };
+    });
+    var full = st.discs.length >= 5;
+    var discs = D.map(function (d) {
+      var on = st.discs.indexOf(d) >= 0, dis = !on && full;
+      return { label: d, on: on, pressed: on ? 'true' : 'false', disabled: dis,
+        style: 'display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 9999px; font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer; ' + (on ? 'border: 1px solid #0a0a0a; background: #0a0a0a; color: #fafafa' : 'border: 1px solid #e4e4e7; background: #ffffff; color: #0a0a0a') + (dis ? '; opacity: 0.4' : ''),
+        pick: function () { var a = self.state.discs.slice(), i = a.indexOf(d); if (i >= 0) a.splice(i, 1); else if (a.length < 5) a.push(d); upd({ discs: a }); } };
+    });
+    var P = [['studio', 'Studio o palestra', 'Uno o più indirizzi'], ['domicilio', 'A domicilio', 'Vai tu dal cliente'], ['parco', 'All\'aperto', 'All\'aperto'], ['online', 'Online', '']];
+    var places = P.map(function (p) {
+      var on = !!st.places[p[0]];
+      return { label: p[1], sub: p[2], pressed: on ? 'true' : 'false',
+        style: 'display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 76px; padding: 14px; box-sizing: border-box; border-radius: 16px; text-align: left; cursor: pointer; ' + (on ? 'border: 1px solid #0a0a0a; background: #0a0a0a; color: #fafafa' : 'border: 1px solid #e4e4e7; background: #ffffff; color: #0a0a0a'),
+        subStyle: 'font-size: 13px; line-height: 18px; color: ' + (on ? '#a3a3a3' : '#525252'),
+        check: 'flex: none; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 6px; ' + (on ? 'background: #ffffff; color: #0a0a0a' : 'border: 1.5px solid #d4d4d8; color: transparent; box-sizing: border-box'),
+        pick: function () { var o = Object.assign({}, self.state.places); o[p[0]] = !o[p[0]]; upd({ places: o }); } };
+    });
+    var addCity = function () { var c = (self.state.cityDraft || '').trim(); if (!c) return; c = c.charAt(0).toUpperCase() + c.slice(1); if (self.state.cities.indexOf(c) < 0) upd({ cities: self.state.cities.concat([c]), cityDraft: '' }); else self.setState({ cityDraft: '' }); };
+    var cities = st.cities.map(function (c) { return { label: c, aria: 'Rimuovi ' + c, remove: function () { upd({ cities: self.state.cities.filter(function (x) { return x !== c; }) }); } }; });
+    var gallery = st.gallery.map(function (id, i) { return { label: 'Foto ' + (i + 1), aria: 'Rimuovi foto ' + (i + 1), remove: function () { upd({ gallery: self.state.gallery.filter(function (x) { return x !== id; }) }); } }; });
+    var setCert = function (i, p) { upd({ certs: self.state.certs.map(function (x, j) { return j === i ? Object.assign({}, x, p) : x; }) }); };
+    var certs = st.certs.map(function (c, i) {
+      return { name: c.name, org: c.org, year: c.year,
+        onName: function (e) { setCert(i, { name: e.target.value }); }, onOrg: function (e) { setCert(i, { org: e.target.value }); }, onYear: function (e) { setCert(i, { year: e.target.value.replace(/[^0-9]/g, '') }); },
+        remove: function () { upd({ certs: self.state.certs.filter(function (x, j) { return j !== i; }) }); },
+        toggleFile: function () { setCert(i, { file: !self.state.certs[i].file }); },
+        fileLabel: c.file ? 'Attestato caricato · cambia' : 'Carica attestato',
+        fileIcon: c.file ? 'M20 6 9 17l-5-5' : 'M12 3v12M7 8l5-5 5 5M5 21h14',
+        fileBtn: 'display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; ' + (c.file ? 'border: 1px solid #0a0a0a; background: #0a0a0a; color: #fafafa' : 'border: 1px solid #d4d4d8; background: #ffffff; color: #0a0a0a') };
+    });
+    var certsFull = st.certs.length >= 3;
+    var anyPlace = P.some(function (p) { return st.places[p[0]]; });
+    var titleOk = (st.title || '').trim().length > 0;
+    var CH = [
+      ['Foto profilo', st.photo, ''],
+      ['Titolo del profilo', titleOk, 'Scrivi una riga che ti descriva'],
+      ['Chi sei e come lavori', bioOk, bioLen ? 'Mancano ' + (60 - bioLen) + ' caratteri' : 'Almeno 60 caratteri'],
+      ['Foto galleria', true, ''],
+      ['Discipline, obiettivi, luoghi e città', st.discs.length > 0 && stGoals.length > 0, ''],
+      ['', anyPlace, 'Scegli almeno un luogo'],
+      ['Formazione e certificazioni', st.cities.length > 0, '']
+    ];
+    var done = CH.filter(function (c) { return c[1]; }).length, pct = Math.round(done / CH.length * 100);
+    var checks = CH.map(function (c) {
+      return { label: c[0], hasHint: !c[1] && !!c[2], hint: c[2],
+        labelStyle: 'color: ' + (c[1] ? '#e5e5e5' : '#ffffff') + '; font-weight: ' + (c[1] ? '400' : '600'),
+        dot: 'flex: none; width: 20px; height: 20px; margin-top: 0; display: flex; align-items: center; justify-content: center; border-radius: 9999px; box-sizing: border-box; ' + (c[1] ? 'background: #ffffff; color: #0a0a0a' : 'border: 1.5px dashed #737373; color: transparent') };
+    });
+    var placeLabels = P.filter(function (p) { return st.places[p[0]]; }).map(function (p) { return p[1]; });
+    var onlineOnly = st.places.online && placeLabels.length === 1, online = !!st.places.online;
+    var dirty = st.dirty;
+    return {
+      nav: nav, hasPhoto: st.photo, noPhoto: !st.photo, photoBtn: st.photo ? 'Cambia foto' : 'Carica foto',
+      setPhoto: function () { upd({ photo: true }); }, removePhoto: function () { upd({ photo: false }); },
+      title: st.title, titleCount: String((st.title || '').length), onTitle: function (e) { upd({ title: e.target.value }); },
+      bio: st.bio, bioCount: String(bioLen), onBio: function (e) { upd({ bio: e.target.value }); },
+      bioHint: bioOk ? 'Ottimo. Non inserire contatti: arrivano al cliente dopo l\'accettazione.' : 'Almeno 60 caratteri' + (bioLen ? ' · ne mancano ' + (60 - bioLen) : '') + '. Non inserire contatti: arrivano al cliente dopo l\'accettazione.',
+      bioHintStyle: 'color: ' + (bioOk ? '#525252' : '#0a0a0a') + '; font-weight: ' + (bioOk ? '400' : '500'),
+      bioBar: 'height: 100%; border-radius: 9999px; background: #0a0a0a; width: ' + Math.min(100, Math.round(bioLen / 60 * 100)) + '%',
+      expOpts: EXP.map(function (o) { return { value: o[0], label: o[1], selected: st.exp === o[0] }; }), onExp: function (e) { upd({ exp: e.target.value }); },
+      gallery: gallery, galleryCount: String(st.gallery.length), galleryEmpty: st.gallery.length === 0, canAddPhoto: st.gallery.length < 8,
+      addPhoto: function () { if (self.state.gallery.length < 8) upd({ gallery: self.state.gallery.concat([self.state.gid]), gid: self.state.gid + 1 }); },
+      discs: discs, discCount: String(st.discs.length), goals: goals, goalCount: String(stGoals.length), places: places,
+      cities: cities, cityDraft: st.cityDraft, onCity: function (e) { self.setState({ cityDraft: e.target.value }); },
+      onCityKey: function (e) { if (e.key === 'Enter') { e.preventDefault(); addCity(); } }, addCity: addCity,
+      certs: certs, certCount: String(st.certs.length), certsFull: certsFull,
+      addCert: function () { if (self.state.certs.length < 3) upd({ certs: self.state.certs.concat([{ name: '', org: '', year: '', file: false }]) }); },
+      addCertStyle: 'align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px; border: 1px solid #d4d4d8; border-radius: 12px; background: #ffffff; color: #0a0a0a; font-size: 14px; font-weight: 600; cursor: pointer; ' + (certsFull ? 'opacity: 0.4' : ''),
+      pvOnline: online, pvOnlineLabel: onlineOnly ? 'Solo online' : 'Anche online',
+      pvTitle: titleOk ? st.title : 'Il tuo titolo comparirà qui',
+      pvTitleStyle: 'font-size: 13px; line-height: 18px; ' + (titleOk ? 'color: #3f3f46' : 'color: #a3a3a3; font-style: italic'),
+      pvCity: st.cities.length ? st.cities.join(' · ') : 'Nessuna città',
+      pvDiscs: st.discs.slice(0, 3), pvHasGoals: stGoals.length > 0, pvGoals: stGoals.join(' · '),
+      pct: String(pct), pctBar: 'height: 100%; border-radius: 9999px; background: #ffffff; width: ' + pct + '%', checks: checks,
+      clean: !dirty, statusText: dirty ? 'Modifiche non salvate' : 'Tutto salvato',
+      statusDot: 'width: 8px; height: 8px; border-radius: 9999px; background: ' + (dirty ? '#ffffff' : '#525252'),
+      saveStyle: 'height: 44px; padding: 0 18px; border: 0; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; ' + (dirty ? 'background: #ffffff; color: #0a0a0a' : 'background: #262626; color: #737373'),
+      save: function () { self.setState({ dirty: false }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

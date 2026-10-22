@@ -1,335 +1,320 @@
-import { Plus, Trash2, X } from 'lucide-react';
+import { Building2, Check, House, Target, Trees, Video } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useId } from 'react';
-import type { ReactNode } from 'react';
-import FormField from '@/components/auth/form-field';
-import type { TrainerDraft } from '@/components/onboarding/trainer/draft';
+import type {
+    PlaceType,
+    TrainerDraft,
+} from '@/components/onboarding/trainer/draft';
 import {
     MAX_DISCIPLINES,
-    MAX_OTHER_CITIES,
-    MAX_STUDIOS,
+    MAX_GOALS,
     needsCity,
     placeOptions,
 } from '@/components/onboarding/trainer/draft';
-import StepTitle from '@/components/onboarding/trainer/step-title';
-import FilterSelect from '@/components/search/filter-select';
-import ChoiceChips from '@/components/shared/choice-chips';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import {
+    DarkPanel,
+    StepColumns,
+} from '@/components/onboarding/trainer/onboarding-shell';
+import type { PanelCheck } from '@/components/onboarding/trainer/search-card-preview';
+import SearchCardPreview, {
+    PanelChecklist,
+} from '@/components/onboarding/trainer/search-card-preview';
+import NumberedSection from '@/components/trainer/area/numbered-section';
+import {
+    Chip,
+    Cities,
+    Group,
+    Studios,
+} from '@/components/trainer/profile/search-section';
+import { trainingGoals } from '@/lib/goals';
 import { cn } from '@/lib/utils';
 import type { CatalogOption, CityOption } from '@/types';
 
 type StepProps = {
     draft: TrainerDraft;
     update: (changes: Partial<TrainerDraft>) => void;
+    /** The trainer's name and photo, in the preview. */
+    name: string;
+    photo: string | null;
     /** From the catalog. */
     disciplines: CatalogOption[];
     cities: CityOption[];
 };
 
+const placeIcons: Record<PlaceType, LucideIcon> = {
+    studio: Building2,
+    home: House,
+    park: Trees,
+    online: Video,
+};
+
+/** A studio counts once it has both name and address (as on the server). */
+export function studiosComplete(draft: TrainerDraft): boolean {
+    return (
+        !draft.places.includes('studio') ||
+        draft.studios.every(
+            (studio) =>
+                studio.name.trim() !== '' && studio.address.trim() !== '',
+        )
+    );
+}
+
+/** The checks of step 3; `short` goes in "Scegli almeno …" of the bottom bar. */
+export function placesChecks(
+    draft: TrainerDraft,
+): (PanelCheck & { short: string })[] {
+    const onlineOnly = draft.places.length > 0 && !needsCity(draft);
+    const checks = [
+        {
+            label: 'Almeno una disciplina',
+            short: 'una disciplina',
+            done: draft.disciplines.length > 0,
+        },
+        {
+            label: 'Almeno un obiettivo',
+            short: 'un obiettivo',
+            done: draft.goals.length > 0,
+        },
+        {
+            label: 'Almeno un luogo',
+            short: 'un luogo',
+            done: draft.places.length > 0,
+        },
+        {
+            label: onlineOnly
+                ? 'Città facoltativa (solo online)'
+                : 'Almeno una città',
+            short: 'una città',
+            done: onlineOnly || draft.city !== '',
+        },
+    ];
+
+    if (draft.places.includes('studio')) {
+        checks.push({
+            label: 'Nome e indirizzo di ogni studio',
+            short: 'nome e indirizzo degli studi',
+            done: studiosComplete(draft),
+        });
+    }
+
+    return checks;
+}
+
 /**
- * Step 3: disciplines (max 5), where the trainer works (max 3 places in
- * person) and in which cities (the main one + max 2 others).
+ * Step 3: disciplines (max 5) and goals (max 3), where the trainer works
+ * (with the studios' addresses) and in which cities (max 3, the first is
+ * the main one). Not needed for online only.
  */
 export default function StepPlaces({
     draft,
     update,
+    name,
+    photo,
     disciplines,
     cities,
 }: StepProps) {
-    const hasStudio = draft.places.includes('studio');
-    const cityName = (slug: string) =>
-        cities.find((city) => city.value === slug)?.label ?? slug;
-    // The main city and the ones already added can't be added again.
-    const addableCities = cities.filter(
-        (city) =>
-            city.value !== draft.city &&
-            !draft.otherCities.includes(city.value),
-    );
-
-    const togglePlace = (place: TrainerDraft['places'][number]) =>
-        update({
-            places: draft.places.includes(place)
-                ? draft.places.filter((item) => item !== place)
-                : [...draft.places, place],
-        });
-
-    const updateStudio = (
-        index: number,
-        changes: Partial<TrainerDraft['studios'][number]>,
-    ) =>
-        update({
-            studios: draft.studios.map((studio, i) =>
-                i === index ? { ...studio, ...changes } : studio,
-            ),
-        });
+    const toggle = <T extends string>(list: T[], value: T, max: number) =>
+        list.includes(value)
+            ? list.filter((item) => item !== value)
+            : list.length < max
+              ? [...list, value]
+              : list;
 
     return (
-        <>
-            <StepTitle
-                title="Discipline, luoghi e città"
-                description="Servono a farti trovare dai clienti giusti nella ricerca."
-            />
-
-            <Group
-                legend="Discipline"
-                note={`${draft.disciplines.length} di ${MAX_DISCIPLINES} al massimo`}
-            >
-                {(labelId) => (
-                    <ChoiceChips
-                        multiple
-                        aria-labelledby={labelId}
-                        options={disciplines}
-                        value={draft.disciplines}
-                        onChange={(disciplines) =>
-                            disciplines.length <= MAX_DISCIPLINES &&
-                            update({ disciplines })
-                        }
+        <StepColumns
+            aside={
+                <DarkPanel title="Così ti vedono nella ricerca">
+                    <SearchCardPreview
+                        draft={draft}
+                        name={name}
+                        photo={photo}
+                        disciplines={disciplines}
+                        cities={cities}
+                        search
                     />
-                )}
-            </Group>
-
-            <Group legend="Dove alleni">
-                {(labelId) => (
-                    <div
-                        role="group"
-                        aria-labelledby={labelId}
-                        className="grid grid-cols-2 gap-2 md:grid-cols-4"
-                    >
-                        {placeOptions.map((place) => {
-                            const on = draft.places.includes(place.value);
-
-                            return (
-                                <button
-                                    key={place.value}
-                                    type="button"
-                                    aria-pressed={on}
-                                    onClick={() => togglePlace(place.value)}
-                                    className={cn(
-                                        'flex flex-col items-start gap-0.5 rounded-lg bg-background px-3.5 py-3 text-left',
-                                        on
-                                            ? 'border-2 border-primary'
-                                            : 'border',
-                                    )}
-                                >
-                                    <span className="text-sm font-semibold">
-                                        {place.label}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                        {place.hint}
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
-            </Group>
-
-            {hasStudio && (
+                    <PanelChecklist
+                        checks={placesChecks(draft)}
+                        className="border-t border-sidebar-border pt-4"
+                    />
+                </DarkPanel>
+            }
+        >
+            <NumberedSection
+                step={1}
+                title="Cosa insegni"
+                description="Le discipline sono come alleni, gli obiettivi sono cosa aiuti a raggiungere. I clienti possono cercarti per entrambi."
+                className="gap-5.5"
+            >
                 <Group
-                    legend="Dove alleni in presenza"
-                    note={`studi, palestre o centri sportivi · ${draft.studios.length} di ${MAX_STUDIOS} al massimo`}
+                    legend="Discipline"
+                    note={`${draft.disciplines.length} di ${MAX_DISCIPLINES} al massimo`}
                 >
-                    {() => (
-                        <div className="flex flex-col gap-3">
-                            {draft.studios.map((studio, index) => (
-                                <div
-                                    key={index}
-                                    className="grid items-end gap-3 rounded-lg border p-3 sm:grid-cols-[1fr_1.4fr_auto]"
-                                >
-                                    <FormField label="Nome del luogo">
-                                        {({ id }) => (
-                                            <Input
-                                                id={id}
-                                                placeholder="Es. Palestra FitLab"
-                                                value={studio.name}
-                                                onChange={(event) =>
-                                                    updateStudio(index, {
-                                                        name: event.target
-                                                            .value,
-                                                    })
-                                                }
-                                            />
-                                        )}
-                                    </FormField>
-                                    <FormField label="Indirizzo">
-                                        {({ id }) => (
-                                            <Input
-                                                id={id}
-                                                autoComplete="street-address"
-                                                placeholder="Via, numero civico, città"
-                                                value={studio.address}
-                                                onChange={(event) =>
-                                                    updateStudio(index, {
-                                                        address:
-                                                            event.target.value,
-                                                    })
-                                                }
-                                            />
-                                        )}
-                                    </FormField>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        aria-label={`Rimuovi ${studio.name || 'indirizzo'}`}
-                                        disabled={draft.studios.length === 1}
-                                        onClick={() =>
-                                            update({
-                                                studios: draft.studios.filter(
-                                                    (_, i) => i !== index,
-                                                ),
-                                            })
-                                        }
-                                    >
-                                        <Trash2 />
-                                    </Button>
-                                </div>
-                            ))}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="self-start"
-                                disabled={draft.studios.length >= MAX_STUDIOS}
+                    {disciplines.map((discipline) => {
+                        const on = draft.disciplines.includes(discipline.value);
+
+                        return (
+                            <Chip
+                                key={discipline.value}
+                                on={on}
+                                disabled={
+                                    !on &&
+                                    draft.disciplines.length >= MAX_DISCIPLINES
+                                }
                                 onClick={() =>
                                     update({
-                                        studios: [
-                                            ...draft.studios,
-                                            { name: '', address: '' },
-                                        ],
+                                        disciplines: toggle(
+                                            draft.disciplines,
+                                            discipline.value,
+                                            MAX_DISCIPLINES,
+                                        ),
                                     })
                                 }
                             >
-                                <Plus aria-hidden="true" />
-                                Aggiungi indirizzo
-                            </Button>
-                            <span className="text-xs text-muted-foreground">
-                                Sul profilo mostriamo solo la città di ogni
-                                luogo. L’indirizzo esatto lo riceve il cliente
-                                con la conferma.
-                            </span>
-                        </div>
-                    )}
+                                {on && <Check strokeWidth={3} />}
+                                {discipline.label}
+                            </Chip>
+                        );
+                    })}
                 </Group>
-            )}
+                <div className="h-px bg-border" />
+                <Group
+                    legend="Obiettivi su cui lavori"
+                    note={`${draft.goals.length} di ${MAX_GOALS} al massimo`}
+                >
+                    {trainingGoals.map((goal) => {
+                        const on = draft.goals.includes(goal.value);
 
-            {needsCity(draft) && (
-                <>
-                    <FilterSelect
-                        id="trainer-city"
-                        label="La tua città"
-                        noneLabel="Scegli la città"
-                        options={cities}
-                        value={draft.city || null}
-                        onChange={(city) =>
-                            update({
-                                city: city ?? '',
-                                otherCities: draft.otherCities.filter(
-                                    (other) => other !== city,
-                                ),
-                            })
-                        }
-                        highlight={false}
-                        className="max-w-80"
-                    />
-
-                    <Group
-                        legend="Altre città in cui ti sposti"
-                        note={`${draft.otherCities.length} di ${MAX_OTHER_CITIES} al massimo`}
-                    >
-                        {(labelId) => (
-                            <div
-                                role="group"
-                                aria-labelledby={labelId}
-                                className="flex flex-col gap-2.5"
+                        return (
+                            <Chip
+                                key={goal.value}
+                                on={on}
+                                dashed
+                                disabled={
+                                    !on && draft.goals.length >= MAX_GOALS
+                                }
+                                onClick={() =>
+                                    update({
+                                        goals: toggle(
+                                            draft.goals,
+                                            goal.value,
+                                            MAX_GOALS,
+                                        ),
+                                    })
+                                }
                             >
-                                {draft.otherCities.length > 0 && (
-                                    <ul className="flex flex-wrap gap-2">
-                                        {draft.otherCities.map((slug) => (
-                                            <li
-                                                key={slug}
-                                                className="flex h-9 items-center gap-1 rounded-full border bg-background pr-1 pl-3.5 text-sm"
-                                            >
-                                                {cityName(slug)}
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    aria-label={`Togli ${cityName(slug)}`}
-                                                    className="size-7 rounded-full"
-                                                    onClick={() =>
-                                                        update({
-                                                            otherCities:
-                                                                draft.otherCities.filter(
-                                                                    (other) =>
-                                                                        other !==
-                                                                        slug,
-                                                                ),
-                                                        })
-                                                    }
-                                                >
-                                                    <X />
-                                                </Button>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                                {/* At the limit the menu goes away: remove a city to add another. */}
-                                {draft.otherCities.length <
-                                    MAX_OTHER_CITIES && (
-                                    <FilterSelect
-                                        id="trainer-other-city"
-                                        label="Aggiungi una città"
-                                        noneLabel="Scegli una città"
-                                        options={addableCities}
-                                        value={null}
-                                        onChange={(city) =>
-                                            city &&
-                                            update({
-                                                otherCities: [
-                                                    ...draft.otherCities,
-                                                    city,
-                                                ],
-                                            })
-                                        }
-                                        highlight={false}
-                                        className="max-w-80"
-                                    />
-                                )}
-                            </div>
-                        )}
-                    </Group>
-                </>
-            )}
-        </>
+                                {on ? <Check strokeWidth={3} /> : <Target />}
+                                {goal.label}
+                            </Chip>
+                        );
+                    })}
+                </Group>
+            </NumberedSection>
+
+            <NumberedSection
+                step={2}
+                title="Dove alleni"
+                description="Scegli tutti i modi in cui lavori. Almeno uno."
+                className="gap-5.5"
+            >
+                <PlaceCards draft={draft} update={update} />
+                {draft.places.includes('studio') && (
+                    <Studios draft={draft} update={update} />
+                )}
+                {needsCity(draft) && (
+                    <>
+                        <div className="h-px bg-border" />
+                        <Cities draft={draft} update={update} cities={cities} />
+                    </>
+                )}
+            </NumberedSection>
+        </StepColumns>
     );
 }
 
-function Group({
-    legend,
-    note,
-    children,
-}: {
-    legend: string;
-    note?: string;
-    children: (labelId: string) => ReactNode;
-}) {
+/** The four ways of training: icon, name and a check, black when chosen. */
+function PlaceCards({ draft, update }: Pick<StepProps, 'draft' | 'update'>) {
     const labelId = useId();
 
     return (
-        <div className="flex flex-col gap-2.5">
-            <span
-                id={labelId}
-                className="text-[15px] font-semibold tabular-nums"
-            >
-                {legend}
-                {note && (
-                    <span className="font-normal text-muted-foreground">
-                        {' '}
-                        · {note}
-                    </span>
-                )}
+        <div
+            role="group"
+            aria-label="Dove alleni"
+            aria-describedby={labelId}
+            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,170px),1fr))] gap-2.5"
+        >
+            <span id={labelId} className="sr-only">
+                Puoi sceglierne più di uno.
             </span>
-            {children(labelId)}
+            {placeOptions.map((place) => {
+                const on = draft.places.includes(place.value);
+                const Icon = placeIcons[place.value];
+
+                return (
+                    <button
+                        key={place.value}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() =>
+                            update({
+                                places: on
+                                    ? draft.places.filter(
+                                          (item) => item !== place.value,
+                                      )
+                                    : [...draft.places, place.value],
+                            })
+                        }
+                        className={cn(
+                            'flex flex-col items-start gap-3.5 rounded-2xl border p-3.5 text-left transition-colors',
+                            on
+                                ? 'border-foreground bg-foreground text-background'
+                                : 'bg-card hover:bg-muted/50',
+                        )}
+                    >
+                        <span className="flex w-full items-center justify-between gap-2">
+                            <span
+                                className={cn(
+                                    'flex size-9 items-center justify-center rounded-[10px]',
+                                    on ? 'bg-foreground/85' : 'bg-secondary',
+                                )}
+                            >
+                                <Icon
+                                    aria-hidden="true"
+                                    className={cn(
+                                        'size-4.5',
+                                        on && 'text-background',
+                                    )}
+                                />
+                            </span>
+                            <span
+                                aria-hidden="true"
+                                className={cn(
+                                    'flex size-5 flex-none items-center justify-center rounded-md',
+                                    on
+                                        ? 'bg-background text-foreground'
+                                        : 'border-[1.5px] border-input text-transparent',
+                                )}
+                            >
+                                <Check strokeWidth={3.5} className="size-3" />
+                            </span>
+                        </span>
+                        <span className="flex flex-col gap-0.5">
+                            <span className="text-[15px] leading-5.5 font-semibold">
+                                {place.label}
+                            </span>
+                            <span
+                                className={cn(
+                                    'text-[13px] leading-4.5',
+                                    on
+                                        ? 'text-background/70'
+                                        : 'text-muted-foreground',
+                                )}
+                            >
+                                {place.hint}
+                            </span>
+                        </span>
+                    </button>
+                );
+            })}
         </div>
     );
 }

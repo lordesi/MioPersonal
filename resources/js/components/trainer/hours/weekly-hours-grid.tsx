@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { weeklyHours } from '@/components/onboarding/trainer/draft';
 import { hourLabel } from '@/lib/calendar';
+import { formatHours } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const dayNames = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
@@ -17,6 +18,13 @@ const dayLabels = [
 const allHours = Array.from({ length: 18 }, (_, index) => 6 + index);
 const range = (from: number, to: number) =>
     allHours.filter((hour) => hour >= from && hour < to);
+
+/** The three steps written above the grid, "a", "b" and "c". */
+const steps = [
+    { letter: 'a', text: 'Scegli i giorni in alto' },
+    { letter: 'b', text: 'Aggiungi una fascia oraria' },
+    { letter: 'c', text: 'Ritocca le singole ore con un tocco' },
+];
 
 /**
  * The buttons above the grid. "toggle": added to the selected days, or
@@ -56,6 +64,9 @@ export default function WeeklyHoursGrid({
     onChange,
 }: WeeklyHoursGridProps) {
     const [selectedDays, setSelectedDays] = useState([0, 1, 2, 3, 4]);
+    const selectedNames = dayNames.filter((_, day) =>
+        selectedDays.includes(day),
+    );
 
     const setDay = (day: number, dayHours: number[]) =>
         onChange(
@@ -103,10 +114,26 @@ export default function WeeklyHoursGrid({
     };
 
     return (
-        <div className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-4.5">
+            <ol className="flex flex-wrap gap-x-5 gap-y-1.5 rounded-[14px] bg-secondary px-4 py-3.5 text-[13px] leading-4.5">
+                {steps.map((step) => (
+                    <li key={step.letter} className="flex items-center gap-2">
+                        <span
+                            aria-hidden="true"
+                            className="flex size-5 items-center justify-center rounded-full bg-foreground text-[11px] font-bold text-background"
+                        >
+                            {step.letter}
+                        </span>
+                        {step.text}
+                    </li>
+                ))}
+            </ol>
+
             <div className="flex flex-wrap items-center gap-2">
-                <span className="mr-1 text-sm font-medium">
-                    Ai giorni selezionati:
+                <span className="mr-1 text-[13px] leading-4.5 font-semibold">
+                    {selectedNames.length > 0
+                        ? `Ai giorni selezionati (${selectedNames.join(', ')}):`
+                        : 'Seleziona almeno un giorno:'}
                 </span>
                 {groups.map((group) => (
                     <button
@@ -114,7 +141,7 @@ export default function WeeklyHoursGrid({
                         type="button"
                         disabled={selectedDays.length === 0}
                         onClick={() => applyGroup(group)}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-input bg-background px-3 text-sm font-medium hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-9 items-center gap-1.5 rounded-full border bg-card px-3 text-[13px] leading-4.5 font-semibold hover:bg-secondary disabled:pointer-events-none disabled:opacity-40"
                     >
                         {group.label}
                         {group.range && (
@@ -130,7 +157,7 @@ export default function WeeklyHoursGrid({
                 <div
                     role="group"
                     aria-label="Orari di lavoro della settimana"
-                    className="grid min-w-80 grid-cols-[44px_repeat(7,minmax(0,1fr))] gap-1 md:min-w-160 md:grid-cols-[60px_repeat(7,minmax(0,1fr))]"
+                    className="grid min-w-70 grid-cols-[40px_repeat(7,minmax(0,1fr))] gap-x-1 gap-y-1 sm:gap-x-1.5 md:min-w-140 md:grid-cols-[52px_repeat(7,minmax(0,1fr))]"
                 >
                     <span />
                     {dayNames.map((name, day) => {
@@ -141,7 +168,7 @@ export default function WeeklyHoursGrid({
                                 key={name}
                                 type="button"
                                 aria-pressed={on}
-                                aria-label={`Seleziona ${dayLabels[day].toLowerCase()}`}
+                                aria-label={`${dayLabels[day]}, ${formatHours(hours[day].length)}`}
                                 onClick={() =>
                                     setSelectedDays(
                                         on
@@ -152,16 +179,23 @@ export default function WeeklyHoursGrid({
                                     )
                                 }
                                 className={cn(
-                                    'flex flex-col items-center gap-0.5 rounded-lg py-2',
+                                    'mb-1 flex h-13 flex-col items-center justify-center gap-0.5 rounded-xl border',
                                     on
-                                        ? 'border-2 border-foreground bg-secondary'
-                                        : 'border bg-background text-muted-foreground',
+                                        ? 'border-foreground bg-foreground text-background'
+                                        : 'bg-card hover:bg-secondary',
                                 )}
                             >
-                                <span className="text-[13px] font-semibold">
+                                <span className="text-[13px] leading-4.5 font-bold">
                                     {name}
                                 </span>
-                                <span className="text-[11px] tabular-nums opacity-75">
+                                <span
+                                    className={cn(
+                                        'text-[11px] leading-3.5 font-medium tabular-nums',
+                                        on
+                                            ? 'text-sidebar-muted-foreground'
+                                            : 'text-muted-foreground',
+                                    )}
+                                >
                                     {hours[day].length} h
                                 </span>
                             </button>
@@ -180,14 +214,27 @@ export default function WeeklyHoursGrid({
                 </div>
             </div>
 
-            <p className="text-sm text-muted-foreground tabular-nums">
-                <strong className="text-foreground">
-                    {weeklyHours(hours)} ore a settimana.
-                </strong>{' '}
-                Tocca un giorno in alto per selezionarlo, poi aggiungi un gruppo
-                di ore oppure tocca le singole ore: si possono cambiare solo le
-                ore dei giorni selezionati.
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2.5 border-t pt-3.5">
+                <span className="text-[15px] leading-5.5 font-bold tabular-nums">
+                    {formatHours(weeklyHours(hours))} a settimana
+                </span>
+                <span className="flex items-center gap-3.5 text-[13px] leading-4.5 text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                        <span
+                            aria-hidden="true"
+                            className="h-2.5 w-3.5 rounded-sm bg-foreground"
+                        />
+                        Disponibile
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                        <span
+                            aria-hidden="true"
+                            className="h-2.5 w-3.5 rounded-sm border border-dashed border-ring"
+                        />
+                        Libero da aggiungere
+                    </span>
+                </span>
+            </div>
         </div>
     );
 }
@@ -206,7 +253,7 @@ function HourRow({
 }) {
     return (
         <>
-            <span className="flex items-center justify-end pr-1.5 text-xs text-muted-foreground tabular-nums">
+            <span className="flex h-6.5 items-center justify-end pr-1.5 text-[11px] leading-3.5 font-medium text-ring tabular-nums">
                 {hourLabel(hour)}
             </span>
             {dayLabels.map((label, day) => {
@@ -218,15 +265,19 @@ function HourRow({
                         key={label}
                         type="button"
                         aria-pressed={on}
-                        aria-label={`${label} ${hourLabel(hour)}, ${on ? 'disponibile' : 'non disponibile'}`}
+                        aria-label={`${label} ${hourLabel(hour)}–${hourLabel(hour + 1)}, ${on ? 'disponibile' : 'non disponibile'}${locked ? ', seleziona il giorno per modificarla' : ''}`}
                         disabled={locked}
                         onClick={() => onToggle(day, hour)}
                         className={cn(
-                            'h-7.5 rounded-md disabled:cursor-not-allowed',
-                            on
-                                ? 'bg-primary'
-                                : 'border border-dashed border-input bg-background',
-                            locked && 'opacity-40',
+                            'h-6.5 w-full rounded-[7px] border',
+                            on && !locked && 'border-foreground bg-foreground',
+                            on &&
+                                locked &&
+                                'border-transparent bg-foreground/75',
+                            !on &&
+                                !locked &&
+                                'border-dashed border-ring bg-card hover:border-foreground',
+                            !on && locked && 'border-dashed bg-secondary/60',
                         )}
                     />
                 );

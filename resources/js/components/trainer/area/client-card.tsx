@@ -1,19 +1,19 @@
 import { Link } from '@inertiajs/react';
-import { Calendar, MapPin } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { useId } from 'react';
 import UserAvatar from '@/components/shared/user-avatar';
+import ClientContacts from '@/components/trainer/area/client-contacts';
 import PackageProgress from '@/components/trainer/package-progress';
 import { Button } from '@/components/ui/button';
 import { romeParts } from '@/lib/calendar';
 import { dateBlockParts, formatDayLong, formatTime } from '@/lib/format';
 import { calendar } from '@/routes/trainer';
-import { show as showClient } from '@/routes/trainer/clients';
 import type { TrainerClient } from '@/types';
 
 /**
  * Details of the client selected in "Clienti": the numbers, the package in
- * progress, every session still to come, the links to the profile and to
- * the calendar.
+ * progress, the contacts, every session still to come and the link to the
+ * calendar.
  */
 export default function ClientCard({ client }: { client: TrainerClient }) {
     const titleId = useId();
@@ -21,7 +21,7 @@ export default function ClientCard({ client }: { client: TrainerClient }) {
     const places = new Set(
         client.upcoming.map((session) => session.placeLabel),
     );
-    // One place for every session: said once, under the list.
+    // One place for every session: not repeated on each row.
     const samePlace = places.size === 1 ? [...places][0] : null;
 
     const numbers = [
@@ -95,6 +95,9 @@ export default function ClientCard({ client }: { client: TrainerClient }) {
             </div>
 
             <div className="flex flex-col gap-3.5 px-6 pt-5 pb-6">
+                <ClientContacts name={client.name} contacts={client.contacts} />
+                <div aria-hidden="true" className="h-px bg-border" />
+
                 <h3
                     id={upcomingTitleId}
                     className="text-[15px] leading-5.5 font-semibold"
@@ -134,6 +137,7 @@ export default function ClientCard({ client }: { client: TrainerClient }) {
                                         <span className="text-[13px] leading-4.5 text-muted-foreground">
                                             {session.serviceName}
                                             {samePlace === null &&
+                                                session.placeLabel &&
                                                 ` · ${session.placeLabel}`}
                                         </span>
                                     </span>
@@ -143,22 +147,7 @@ export default function ClientCard({ client }: { client: TrainerClient }) {
                     </ul>
                 )}
 
-                {samePlace && (
-                    <span className="flex items-center gap-2 text-[13px] leading-4.5 text-muted-foreground">
-                        <MapPin aria-hidden="true" className="size-3.5" />
-                        {client.upcoming.length === 1
-                            ? samePlace
-                            : `${samePlace} per tutte le sedute`}
-                    </span>
-                )}
-
                 <div className="mt-1 flex flex-wrap gap-2">
-                    <Button
-                        asChild
-                        className="h-11 rounded-[10px] px-4.5 font-semibold"
-                    >
-                        <Link href={showClient(client.id)}>Apri la scheda</Link>
-                    </Button>
                     <Button
                         asChild
                         variant="outline"

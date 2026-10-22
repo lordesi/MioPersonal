@@ -40,6 +40,7 @@ class TrainerProfileEditTest extends TestCase
             'bio' => str_repeat('Alleno persone che vogliono muoversi meglio. ', 5),
             'experience' => '5to10',
             'disciplines' => ['pilates', 'functional'],
+            'goals' => ['posture'],
             'places' => ['studio', 'online'],
             'studios' => [['name' => 'Studio Brera', 'address' => 'Via Solferino 3']],
             'city' => 'milano',
@@ -74,6 +75,8 @@ class TrainerProfileEditTest extends TestCase
                 ->whereNot('draft.photoUrl', null)
                 ->has('disciplines')
                 ->has('cities')
+                // No reviews yet: "Nuovo" in the preview.
+                ->where('rating', ['value' => null, 'count' => 0])
             );
     }
 
@@ -109,6 +112,7 @@ class TrainerProfileEditTest extends TestCase
         $profile->refresh();
         $this->assertSame(TrainerProfileStatus::Approved, $profile->status);
         $this->assertSame('Pilates e postura', $profile->headline);
+        $this->assertSame(['posture'], $profile->goals);
         $this->assertSame('milano', $profile->city?->slug);
         $this->assertTrue($profile->trains_in_person);
         $this->assertTrue($profile->trains_online);
@@ -192,6 +196,17 @@ class TrainerProfileEditTest extends TestCase
         $this->actingAs($profile->user)
             ->put(route('trainer.profile.update'), $this->payload(['bio' => 'Troppo corta', 'city' => '']))
             ->assertSessionHasErrors(['bio', 'city']);
+
+        $this->assertSame('Personal trainer', $profile->fresh()?->headline);
+    }
+
+    public function test_at_most_three_goals()
+    {
+        $profile = $this->approvedTrainer();
+
+        $this->actingAs($profile->user)
+            ->put(route('trainer.profile.update'), $this->payload(['goals' => ['weight_loss', 'muscle', 'posture', 'athletic']]))
+            ->assertSessionHasErrors(['goals' => 'Puoi scegliere al massimo 3 obiettivi.']);
 
         $this->assertSame('Personal trainer', $profile->fresh()?->headline);
     }

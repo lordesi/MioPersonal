@@ -22,8 +22,6 @@ export type ClientUpcomingBooking = {
     status: 'confirmed';
     /** ISO UTC string: after this moment cancelling is no longer free. */
     freeCancellationUntil: string;
-    /** The .ics file of "Aggiungi al calendario". */
-    calendarHref: string;
 };
 
 /** The request just sent, on the "Prenotazione inviata" page. */

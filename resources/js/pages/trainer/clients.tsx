@@ -15,13 +15,20 @@ import type { TrainerClient } from '@/types';
 
 type ClientsProps = {
     clients: TrainerClient[];
+    /** From "?cliente=37" (Panoramica, Calendario): the client to open first. */
+    selectedId: number | null;
 };
 
 /** "Clienti" (docs/design/trainer-clienti.html): list on the left, card on the right. */
-export default function Clients({ clients }: ClientsProps) {
+export default function Clients({
+    clients,
+    selectedId: initialId,
+}: ClientsProps) {
     const [query, setQuery] = useState('');
     const [filter, setFilter] = useState<ClientFilter>('all');
-    const [selectedId, setSelectedId] = useState(clients[0]?.id ?? null);
+    const [selectedId, setSelectedId] = useState(
+        initialId ?? clients[0]?.id ?? null,
+    );
 
     const current =
         clientFilters.find((item) => item.value === filter) ?? clientFilters[0];

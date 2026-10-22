@@ -20,11 +20,7 @@ final class BookingLabels
             return $booking->service_name;
         }
 
-        // Its place among the package's sessions that count: confirmed or waiting.
-        $position = $package->bookings
-            ->filter(fn (Booking $session) => $session->status === BookingStatus::Confirmed || $session->isPending())
-            ->filter(fn (Booking $session) => $session->starts_at <= $booking->starts_at)
-            ->count();
+        $position = self::position($booking);
 
         // Cancelled or refused: it no longer takes a place of the package.
         if ($position === 0) {
@@ -32,5 +28,14 @@ final class BookingLabels
         }
 
         return "{$package->name} · seduta {$position} di {$package->sessions_total}";
+    }
+
+    /** Its place among the package's sessions that count: confirmed or waiting. 0 without a package. */
+    public static function position(Booking $booking): int
+    {
+        return $booking->clientPackage?->bookings
+            ->filter(fn (Booking $session) => $session->status === BookingStatus::Confirmed || $session->isPending())
+            ->filter(fn (Booking $session) => $session->starts_at <= $booking->starts_at)
+            ->count() ?? 0;
     }
 }

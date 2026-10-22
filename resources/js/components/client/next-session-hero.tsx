@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { CalendarPlus, Clock, MapPin } from 'lucide-react';
+import { Clock, MapPin } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import UserAvatar from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
@@ -20,8 +20,9 @@ type NextSessionHeroProps = {
 
 /**
  * "La tua prossima seduta": the black card at the top of the dashboard.
- * "Annulla seduta" asks right in the card, as in the design; once cancelled
- * it can't be restored (the slot is free for the others again).
+ * "Annulla seduta" asks right in the card, as in the design, and only until
+ * the end of the free cancellation; once cancelled it can't be restored (the
+ * slot is free for the others again).
  */
 export default function NextSessionHero({
     booking,
@@ -110,19 +111,24 @@ export default function NextSessionHero({
                             </Link>
                         </span>
                     </div>
-                    <div className="flex flex-[1_1_220px] items-center gap-3 rounded-[14px] bg-sidebar-accent px-3.5 py-3">
-                        <span className="flex size-10 flex-none items-center justify-center rounded-full bg-sidebar-border">
-                            <MapPin aria-hidden="true" className="size-4.5" />
-                        </span>
-                        <span className="flex min-w-0 flex-col">
-                            <span className="text-xs text-sidebar-muted-foreground">
-                                Dove
+                    {booking.placeLabel && (
+                        <div className="flex flex-[1_1_220px] items-center gap-3 rounded-[14px] bg-sidebar-accent px-3.5 py-3">
+                            <span className="flex size-10 flex-none items-center justify-center rounded-full bg-sidebar-border">
+                                <MapPin
+                                    aria-hidden="true"
+                                    className="size-4.5"
+                                />
                             </span>
-                            <span className="text-[15px] leading-5.5 font-semibold">
-                                {booking.placeLabel}
+                            <span className="flex min-w-0 flex-col">
+                                <span className="text-xs text-sidebar-muted-foreground">
+                                    Dove
+                                </span>
+                                <span className="text-[15px] leading-5.5 font-semibold">
+                                    {booking.placeLabel}
+                                </span>
                             </span>
-                        </span>
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -157,9 +163,7 @@ export default function NextSessionHero({
                             {formatDayTimeRelative(booking.start, now)}?
                         </span>
                         <span className="text-[13px] leading-4.5 text-sidebar-muted-foreground">
-                            {freeCancellation
-                                ? `È gratuita fino a ${formatDayTimeRelative(booking.freeCancellationUntil, now)}. Avvisiamo noi il trainer.`
-                                : 'La cancellazione gratuita è scaduta. Avvisiamo noi il trainer.'}
+                            {`È gratuita fino a ${formatDayTimeRelative(booking.freeCancellationUntil, now)}. Avvisiamo noi il trainer.`}
                         </span>
                     </span>
                     <div className="flex gap-2">
@@ -185,17 +189,17 @@ export default function NextSessionHero({
                     </div>
                 </div>
             ) : (
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sidebar-border bg-sidebar-accent/50 px-5 py-4 md:px-7">
-                    <span className="flex items-center gap-2 text-sm text-sidebar-foreground/85 tabular-nums">
-                        <Clock
-                            aria-hidden="true"
-                            className="size-4 flex-none"
-                        />
-                        {freeCancellation
-                            ? `Cancellazione gratuita fino a ${formatDayTimeRelative(booking.freeCancellationUntil, now)}`
-                            : 'Cancellazione gratuita scaduta'}
-                    </span>
-                    <div className="flex flex-wrap gap-2">
+                // Past the free cancellation the session can't be cancelled
+                // any more: no bar at all.
+                freeCancellation && (
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sidebar-border bg-sidebar-accent/50 px-5 py-4 md:px-7">
+                        <span className="flex items-center gap-2 text-sm text-sidebar-foreground/85 tabular-nums">
+                            <Clock
+                                aria-hidden="true"
+                                className="size-4 flex-none"
+                            />
+                            {`Cancellazione gratuita fino a ${formatDayTimeRelative(booking.freeCancellationUntil, now)}`}
+                        </span>
                         <Button
                             type="button"
                             variant="ghost"
@@ -204,18 +208,8 @@ export default function NextSessionHero({
                         >
                             Annulla seduta
                         </Button>
-                        <Button
-                            asChild
-                            className="h-11 rounded-[10px] bg-sidebar-primary px-4.5 font-semibold text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
-                        >
-                            {/* A file to download: a plain link, not an Inertia visit. */}
-                            <a href={booking.calendarHref} download>
-                                <CalendarPlus aria-hidden="true" />
-                                Aggiungi al calendario
-                            </a>
-                        </Button>
                     </div>
-                </div>
+                )
             )}
         </section>
     );

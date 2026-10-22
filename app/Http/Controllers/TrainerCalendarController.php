@@ -5,20 +5,24 @@ namespace App\Http\Controllers;
 use App\Enums\BookingStatus;
 use App\Http\Controllers\Concerns\BuildsPlaceholderData;
 use App\Models\Booking;
+use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\BookingLabels;
 use App\Support\TrainerSessions;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * "Calendario" of the trainer: a week or a month of sessions, confirmed and
- * waiting for an answer. The URL says what to show, e.g.
- * ?vista=mese&giorno=2026-11-01, and only that period is loaded.
+ * "Calendario" of the trainer: a day, a week or a month of sessions, confirmed
+ * and waiting for an answer. The URL says what to show, e.g.
+ * ?vista=mese&giorno=2026-11-01, and only that period is loaded: the day
+ * comes with its week (the strip of the 7 days), the month with its whole
+ * weeks (the "La settimana" panel of a day at the edge of the month).
  *
  * The arrows go from 12 months before to 12 months after the current one:
  * the limits are computed from today, so they move by themselves every month.
@@ -40,12 +44,19 @@ class TrainerCalendarController extends Controller
         $minDate = $today->startOfMonth()->subMonths(self::MONTHS_AROUND);
         $maxDate = $today->startOfMonth()->addMonths(self::MONTHS_AROUND)->endOfMonth()->startOfDay();
 
-        $view = $request->query('vista') === 'mese' ? 'month' : 'week';
+        $view = match ($request->query('vista')) {
+            'mese' => 'month',
+            'giorno' => 'day',
+            default => 'week',
+        };
         // A day outside the limits shows the first or the last one.
         $focus = $this->focus($request->query('giorno'), $today)->max($minDate)->min($maxDate);
 
-        $from = $view === 'month' ? $focus->startOfMonth() : $focus->startOfWeek(CarbonInterface::MONDAY);
-        $to = $view === 'month' ? $from->addMonth() : $from->addWeek();
+        $from = ($view === 'month' ? $focus->startOfMonth() : $focus)->startOfWeek(CarbonInterface::MONDAY);
+        $to = $view === 'month'
+            // The Monday after the week of the last day of the month.
+            ? $focus->endOfMonth()->startOfWeek(CarbonInterface::MONDAY)->addWeek()
+            : $from->addWeek();
 
         return Inertia::render('trainer/calendar', [
             'trainerArea' => $this->trainerArea(),
@@ -53,14 +64,10 @@ class TrainerCalendarController extends Controller
             'focus' => $focus->toDateString(),
             'minDate' => $minDate->toDateString(),
             'maxDate' => $maxDate->toDateString(),
+            // For "Oggi, lunedì 19 ottobre · 2 sedute", whatever period is shown.
+            'todayCount' => $profile === null ? 0 : $this->sessions($profile, $today, $today->addDay())->count(),
             // No profile yet (registration not sent): nothing to show.
-            'events' => $profile === null ? [] : $profile->bookings()
-                // The requests still waiting take the slot too.
-                ->where(fn (Builder $query) => $query
-                    ->where('status', BookingStatus::Confirmed)
-                    ->orWhere(fn (Builder $query) => $query->awaitingAnswer()))
-                ->where('starts_at', '>=', $from->utc())
-                ->where('starts_at', '<', $to->utc())
+            'events' => $profile === null ? [] : $this->sessions($profile, $from, $to)
                 ->with(TrainerSessions::WITH)
                 ->orderBy('starts_at')
                 ->get()
@@ -78,6 +85,22 @@ class TrainerCalendarController extends Controller
                 ])
                 ->all(),
         ]);
+    }
+
+    /**
+     * The sessions starting between two Rome days: confirmed, and the
+     * requests still waiting (they take the slot too).
+     *
+     * @return HasMany<Booking, TrainerProfile>
+     */
+    private function sessions(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $to): HasMany
+    {
+        return $profile->bookings()
+            ->where(fn (Builder $query) => $query
+                ->where('status', BookingStatus::Confirmed)
+                ->orWhere(fn (Builder $query) => $query->awaitingAnswer()))
+            ->where('starts_at', '>=', $from->utc())
+            ->where('starts_at', '<', $to->utc());
     }
 
     /** The day in `?giorno=2026-11-01`; today when it is missing or not a real day. */

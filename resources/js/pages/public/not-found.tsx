@@ -118,5 +118,3 @@ export default function NotFound() {
         </>
     );
 }
-
-NotFound.layout = { footer: 'compact' };

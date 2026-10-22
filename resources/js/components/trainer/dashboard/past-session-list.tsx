@@ -3,7 +3,7 @@ import NoShowButton from '@/components/trainer/no-show-button';
 import { Badge } from '@/components/ui/badge';
 import { romeParts } from '@/lib/calendar';
 import { formatDayLong, formatTimeRange } from '@/lib/format';
-import { show as showClient } from '@/routes/trainer/clients';
+import { clients } from '@/routes/trainer';
 import type { TrainerPastSession } from '@/types';
 
 /**
@@ -37,7 +37,11 @@ export default function PastSessionList({
                                     session.clientName
                                 ) : (
                                     <Link
-                                        href={showClient(session.clientId)}
+                                        href={clients({
+                                            query: {
+                                                cliente: session.clientId,
+                                            },
+                                        })}
                                         className="hover:underline"
                                     >
                                         {session.clientName}
@@ -45,7 +49,9 @@ export default function PastSessionList({
                                 )}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                                {session.serviceName} · {session.placeLabel}
+                                {session.serviceName}
+                                {session.placeLabel &&
+                                    ` · ${session.placeLabel}`}
                             </span>
                         </span>
                         <span className="flex items-center gap-2">

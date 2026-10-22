@@ -3,6 +3,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import TrainerCard from '@/components/trainer/trainer-card';
 import { Button } from '@/components/ui/button';
+import { useFavorite } from '@/hooks/use-favorite';
 import { searchUrl } from '@/lib/search';
 import type { TrainerSummary } from '@/types';
 
@@ -137,20 +138,40 @@ export default function FeaturedTrainers({ trainers }: FeaturedTrainersProps) {
                     </div>
                 </div>
             </div>
+            {/*
+             * The sideways scroll cuts what sticks out of the row: room above
+             * and below (taken back with negative margins) for the lift and
+             * the shadow of the cards on hover.
+             */}
             <div
                 ref={trackRef}
-                className="flex snap-x snap-mandatory scroll-px-4 [scrollbar-width:none] gap-3 overflow-x-auto px-4 pb-1 md:scroll-px-8 md:px-8 lg:gap-6 [&::-webkit-scrollbar]:hidden"
+                className="-mt-2 -mb-10 flex snap-x snap-mandatory scroll-px-4 [scrollbar-width:none] gap-3 overflow-x-auto px-4 pt-2 pb-10 md:scroll-px-8 md:px-8 lg:gap-6 [&::-webkit-scrollbar]:hidden"
             >
                 {trainers.map((trainer) => (
-                    <TrainerCard
-                        key={trainer.slug}
-                        trainer={trainer}
-                        layout="featured"
-                        // Three cards and two gaps fill the row on desktop.
-                        className="w-68 shrink-0 snap-start md:w-80 lg:w-[calc((100%-3rem)/3)]"
-                    />
+                    <FeaturedCard key={trainer.slug} trainer={trainer} />
                 ))}
             </div>
         </section>
+    );
+}
+
+/** One card of the carousel, like the search results: each heart keeps its own state. */
+function FeaturedCard({ trainer }: { trainer: TrainerSummary }) {
+    const favorite = useFavorite(trainer.slug, trainer.favorite ?? false);
+
+    return (
+        <TrainerCard
+            trainer={trainer}
+            favorite={
+                favorite.canSave
+                    ? {
+                          pressed: favorite.pressed,
+                          onPressedChange: favorite.change,
+                      }
+                    : undefined
+            }
+            // Three cards and two gaps fill the row on desktop.
+            className="w-76 shrink-0 snap-start md:w-80 lg:w-[calc((100%-3rem)/3)]"
+        />
     );
 }

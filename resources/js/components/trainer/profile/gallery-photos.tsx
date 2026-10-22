@@ -1,8 +1,8 @@
 import { router } from '@inertiajs/react';
-import { ImagePlus, Trash2 } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import TrainerPhotoController from '@/actions/App/Http/Controllers/TrainerPhotoController';
-import { Button } from '@/components/ui/button';
+import NumberedSection from '@/components/trainer/area/numbered-section';
 import { Spinner } from '@/components/ui/spinner';
 import { shrinkImage } from '@/lib/image';
 
@@ -15,9 +15,9 @@ type GalleryPhotosProps = {
 };
 
 /**
- * "Foto della galleria": the photos of the carousel after the profile
- * photo. Each action (add, delete) is saved right away by
- * TrainerPhotoController, not with "Salva modifiche".
+ * "Foto della galleria" (section 2 of "Il mio profilo"): the photos of the
+ * carousel after the profile photo. Each action (add, delete) is saved right
+ * away by TrainerPhotoController, not with "Salva modifiche".
  */
 export default function GalleryPhotos({ photos, max }: GalleryPhotosProps) {
     const fileInput = useRef<HTMLInputElement>(null);
@@ -66,28 +66,27 @@ export default function GalleryPhotos({ photos, max }: GalleryPhotosProps) {
         });
 
     return (
-        <section
-            aria-labelledby="gallery-title"
-            className="flex flex-col gap-4 rounded-[20px] border bg-card p-5 md:p-6"
-        >
-            <h2 id="gallery-title" className="text-lg font-semibold">
-                Foto della galleria{' '}
-                <span className="text-sm font-normal text-muted-foreground tabular-nums">
+        <NumberedSection
+            step={2}
+            title="Foto della galleria"
+            description="JPG o PNG, almeno 800 × 500 px. Puoi sceglierne più di una insieme."
+            action={
+                <span className="inline-flex h-6.5 items-center rounded-full bg-secondary px-2.5 text-xs font-semibold tabular-nums">
                     {photos.length} di {max}
                 </span>
-            </h2>
-
+            }
+        >
             {message && (
                 <p role="alert" className="text-sm text-destructive">
                     {message}
                 </p>
             )}
 
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
                 {photos.map((photo, index) => (
                     <li
                         key={photo.id}
-                        className="relative aspect-4/3 overflow-hidden rounded-lg border bg-muted"
+                        className="relative aspect-8/5 overflow-hidden rounded-[14px] bg-sidebar-accent"
                     >
                         <img
                             src={photo.url}
@@ -95,16 +94,14 @@ export default function GalleryPhotos({ photos, max }: GalleryPhotosProps) {
                             className="size-full object-cover"
                         />
                         {/* Deleted right away, without asking: it's only a gallery photo. */}
-                        <Button
+                        <button
                             type="button"
-                            variant="secondary"
-                            size="icon"
-                            aria-label={`Elimina la foto ${index + 1}`}
+                            aria-label={`Rimuovi foto ${index + 1}`}
                             onClick={() => remove(photo)}
-                            className="absolute right-2 bottom-2 size-8 rounded-full shadow-sm"
+                            className="absolute top-1.5 right-1.5 flex size-8 items-center justify-center rounded-full bg-background text-foreground shadow-sm hover:bg-secondary"
                         >
-                            <Trash2 />
-                        </Button>
+                            <X aria-hidden="true" className="size-3.5" />
+                        </button>
                     </li>
                 ))}
 
@@ -123,31 +120,28 @@ export default function GalleryPhotos({ photos, max }: GalleryPhotosProps) {
                                 event.target.value = '';
                             }}
                         />
-                        <Button
+                        <button
                             type="button"
-                            variant="outline"
                             disabled={uploading}
                             onClick={() => fileInput.current?.click()}
-                            className="flex aspect-4/3 h-auto w-full flex-col gap-2 rounded-lg border-dashed text-muted-foreground"
+                            className="flex aspect-8/5 w-full flex-col items-center justify-center gap-1.5 rounded-[14px] border-[1.5px] border-dashed border-input bg-muted/50 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-foreground hover:text-foreground disabled:cursor-default"
                         >
                             {uploading ? (
                                 <Spinner />
                             ) : (
-                                <ImagePlus
-                                    aria-hidden="true"
-                                    className="size-6"
-                                />
+                                <Plus aria-hidden="true" className="size-5.5" />
                             )}
                             {uploading ? 'Caricamento…' : 'Aggiungi foto'}
-                        </Button>
+                        </button>
                     </li>
                 )}
             </ul>
 
-            <p className="text-xs text-muted-foreground">
-                JPG o PNG, almeno 800 × 500 px. Puoi sceglierne più di una
-                insieme.
-            </p>
-        </section>
+            {photos.length === 0 && (
+                <p className="text-[13px] leading-4.5 text-muted-foreground">
+                    I profili con qualche foto ricevono più visite.
+                </p>
+            )}
+        </NumberedSection>
     );
 }

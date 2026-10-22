@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\BookingStatus;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
 use App\Models\Booking;
@@ -59,13 +58,11 @@ Artisan::command('bookings:expire', function () {
     $count = 0;
 
     Booking::query()
-        ->where('status', BookingStatus::Pending)
-        ->where('expires_at', '<=', now())
+        ->overdue()
         ->with('trainerProfile.workingHours')
         ->chunkById(100, function ($bookings) use (&$count) {
             foreach ($bookings as $booking) {
-                $booking->forceFill(['status' => BookingStatus::Expired])->save();
-                $booking->record('expired');
+                $booking->expire();
                 TrainerSlots::refresh($booking->trainerProfile);
                 $count++;
             }

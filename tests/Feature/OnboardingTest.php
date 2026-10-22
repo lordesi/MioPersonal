@@ -133,23 +133,23 @@ class OnboardingTest extends TestCase
         $client = User::factory()->create();
 
         $this->actingAs($client)->put(route('client.complete-profile.update'), [])->assertSessionHasNoErrors();
-        $this->put(route('client.complete-profile.update'), ['goal' => 'fitness'])->assertSessionHasNoErrors();
+        $this->put(route('client.complete-profile.update'), ['goal' => 'weight_loss'])->assertSessionHasNoErrors();
 
         $this->assertSame(1, ClientPreference::count());
-        $this->assertSame(TrainingGoal::Fitness, $client->clientPreference()->firstOrFail()->goal);
+        $this->assertSame(TrainingGoal::WeightLoss, $client->clientPreference()->firstOrFail()->goal);
     }
 
     public function test_edit_profile_page_shows_the_saved_answers_in_the_client_area()
     {
         $client = User::factory()->create();
-        $client->clientPreference()->create(['goal' => TrainingGoal::Strength]);
+        $client->clientPreference()->create(['goal' => TrainingGoal::Muscle]);
 
         $this->actingAs($client)
             ->get(route('client.profile'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('client/edit-profile')
-                ->where('preferences.goal', 'strength')
+                ->where('preferences.goal', 'muscle')
                 ->has('disciplines')
                 ->has('cities')
             );
@@ -168,6 +168,21 @@ class OnboardingTest extends TestCase
         $preference = $client->clientPreference()->firstOrFail();
         $this->assertSame(TrainingGoal::Wellbeing, $preference->goal);
         $this->assertSame(TrainingMode::Online, $preference->mode);
+    }
+
+    public function test_edit_profile_accepts_only_the_new_goals()
+    {
+        $client = User::factory()->create();
+
+        // A name of the old list.
+        $this->actingAs($client)
+            ->from(route('client.profile'))
+            ->put(route('client.profile.update'), ['goal' => 'fitness'])
+            ->assertSessionHasErrors(['goal' => 'Scegli il tuo obiettivo tra quelli proposti.']);
+
+        $this->put(route('client.profile.update'), ['goal' => 'endurance'])->assertSessionHasNoErrors();
+
+        $this->assertSame(TrainingGoal::Endurance, $client->clientPreference()->firstOrFail()->goal);
     }
 
     public function test_complete_profile_rejects_unknown_values()

@@ -95,6 +95,10 @@ class CreateBooking
                 // One booking at a time for this trainer, until the transaction ends.
                 TrainerProfile::whereKey($profile->id)->lockForUpdate()->first();
 
+                // Requests not answered in time, if bookings:expire hasn't run yet:
+                // still "pending", they would keep the slot for `bookings_no_overlap`.
+                $profile->bookings()->overdue()->get()->each(fn (Booking $request) => $request->expire());
+
                 if (! TrainerSlots::isFree($profile, $start, $minutes)) {
                     throw ValidationException::withMessages(['start' => self::SLOT_TAKEN]);
                 }
@@ -187,7 +191,7 @@ class CreateBooking
 
     /**
      * The profile page doesn't ask where: "Online" for online services, the
-     * place when the trainer has only one, otherwise they agree on it.
+     * place when the trainer has only one, otherwise empty (the pages hide it).
      */
     private function placeLabel(TrainerProfile $profile, bool $online): string
     {
@@ -199,7 +203,7 @@ class CreateBooking
             ->reject(fn (TrainerPlace $place) => $place->type === PlaceType::Online);
 
         if ($places->count() !== 1) {
-            return 'Da concordare con il trainer';
+            return '';
         }
 
         /** @var TrainerPlace $place */

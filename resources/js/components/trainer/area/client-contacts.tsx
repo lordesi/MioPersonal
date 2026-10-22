@@ -1,72 +1,71 @@
-import { Lock, Mail, MessageCircle, Phone } from 'lucide-react';
+import { Mail, MessageCircle, Phone } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useId } from 'react';
 import { Button } from '@/components/ui/button';
-import type { TrainerClientProfile } from '@/types';
+import type { TrainerClient } from '@/types';
 
 type ClientContactsProps = {
-    firstName: string;
-    contacts: TrainerClientProfile['contacts'];
+    name: string;
+    contacts: TrainerClient['contacts'];
 };
 
 /**
- * "Contatti" of the client's profile. Before the trainer confirms a booking
- * the server sends no contacts at all, and the card says how to get them.
+ * "Contatti" in the card of "Clienti": phone, email and WhatsApp. Without a
+ * phone number only the email is left.
  */
 export default function ClientContacts({
-    firstName,
+    name,
     contacts,
 }: ClientContactsProps) {
-    return (
-        <section
-            aria-labelledby="client-contacts-title"
-            className="flex flex-col gap-3 rounded-[20px] border bg-card p-5 md:p-6"
-        >
-            <h2 id="client-contacts-title" className="text-lg font-semibold">
-                Contatti
-            </h2>
+    const titleId = useId();
+    const phone = contacts.phone;
 
-            {contacts === null ? (
-                <p className="flex items-start gap-2.5 rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-                    <Lock
-                        aria-hidden="true"
-                        className="mt-0.5 size-4 flex-none"
+    return (
+        <section aria-labelledby={titleId} className="flex flex-col gap-3">
+            <h3 id={titleId} className="text-[15px] leading-5.5 font-semibold">
+                Contatti
+            </h3>
+
+            <ul className="flex flex-col overflow-hidden rounded-[14px] border">
+                {phone && (
+                    <ContactRow
+                        icon={Phone}
+                        label="Telefono"
+                        value={phone}
+                        href={`tel:${phone.replace(/\s/g, '')}`}
+                        action="Chiama"
+                        actionLabel={`Chiama ${name}`}
                     />
-                    I contatti di {firstName} compaiono quando confermi una
-                    prenotazione.
-                </p>
-            ) : (
-                <div className="flex flex-col">
-                    <ContactRow icon={Mail} value={contacts.email}>
-                        <Button asChild variant="outline" size="sm">
-                            <a href={`mailto:${contacts.email}`}>
-                                Scrivi email
-                            </a>
-                        </Button>
-                    </ContactRow>
-                    {contacts.phone && (
-                        <ContactRow icon={Phone} value={contacts.phone}>
-                            <Button asChild variant="outline" size="sm">
-                                <a
-                                    href={`tel:${contacts.phone.replace(/\s/g, '')}`}
-                                >
-                                    Chiama
-                                </a>
-                            </Button>
-                            <Button asChild variant="outline" size="sm">
-                                {/* wa.me wants the number with the prefix, digits only. */}
-                                <a
-                                    href={`https://wa.me/${contacts.phone.replace(/\D/g, '')}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                >
-                                    <MessageCircle aria-hidden="true" />
-                                    WhatsApp
-                                </a>
-                            </Button>
-                        </ContactRow>
-                    )}
-                </div>
+                )}
+                <ContactRow
+                    icon={Mail}
+                    label="Email"
+                    value={contacts.email}
+                    href={`mailto:${contacts.email}`}
+                    action="Scrivi"
+                    actionLabel={`Scrivi una email a ${name}`}
+                />
+            </ul>
+
+            {phone && (
+                <Button
+                    asChild
+                    className="h-12 gap-2.5 rounded-xl text-[15px] font-semibold"
+                >
+                    {/* wa.me wants the number with the prefix, digits only. */}
+                    <a
+                        href={`https://wa.me/${phone.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`Scrivi a ${name} su WhatsApp`}
+                    >
+                        <MessageCircle
+                            aria-hidden="true"
+                            className="size-4.5"
+                        />
+                        Scrivi su WhatsApp
+                    </a>
+                </Button>
             )}
         </section>
     );
@@ -74,23 +73,39 @@ export default function ClientContacts({
 
 function ContactRow({
     icon: Icon,
+    label,
     value,
-    children,
+    href,
+    action,
+    actionLabel,
 }: {
     icon: LucideIcon;
+    label: string;
     value: string;
-    children: ReactNode;
+    href: string;
+    action: string;
+    actionLabel: string;
 }) {
     return (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b py-3 last:border-b-0">
-            <Icon
-                aria-hidden="true"
-                className="size-4 flex-none text-muted-foreground"
-            />
-            <span className="min-w-0 flex-1 text-[15px] break-all">
-                {value}
+        <li className="flex items-center gap-3 border-t py-2.5 pr-2.5 pl-3 first:border-t-0">
+            <span className="flex size-9 flex-none items-center justify-center rounded-[10px] bg-muted">
+                <Icon aria-hidden="true" className="size-4" />
             </span>
-            <div className="flex gap-2">{children}</div>
-        </div>
+            <span className="flex min-w-0 flex-1 flex-col">
+                <span className="text-xs text-muted-foreground">{label}</span>
+                <span className="truncate text-sm font-semibold tabular-nums">
+                    {value}
+                </span>
+            </span>
+            <Button
+                asChild
+                variant="outline"
+                className="h-9 flex-none rounded-[9px] px-3 text-[13px] font-semibold"
+            >
+                <a href={href} aria-label={actionLabel}>
+                    {action}
+                </a>
+            </Button>
+        </li>
     );
 }

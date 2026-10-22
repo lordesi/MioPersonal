@@ -137,12 +137,7 @@ class TrainerNoShowTest extends TestCase
                 ->where('clients.0.done', 1)
                 ->where('clients.0.missed', 1)
                 ->where('clients.0.attendance.withYou', ['rate' => 50, 'sessions' => 2])
-            );
-
-        $this->actingAs($trainer->user)
-            ->get(route('trainer.clients.show', $client))
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('client.attendance.platform', ['rate' => 50, 'sessions' => 2])
+                ->where('clients.0.attendance.platform', ['rate' => 50, 'sessions' => 2])
             );
     }
 }

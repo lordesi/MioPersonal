@@ -59,7 +59,7 @@ type AccountMenuProps = {
     userName: string;
     /** Number on "Preferiti" (client), hidden when 0. By default the one shared by the server. */
     favoritesCount?: number;
-    /** "Il mio profilo pubblico" (trainer), hidden when missing. */
+    /** "Vedi profilo pubblico" (trainer), hidden when missing. */
     publicProfileHref?: string;
     /** The mobile menu opens right under the header: pass its height. */
     headerHeight?: 15 | 16;
@@ -93,7 +93,7 @@ function menuGroups({
                 ...(publicProfileHref
                     ? [
                           {
-                              title: 'Il mio profilo pubblico',
+                              title: 'Vedi profilo pubblico',
                               href: publicProfileHref,
                               icon: Eye,
                           },

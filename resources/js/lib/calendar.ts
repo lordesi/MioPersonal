@@ -81,9 +81,29 @@ export function sessionsLabel(count: number): string {
     return count === 1 ? '1 seduta' : `${count} sedute`;
 }
 
+/** 1 → "1 ora", 2 → "2 ore", 1.5 → "1,5 ore": the hours of sessions of a day or week. */
+export function hoursAmountLabel(hours: number): string {
+    const rounded = Math.round(hours * 10) / 10;
+
+    return rounded === 1 ? '1 ora' : `${rounded.toLocaleString('it-IT')} ore`;
+}
+
+/** "Giorgio Montana" → "G. Montana", for the small cells of the month. */
+export function shortName(name: string): string {
+    const parts = name.trim().split(/\s+/u);
+
+    return parts.length > 1
+        ? `${parts[0].charAt(0)}. ${parts.slice(1).join(' ')}`
+        : name;
+}
+
 /** A session drawn in the calendar, confirmed or waiting for an answer. */
 export type CalendarItem = {
     key: string;
+    /** The booking: to select it and show its details. */
+    id: number;
+    /** For the link to the client's page; null once the account is deleted. */
+    clientId: number | null;
     /** Rome day "YYYY-MM-DD". */
     date: string;
     /** Hours as numbers, 07:30 → 7.5. */
@@ -105,6 +125,8 @@ export function calendarItems(events: CalendarEvent[]): CalendarItem[] {
 
         return {
             key: `event-${event.id}`,
+            id: event.id,
+            clientId: event.clientId,
             date: start.date,
             from: start.hour,
             // A session ending at midnight ends at 24, not at 0.

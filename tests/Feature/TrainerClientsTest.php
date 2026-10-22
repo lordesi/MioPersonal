@@ -91,4 +91,44 @@ class TrainerClientsTest extends TestCase
                 ->where('clients.3.id', $old->client_id)
             );
     }
+
+    public function test_the_contacts_of_each_client_are_sent()
+    {
+        $trainer = TrainerProfile::factory()->approved()->create();
+        $client = User::factory()->create(['email' => 'marco@example.com', 'phone' => '+39 345 000 0000']);
+        Booking::factory()->for($trainer)->for($client, 'client')->confirmed()->create();
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.clients'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('clients.0.contacts', [
+                    'email' => 'marco@example.com',
+                    'phone' => '+39 345 000 0000',
+                ])
+            );
+    }
+
+    /** The links of Panoramica and Calendario open Clienti on that client. */
+    public function test_the_client_in_the_url_is_selected()
+    {
+        $trainer = TrainerProfile::factory()->approved()->create();
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.clients', ['cliente' => 37]))
+            ->assertInertia(fn (Assert $page) => $page->where('selectedId', 37));
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.clients'))
+            ->assertInertia(fn (Assert $page) => $page->where('selectedId', null));
+    }
+
+    /** The old "scheda" page is gone. */
+    public function test_the_client_profile_page_no_longer_exists()
+    {
+        $booking = Booking::factory()->for(TrainerProfile::factory()->approved())->confirmed()->create();
+
+        $this->actingAs($booking->trainerProfile->user)
+            ->get('/area-trainer/clienti/'.$booking->client_id)
+            ->assertNotFound();
+    }
 }
