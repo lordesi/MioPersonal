@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Enums\BookingStatus;
 use App\Models\Booking;
+use App\Models\TrainerProfile;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -22,7 +24,7 @@ class AccountSettingsTest extends TestCase
 
     public function test_page_shows_the_account()
     {
-        $user = User::factory()->create(['first_name' => 'Lorenzo', 'last_name' => 'De Simone', 'phone' => '+393330000000']);
+        $user = User::factory()->create(['first_name' => 'Lorenzo', 'last_name' => 'De Simone', 'phone' => '+393475218846']);
 
         $this->actingAs($user)
             ->get(route('account.settings'))
@@ -31,7 +33,7 @@ class AccountSettingsTest extends TestCase
                 ->component('client/settings')
                 ->where('account.firstName', 'Lorenzo')
                 ->where('account.lastName', 'De Simone')
-                ->where('account.phone', '+393330000000')
+                ->where('account.phone', '+393475218846')
                 ->where('account.email', $user->email)
                 ->where('account.hasPassword', true)
                 ->where('account.passwordChangedAt', null)
@@ -61,7 +63,7 @@ class AccountSettingsTest extends TestCase
             ->patch(route('account.personal.update'), [
                 'first_name' => ' Luca ',
                 'last_name' => 'Moretti',
-                'phone' => '333 000 0000',
+                'phone' => '347 521 8846',
             ])
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('account.settings'));
@@ -69,31 +71,50 @@ class AccountSettingsTest extends TestCase
         $user->refresh();
         $this->assertSame('Luca', $user->first_name);
         $this->assertSame('Moretti', $user->last_name);
-        $this->assertSame('+393330000000', $user->phone);
+        $this->assertSame('+393475218846', $user->phone);
     }
 
     public function test_the_phone_can_not_be_removed()
     {
-        $user = User::factory()->create(['phone' => '+393330000000']);
+        $user = User::factory()->create(['phone' => '+393475218846']);
 
         $this->actingAs($user)
             ->from(route('account.settings'))
             ->patch(route('account.personal.update'), ['first_name' => 'Luca', 'last_name' => 'Moretti', 'phone' => ''])
             ->assertSessionHasErrors('phone');
 
-        $this->assertSame('+393330000000', $user->refresh()->phone);
+        $this->assertSame('+393475218846', $user->refresh()->phone);
     }
 
     public function test_the_phone_must_have_10_digits()
     {
-        $user = User::factory()->create(['phone' => '+393330000000']);
+        $user = User::factory()->create(['phone' => '+393475218846']);
 
         $this->actingAs($user)
             ->from(route('account.settings'))
             ->patch(route('account.personal.update'), ['first_name' => 'Luca', 'last_name' => 'Moretti', 'phone' => '333 000 00000'])
             ->assertSessionHasErrors('phone');
 
-        $this->assertSame('+393330000000', $user->refresh()->phone);
+        $this->assertSame('+393475218846', $user->refresh()->phone);
+    }
+
+    public function test_the_own_phone_can_be_kept_but_not_another_accounts()
+    {
+        $user = User::factory()->create(['phone' => '+393475218846']);
+        User::factory()->create(['phone' => '+393512349087']);
+
+        // Saving again with the same number: it is the user's own.
+        $this->actingAs($user)
+            ->from(route('account.settings'))
+            ->patch(route('account.personal.update'), ['first_name' => 'Luca', 'last_name' => 'Moretti', 'phone' => '347 521 8846'])
+            ->assertSessionHasNoErrors();
+
+        $this->actingAs($user)
+            ->from(route('account.settings'))
+            ->patch(route('account.personal.update'), ['first_name' => 'Luca', 'last_name' => 'Moretti', 'phone' => '351 234 9087'])
+            ->assertSessionHasErrors(['phone' => 'Esiste già un account con questo numero.']);
+
+        $this->assertSame('+393475218846', $user->refresh()->phone);
     }
 
     public function test_personal_data_requires_name_surname_and_phone()
@@ -185,7 +206,8 @@ class AccountSettingsTest extends TestCase
             ->get(route('account.settings'))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('pendingBookingTrainers', [$future->trainerProfile->user->name])
-                ->where('account.providers.0', ['name' => 'Google', 'connected' => true])
+                ->where('account.providers.0.name', 'Google')
+                ->where('account.providers.0.connected', true)
             );
     }
 
@@ -197,12 +219,61 @@ class AccountSettingsTest extends TestCase
             ->at(CarbonImmutable::now()->subWeek())->create();
 
         $this->actingAs($client)
-            ->delete(route('profile.destroy'), ['password' => 'password'])
+            ->delete(route('profile.destroy'), ['password' => 'password', 'confirmation' => 'ELIMINA'])
             ->assertSessionHasNoErrors();
 
         $this->assertSame(BookingStatus::Cancelled, $future->refresh()->status);
         // The trainer keeps the past session, without the client.
         $this->assertSame(BookingStatus::Confirmed, $past->refresh()->status);
         $this->assertNull($past->client_id);
+    }
+
+    public function test_deleting_the_account_needs_elimina()
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->delete(route('profile.destroy'), ['password' => 'password', 'confirmation' => 'cancella'])
+            ->assertSessionHasErrors(['confirmation' => 'Scrivi ELIMINA per confermare.']);
+
+        $this->assertNotNull($user->fresh());
+
+        // Lower case and spaces are fine.
+        $this->delete(route('profile.destroy'), ['password' => 'password', 'confirmation' => ' elimina '])
+            ->assertSessionHasNoErrors();
+
+        $this->assertNull($user->fresh());
+    }
+
+    public function test_who_signed_up_with_google_deletes_the_account_without_a_password()
+    {
+        $user = User::factory()->create(['password' => null]);
+
+        $this->actingAs($user)
+            ->delete(route('profile.destroy'), ['confirmation' => 'ELIMINA'])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/');
+
+        $this->assertGuest();
+        $this->assertNull($user->fresh());
+    }
+
+    public function test_deleting_a_trainer_account_removes_the_profile_and_its_files()
+    {
+        Storage::fake('public');
+        Storage::fake('local');
+        $profile = TrainerProfile::factory()->create();
+        Storage::disk('public')->put('trainers/photo.jpg', 'jpg');
+        Storage::disk('local')->put('trainers/certificate.pdf', 'pdf');
+        $profile->photos()->create(['path' => 'trainers/photo.jpg', 'is_portrait' => true]);
+        $profile->documents()->create(['title' => 'Attestato', 'path' => 'trainers/certificate.pdf']);
+
+        $this->actingAs($profile->user)
+            ->delete(route('profile.destroy'), ['password' => 'password', 'confirmation' => 'ELIMINA'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(0, TrainerProfile::count());
+        Storage::disk('public')->assertMissing('trainers/photo.jpg');
+        Storage::disk('local')->assertMissing('trainers/certificate.pdf');
     }
 }

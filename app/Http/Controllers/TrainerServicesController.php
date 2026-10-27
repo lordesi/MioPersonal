@@ -14,11 +14,11 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * "Servizi e prezzi": an approved trainer changes the kinds of session and
- * their prices, the first session and the packages (step 4 of "Diventa
- * trainer"). Saved changes are public right away, without a new review,
- * like "Modifica profilo". Before the approval they are changed from
- * "Diventa trainer" instead.
+ * "Servizi e prezzi": the trainer changes the kinds of session and their
+ * prices, the first session and the packages (step 4 of "Diventa trainer"),
+ * also while the profile waits for the approval, like "Disponibilità".
+ * Saved changes are public right away, without a new review, like
+ * "Modifica profilo".
  */
 class TrainerServicesController extends Controller
 {
@@ -27,22 +27,19 @@ class TrainerServicesController extends Controller
     public function show(Request $request): Response
     {
         $profile = $this->profile($request);
-        $editable = $profile?->isApproved() ?? false;
 
         return Inertia::render('trainer/services', [
             'trainerArea' => $this->trainerArea(),
-            // null: not approved yet, the page links to "Diventa trainer".
-            'pricing' => $editable ? TrainerDraft::pricing($profile) : null,
+            // null: the registration was never sent, the page links to "Diventa trainer".
+            'pricing' => $profile === null ? null : TrainerDraft::pricing($profile),
             // Separate online prices only for who trains both online and in person.
-            'asksOnlinePrice' => $editable && $profile->trains_online && $profile->trains_in_person,
+            'asksOnlinePrice' => $profile !== null && $profile->trains_online && $profile->trains_in_person,
         ]);
     }
 
     public function update(TrainerServicesRequest $request, SaveTrainerServices $saver): RedirectResponse
     {
-        $profile = $this->profile($request);
-
-        abort_unless($profile?->isApproved() ?? false, 403);
+        $profile = $this->profile($request) ?? abort(404);
 
         $saver->handle($profile, $request->validated());
 

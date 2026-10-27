@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
-use App\Models\Booking;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\TrainerSlots;
@@ -48,38 +47,41 @@ class TrainerProfileSettingsTest extends TestCase
         CarbonImmutable::setTestNow();
     }
 
-    public function test_metti_in_pausa_hides_the_profile_until_it_is_turned_back_on()
+    public function test_a_pause_until_a_chosen_day()
+    {
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-10-11 10:00', 'Europe/Rome'));
+        $profile = TrainerProfile::factory()->approved()->create();
+        $switches = ['visible_in_search' => true, 'accepts_new_clients' => true];
+
+        $this->actingAs($profile->user)
+            ->patch(route('trainer.visibility.update'), [...$switches, 'pause' => 'custom', 'pause_until' => '2026-11-08'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('2026-11-08 00:00', $profile->refresh()->paused_until?->setTimezone('Europe/Rome')->format('Y-m-d H:i'));
+
+        // Not today, not without a day, not longer than a year.
+        $this->patch(route('trainer.visibility.update'), [...$switches, 'pause' => 'custom', 'pause_until' => '2026-10-11'])
+            ->assertSessionHasErrors(['pause_until' => 'Scegli un giorno a partire da domani.']);
+        $this->patch(route('trainer.visibility.update'), [...$switches, 'pause' => 'custom'])
+            ->assertSessionHasErrors('pause_until');
+        $this->patch(route('trainer.visibility.update'), [...$switches, 'pause' => 'custom', 'pause_until' => '2027-10-12'])
+            ->assertSessionHasErrors(['pause_until' => 'La pausa può durare al massimo un anno.']);
+
+        $this->assertSame('2026-11-08', $profile->refresh()->paused_until?->setTimezone('Europe/Rome')->toDateString());
+
+        CarbonImmutable::setTestNow();
+    }
+
+    public function test_riprendi_ora_also_ends_the_pause_without_an_end()
     {
         // refresh(): the rules with a default in the database (e.g. booking_window_days).
         $profile = TrainerProfile::factory()->approved()->bookable()->create()->refresh();
+        $profile->forceFill(['paused_at' => now()])->save();
         TrainerSlots::refresh($profile);
-        $this->assertNotNull($profile->next_free_slot_at);
-
-        $this->actingAs($profile->user)
-            ->patch(route('trainer.pause.update'), ['paused' => true])
-            ->assertSessionHasNoErrors();
-
-        $profile->refresh();
-        $this->assertNotNull($profile->paused_at);
-        // Out of the search, and no free slots.
         $this->assertFalse(TrainerProfile::published()->whereKey($profile->id)->exists());
-        $this->assertNull($profile->next_free_slot_at);
-        $this->get(route('trainer.settings'))
-            ->assertInertia(fn (Assert $page) => $page->where('visibility.paused', true));
 
-        // Nobody can book, not even with an old link to a slot.
-        $this->actingAs(User::factory()->create())
-            ->post(route('trainers.book', $profile->slug), [
-                'service_id' => $profile->services()->where('minutes', 60)->value('id'),
-                'start' => now()->addDays(2)->setTime(18, 0)->toIso8601String(),
-                'minutes' => 60,
-            ])
-            ->assertSessionHasErrors(['start' => 'Al momento questo trainer non accetta prenotazioni.']);
-        $this->assertSame(0, Booking::count());
-
-        // "Riattiva profilo".
         $this->actingAs($profile->user)
-            ->patch(route('trainer.pause.update'), ['paused' => false])
+            ->patch(route('trainer.visibility.update'), ['visible_in_search' => true, 'accepts_new_clients' => true, 'pause' => 'none'])
             ->assertSessionHasNoErrors();
 
         $profile->refresh();
@@ -104,6 +106,12 @@ class TrainerProfileSettingsTest extends TestCase
         $this->assertFalse($profile->show_phone);
         $this->assertTrue($profile->show_email);
         $this->assertSame('Citofono «Studio 3B»', $profile->arrival_notes);
+
+        $this->patch(route('trainer.contacts.update'), [
+            'show_phone' => true,
+            'show_email' => true,
+            'arrival_notes' => str_repeat('a', 301),
+        ])->assertSessionHasErrors(['arrival_notes' => 'Le indicazioni possono avere al massimo 300 caratteri.']);
     }
 
     public function test_closing_the_profile_deletes_it_and_the_trainer_becomes_a_client()

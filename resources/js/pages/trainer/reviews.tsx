@@ -64,7 +64,7 @@ export default function Reviews({ summary, reviews }: ReviewsProps) {
                 <EmptyState
                     icon={Star}
                     title="Ancora nessuna recensione"
-                    description="Dopo una seduta svolta il cliente può lasciarti una recensione: la trovi qui e puoi rispondere."
+                    description="I clienti possono lasciare una recensione solo dopo aver svolto una seduta con te."
                     bordered
                     className="rounded-3xl bg-card"
                 />

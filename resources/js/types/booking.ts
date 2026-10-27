@@ -35,9 +35,6 @@ export type SentBooking = {
     serviceName: string;
     placeLabel: string;
     priceCents: number;
-    /** The trainer answers within this many hours, or the slot is freed. */
-    confirmWithinHours: number;
-    freeCancellationHours: number;
     trainer: {
         name: string;
         firstName: string;
@@ -73,18 +70,19 @@ export type ClientPackage = {
     done: number;
     /** Sessions that take a place: done, confirmed or waiting for an answer. */
     booked: number;
-    /** ISO UTC string of the next session already booked, if any. */
-    nextStart: string | null;
 };
 
 /** A row of "I tuoi trainer". */
 export type ClientTrainer = {
     name: string;
+    firstName: string;
+    /** For the heart: the favorites are saved by slug. */
+    slug: string;
     href: string;
+    /** Sessions done together, "5 sedute insieme". */
+    sessionsDone: number;
     /** The first discipline, shown for the trainers already booked. */
     discipline: string | null;
-    /** ISO UTC string of the first free slot, null without free slots. */
-    nextSlotStart: string | null;
     favorite: boolean;
     /** At least one confirmed session with this trainer. */
     booked: boolean;

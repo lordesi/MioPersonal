@@ -41,7 +41,7 @@ function gridColumns(columns: number[]): CSSProperties {
 }
 
 /**
- * "Listino": one row for each kind of session, one column for each
+ * "Listino prezzi": one row for each kind of session, one column for each
  * duration. A cell is a price; an empty cell is a duration not offered.
  */
 export default function PriceListSection({
@@ -84,12 +84,7 @@ export default function PriceListSection({
         ]);
 
     return (
-        <SectionCard
-            step={1}
-            title="Listino"
-            description="Una riga per ogni tipo di seduta, una colonna per ogni durata. Le celle vuote non compaiono sul profilo."
-            errors={errors}
-        >
+        <SectionCard step={1} title="Listino prezzi" errors={errors}>
             <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-secondary p-3">
                 <span
                     id={columnsLabelId}
@@ -165,8 +160,7 @@ export default function PriceListSection({
                     Aggiungi un tipo di seduta
                 </Button>
                 <span className="text-[13px] leading-4.5 text-muted-foreground tabular-nums">
-                    {sessions.length} di {MAX_SESSION_TYPES} · es. calisthenics
-                    e crossfit a prezzi diversi
+                    {sessions.length} di {MAX_SESSION_TYPES}
                 </span>
             </div>
         </SectionCard>

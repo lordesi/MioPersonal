@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
-/** "Servizi e prezzi": an approved trainer changes the services, public right away. */
+/** "Servizi e prezzi": the trainer changes the services, public right away. */
 class TrainerServicesTest extends TestCase
 {
     use RefreshDatabase;
@@ -139,20 +139,36 @@ class TrainerServicesTest extends TestCase
         $this->assertSame(2, $profile->services()->count());
     }
 
-    public function test_a_profile_not_approved_yet_is_changed_from_the_registration()
+    public function test_a_profile_not_approved_yet_sees_and_saves_the_services()
     {
         $profile = TrainerProfile::factory()->status(TrainerProfileStatus::Review)->bookable()->create();
 
         $this->actingAs($profile->user)
             ->get(route('trainer.services'))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->where('pricing', null));
+            ->assertInertia(fn (Assert $page) => $page->where('pricing.sessions.0.name', 'Seduta singola'));
 
         $this->actingAs($profile->user)
             ->put(route('trainer.services.update'), $this->payload())
-            ->assertForbidden();
+            ->assertRedirect();
 
-        $this->assertSame(2, $profile->services()->count());
+        // 1 first session + 3 prices of the 2 kinds + 1 package.
+        $this->assertSame(5, $profile->services()->count());
+        $this->assertSame(TrainerProfileStatus::Review, $profile->fresh()?->status);
+    }
+
+    public function test_a_trainer_without_a_profile_is_sent_to_the_registration()
+    {
+        $trainer = User::factory()->trainer()->create();
+
+        $this->actingAs($trainer)
+            ->get(route('trainer.services'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('pricing', null));
+
+        $this->actingAs($trainer)
+            ->put(route('trainer.services.update'), $this->payload())
+            ->assertNotFound();
     }
 
     public function test_clients_cannot_open_the_page()

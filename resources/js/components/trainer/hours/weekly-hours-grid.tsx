@@ -23,7 +23,7 @@ const range = (from: number, to: number) =>
 const steps = [
     { letter: 'a', text: 'Scegli i giorni in alto' },
     { letter: 'b', text: 'Aggiungi una fascia oraria' },
-    { letter: 'c', text: 'Ritocca le singole ore con un tocco' },
+    { letter: 'c', text: 'Modifica le tue disponibilità' },
 ];
 
 /**
@@ -64,9 +64,6 @@ export default function WeeklyHoursGrid({
     onChange,
 }: WeeklyHoursGridProps) {
     const [selectedDays, setSelectedDays] = useState([0, 1, 2, 3, 4]);
-    const selectedNames = dayNames.filter((_, day) =>
-        selectedDays.includes(day),
-    );
 
     const setDay = (day: number, dayHours: number[]) =>
         onChange(
@@ -115,9 +112,12 @@ export default function WeeklyHoursGrid({
 
     return (
         <div className="flex flex-col gap-4.5">
-            <ol className="flex flex-wrap gap-x-5 gap-y-1.5 rounded-[14px] bg-secondary px-4 py-3.5 text-[13px] leading-4.5">
+            <ol className="flex flex-wrap gap-x-5 gap-y-1.5 rounded-[14px] bg-secondary px-4 py-3.5 text-[13px] leading-4.5 sm:flex-nowrap">
                 {steps.map((step) => (
-                    <li key={step.letter} className="flex items-center gap-2">
+                    <li
+                        key={step.letter}
+                        className="flex items-center gap-2 whitespace-nowrap"
+                    >
                         <span
                             aria-hidden="true"
                             className="flex size-5 items-center justify-center rounded-full bg-foreground text-[11px] font-bold text-background"
@@ -129,12 +129,12 @@ export default function WeeklyHoursGrid({
                 ))}
             </ol>
 
-            <div className="flex flex-wrap items-center gap-2">
-                <span className="mr-1 text-[13px] leading-4.5 font-semibold">
-                    {selectedNames.length > 0
-                        ? `Ai giorni selezionati (${selectedNames.join(', ')}):`
-                        : 'Seleziona almeno un giorno:'}
-                </span>
+            {/* Applied to the selected days (the black ones in the grid). */}
+            <div
+                role="group"
+                aria-label="Applica ai giorni selezionati"
+                className="flex flex-wrap items-center gap-2"
+            >
                 {groups.map((group) => (
                     <button
                         key={group.label}

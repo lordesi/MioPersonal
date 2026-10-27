@@ -1,9 +1,11 @@
 import { Link, usePage } from '@inertiajs/react';
 import { ArrowRight, Check } from 'lucide-react';
-import { nextSteps } from '@/components/onboarding/trainer/step-review';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { today } from '@/routes/trainer';
+
+/** What happens after sending: the first step is already done. */
+const nextSteps = ['Profilo inviato', 'Il team lo controlla', 'Vai online'];
 
 type SubmittedProps = {
     /** The trainer's own profile, visible only to them until it is approved. */
@@ -69,8 +71,8 @@ export default function Submitted({ previewHref }: SubmittedProps) {
             </div>
 
             <ol className="flex min-w-0 flex-[2_1_300px] flex-col gap-3.5 rounded-[20px] bg-sidebar-accent p-5">
-                {nextSteps.map((item, index) => (
-                    <li key={item.title} className="flex gap-3">
+                {nextSteps.map((title, index) => (
+                    <li key={title} className="flex items-center gap-3">
                         <span
                             className={cn(
                                 'flex size-6 flex-none items-center justify-center rounded-full text-xs font-bold tabular-nums',
@@ -89,16 +91,7 @@ export default function Submitted({ previewHref }: SubmittedProps) {
                                 index + 1
                             )}
                         </span>
-                        <span className="flex flex-col gap-0.5">
-                            <span className="text-sm font-semibold">
-                                {index === 0 ? 'Profilo inviato' : item.title}
-                            </span>
-                            <span className="text-[13px] leading-4.5 text-sidebar-muted-foreground">
-                                {index === 0
-                                    ? 'Fatto. Non devi fare altro.'
-                                    : item.text}
-                            </span>
-                        </span>
+                        <span className="text-sm font-semibold">{title}</span>
                     </li>
                 ))}
             </ol>

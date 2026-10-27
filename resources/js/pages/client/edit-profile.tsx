@@ -18,7 +18,7 @@ type EditProfileProps = {
 };
 
 /**
- * "Modifica il mio profilo": the answers of "Completa il tuo profilo"
+ * "Modifica profilo": the answers of "Completa il tuo profilo"
  * (pages/onboarding/complete-profile.tsx), changed from the client area,
  * with the black "Anteprima" panel and its "Salva modifiche" on the right.
  * After saving, the page stays open with the "Profilo aggiornato." toast.
@@ -44,12 +44,9 @@ export default function EditProfile({
 
     return (
         <>
-            <Head title="Modifica il mio profilo" />
+            <Head title="Modifica profilo" />
 
-            <PageHeading
-                title="Modifica il mio profilo"
-                description="Ci aiuta a suggerirti i trainer e gli orari giusti. Non ti chiediamo dati sulla salute."
-            />
+            <PageHeading title="Modifica profilo" />
 
             <form onSubmit={save} className="flex flex-wrap items-start gap-5">
                 <div className="flex min-w-0 flex-[3_1_560px] flex-col gap-4">

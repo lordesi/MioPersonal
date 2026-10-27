@@ -27,10 +27,6 @@ export default function ContactAside({
                 >
                     {email}
                 </a>
-                <span className="text-[13px] leading-4.75 opacity-75">
-                    Siamo un piccolo team a Milano: leggiamo tutto noi e
-                    rispondiamo in pochi giorni lavorativi.
-                </span>
             </section>
 
             <section

@@ -9,8 +9,8 @@ export type AccountSettings = {
     hasPassword: boolean;
     /** ISO UTC of the last change in "Cambia password"; null = never. */
     passwordChangedAt: string | null;
-    /** Sign-in with Google. */
-    providers: { name: string; connected: boolean }[];
+    /** Sign-in with Google; `available` is false without the keys in the .env ("Collega" hidden). */
+    providers: { name: string; connected: boolean; available: boolean }[];
 };
 
 /** What clients receive when the trainer confirms a booking. */
@@ -29,6 +29,6 @@ export type TrainerVisibility = {
     acceptsNewClients: boolean;
     /** First day bookable again ("YYYY-MM-DD", Rome); null when not paused. */
     pausedUntil: string | null;
-    /** "Metti in pausa" without an end: hidden from the search until "Riattiva profilo". */
+    /** The old "Metti in pausa" without an end: ended by "Riprendi ora". */
     paused: boolean;
 };

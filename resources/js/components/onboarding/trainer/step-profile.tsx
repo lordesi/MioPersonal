@@ -64,10 +64,7 @@ export function usePhotoPreview(draft: TrainerDraft): string | null {
 }
 
 /** The 4 required fields of step 2, with the line under each one. */
-export function profileChecks(
-    draft: TrainerDraft,
-    hasPhoto: boolean,
-): (PanelCheck & { short: string })[] {
+function profileChecks(draft: TrainerDraft, hasPhoto: boolean): PanelCheck[] {
     const bioLength = draft.bio.trim().length;
     const bioOk = bioLength >= BIO_MIN;
     const headlineOk = draft.headline.trim() !== '';
@@ -86,25 +83,21 @@ export function profileChecks(
     return [
         {
             label: 'Foto profilo',
-            short: 'foto',
             done: hasPhoto,
             hint: hasPhoto ? 'Caricata' : 'Non ancora caricata',
         },
         {
             label: 'Titolo del profilo',
-            short: 'titolo',
             done: headlineOk,
             hint: headlineOk ? 'Fatto' : 'Una riga che ti descriva',
         },
         {
             label: 'Chi sei e come lavori',
-            short: 'presentazione',
             done: bioOk,
             hint: bioHint,
         },
         {
             label: 'Anni di esperienza',
-            short: 'esperienza',
             done: experience !== undefined,
             hint: experience?.label ?? 'Scegli dall’elenco',
         },
@@ -211,20 +204,13 @@ function PhotoSection({
                 )}
 
                 <div className="flex min-w-55 flex-1 flex-col gap-2.5">
-                    <ul className="flex flex-col gap-1.5 text-[13px] leading-4.5 text-foreground/80">
-                        {[
-                            'JPG o PNG, almeno 400 × 400 px',
-                            'Viso ben visibile, luce naturale',
-                        ].map((rule) => (
-                            <li key={rule} className="flex items-center gap-2">
-                                <span
-                                    aria-hidden="true"
-                                    className="size-1.5 rounded-full bg-foreground"
-                                />
-                                {rule}
-                            </li>
-                        ))}
-                    </ul>
+                    <p className="flex items-center gap-2 text-[13px] leading-4.5 text-foreground/80">
+                        <span
+                            aria-hidden="true"
+                            className="size-1.5 rounded-full bg-foreground"
+                        />
+                        JPG o PNG, almeno 400 × 400 px
+                    </p>
                     <div className="flex flex-wrap gap-2">
                         {/* Hidden: the buttons open it. Sent with the whole registration. */}
                         <input

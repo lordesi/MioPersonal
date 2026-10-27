@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\AdminUsersController;
 use App\Http\Controllers\Admin\AdminVerificationController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Auth\RegistrationCheckController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BookingSentController;
 use App\Http\Controllers\ClientFavoritesController;
@@ -57,10 +58,16 @@ Route::inertia('cookie', 'public/cookies')->name('legal.cookies');
 // "Continua con Google": see App\Http\Controllers\Auth\GoogleAuthController.
 Route::middleware('guest')->controller(GoogleAuthController::class)->group(function () {
     Route::get('auth/google', 'redirect')->name('google.redirect');
-    Route::get('auth/google/callback', 'callback')->name('google.callback');
     Route::get('registrazione/google', 'create')->name('google.register');
     Route::post('registrazione/google', 'store')->name('google.register.store');
 });
+// Email and phone checked while the sign-up forms are filled in (see the controller).
+Route::post('registrazione/verifica', RegistrationCheckController::class)
+    ->middleware(['guest', 'throttle:20,1'])
+    ->name('register.check');
+
+// Also for logged-in users: "Collega" in the settings comes back here (the address saved on Google).
+Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
 
 Route::get('contatti', [ContactController::class, 'show'])->name('contact.show');
 Route::post('contatti', [ContactController::class, 'store'])
@@ -72,6 +79,11 @@ Route::post('contatti', [ContactController::class, 'store'])
 // page shows "Profilo inviato".
 Route::get('registrazione-trainer', [TrainerRegistrationController::class, 'show'])->name('trainer.register');
 Route::post('registrazione-trainer', [TrainerRegistrationController::class, 'store'])->name('trainer.register.store');
+// "Continua": checks the step being left (step 1 tells if an email is taken, hence the limit).
+Route::post('registrazione-trainer/passo/{step}', [TrainerRegistrationController::class, 'check'])
+    ->whereIn('step', ['1', '2', '3', '4', '5', '6'])
+    ->middleware('throttle:20,1')
+    ->name('trainer.register.check');
 
 // Clients right after sign-up, before the email is verified.
 Route::middleware(['auth', 'role:client'])->group(function () {
@@ -119,7 +131,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware('throttle:10,1')
             ->name('client.bookings.review');
         Route::get('preferiti', ClientFavoritesController::class)->name('client.favorites');
-        // "Modifica il mio profilo": the answers of "Completa il tuo profilo", inside the client area.
+        // "Modifica profilo": the answers of "Completa il tuo profilo", inside the client area.
         Route::controller(CompleteProfileController::class)->group(function () {
             Route::get('profilo', 'edit')->name('client.profile');
             Route::put('profilo', 'update')->name('client.profile.update');
@@ -131,6 +143,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('impostazioni')->name('account.')->controller(AccountSettingsController::class)->group(function () {
         Route::patch('dati-personali', 'updatePersonal')->name('personal.update');
         Route::put('password', 'updatePassword')->middleware('throttle:6,1')->name('password.update');
+    });
+    // "Collega" / "Scollega" Google in "Accesso e sicurezza".
+    Route::prefix('impostazioni/google')->name('account.google.')->controller(GoogleAuthController::class)->group(function () {
+        Route::get('collega', 'link')->name('link');
+        Route::delete('/', 'unlink')->name('unlink');
     });
 
     Route::middleware('role:trainer')->prefix('area-trainer')->name('trainer.')->group(function () {
@@ -178,8 +195,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::controller(TrainerProfileSettingsController::class)->group(function () {
             Route::patch('impostazioni/visibilita', 'updateVisibility')->name('visibility.update');
             Route::patch('impostazioni/contatti', 'updateContacts')->name('contacts.update');
-            // "Metti in pausa" / "Riattiva profilo".
-            Route::patch('impostazioni/pausa', 'updatePause')->name('pause.update');
             // "Chiudi il profilo": the account becomes a client one again.
             Route::delete('profilo', 'close')->name('profile.close');
         });

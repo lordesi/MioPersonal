@@ -4,7 +4,7 @@ type StepErrorsProps = {
     title?: string;
 };
 
-/** What to fix in this step, after "Invia per approvazione". */
+/** What to fix in this step, after "Continua" or "Invia per approvazione". */
 export default function StepErrors({
     errors,
     title = 'Da sistemare in questo passo:',

@@ -1,15 +1,15 @@
 const steps = [
     {
         title: 'Cerca',
-        text: 'Filtra per disciplina, zona e modalità. Guardi profili, servizi e prezzi indicativi senza registrarti.',
+        text: 'Filtra per disciplina, zona e modalità. Consulta i profili dei trainer e i loro servizi senza registrarti.',
     },
     {
         title: 'Richiedi una seduta',
-        text: 'Scegli il servizio e proponi uno o due giorni con la fascia oraria. Ti registri solo in questo momento.',
+        text: 'Scegli il trainer migliore per te e prenota la tua seduta gratuitamente.',
     },
     {
         title: 'Allenati',
-        text: 'Il trainer conferma e vi scambiate i contatti. Dopo la seduta puoi lasciare una recensione.',
+        text: "Una volta confermata la seduta potrai visualizzare la tua prenotazione e i contatti del trainer nell'area cliente.",
     },
 ];
 
@@ -22,17 +22,12 @@ export default function HowItWorks() {
             className="my-10 bg-secondary"
         >
             <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 md:gap-8 md:px-8 md:py-18">
-                <div className="flex flex-col gap-1.5">
-                    <h2
-                        id="how-title"
-                        className="text-2xl font-semibold tracking-tight md:text-3xl"
-                    >
-                        Come funziona
-                    </h2>
-                    <p className="text-muted-foreground">
-                        Dalla ricerca al primo allenamento, in tre passi.
-                    </p>
-                </div>
+                <h2
+                    id="how-title"
+                    className="text-2xl font-semibold tracking-tight md:text-3xl"
+                >
+                    Come funziona
+                </h2>
                 <ol className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-3 md:gap-6">
                     {steps.map((step, index) => (
                         <li

@@ -28,6 +28,9 @@ use Throwable;
  *    the session and the user goes to "Completa la registrazione".
  * 3. create() / store(): that page, where the user accepts the Terms (as in
  *    the normal sign-up) and adds the phone (required). Then the client account is made.
+ *
+ * From "Impostazioni account", a logged-in user can link Google (link(), then
+ * the same callback) or unlink it (unlink()).
  */
 class GoogleAuthController extends Controller
 {
@@ -36,6 +39,9 @@ class GoogleAuthController extends Controller
     /** Session key with the Google data while the sign-up is completed. */
     private const SESSION_KEY = 'google_sign_up';
 
+    /** Session key set by "Collega": the callback links Google instead of logging in. */
+    private const LINK_KEY = 'google_link';
+
     public function redirect(): SymfonyRedirect
     {
         abort_unless(FortifyServiceProvider::googleEnabled(), 404);
@@ -43,9 +49,44 @@ class GoogleAuthController extends Controller
         return Socialite::driver('google')->redirect();
     }
 
+    /** "Collega" in "Accesso e sicurezza". */
+    public function link(Request $request): SymfonyRedirect
+    {
+        abort_unless(FortifyServiceProvider::googleEnabled(), 404);
+
+        $request->session()->put(self::LINK_KEY, true);
+
+        return Socialite::driver('google')->redirect();
+    }
+
+    /** "Scollega": only with a password, otherwise the user could no longer log in. */
+    public function unlink(Request $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($user->password === null) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Imposta prima una password: è l’unico modo per entrare senza Google.']);
+
+            return back();
+        }
+
+        $user->forceFill(['google_id' => null])->save();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Google scollegato.']);
+
+        return back();
+    }
+
     public function callback(Request $request): RedirectResponse
     {
         abort_unless(FortifyServiceProvider::googleEnabled(), 404);
+
+        if ($request->user() !== null) {
+            return $request->session()->pull(self::LINK_KEY, false)
+                ? $this->linkAccount($request)
+                : to_route('dashboard');
+        }
 
         try {
             /** @var GoogleUser $googleUser */
@@ -144,6 +185,35 @@ class GoogleAuthController extends Controller
 
         // Where Fortify sends the normal sign-up: "Completa il tuo profilo".
         return redirect()->to(config()->string('fortify.redirects.register'));
+    }
+
+    /** Back from Google after "Collega": the account gets its google_id. */
+    private function linkAccount(Request $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $settings = $user->role->settingsRoute();
+
+        try {
+            /** @var GoogleUser $googleUser */
+            $googleUser = Socialite::driver('google')->user();
+        } catch (Throwable) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Collegamento con Google non riuscito. Riprova.']);
+
+            return to_route($settings);
+        }
+
+        if (User::where('google_id', $googleUser->getId())->whereKeyNot($user->id)->exists()) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Questo account Google è già collegato a un altro account MioPersonal.']);
+
+            return to_route($settings);
+        }
+
+        $user->forceFill(['google_id' => $googleUser->getId()])->save();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Google collegato: ora puoi entrare anche con Google.']);
+
+        return to_route($settings);
     }
 
     /** Like the email login: who turned on two-factor authentication still has to type the code. */

@@ -93,23 +93,6 @@ class TrainerCalendarTest extends TestCase
             );
     }
 
-    public function test_today_count_is_the_sessions_of_today_whatever_is_shown()
-    {
-        $trainer = TrainerProfile::factory()->approved()->create();
-        Booking::factory()->for($trainer)->confirmed()->at($this->now->setTime(18, 0))->create();
-        Booking::factory()->for($trainer)->at($this->now->setTime(20, 0))->create();
-        // Not today, or not in the calendar.
-        Booking::factory()->for($trainer)->confirmed()->at($this->now->addDay()->setTime(10, 0))->create();
-        Booking::factory()->for($trainer)->confirmed()->status(BookingStatus::Cancelled)->at($this->now->setTime(12, 0))->create();
-
-        $this->actingAs($trainer->user)
-            ->get(route('trainer.calendar', ['vista' => 'mese', 'giorno' => '2027-01-10']))
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('todayCount', 2)
-                ->has('events', 0)
-            );
-    }
-
     /** The limits follow today: 12 months before and after the current month. */
     public function test_the_arrows_reach_twelve_months_around_today()
     {

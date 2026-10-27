@@ -27,7 +27,7 @@ import type { TrainerSummary } from '@/types';
  * No trainer matches every filter: similar profiles, found leaving out
  * more and more filters (TrainerSearchController::suggestions).
  * some = at least one of the chosen disciplines and goals;
- * fewer-filters = also without price, availability, rating…;
+ * fewer-filters = also without name, price, availability, rating…;
  * city = every trainer of the city.
  */
 type Suggestions = {
@@ -37,6 +37,7 @@ type Suggestions = {
 
 /** The filters the "fewer-filters" suggestions leave out, as in the sentence. */
 const minorFilterNames: Partial<Record<keyof ActiveFilters, string>> = {
+    nome: 'nome',
     prezzo: 'prezzo',
     disponibilita: 'disponibilità',
     valutazione: 'valutazione',

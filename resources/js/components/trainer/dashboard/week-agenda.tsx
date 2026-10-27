@@ -1,9 +1,10 @@
 import { Link } from '@inertiajs/react';
-import { ArrowRight, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
 import { useId, useRef, useState } from 'react';
 import UserAvatar from '@/components/shared/user-avatar';
 import Panel from '@/components/trainer/area/panel';
+import { Button } from '@/components/ui/button';
 import { addDays, romeParts, sessionsLabel } from '@/lib/calendar';
 import {
     formatDayLong,
@@ -12,7 +13,7 @@ import {
     formatWeekdayShort,
 } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { availability, calendar, clients, requests } from '@/routes/trainer';
+import { availability, clients, requests } from '@/routes/trainer';
 import type { TrainerSession } from '@/types';
 
 type WeekAgendaProps = {
@@ -55,20 +56,7 @@ export default function WeekAgenda({
     };
 
     return (
-        <Panel
-            title="Agenda"
-            titleSize="lg"
-            className="flex-[2_1_480px] gap-5"
-            action={
-                <Link
-                    href={calendar()}
-                    className="inline-flex min-h-11 items-center gap-1.5 text-sm font-medium hover:underline"
-                >
-                    Calendario completo
-                    <ArrowRight aria-hidden="true" className="size-4" />
-                </Link>
-            }
-        >
+        <Panel title="Agenda" titleSize="lg" className="flex-[2_1_480px] gap-5">
             <div
                 role="tablist"
                 aria-label="Giorno"
@@ -147,19 +135,22 @@ export default function WeekAgenda({
                 ) : (
                     <div className="flex flex-col items-start gap-1.5 rounded-[14px] border border-dashed border-input p-5">
                         <span className="text-[15px] leading-5.5 font-semibold">
-                            Giornata libera
+                            Nessuna seduta
                         </span>
                         <span className="text-sm text-muted-foreground">
                             Nessuna seduta in programma. Se vuoi ricevere
                             richieste per questo giorno, controlla di avere slot
-                            aperti.
+                            liberi.
                         </span>
-                        <Link
-                            href={availability()}
-                            className="mt-1 text-sm font-semibold underline"
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="mt-1 h-10 rounded-full px-4 font-semibold"
                         >
-                            Apri disponibilità
-                        </Link>
+                            <Link href={availability()}>
+                                Apri disponibilità
+                            </Link>
+                        </Button>
                     </div>
                 )}
             </div>

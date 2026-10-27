@@ -7,6 +7,8 @@ import { search } from '@/routes/trainers';
  * The server checks them in TrainerSearchController.
  */
 export type SearchFilters = {
+    /** Words of the trainer's name, in any order. */
+    nome?: string | null;
     /** One or more slugs: the trainer must do all of them. */
     disciplina?: string[] | null;
     /** One or more goals: the trainer must work on all of them. */

@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils';
 
 type ClientPreviewProps = {
     rows: PreviewRow[];
-    /** "Tutto salvato", "Modifiche non salvate"… */
-    status: string;
+    /** "Modifiche non salvate", "Salvataggio…"; none when there is nothing to save. */
+    status?: string;
     /** Something changed since the last save: white dot. */
     changed: boolean;
     canSave: boolean;
@@ -50,20 +50,25 @@ export default function ClientPreview({
             />
 
             <div className="mt-1 flex flex-wrap items-center justify-between gap-3 border-t border-sidebar-border pt-4">
+                {/* Always there, also empty: screen readers hear the changes. */}
                 <span
                     role="status"
                     className="flex items-center gap-2 text-[13px] leading-4.5 text-sidebar-foreground/80 tabular-nums"
                 >
-                    <span
-                        aria-hidden="true"
-                        className={cn(
-                            'size-2 rounded-full',
-                            changed
-                                ? 'bg-sidebar-primary'
-                                : 'bg-muted-foreground',
-                        )}
-                    />
-                    {status}
+                    {status && (
+                        <>
+                            <span
+                                aria-hidden="true"
+                                className={cn(
+                                    'size-2 rounded-full',
+                                    changed
+                                        ? 'bg-sidebar-primary'
+                                        : 'bg-muted-foreground',
+                                )}
+                            />
+                            {status}
+                        </>
+                    )}
                 </span>
                 <Button
                     type="submit"
@@ -87,42 +92,42 @@ export function ServiceRows({
     empty,
 }: {
     rows: PreviewRow[];
-    /** Shown while there is no row. */
-    empty: string;
+    /** Shown while there is no row; without it, nothing is shown. */
+    empty?: string;
 }) {
     return (
         <>
-            {rows.length > 0 ? (
-                rows.map((row) => (
-                    <div
-                        key={row.key}
-                        className="flex items-start justify-between gap-3 rounded-2xl bg-sidebar-accent p-4"
-                    >
-                        <span className="flex min-w-0 flex-col gap-1">
-                            <span className="flex flex-wrap items-center gap-2">
-                                <span className="text-[15px] leading-5.5 font-semibold break-words">
-                                    {row.name}
-                                </span>
-                                {row.badge && (
-                                    <span className="inline-flex h-5 items-center rounded-full bg-sidebar-primary px-2 text-[11px] font-bold text-sidebar-primary-foreground tabular-nums">
-                                        {row.badge}
-                                    </span>
-                                )}
-                            </span>
-                            <span className="text-[13px] leading-4.5 break-words text-sidebar-muted-foreground tabular-nums">
-                                {row.meta}
-                            </span>
-                        </span>
-                        <span className="flex-none text-[17px] leading-6 font-bold tabular-nums">
-                            {row.price}
-                        </span>
-                    </div>
-                ))
-            ) : (
-                <p className="rounded-2xl bg-sidebar-accent p-4 text-sm text-sidebar-muted-foreground">
-                    {empty}
-                </p>
-            )}
+            {rows.length > 0
+                ? rows.map((row) => (
+                      <div
+                          key={row.key}
+                          className="flex items-start justify-between gap-3 rounded-2xl bg-sidebar-accent p-4"
+                      >
+                          <span className="flex min-w-0 flex-col gap-1">
+                              <span className="flex flex-wrap items-center gap-2">
+                                  <span className="text-[15px] leading-5.5 font-semibold break-words">
+                                      {row.name}
+                                  </span>
+                                  {row.badge && (
+                                      <span className="inline-flex h-5 items-center rounded-full bg-sidebar-primary px-2 text-[11px] font-bold text-sidebar-primary-foreground tabular-nums">
+                                          {row.badge}
+                                      </span>
+                                  )}
+                              </span>
+                              <span className="text-[13px] leading-4.5 break-words text-sidebar-muted-foreground tabular-nums">
+                                  {row.meta}
+                              </span>
+                          </span>
+                          <span className="flex-none text-[17px] leading-6 font-bold tabular-nums">
+                              {row.price}
+                          </span>
+                      </div>
+                  ))
+                : empty && (
+                      <p className="rounded-2xl bg-sidebar-accent p-4 text-sm text-sidebar-muted-foreground">
+                          {empty}
+                      </p>
+                  )}
         </>
     );
 }

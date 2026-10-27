@@ -1,15 +1,15 @@
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-/** The 7 steps of "Diventa trainer": name and the line under it in the sidebar. */
+/** The 7 steps of "Diventa trainer", as named in the sidebar. */
 export const steps = [
-    { label: 'Account', hint: 'Email e termini' },
-    { label: 'Profilo pubblico', hint: 'Foto, titolo e presentazione' },
-    { label: 'Discipline e città', hint: 'Discipline, obiettivi e luoghi' },
-    { label: 'Servizi e prezzi', hint: 'Listino e pacchetti' },
-    { label: 'Orari e regole', hint: 'Disponibilità e prenotazioni' },
-    { label: 'Certificazioni', hint: 'Facoltativo' },
-    { label: 'Riepilogo', hint: 'Controlla e invia' },
+    { label: 'Account' },
+    { label: 'Profilo pubblico' },
+    { label: 'Discipline e città' },
+    { label: 'Servizi e prezzi' },
+    { label: 'Orari e regole' },
+    { label: 'Certificazioni' },
+    { label: 'Riepilogo' },
 ];
 
 type StepNavProps = {
@@ -77,27 +77,13 @@ export default function StepNav({
                                         number
                                     )}
                                 </span>
-                                <span className="flex min-w-0 flex-col">
-                                    <span className="text-sm font-semibold">
-                                        {item.label}
-                                        {done && (
-                                            <span className="sr-only">
-                                                , completato
-                                            </span>
-                                        )}
-                                    </span>
-                                    <span
-                                        className={cn(
-                                            'text-xs',
-                                            current
-                                                ? 'text-muted-foreground'
-                                                : done
-                                                  ? 'text-sidebar-muted-foreground'
-                                                  : 'text-muted-foreground',
-                                        )}
-                                    >
-                                        {item.hint}
-                                    </span>
+                                <span className="min-w-0 text-sm font-semibold">
+                                    {item.label}
+                                    {done && (
+                                        <span className="sr-only">
+                                            , completato
+                                        </span>
+                                    )}
                                 </span>
                             </button>
                         </li>

@@ -16,7 +16,7 @@ use Inertia\Response;
 
 /**
  * "Completa il tuo profilo": right after the client sign-up (full screen), and
- * "Modifica il mio profilo" in the client area to change the answers later.
+ * "Modifica profilo" in the client area to change the answers later.
  * Saved in `client_preferences` and, for the photo, in `users.avatar_path`.
  */
 class CompleteProfileController extends Controller
@@ -26,7 +26,7 @@ class CompleteProfileController extends Controller
         return Inertia::render('onboarding/complete-profile', $this->pageData($request));
     }
 
-    /** "Modifica il mio profilo": the same form, inside the client area. */
+    /** "Modifica profilo": the same form, inside the client area. */
     public function edit(Request $request): Response
     {
         return Inertia::render('client/edit-profile', $this->pageData($request));
@@ -52,7 +52,7 @@ class CompleteProfileController extends Controller
             'budget_max_cents' => $request->filled('budget_max_cents') ? $request->integer('budget_max_cents') : null,
         ]);
 
-        // "Modifica il mio profilo" stays on the page; the sign-up goes on to the dashboard.
+        // "Modifica profilo" stays on the page; the sign-up goes on to the dashboard.
         if ($request->routeIs('client.profile.update')) {
             Inertia::flash('toast', ['type' => 'success', 'message' => 'Profilo aggiornato.']);
 

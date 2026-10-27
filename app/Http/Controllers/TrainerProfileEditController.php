@@ -20,7 +20,7 @@ use Inertia\Response;
  * disciplines and places and certifications (steps 2, 3 and 6 of "Diventa
  * trainer"; the services are changed from "Servizi"). Saved changes are
  * public right away, without a new review, like "Disponibilità". Before the
- * approval the profile is changed from "Diventa trainer" instead.
+ * approval the page shows the profile, locked: nothing can be saved.
  */
 class TrainerProfileEditController extends Controller
 {
@@ -29,21 +29,22 @@ class TrainerProfileEditController extends Controller
     public function show(Request $request): Response
     {
         $profile = $this->profile($request);
-        $editable = $profile?->isApproved() ?? false;
 
         return Inertia::render('trainer/profile', [
             'trainerArea' => $this->trainerArea(),
-            // null: not approved yet, the page links to "Diventa trainer".
-            'draft' => $editable ? TrainerDraft::fromProfile($profile) : null,
-            'disciplines' => $editable ? CatalogOptions::disciplines() : [],
-            'cities' => $editable ? CatalogOptions::cities() : [],
+            // null: the registration is not sent yet, the page links to "Diventa trainer".
+            'draft' => $profile ? TrainerDraft::fromProfile($profile) : null,
+            // False until the team approves the profile: shown, but locked.
+            'editable' => $profile?->isApproved() ?? false,
+            'disciplines' => $profile ? CatalogOptions::disciplines() : [],
+            'cities' => $profile ? CatalogOptions::cities() : [],
             // "Foto della galleria": saved one action at a time by TrainerPhotoController.
-            'gallery' => $editable
+            'gallery' => $profile
                 ? $profile->galleryPhotos->map(fn (TrainerPhoto $photo) => ['id' => $photo->id, 'url' => $photo->url()])->values()->all()
                 : [],
             'maxGalleryPhotos' => TrainerProfile::MAX_GALLERY_PHOTOS,
             // "Nuovo" or the stars in "Così ti vedono nella ricerca".
-            'rating' => $editable
+            'rating' => $profile
                 ? ['value' => $profile->rating(), 'count' => $profile->rating_count]
                 : null,
         ]);

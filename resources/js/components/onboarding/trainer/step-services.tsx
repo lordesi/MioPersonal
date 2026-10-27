@@ -87,7 +87,6 @@ export default function StepServices({ draft, update }: StepProps) {
                             firstMode,
                             hasOwnOnlinePrice(draft),
                         )}
-                        empty="Inserisci almeno un prezzo nel listino: comparirà qui."
                     />
                     <PanelNote icon={<Info aria-hidden="true" />}>
                         Dopo l’approvazione puoi modificare prezzi e pacchetti

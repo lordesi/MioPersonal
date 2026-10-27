@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Actions\Trainer\DeleteTrainerProfile;
 use App\Enums\BookingActor;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
@@ -51,8 +52,9 @@ class ProfileController extends Controller
     /**
      * Delete the user's profile.
      */
-    public function destroy(ProfileDeleteRequest $request): RedirectResponse
+    public function destroy(ProfileDeleteRequest $request, DeleteTrainerProfile $deleteProfile): RedirectResponse
     {
+        /** @var User $user */
         $user = $request->user();
 
         // Future bookings are cancelled, so the trainers get their slots back;
@@ -62,6 +64,11 @@ class ProfileController extends Controller
                 $booking->cancel(BookingActor::Client, $user);
                 TrainerSlots::refresh($booking->trainerProfile);
             });
+
+        // A trainer's profile goes too, with its photos and certificates on the disk.
+        if ($user->trainerProfile !== null) {
+            $deleteProfile->handle($user->trainerProfile);
+        }
 
         Auth::logout();
 

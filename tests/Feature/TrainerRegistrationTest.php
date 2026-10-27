@@ -92,7 +92,7 @@ class TrainerRegistrationTest extends TestCase
             'first_name' => 'Giulia',
             'last_name' => 'Rossi',
             'email' => 'giulia@example.com',
-            'phone' => '333 000 0000',
+            'phone' => '347 521 8846',
             'password' => 'Password1',
             'terms' => '1',
             ...$this->profile(['photo' => UploadedFile::fake()->image('giulia.jpg', 600, 600)]),
@@ -103,7 +103,7 @@ class TrainerRegistrationTest extends TestCase
         $this->assertAuthenticated();
         $user = User::where('email', 'giulia@example.com')->firstOrFail();
         $this->assertSame(UserRole::Trainer, $user->role);
-        $this->assertSame('+393330000000', $user->phone);
+        $this->assertSame('+393475218846', $user->phone);
 
         $profile = $user->trainerProfile;
         $this->assertNotNull($profile);
@@ -600,5 +600,87 @@ class TrainerRegistrationTest extends TestCase
 
         $this->post(route('trainer.register.store'), $this->profile())->assertSessionHasNoErrors();
         $this->assertNotNull($trainer->refresh()->trainerProfile);
+    }
+
+    public function test_continua_checks_the_photo_in_step_2()
+    {
+        $client = User::factory()->create();
+
+        // Only the fields of step 2, as the page sends them.
+        $this->actingAs($client)
+            ->post(route('trainer.register.check', 2), [
+                'headline' => 'Functional training e Pilates',
+                'bio' => str_repeat('Alleno persone che vogliono tornare in forma. ', 5),
+                'experience' => '5to10',
+                'photo' => UploadedFile::fake()->image('piccola.jpg', 200, 200),
+            ])
+            ->assertSessionHasErrors(['photo' => 'La foto deve essere almeno 400 × 400 px.'])
+            // The next steps are not filled in yet: no errors about them.
+            ->assertSessionDoesntHaveErrors(['disciplines', 'city', 'sessions', 'hours']);
+
+        $this->assertSame(UserRole::Client, $client->refresh()->role);
+        $this->assertSame(0, TrainerProfile::count());
+    }
+
+    public function test_continua_goes_on_when_the_step_is_right_and_saves_nothing()
+    {
+        $client = User::factory()->create();
+
+        $this->actingAs($client)
+            ->post(route('trainer.register.check', 2), [
+                'headline' => 'Functional training e Pilates',
+                'bio' => str_repeat('Alleno persone che vogliono tornare in forma. ', 5),
+                'experience' => '5to10',
+                'photo' => UploadedFile::fake()->image('ritratto.jpg', 600, 600),
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('trainer.register', absolute: false));
+
+        $this->assertSame(UserRole::Client, $client->refresh()->role);
+        $this->assertSame(0, TrainerProfile::count());
+        $this->assertSame([], Storage::disk('public')->allFiles());
+    }
+
+    public function test_continua_checks_only_the_step_being_left()
+    {
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.check', 3), [
+                'disciplines' => ['pilates'],
+                'goals' => ['posture'],
+                'places' => ['studio'],
+                'studios' => [],
+                'city' => 'milano',
+            ])
+            ->assertSessionHasErrors(['studios'])
+            ->assertSessionDoesntHaveErrors(['headline', 'photo', 'sessions', 'hours', 'terms']);
+    }
+
+    public function test_continua_checks_the_account_of_a_guest_in_step_1()
+    {
+        User::factory()->create(['email' => 'giulia@example.com']);
+
+        $this->post(route('trainer.register.check', 1), [
+            'first_name' => 'Giulia',
+            'last_name' => 'Rossi',
+            'email' => 'giulia@example.com',
+            'phone' => '347 521 8846',
+            'password' => 'Password1',
+            'terms' => '1',
+        ])
+            ->assertSessionHasErrors(['email'])
+            ->assertSessionDoesntHaveErrors(['headline', 'photo']);
+
+        $this->assertGuest();
+        $this->assertSame(1, User::count());
+    }
+
+    public function test_a_trainer_waiting_for_the_team_cannot_check_a_step()
+    {
+        $trainer = User::factory()->trainer()->create();
+        TrainerProfile::factory()->for($trainer)->status(TrainerProfileStatus::Review)->create();
+
+        $this->actingAs($trainer)
+            ->post(route('trainer.register.check', 2), [])
+            ->assertRedirect(route('trainer.today'));
     }
 }

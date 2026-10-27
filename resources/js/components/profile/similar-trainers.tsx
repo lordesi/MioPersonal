@@ -1,12 +1,19 @@
-import TrainerMiniCard from '@/components/trainer/trainer-mini-card';
+import { Link } from '@inertiajs/react';
+import { ArrowRight } from 'lucide-react';
+import TrainerCard from '@/components/trainer/trainer-card';
 import type { TrainerProfile } from '@/types';
 
-/** Similar trainers (grid on desktop, carousel on mobile); hidden without any. */
+type SimilarTrainersProps = {
+    trainers: TrainerProfile['similarTrainers'];
+    /** "Vedi tutti": the search of the trainer's city. */
+    searchHref: string;
+};
+
+/** Similar trainers, with the cards of the search; hidden without any. */
 export default function SimilarTrainers({
     trainers,
-}: {
-    trainers: TrainerProfile['similarTrainers'];
-}) {
+    searchHref,
+}: SimilarTrainersProps) {
     if (trainers.length === 0) {
         return null;
     }
@@ -14,26 +21,30 @@ export default function SimilarTrainers({
     return (
         <section
             aria-labelledby="similar-title"
-            className="flex flex-col gap-3"
+            className="flex flex-col gap-4"
         >
-            <h2
-                id="similar-title"
-                className="text-xl font-semibold tracking-tight md:text-2xl"
-            >
-                Trainer simili
-            </h2>
-            <div className="-mx-4 flex gap-2.5 overflow-x-auto px-4 md:mx-0 md:grid md:grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] md:gap-3 md:px-0">
-                {trainers.map((trainer) => (
-                    <TrainerMiniCard
-                        key={trainer.href}
-                        name={trainer.name}
-                        href={trainer.href}
-                        subtitle={trainer.subtitle}
-                        detail={trainer.detail}
-                        className="w-62.5 shrink-0 md:w-auto"
-                    />
-                ))}
+            <div className="flex flex-wrap items-end justify-between gap-2.5">
+                <h2
+                    id="similar-title"
+                    className="text-[26px] leading-8 font-bold tracking-[-0.02em]"
+                >
+                    Trainer simili
+                </h2>
+                <Link
+                    href={searchHref}
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
+                >
+                    Vedi tutti
+                    <ArrowRight aria-hidden="true" className="size-4" />
+                </Link>
             </div>
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-4">
+                {trainers.map((trainer) => (
+                    <li key={trainer.href} className="flex">
+                        <TrainerCard trainer={trainer} className="flex-1" />
+                    </li>
+                ))}
+            </ul>
         </section>
     );
 }

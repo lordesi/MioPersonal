@@ -1,3 +1,5 @@
+import type { TrainingGoal } from '@/lib/goals';
+
 /** Trainer data shown in search results and featured lists. */
 export type TrainerSummary = {
     /** In the URL /trainer/{slug}; used to save it among the favorites. */
@@ -68,6 +70,8 @@ export type TrainerReview = {
 export type AvailabilityDay = {
     /** Local date in Europe/Rome, "YYYY-MM-DD". */
     date: string;
+    /** The trainer doesn't work that day ("chiuso"); without slots and not closed: "pieno". */
+    closed: boolean;
     /** start is an ISO UTC string; maxMinutes is the longest session that fits. */
     slots: { start: string; maxMinutes: number }[];
 };
@@ -85,6 +89,8 @@ export type TrainerProfile = {
     /** Null until the trainer has answered some bookings. */
     responseTimeLabel: string | null;
     cancellationLabel: string;
+    /** "Conferma entro 24 ore" or "Conferma immediata". */
+    confirmLabel: string;
     rating: number | null;
     reviewCount: number;
     /** Main city: the breadcrumb links to its search. Null for online-only trainers. */
@@ -93,6 +99,8 @@ export type TrainerProfile = {
     cities: string[];
     online: 'also' | 'only' | null;
     disciplines: string[];
+    /** Labels in trainingGoals (lib/goals.ts). */
+    goals: TrainingGoal[];
     /** The profile photo, for the circle next to the name; null = the initials. */
     portraitUrl: string | null;
     /** The gallery (carousel), without the profile photo; may be empty. */
@@ -103,12 +111,8 @@ export type TrainerProfile = {
     ratingDistribution: { stars: number; count: number }[];
     reviews: TrainerReview[];
     availability: AvailabilityDay[];
-    similarTrainers: {
-        name: string;
-        href: string;
-        subtitle: string;
-        detail: string;
-    }[];
+    /** In the format of the search cards. */
+    similarTrainers: TrainerSummary[];
 };
 
 /** A confirmed session in the trainer's "Le tue prenotazioni" page. */
@@ -156,6 +160,28 @@ export type TrainerPackage = {
 export type TrainerPastSession = TrainerTodaySession & {
     /** Within 7 days from the end: "Saltata" can still be set or taken back. */
     canChangeNoShow: boolean;
+    /** "Seduta 2 di 10" as numbers; null for a single session. */
+    package: { position: number; total: number } | null;
+    /** ISO UTC string: the end + 7 days, "Modificabile fino a gio 29 ott". */
+    noShowUntil: string;
+};
+
+/** "Tutte", "Effettuate" or "Saltate" in "Sedute passate" (`?esito=` in the URL). */
+export type PastSessionFilter = 'all' | 'done' | 'missed';
+
+/** The numbers next to the filters, of every session over. */
+export type PastSessionCounts = Record<PastSessionFilter, number>;
+
+/** "Ultimi 7 giorni" of "Sedute passate": the sessions over that can still be changed. */
+export type PastWeekSummary = {
+    sessions: number;
+    hours: number;
+    /** Different clients (deleted accounts not counted). */
+    clients: number;
+    missed: number;
+    /** Rome calendar days "YYYY-MM-DD" of the first and the last one; null without sessions. */
+    first: string | null;
+    last: string | null;
 };
 
 /** How often a client shows up: percentage of the sessions over that were not missed. */

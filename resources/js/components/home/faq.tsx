@@ -11,27 +11,19 @@ import { show as contactPage } from '@/routes/contact';
 const questions = [
     {
         question: 'Quanto costa usare MioPersonal?',
-        answer: 'Per chi cerca un trainer è gratis: cerchi, confronti e richiedi sedute senza costi. Il prezzo di ogni seduta lo indica il trainer sul suo profilo.',
+        answer: 'Tutte le funzionalità attualmente presenti su MioPersonal sono gratuite.',
     },
     {
         question: 'Devo registrarmi per cercare un trainer?',
-        answer: 'No. Profili, servizi e prezzi indicativi sono visibili a tutti. Ti registri solo quando invii la prima richiesta di seduta.',
+        answer: 'Registrarsi non è necessario per cercare e confrontare trainer. Ti registri solo nel momento in cui invii la prima richiesta di seduta.',
     },
     {
         question: 'Come prenoto una seduta?',
-        answer: 'Sul profilo del trainer scegli il servizio e proponi uno o due giorni con la fascia oraria. Il trainer conferma e vi scambiate i contatti.',
-    },
-    {
-        question: 'Posso allenarmi online?',
-        answer: 'Sì: scegli «Online» sotto la barra di ricerca per vedere solo i trainer che offrono sedute a distanza.',
+        answer: 'Una volta trovato il trainer migliore per te, scegli uno dei servizi offerti e prenota la seduta. Il trainer ha 24 ore per confermare la prenotazione.',
     },
     {
         question: 'Come vengono verificati i trainer?',
-        answer: "Ogni profilo viene approvato dal nostro team: controlliamo un documento d'identità e gli attestati caricati, che restano privati.",
-    },
-    {
-        question: 'Le recensioni sono affidabili?',
-        answer: 'Una recensione la può lasciare solo chi ha svolto davvero una seduta con quel trainer.',
+        answer: 'Il nostro team verifica e approva ogni profilo dopo aver controllato le informazioni indicate dai trainer.',
     },
 ];
 
@@ -53,7 +45,7 @@ export default function Faq() {
                     Domande frequenti
                 </h2>
                 <p className="text-muted-foreground">
-                    Non trovi la risposta?{' '}
+                    Hai altre domande?{' '}
                     <Link
                         href={contactPage()}
                         className="text-foreground underline underline-offset-2"

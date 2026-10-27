@@ -8,7 +8,7 @@ type BookingBarProps = {
     /** Chosen duration of the session. */
     minutes: number;
     selectedStart: string | null;
-    /** "Prenota", once a slot is chosen. */
+    /** "Prenota il tuo slot", once a slot is chosen. */
     onBook: () => void;
     /** The request is being sent. */
     booking: boolean;
@@ -31,7 +31,7 @@ export default function BookingBar({
                 <span className="text-xs text-muted-foreground">
                     {selectedStart
                         ? formatSlot(selectedStart, minutes / 60)
-                        : 'Scegli giorno e orario'}
+                        : 'Scegli uno slot'}
                 </span>
             </span>
             {selectedStart ? (
@@ -41,7 +41,7 @@ export default function BookingBar({
                     disabled={booking}
                     onClick={onBook}
                 >
-                    Prenota
+                    Prenota il tuo slot
                 </Button>
             ) : (
                 <Button asChild className="ml-auto h-11 flex-1">

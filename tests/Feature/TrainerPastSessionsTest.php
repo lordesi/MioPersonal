@@ -68,6 +68,78 @@ class TrainerPastSessionsTest extends TestCase
             );
     }
 
+    public function test_filters_by_outcome_and_counts_every_session()
+    {
+        $trainer = TrainerProfile::factory()->approved()->create();
+        $missed = Booking::factory()->for($trainer)->confirmed()->at($this->now->subDays(2))->create(['no_show_at' => now()]);
+        $done = Booking::factory()->for($trainer)->confirmed()->at($this->now->subDay())->create();
+        // On page 2 of "Tutte": still in the numbers.
+        foreach (range(3, 22) as $days) {
+            Booking::factory()->for($trainer)->confirmed()->at($this->now->subDays($days))->create();
+        }
+
+        $counts = ['all' => 22, 'done' => 21, 'missed' => 1];
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.past-sessions', ['esito' => 'saltate']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('filter', 'missed')
+                ->where('counts', $counts)
+                ->has('sessions', 1)
+                ->where('sessions.0.id', $missed->id)
+            );
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.past-sessions', ['esito' => 'effettuate']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('filter', 'done')
+                ->where('counts', $counts)
+                ->has('sessions', 20)
+                ->where('sessions.0.id', $done->id)
+                ->where('pagination', ['currentPage' => 1, 'lastPage' => 2])
+            );
+
+        // Unknown value: "Tutte".
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.past-sessions', ['esito' => 'boh']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('filter', 'all')
+                ->where('sessions.0.id', $done->id)
+                ->where('sessions.1.id', $missed->id)
+            );
+    }
+
+    public function test_sums_up_the_sessions_that_can_still_be_changed()
+    {
+        $trainer = TrainerProfile::factory()->approved()->create();
+        $client = User::factory()->create();
+        // Yesterday 10:00–11:30 and 3 days ago (missed), both of the same client.
+        $yesterday = Booking::factory()->for($trainer)->for($client, 'client')->confirmed()
+            ->at($this->now->subDay()->setTime(10, 0), 90)->create();
+        Booking::factory()->for($trainer)->for($client, 'client')->confirmed()
+            ->at($this->now->subDays(3)->setTime(10, 0))->create(['no_show_at' => now()]);
+        // Over 7 days ago, not over yet, cancelled: not counted.
+        Booking::factory()->for($trainer)->confirmed()->at($this->now->subDays(8))->create();
+        Booking::factory()->for($trainer)->confirmed()->at($this->now->addHour())->create();
+        Booking::factory()->for($trainer)->status(BookingStatus::Cancelled)->at($this->now->subDays(2))->create();
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.past-sessions'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('lastWeek', [
+                    'sessions' => 2,
+                    'hours' => 2.5,
+                    'clients' => 1,
+                    'missed' => 1,
+                    'first' => '2026-10-12',
+                    'last' => '2026-10-14',
+                ])
+                // "Modificabile fino a": 7 days after the end (11:30 Rome = 09:30 UTC).
+                ->where('sessions.0.id', $yesterday->id)
+                ->where('sessions.0.noShowUntil', '2026-10-21T09:30:00Z')
+            );
+    }
+
     public function test_only_for_trainers()
     {
         $this->get(route('trainer.past-sessions'))->assertRedirect(route('login'));

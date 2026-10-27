@@ -1,24 +1,29 @@
 import { Link, router } from '@inertiajs/react';
-import { History, Star } from 'lucide-react';
+import { ChevronDown, ChevronUp, History, RotateCcw, Star } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import ReviewForm from '@/components/client/review-form';
-import UserAvatar from '@/components/shared/user-avatar';
-import Panel from '@/components/trainer/area/panel';
 import { Button } from '@/components/ui/button';
-import { formatDayShort, formatTimeSpan } from '@/lib/format';
+import { dateBlockParts, formatDayShort, formatTimeSpan } from '@/lib/format';
 import { review as reviewRoute } from '@/routes/client/bookings';
 import type { ClientPastSession } from '@/types';
 
+/** Sessions shown before "Vedi tutte". */
+const VISIBLE = 3;
+
 /**
- * "Sedute svolte": the last sessions done, each with its review or
- * "Lascia una recensione". Empty, it says the history starts here.
+ * "Sedute svolte": the last sessions done, each with "Lascia una
+ * recensione" (or the review already left) and "Prenota di nuovo". Only the
+ * last three at first: "Vedi tutte" opens the others. Empty, it says the
+ * history starts here.
  */
 export default function SessionHistory({
     sessions,
 }: {
     sessions: ClientPastSession[];
 }) {
+    const [showAll, setShowAll] = useState(false);
+
     if (sessions.length === 0) {
         return (
             <section
@@ -41,40 +46,45 @@ export default function SessionHistory({
         );
     }
 
+    const shown = showAll ? sessions : sessions.slice(0, VISIBLE);
+
     return (
-        <Panel title="Sedute svolte" className="gap-3.5">
-            <ul className="flex flex-col divide-y">
-                {sessions.map((session) => (
+        <section
+            aria-labelledby="sedute-svolte"
+            className="flex flex-col gap-2.5 rounded-3xl border bg-card p-5 md:p-6"
+        >
+            <h2
+                id="sedute-svolte"
+                className="text-xl font-bold tracking-[-0.02em]"
+            >
+                Sedute svolte
+            </h2>
+
+            <ul className="flex flex-col">
+                {shown.map((session) => (
                     <PastSessionItem key={session.id} session={session} />
                 ))}
             </ul>
-        </Panel>
-    );
-}
 
-/** The review already left: stars and text. */
-function YourReview({ rating, text }: { rating: number; text: string }) {
-    return (
-        <p className="flex flex-col gap-1 rounded-xl bg-secondary px-3.5 py-3 text-sm">
-            <span
-                className="flex items-center gap-0.5"
-                role="img"
-                aria-label={`Hai lasciato ${rating} ${rating === 1 ? 'stella' : 'stelle'}`}
-            >
-                {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                        key={star}
-                        aria-hidden="true"
-                        className={
-                            star <= rating
-                                ? 'size-3.5 fill-current'
-                                : 'size-3.5 text-muted-foreground'
-                        }
-                    />
-                ))}
-            </span>
-            <span className="text-muted-foreground">«{text}»</span>
-        </p>
+            {sessions.length > VISIBLE && (
+                <Button
+                    type="button"
+                    variant="ghost"
+                    className="-mx-5 -mb-5 h-11 rounded-none rounded-b-3xl border-t text-sm font-semibold md:-mx-6 md:-mb-6"
+                    aria-expanded={showAll}
+                    onClick={() => setShowAll(!showAll)}
+                >
+                    {showAll
+                        ? 'Mostra meno'
+                        : `Vedi tutte (${sessions.length})`}
+                    {showAll ? (
+                        <ChevronUp aria-hidden="true" />
+                    ) : (
+                        <ChevronDown aria-hidden="true" />
+                    )}
+                </Button>
+            )}
+        </section>
     );
 }
 
@@ -82,6 +92,7 @@ function PastSessionItem({ session }: { session: ClientPastSession }) {
     const [writing, setWriting] = useState(false);
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState<string>();
+    const date = dateBlockParts(session.start);
 
     const publish = (review: { rating: number; text: string }) =>
         router.post(reviewRoute.url(session.id), review, {
@@ -103,14 +114,17 @@ function PastSessionItem({ session }: { session: ClientPastSession }) {
         });
 
     return (
-        <li className="flex flex-col gap-3 py-3.5 first:pt-0 last:pb-0">
-            <div className="flex flex-wrap items-center gap-3">
-                <UserAvatar
-                    name={session.trainerName}
-                    size="lg"
-                    className="size-11 text-[13px] [&_[data-slot=avatar-fallback]]:bg-secondary"
-                />
-                <span className="flex min-w-45 flex-1 flex-col">
+        <li className="flex flex-col gap-3 border-t border-border/70 py-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3.5">
+                <span className="flex h-14 w-13 flex-none flex-col items-center justify-center rounded-[14px] bg-primary text-primary-foreground tabular-nums">
+                    <span className="text-[10px] leading-3 font-bold tracking-[0.08em] text-primary-foreground/65 uppercase">
+                        {date.weekday}
+                    </span>
+                    <span className="text-xl leading-6 font-bold">
+                        {date.day}
+                    </span>
+                </span>
+                <span className="flex min-w-0 flex-[1_1_220px] flex-col gap-0.75">
                     <span className="text-[15px] leading-5.5 font-semibold">
                         {session.discipline} con{' '}
                         <Link
@@ -126,29 +140,45 @@ function PastSessionItem({ session }: { session: ClientPastSession }) {
                         {session.serviceName}
                     </span>
                 </span>
-                {session.canReview && !writing && (
+                <span className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
+                    {session.canReview && !writing && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="h-9.5 rounded-[10px] px-3.5 text-[13px] font-semibold"
+                            onClick={() => setWriting(true)}
+                        >
+                            <Star aria-hidden="true" className="size-3.5" />
+                            Lascia una recensione
+                        </Button>
+                    )}
+                    {session.review && (
+                        <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-secondary px-3 text-xs font-semibold tabular-nums">
+                            <Star
+                                aria-hidden="true"
+                                className="size-3 fill-current"
+                            />
+                            Recensione lasciata · {session.review.rating}★
+                        </span>
+                    )}
                     <Button
-                        type="button"
-                        variant="outline"
-                        className="h-10 rounded-[10px] px-3.5"
-                        onClick={() => setWriting(true)}
+                        asChild
+                        className="h-9.5 rounded-[10px] px-3.5 text-[13px] font-semibold"
                     >
-                        Lascia una recensione
+                        <Link href={session.trainerHref}>
+                            <RotateCcw
+                                aria-hidden="true"
+                                className="size-3.5"
+                                strokeWidth={2.2}
+                            />
+                            Prenota di nuovo
+                        </Link>
                     </Button>
-                )}
-                <Button
-                    asChild
-                    variant="ghost"
-                    className="h-10 rounded-[10px] px-3 underline"
-                >
-                    <Link href={session.trainerHref}>Prenota di nuovo</Link>
-                </Button>
+                </span>
             </div>
 
-            {session.review && <YourReview {...session.review} />}
-
             {writing && (
-                <div className="rounded-xl border p-4">
+                <div className="md:ml-16.5">
                     <ReviewForm
                         processing={processing}
                         error={error}

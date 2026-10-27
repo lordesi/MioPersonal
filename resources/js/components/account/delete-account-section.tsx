@@ -1,37 +1,45 @@
 import { Form } from '@inertiajs/react';
-import { useState } from 'react';
+import { Trash2 } from 'lucide-react';
+import { useId, useState } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
-import AcknowledgeCheckbox from '@/components/account/acknowledge-checkbox';
 import SettingsSection from '@/components/account/settings-section';
-import FormField from '@/components/auth/form-field';
 import PasswordField from '@/components/auth/password-field';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 type DeleteAccountSectionProps = {
+    /** What gets deleted: different for clients and trainers. */
+    description: string;
+    /** Who has a password types it too; who uses only Google can't. */
+    hasPassword: boolean;
     /** Trainers of the client's pending bookings: they get cancelled too. */
     pendingBookingTrainers?: string[];
 };
 
-/**
- * Deletes the account on the server (starter kit route `profile.destroy`).
- * Unlike the design it also asks for the password: the server requires it.
- */
+/** Deletes the account on the server (route `profile.destroy`) after typing ELIMINA. */
 export default function DeleteAccountSection({
+    description,
+    hasPassword,
     pendingBookingTrainers = [],
 }: DeleteAccountSectionProps) {
     const [open, setOpen] = useState(false);
-    const [acknowledged, setAcknowledged] = useState(false);
+    const [confirmation, setConfirmation] = useState('');
+    const confirmationId = useId();
+    const passwordId = useId();
+
+    const confirmed = confirmation.trim().toUpperCase() === 'ELIMINA';
 
     const close = () => {
         setOpen(false);
-        setAcknowledged(false);
+        setConfirmation('');
     };
 
     return (
         <SettingsSection
             id="elimina"
             title="Elimina account"
-            description="Cancelliamo account, profilo, preferiti e messaggi. Le recensioni che hai scritto restano, ma in forma anonima."
+            icon={Trash2}
+            description={description}
             danger
         >
             {open ? (
@@ -39,66 +47,91 @@ export default function DeleteAccountSection({
                     {...ProfileController.destroy.form()}
                     options={{ preserveScroll: true }}
                     role="alertdialog"
-                    aria-label="Conferma eliminazione"
-                    className="flex flex-col gap-3 rounded-lg bg-muted p-3.5"
+                    aria-labelledby={`${confirmationId}-title`}
+                    className="flex flex-col gap-3 rounded-2xl bg-sidebar p-4.5 text-sidebar-foreground"
                 >
                     {({ errors, processing }) => (
                         <>
-                            <strong className="text-[15px]">
-                                Sei sicuro? Non si può annullare.
-                            </strong>
+                            <span
+                                id={`${confirmationId}-title`}
+                                className="text-[15px] leading-5.5 font-semibold"
+                            >
+                                Non si può annullare. Per confermare scrivi
+                                ELIMINA.
+                            </span>
                             <PendingBookings
                                 trainers={pendingBookingTrainers}
                             />
-                            <FormField
-                                label="Password attuale"
-                                error={errors.password}
-                            >
-                                {({ id, describedBy }) => (
+                            {hasPassword && (
+                                <div className="flex flex-col gap-1.5">
+                                    <label
+                                        htmlFor={passwordId}
+                                        className="text-[13px] font-semibold"
+                                    >
+                                        Password attuale
+                                    </label>
                                     <PasswordField
-                                        id={id}
+                                        id={passwordId}
                                         name="password"
                                         required
                                         autoComplete="current-password"
-                                        aria-describedby={describedBy}
                                         aria-invalid={!!errors.password}
-                                        className="bg-background"
+                                        className="border-sidebar-border bg-sidebar-accent text-sidebar-foreground"
                                     />
-                                )}
-                            </FormField>
-                            <AcknowledgeCheckbox
-                                checked={acknowledged}
-                                onCheckedChange={setAcknowledged}
-                            >
-                                Ho capito che i miei dati verranno cancellati
-                                definitivamente.
-                            </AcknowledgeCheckbox>
+                                    {errors.password && (
+                                        <p className="text-sm text-sidebar-foreground">
+                                            {errors.password}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                             <div className="flex flex-wrap gap-2">
-                                <Button
-                                    type="submit"
-                                    disabled={!acknowledged || processing}
-                                    className="h-10 font-semibold"
+                                <label
+                                    htmlFor={confirmationId}
+                                    className="sr-only"
                                 >
-                                    Elimina definitivamente
-                                </Button>
+                                    Scrivi ELIMINA per confermare
+                                </label>
+                                <Input
+                                    id={confirmationId}
+                                    name="confirmation"
+                                    value={confirmation}
+                                    onChange={(event) =>
+                                        setConfirmation(event.target.value)
+                                    }
+                                    placeholder="ELIMINA"
+                                    autoComplete="off"
+                                    aria-invalid={!!errors.confirmation}
+                                    className="h-11 min-w-0 flex-[1_1_200px] rounded-[10px] border-sidebar-border bg-sidebar-accent tracking-[0.06em] text-sidebar-foreground placeholder:text-sidebar-muted-foreground"
+                                />
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="h-10"
                                     onClick={close}
+                                    className="h-11 border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
                                 >
                                     Annulla
                                 </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={!confirmed || processing}
+                                    className="h-11 bg-sidebar-primary font-semibold text-sidebar-primary-foreground hover:bg-sidebar-primary/90 disabled:bg-sidebar-border disabled:text-sidebar-muted-foreground disabled:opacity-100"
+                                >
+                                    Elimina per sempre
+                                </Button>
                             </div>
+                            {errors.confirmation && (
+                                <p className="text-sm">{errors.confirmation}</p>
+                            )}
                         </>
                     )}
                 </Form>
             ) : (
-                <div>
+                <div className="flex justify-end">
                     <Button
                         type="button"
                         variant="outline"
-                        className="h-10"
+                        className="h-11 rounded-xl font-semibold"
                         onClick={() => setOpen(true)}
                     >
                         Elimina il mio account
@@ -116,7 +149,7 @@ function PendingBookings({ trainers }: { trainers: string[] }) {
 
     if (trainers.length === 1) {
         return (
-            <span className="text-sm">
+            <span className="text-sm text-sidebar-foreground/85">
                 Hai <strong>1 prenotazione in attesa</strong> con {trainers[0]}:
                 la annulliamo e avvisiamo noi {trainers[0]}.
             </span>
@@ -124,7 +157,7 @@ function PendingBookings({ trainers }: { trainers: string[] }) {
     }
 
     return (
-        <span className="text-sm">
+        <span className="text-sm text-sidebar-foreground/85">
             Hai <strong>{trainers.length} prenotazioni in attesa</strong>: le
             annulliamo e avvisiamo noi i trainer.
         </span>

@@ -20,7 +20,6 @@ const rules: {
     /** The name of the field on the server, for its error. */
     field: string;
     label: string;
-    hint: string;
     /** null = "Nessun limite". */
     options: (number | null)[];
     format: (value: number) => string;
@@ -29,7 +28,6 @@ const rules: {
         name: 'noticeHours',
         field: 'notice_hours',
         label: 'Preavviso minimo',
-        hint: 'Niente prenotazioni all’ultimo minuto.',
         options: [2, 6, 12, 24, 48],
         format: formatHours,
     },
@@ -37,7 +35,6 @@ const rules: {
         name: 'bookingWindowDays',
         field: 'booking_window_days',
         label: 'Prenotabile fino a',
-        hint: 'Oltre, il calendario è chiuso.',
         options: [14, 30, 60, 90],
         format: (n) => `${n} giorni`,
     },
@@ -45,7 +42,6 @@ const rules: {
         name: 'breakMinutes',
         field: 'break_minutes',
         label: 'Pausa tra due sedute',
-        hint: 'Per rifiatare e prepararti.',
         options: [0, 15, 30],
         format: (n) => (n === 0 ? 'Nessuna' : `${n} min`),
     },
@@ -53,15 +49,13 @@ const rules: {
         name: 'maxSessionsPerDay',
         field: 'max_sessions_per_day',
         label: 'Massimo sedute al giorno',
-        hint: 'Poi il giorno risulta pieno.',
         options: [2, 3, 4, 5, 6, 7, 8, 10, null],
         format: String,
     },
     {
         name: 'freeCancellationHours',
         field: 'free_cancellation_hours',
-        label: 'Cancellazione gratuita',
-        hint: 'I clienti la vedono prima di prenotare.',
+        label: 'Cancellazione',
         options: [12, 24, 48],
         format: (n) => `Fino a ${n} ore prima`,
     },
@@ -132,8 +126,8 @@ export default function BookingRulesFields({
                                 : 'text-muted-foreground',
                         )}
                     >
-                        Se attiva, le prenotazioni sono confermate subito. Se
-                        no, hai 24 ore per rispondere.
+                        Se attiva, le prenotazioni sono confermate da subito.
+                        Altrimenti, hai 24 ore di tempo per rispondere.
                     </span>
                 </span>
                 <span
@@ -157,7 +151,7 @@ export default function BookingRulesFields({
     );
 }
 
-/** A rule: label, menu with its options, hint and the server's error. */
+/** A rule: label, menu with its options and the server's error. */
 function RuleField({
     rule,
     value,
@@ -170,7 +164,6 @@ function RuleField({
     onChange: (value: number | null) => void;
 }) {
     const id = useId();
-    const hintId = `${id}-hint`;
     const errorId = `${id}-error`;
 
     return (
@@ -186,7 +179,7 @@ function RuleField({
             >
                 <SelectTrigger
                     id={id}
-                    aria-describedby={error ? `${hintId} ${errorId}` : hintId}
+                    aria-describedby={error ? errorId : undefined}
                     aria-invalid={error ? true : undefined}
                     className="w-full rounded-xl bg-card px-3.5 text-[15px] font-medium tabular-nums shadow-none focus-visible:border-foreground focus-visible:ring-foreground/10 data-[size=default]:h-11.5 [&_svg:not([class*='text-'])]:text-foreground"
                 >
@@ -205,12 +198,6 @@ function RuleField({
                     ))}
                 </SelectContent>
             </Select>
-            <span
-                id={hintId}
-                className="text-[13px] leading-4.5 text-muted-foreground"
-            >
-                {rule.hint}
-            </span>
             {error && (
                 <p id={errorId} className="text-sm text-destructive">
                     {error}

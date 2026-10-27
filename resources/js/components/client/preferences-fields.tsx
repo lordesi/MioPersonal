@@ -17,6 +17,7 @@ import {
 import { useId, useRef, useState } from 'react';
 import type { ChangeEvent, ReactNode } from 'react';
 import CompleteProfileController from '@/actions/App/Http/Controllers/CompleteProfileController';
+import PhotoCropDialog from '@/components/client/photo-crop-dialog';
 import NumberedSection from '@/components/trainer/area/numbered-section';
 import UserAvatar from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
@@ -32,7 +33,7 @@ import { Slider } from '@/components/ui/slider';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useInitials } from '@/hooks/use-initials';
 import { formatPrice } from '@/lib/format';
-import { closestCity, currentPosition } from '@/lib/geo';
+import { closestCity, currentPosition, PositionError } from '@/lib/geo';
 import { trainingGoals } from '@/lib/goals';
 import { cn } from '@/lib/utils';
 import type { CatalogOption, CityWithCoordinates } from '@/types';
@@ -68,9 +69,14 @@ const BUDGET_TICKS_CENTS = [2000, 4000, 6000, 8000, 10000];
 /** As in CompleteProfileController::updatePhoto (max:5120). */
 const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 const PHOTO_TOO_BIG = 'La foto è troppo pesante: massimo 5 MB.';
+/** As in CompleteProfileController::updatePhoto (mimes:jpg,jpeg,png). */
+const PHOTO_TYPES = ['image/jpeg', 'image/png'];
+const PHOTO_WRONG_TYPE = 'La foto deve essere un’immagine JPG o PNG.';
 
 const LOCATION_ERROR =
     'Non riusciamo a leggere la tua posizione: scegli la città dall’elenco.';
+const LOCATION_DENIED =
+    'Hai bloccato la posizione: attivala dalle impostazioni del browser o scegli la città dall’elenco.';
 
 /** Radix Select doesn't accept '' as a value, so "no city" uses this one. */
 const NO_CITY = 'none';
@@ -145,7 +151,7 @@ const pillClassName =
 
 /**
  * The four numbered sections of "Completa il tuo profilo" (after the sign-up)
- * and "Modifica il mio profilo" (client area): photo, where and how, goal and
+ * and "Modifica profilo" (client area): photo, where and how, goal and
  * disciplines, when and budget. The page adds its title and buttons.
  */
 export default function PreferencesFields({
@@ -176,7 +182,13 @@ export default function PreferencesFields({
                     setLocationError(LOCATION_ERROR);
                 }
             })
-            .catch(() => setLocationError(LOCATION_ERROR))
+            .catch((error: unknown) =>
+                setLocationError(
+                    error instanceof PositionError && error.problem === 'denied'
+                        ? LOCATION_DENIED
+                        : LOCATION_ERROR,
+                ),
+            )
             .finally(() => setLocating(false));
     };
 
@@ -200,7 +212,6 @@ export default function PreferencesFields({
                         </span>
                     </>
                 }
-                description="La vedono solo i trainer a cui chiedi una seduta."
             >
                 <PhotoUpload
                     name={auth?.user?.name ?? ''}
@@ -208,11 +219,7 @@ export default function PreferencesFields({
                 />
             </NumberedSection>
 
-            <NumberedSection
-                step={2}
-                title="Dove e come ti alleni"
-                description="Ti mostriamo prima i trainer della tua città."
-            >
+            <NumberedSection step={2} title="Dove e come ti alleni">
                 <div className="flex flex-col gap-2">
                     <Label htmlFor={cityId} className="font-semibold">
                         In che città ti alleni
@@ -309,11 +316,7 @@ export default function PreferencesFields({
                 </Field>
             </NumberedSection>
 
-            <NumberedSection
-                step={3}
-                title="Cosa cerchi"
-                description="L’obiettivo è cosa vuoi ottenere, le discipline sono come ti piace allenarti."
-            >
+            <NumberedSection step={3} title="Cosa cerchi">
                 <Field label="Il tuo obiettivo" hint="Scegline uno">
                     {(labelId) => (
                         <ToggleGroup
@@ -397,19 +400,11 @@ export default function PreferencesFields({
                 </Field>
             </NumberedSection>
 
-            <NumberedSection
-                step={4}
-                title="Quando e quanto"
-                description="Ti suggeriamo prima gli orari liberi che ti vanno bene."
-            >
+            <NumberedSection step={4} title="Quando">
                 <Field
                     label="Quando preferisci allenarti"
-                    hint={countHint(
-                        data.times.length,
-                        'Anche più di uno',
-                        'scelto',
-                        'scelti',
-                    )}
+                    // Nothing until a time is chosen, then "2 scelti".
+                    hint={countHint(data.times.length, '', 'scelto', 'scelti')}
                 >
                     {(labelId) => (
                         <ToggleGroup
@@ -466,7 +461,7 @@ export default function PreferencesFields({
     );
 }
 
-/** "Budget indicativo a seduta": the big value, the slider and its scale. */
+/** "Budget per seduta": the big value, the slider and its scale. */
 function BudgetField({
     value,
     onChange,
@@ -480,7 +475,7 @@ function BudgetField({
         <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span id={labelId} className="text-sm font-semibold">
-                    Budget indicativo a seduta
+                    Budget per seduta
                 </span>
                 <span className="text-[22px] leading-7 font-bold tracking-[-0.02em] tabular-nums">
                     {budgetLabel(value)}
@@ -493,7 +488,7 @@ function BudgetField({
                     step={BUDGET_STEP_CENTS}
                     value={[value ?? BUDGET_START_CENTS]}
                     onValueChange={([cents]) => onChange(cents)}
-                    thumbLabel="Budget indicativo a seduta"
+                    thumbLabel="Budget per seduta"
                     valueText={budgetLabel(value)}
                     className="py-2"
                 />
@@ -509,10 +504,6 @@ function BudgetField({
                     ))}
                 </div>
             </div>
-            <p className="text-[13px] leading-4.5 text-muted-foreground">
-                È solo un’indicazione: i trainer sopra il tuo budget restano
-                visibili, più in basso.
-            </p>
         </div>
     );
 }
@@ -528,13 +519,22 @@ function PhotoUpload({ name, src }: { name: string; src?: string | null }) {
     const [uploading, setUploading] = useState(false);
     const [removing, setRemoving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // The chosen photo while "Ritaglia la foto" is open.
+    const [cropSrc, setCropSrc] = useState<string | null>(null);
 
-    const upload = (event: ChangeEvent<HTMLInputElement>) => {
+    const choose = (event: ChangeEvent<HTMLInputElement>) => {
         const photo = event.target.files?.[0];
         // Lets the same file be chosen again after an error.
         event.target.value = '';
 
         if (!photo) {
+            return;
+        }
+
+        // The file input accepts other files too, with "All files".
+        if (!PHOTO_TYPES.includes(photo.type)) {
+            setError(PHOTO_WRONG_TYPE);
+
             return;
         }
 
@@ -546,6 +546,21 @@ function PhotoUpload({ name, src }: { name: string; src?: string | null }) {
         }
 
         setError(null);
+        setCropSrc(URL.createObjectURL(photo));
+    };
+
+    // The address of the file is freed when the dialog closes.
+    const closeCrop = () => {
+        if (cropSrc) {
+            URL.revokeObjectURL(cropSrc);
+        }
+
+        setCropSrc(null);
+    };
+
+    // Only the square part chosen in "Ritaglia la foto" is uploaded.
+    const upload = (photo: File) => {
+        closeCrop();
         router.post(
             CompleteProfileController.updatePhoto.url(),
             { photo },
@@ -618,7 +633,12 @@ function PhotoUpload({ name, src }: { name: string; src?: string | null }) {
                     className="sr-only"
                     tabIndex={-1}
                     aria-hidden="true"
-                    onChange={upload}
+                    onChange={choose}
+                />
+                <PhotoCropDialog
+                    src={cropSrc}
+                    onCancel={closeCrop}
+                    onConfirm={upload}
                 />
                 <div className="flex flex-wrap gap-2">
                     <Button

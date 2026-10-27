@@ -23,7 +23,7 @@ export function totalHours(items: CalendarItem[]): number {
     return items.reduce((sum, item) => sum + item.to - item.from, 0);
 }
 
-/** "Giorno": the sessions of one day as black cards, or "Giornata libera". */
+/** "Giorno": the sessions of one day as black cards, or "Nessuna seduta". */
 export default function DayView({
     date,
     items,
@@ -127,18 +127,19 @@ export default function DayView({
                         <Moon aria-hidden="true" className="size-5.5" />
                     </span>
                     <span className="text-[17px] leading-6 font-semibold">
-                        Giornata libera
+                        Nessuna seduta
                     </span>
                     <span className="max-w-100 text-sm text-muted-foreground">
                         Nessuna seduta in programma. Se vuoi ricevere richieste
-                        per questo giorno, controlla di avere orari aperti.
+                        per questo giorno, controlla di avere slot liberi.
                     </span>
-                    <Link
-                        href={availability()}
-                        className="mt-1 text-sm font-semibold underline underline-offset-4"
+                    <Button
+                        asChild
+                        variant="outline"
+                        className="mt-1 h-10 rounded-full px-4 font-semibold"
                     >
-                        Apri disponibilità
-                    </Link>
+                        <Link href={availability()}>Apri disponibilità</Link>
+                    </Button>
                 </div>
             )}
         </div>

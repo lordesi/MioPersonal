@@ -34,8 +34,6 @@ class BookingSentController extends Controller
                 'serviceName' => $booking->service_name,
                 'placeLabel' => $booking->place_label,
                 'priceCents' => $booking->price_cents,
-                'confirmWithinHours' => $trainer->confirm_hours,
-                'freeCancellationHours' => $trainer->free_cancellation_hours,
                 'trainer' => [
                     'name' => $trainer->user->name,
                     'firstName' => $trainer->user->first_name,

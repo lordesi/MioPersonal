@@ -11,6 +11,7 @@ use App\Models\TrainerPhoto;
 use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\SimilarTrainers;
 use App\Support\TrainerCard;
 use App\Support\TrainerSlots;
 use Illuminate\Http\Request;
@@ -72,12 +73,16 @@ class TrainerProfileController extends Controller
             // TODO (step 5): computed from the answers to the bookings.
             'responseTimeLabel' => null,
             'cancellationLabel' => "Cancellazione gratuita fino a {$profile->free_cancellation_hours} ore prima",
+            // Under the booking button: how soon the client gets an answer.
+            'confirmLabel' => $profile->auto_confirm ? 'Conferma immediata' : "Conferma entro {$profile->confirm_hours} ore",
             'rating' => $profile->rating(),
             'reviewCount' => $profile->rating_count,
             'city' => $profile->city === null ? null : ['slug' => $profile->city->slug, 'name' => $profile->city->name],
             'cities' => $cities ?: ['Solo online'],
             'online' => TrainerCard::online($profile),
             'disciplines' => $profile->disciplines->pluck('name')->all(),
+            // App\Enums\TrainingGoal values: the page shows them with the labels of goals.ts.
+            'goals' => $profile->goals ?? [],
             // The profile photo goes in the circle next to the name, not in the carousel.
             'portraitUrl' => $profile->photos->firstWhere('is_portrait', true)?->url(),
             'photos' => $this->photos($profile),
@@ -310,39 +315,21 @@ class TrainerProfileController extends Controller
     }
 
     /**
-     * Other published trainers with a discipline in common: of the same city,
-     * or training online for an online-only trainer (who has no city).
+     * The published trainers closest in disciplines, goals and place (see
+     * SimilarTrainers), in the format of the search cards (TrainerCard).
      *
-     * @return list<array{name: string, href: string, subtitle: string, detail: string}>
+     * @return list<array<string, mixed>>
      */
     private function similar(TrainerProfile $profile): array
     {
-        $others = TrainerProfile::query()
-            ->published()
-            ->whereKeyNot($profile->id)
-            ->when(
-                $profile->city_id === null,
-                fn ($query) => $query->where('trains_online', true),
-                fn ($query) => $query->where('city_id', $profile->city_id),
-            )
-            ->whereHas('disciplines', fn ($query) => $query->whereKey($profile->disciplines->modelKeys()))
+        $ids = SimilarTrainers::ids($profile, self::SIMILAR);
+
+        // Loaded with everything the cards need, back in the order of $ids.
+        return array_values(TrainerProfile::query()
             ->with(TrainerCard::RELATIONS)
-            ->orderByDesc('rating_count')
-            ->limit(self::SIMILAR)
-            ->get();
-
-        return array_values($others->map(function (TrainerProfile $other) {
-            $slot = TrainerCard::slotLabel($other->next_free_slot_at);
-            $cents = $other->price_from_cents ?? 0;
-            // "da 45 €", or "da 45,50 €" with cents.
-            $price = 'da '.number_format($cents / 100, $cents % 100 === 0 ? 0 : 2, ',', '.').' €';
-
-            return [
-                'name' => $other->user->name,
-                'href' => route('trainers.show', $other->slug, false),
-                'subtitle' => TrainerCard::cityLabel($other).' · '.$other->disciplines->pluck('name')->take(2)->implode(', '),
-                'detail' => $slot === null ? $price : "{$price} · primo slot {$slot}",
-            ];
-        })->all());
+            ->findMany($ids)
+            ->sortBy(fn (TrainerProfile $other) => array_search($other->id, $ids, true))
+            ->map(TrainerCard::from(...))
+            ->all());
     }
 }

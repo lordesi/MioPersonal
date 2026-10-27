@@ -18,4 +18,14 @@ enum UserRole: string
             self::Admin => 'admin.overview',
         };
     }
+
+    /** Name of the route of "Impostazioni account"; admins have none. */
+    public function settingsRoute(): string
+    {
+        return match ($this) {
+            self::Client => 'account.settings',
+            self::Trainer => 'trainer.settings',
+            self::Admin => 'admin.overview',
+        };
+    }
 }

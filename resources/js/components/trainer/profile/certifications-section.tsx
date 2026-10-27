@@ -24,7 +24,7 @@ type CertificationsSectionProps = {
 };
 
 /**
- * "Formazione e certificazioni" (section 4 of "Il mio profilo", optional):
+ * "Formazione e certificazioni" (section 4 of "Modifica profilo", optional):
  * at most 3. A started one needs title, issuer and year; the certificate
  * file stays optional and only the team sees it.
  */

@@ -25,8 +25,10 @@ import { register } from '@/routes/trainer';
 import type { CatalogOption, CityOption } from '@/types';
 
 type ProfileProps = {
-    /** null until the team approves the profile: it is changed from "Diventa trainer". */
+    /** null until the registration is sent: it is filled in from "Diventa trainer". */
     draft: Omit<TrainerDraft, 'photo'> | null;
+    /** False until the team approves the profile: shown, but locked. */
+    editable: boolean;
     /** Options of "Discipline, obiettivi, luoghi e città", from the catalog. */
     disciplines: CatalogOption[];
     cities: CityOption[];
@@ -39,6 +41,7 @@ type ProfileProps = {
 
 export default function Profile({
     draft,
+    editable,
     disciplines,
     cities,
     gallery,
@@ -47,9 +50,9 @@ export default function Profile({
 }: ProfileProps) {
     return (
         <>
-            <Head title="Il mio profilo" />
+            <Head title="Modifica profilo" />
 
-            <PageHeading title="Il mio profilo" />
+            <PageHeading title="Modifica profilo" />
 
             {draft === null || rating === null ? (
                 <p className="text-sm text-muted-foreground">
@@ -65,6 +68,7 @@ export default function Profile({
             ) : (
                 <ProfileForm
                     saved={draft}
+                    locked={!editable}
                     disciplines={disciplines}
                     cities={cities}
                     gallery={gallery}
@@ -80,10 +84,12 @@ export default function Profile({
  * The four sections on the left (steps 2, 3 and 6 of "Diventa trainer"),
  * the preview with "Salva modifiche" on the right. The fields are saved
  * with one button, public right away; the gallery photos are saved one
- * action at a time. The services are changed from "Servizi".
+ * action at a time. The services are changed from "Servizi". Locked
+ * before the approval: everything is shown, nothing can be changed.
  */
 function ProfileForm({
     saved,
+    locked,
     disciplines,
     cities,
     gallery,
@@ -91,6 +97,7 @@ function ProfileForm({
     rating,
 }: {
     saved: Omit<TrainerDraft, 'photo'>;
+    locked: boolean;
     disciplines: CatalogOption[];
     cities: CityOption[];
     gallery: GalleryPhoto[];
@@ -138,7 +145,7 @@ function ProfileForm({
     const askToSave = (event: React.FormEvent) => {
         event.preventDefault();
 
-        if (changed && complete && !form.processing) {
+        if (!locked && changed && complete && !form.processing) {
             setConfirming(true);
         }
     };
@@ -167,12 +174,12 @@ function ProfileForm({
     // null when nothing changed: the preview shows no status.
     let status: string | null = 'Modifiche non salvate';
 
-    if (form.processing) {
+    if (locked) {
+        status = 'Prima di poter modificare il profilo, deve essere approvato.';
+    } else if (form.processing) {
         status = 'Salvataggio…';
     } else if (!changed) {
         status = null;
-    } else if (!complete) {
-        status = 'Completa i campi obbligatori';
     }
 
     return (
@@ -182,7 +189,11 @@ function ProfileForm({
                 onSubmit={askToSave}
                 className="flex flex-wrap items-start gap-5"
             >
-                <div className="flex min-w-0 flex-[3_1_560px] flex-col gap-4">
+                {/* Disabled: the browser turns off every field and button inside. */}
+                <fieldset
+                    disabled={locked}
+                    className="flex min-w-0 flex-[3_1_560px] flex-col gap-4"
+                >
                     <PublicProfileSection
                         draft={draft}
                         update={update}
@@ -204,7 +215,7 @@ function ProfileForm({
                         update={update}
                         errors={errorsOf(6)}
                     />
-                </div>
+                </fieldset>
                 <aside className="min-w-0 flex-[2_1_320px] lg:sticky lg:top-6">
                     <ProfilePreview
                         draft={draft}

@@ -87,7 +87,7 @@ export default function Clients({
                 <EmptyState
                     icon={Users}
                     title="Ancora nessun cliente"
-                    description="I nuovi clienti compaiono qui dopo la prima richiesta che confermi."
+                    description="I nuovi clienti compaiono qui dopo la prima prenotazione confermata."
                     bordered
                     className="rounded-[20px] bg-card"
                 />

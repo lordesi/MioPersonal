@@ -65,7 +65,7 @@ type ProfilePreviewProps = {
     disciplines: CatalogOption[];
     cities: CatalogOption[];
     checks: ProfileCheck[];
-    /** "Modifiche non salvate", "Salvataggio…"; null when nothing changed. */
+    /** "Modifiche non salvate", "Salvataggio…", why it is locked; null when nothing changed. */
     status: string | null;
     changed: boolean;
     canSave: boolean;
@@ -73,7 +73,7 @@ type ProfilePreviewProps = {
 };
 
 /**
- * "Anteprima": the black panel of "Il mio profilo" with the card at the size
+ * "Anteprima": the black panel of "Modifica profilo" with the card at the size
  * of the search and home cards (TrainerCard), how complete the profile is,
  * and the save button of the page (a submit button of its form).
  */

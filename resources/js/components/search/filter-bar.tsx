@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { ChevronDown, Heart, Star } from 'lucide-react';
 import ActiveFilters from '@/components/search/active-filters';
 import type { ActiveChip } from '@/components/search/active-filters';
+import NameSearch from '@/components/search/name-search';
 import OptionsMenu from '@/components/search/options-menu';
 import SearchBar from '@/components/search/search-bar';
 import { Toggle } from '@/components/ui/toggle';
@@ -167,7 +168,7 @@ type FilterBarProps = SearchControlsProps & {
     onReset: () => void;
 };
 
-/** Above the results: price, rating, favorites, sort and "Filtri attivi". */
+/** Above the results: name, price, rating, favorites, sort and "Filtri attivi". */
 export default function FilterBar({
     filters,
     disciplines,
@@ -201,6 +202,9 @@ export default function FilterBar({
         }
     };
 
+    addChip('nome', filters.nome ? `Nome: “${filters.nome}”` : undefined, () =>
+        onChange({ nome: null }),
+    );
     // One chip for each discipline and each goal: each one goes away on its own.
     filters.disciplina.forEach((slug) =>
         addChip(`disciplina-${slug}`, labelOf(disciplines, slug), () =>
@@ -244,6 +248,13 @@ export default function FilterBar({
                 aria-label="Filtri"
                 className="flex flex-wrap items-center gap-2.5"
             >
+                <NameSearch
+                    // No `key`: a new field while typing would lose the cursor.
+                    applied={filters.nome}
+                    onSearch={(nome) => onChange({ nome })}
+                    className="w-full sm:w-60"
+                />
+
                 <OptionsMenu
                     label="Prezzo a seduta"
                     noneLabel="Qualsiasi prezzo"

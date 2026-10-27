@@ -279,24 +279,30 @@ class TrainerProfileRequest extends FormRequest
     {
         return [
             function (Validator $validator) {
+                // Each check only with its fields: "Continua" checks one step (TrainerRegistrationStepRequest).
+                $rules = $this->rules();
                 $places = (array) $this->input('places', []);
 
-                if (in_array(PlaceType::Studio->value, $places, true) && $this->input('studios', []) === []) {
-                    $validator->errors()->add('studios', 'Aggiungi almeno uno studio con nome e indirizzo.');
-                }
+                if (isset($rules['places'])) {
+                    if (in_array(PlaceType::Studio->value, $places, true) && $this->input('studios', []) === []) {
+                        $validator->errors()->add('studios', 'Aggiungi almeno uno studio con nome e indirizzo.');
+                    }
 
-                // Online-only trainers don't need a city.
-                if (array_diff($places, [PlaceType::Online->value]) !== [] && ! $this->filled('city')) {
-                    $validator->errors()->add('city', 'Scegli la tua città principale.');
+                    // Online-only trainers don't need a city.
+                    if (array_diff($places, [PlaceType::Online->value]) !== [] && ! $this->filled('city')) {
+                        $validator->errors()->add('city', 'Scegli la tua città principale.');
+                    }
                 }
 
                 // With the hours (the registration, not "Modifica profilo"): at least one
                 // open hour, or nobody could book. "Disponibilità" can close them all later.
-                if (isset($this->rules()['hours']) && collect((array) $this->input('hours', []))->flatten()->isEmpty()) {
+                if (isset($rules['hours']) && collect((array) $this->input('hours', []))->flatten()->isEmpty()) {
                     $validator->errors()->add('hours', 'Apri almeno un’ora nella settimana.');
                 }
 
-                self::checkSessions($validator, (array) $this->input('sessions', []));
+                if (isset($rules['sessions'])) {
+                    self::checkSessions($validator, (array) $this->input('sessions', []));
+                }
             },
         ];
     }

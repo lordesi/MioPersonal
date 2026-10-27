@@ -4,7 +4,7 @@ import { useState } from 'react';
 import LaterSessionRow from '@/components/client/later-session-row';
 import NextSessionHero from '@/components/client/next-session-hero';
 import NoUpcomingSessions from '@/components/client/no-upcoming-sessions';
-import PackageStack from '@/components/client/package-stack';
+import PackageCarousel from '@/components/client/package-carousel';
 import PendingBookingCard from '@/components/client/pending-booking-card';
 import RecommendedTrainersPanel from '@/components/client/recommended-trainers-panel';
 import SessionHistory from '@/components/client/session-history';
@@ -38,8 +38,6 @@ type HomeProps = {
     recommended: TrainerSummary[];
     /** False until the client fills in "Completa il tuo profilo". */
     hasPreferences: boolean;
-    /** The client's city: "Prenota una seduta" opens its search. */
-    citySlug: string | null;
 };
 
 /**
@@ -55,11 +53,16 @@ export default function Home({
     trainers,
     recommended,
     hasPreferences,
-    citySlug,
 }: HomeProps) {
     const [now] = useState(() => new Date());
-    const bookUrl = searchUrl({}, citySlug);
+    // All of Italy: the client's preferences only change the order.
+    const bookUrl = searchUrl();
     const [next, ...later] = upcoming;
+    // "Riprendi con …": the trainer of the last session, when nothing is booked.
+    const resumeTrainer = trainers.find((trainer) => trainer.booked) ?? null;
+    const resumeSessionsLeft = packages
+        .filter((pack) => pack.trainerHref === resumeTrainer?.href)
+        .reduce((sum, pack) => sum + pack.total - pack.booked, 0);
 
     return (
         <>
@@ -82,11 +85,15 @@ export default function Home({
             />
 
             <div className="flex flex-wrap items-start gap-5">
-                <div className="flex min-w-0 flex-[2_1_520px] flex-col gap-5">
+                <div className="flex min-w-0 flex-[3_1_540px] flex-col gap-5">
                     {next ? (
                         <NextSessionHero booking={next} now={now} />
                     ) : (
-                        <NoUpcomingSessions bookUrl={bookUrl} />
+                        <NoUpcomingSessions
+                            bookUrl={bookUrl}
+                            trainer={resumeTrainer}
+                            packageSessionsLeft={resumeSessionsLeft}
+                        />
                     )}
 
                     {pending.length > 0 && (
@@ -117,7 +124,7 @@ export default function Home({
                     <SessionHistory sessions={past} />
                 </div>
 
-                <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-5">
+                <div className="flex min-w-0 flex-[2_1_320px] flex-col gap-5">
                     {!hasPreferences && (
                         <section
                             aria-labelledby="completa-profilo"
@@ -152,11 +159,14 @@ export default function Home({
                     )}
 
                     {packages.length > 0 && (
-                        <PackageStack packages={packages} now={now} />
+                        <PackageCarousel packages={packages} />
                     )}
 
                     {trainers.length > 0 ? (
-                        <YourTrainersPanel trainers={trainers} />
+                        <YourTrainersPanel
+                            trainers={trainers}
+                            searchHref={bookUrl}
+                        />
                     ) : (
                         recommended.length > 0 && (
                             <RecommendedTrainersPanel

@@ -42,7 +42,7 @@ type SearchSectionProps = {
 };
 
 /**
- * "Discipline, obiettivi, luoghi e città" (section 3 of "Il mio profilo"):
+ * "Discipline, obiettivi, luoghi e città" (section 3 of "Modifica profilo"):
  * what the search reads. The studios' names and addresses show up only with
  * "Studio o palestra".
  */

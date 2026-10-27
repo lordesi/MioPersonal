@@ -180,6 +180,15 @@ export function formatUntilDay(date: string): string {
     return `${preposition}${number} ${part(day, { month: 'long' })}`;
 }
 
+/** "2026-10-29" → "al 29 ott", "2026-11-08" → "all'8 nov" */
+export function formatUntilDayShort(date: string): string {
+    const day = fromDateString(date);
+    const number = part(day, { day: 'numeric' });
+    const preposition = ['1', '8', '11'].includes(number) ? "all'" : 'al ';
+
+    return `${preposition}${number} ${part(day, { month: 'short' })}`;
+}
+
 /** Whole hours from now until an ISO UTC moment (never negative). */
 export function hoursUntil(iso: string, now = new Date()): number {
     const hours = (new Date(iso).getTime() - now.getTime()) / (60 * 60 * 1000);

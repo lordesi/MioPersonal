@@ -22,7 +22,7 @@ type CompleteProfileProps = {
 
 /**
  * Optional page right after the client sign-up; later the same answers are
- * changed from "Modifica il mio profilo" (pages/client/edit-profile.tsx).
+ * changed from "Modifica profilo" (pages/client/edit-profile.tsx).
  * Saved in `client_preferences`; the photo is saved as soon as it is chosen.
  */
 export default function CompleteProfile({

@@ -5,7 +5,6 @@ import {
     Dumbbell,
     Euro,
     MapPin,
-    ShieldCheck,
     Target,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -17,7 +16,6 @@ import type { PreferencesData } from '@/components/client/preferences-fields';
 import { Button } from '@/components/ui/button';
 import { trainingGoals } from '@/lib/goals';
 import { searchUrl } from '@/lib/search';
-import type { SearchFilters } from '@/lib/search';
 import { cn } from '@/lib/utils';
 import type { CatalogOption } from '@/types';
 
@@ -39,21 +37,16 @@ type SummaryRow = {
     icon: LucideIcon;
 };
 
-/** App\Enums\TrainingMode → "modalita" of the search; "Entrambe" is no filter. */
-const searchModes: Record<string, SearchFilters['modalita']> = {
-    in_person: 'presenza',
-    online: 'online',
-};
-
 /** "a Roma", "ad Alessandria". */
 function inCity(city: string): string {
     return /^a/i.test(city) ? `ad ${city}` : `a ${city}`;
 }
 
 /**
- * "Anteprima": the black panel of "Modifica il mio profilo" with what the
- * client is looking for, the link to the search with those filters and the
- * save button of the page (a submit button of its form).
+ * "Anteprima": the black panel of "Modifica profilo" with what the
+ * client is looking for, the link to the search (ordered by the saved
+ * answers, never filtered) and the save button of the page (a submit button
+ * of its form).
  */
 export default function PreferencesPreview({
     data,
@@ -138,15 +131,9 @@ export default function PreferencesPreview({
         },
     ];
 
-    // The budget isn't a filter: the trainers above it stay in the results.
-    const trainersUrl = searchUrl(
-        {
-            disciplina: data.disciplines,
-            obiettivo: goal ? [goal.value] : null,
-            modalita: searchModes[data.mode ?? ''] ?? null,
-        },
-        online ? null : data.city,
-    );
+    // All of Italy, no filters: the saved answers only change the order
+    // (TrainerSearchController::preferenceOrder).
+    const trainersUrl = searchUrl();
 
     return (
         <section
@@ -201,19 +188,10 @@ export default function PreferencesPreview({
                 className="h-11.5 rounded-xl bg-sidebar-primary text-[15px] font-semibold text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
             >
                 <Link href={trainersUrl}>
-                    Vedi i trainer per te
+                    Vedi i risultati
                     <ArrowRight aria-hidden="true" strokeWidth={2.5} />
                 </Link>
             </Button>
-
-            <p className="flex gap-2.5 text-[13px] leading-4.5 text-sidebar-foreground/80">
-                <ShieldCheck
-                    aria-hidden="true"
-                    className="mt-px size-4 flex-none"
-                />
-                Non ti chiediamo dati sulla salute. Puoi cambiare queste
-                preferenze quando vuoi.
-            </p>
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sidebar-border pt-4">
                 <span

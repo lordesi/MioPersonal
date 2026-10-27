@@ -7,6 +7,7 @@ import Certifications from '@/components/profile/certifications';
 import PhotoGallery from '@/components/profile/photo-gallery';
 import ProfileIntro from '@/components/profile/profile-intro';
 import ProfileMobileHeader from '@/components/profile/profile-mobile-header';
+import ProfileSection from '@/components/profile/profile-section';
 import ReviewsSection from '@/components/profile/reviews-section';
 import ServicePicker from '@/components/profile/service-picker';
 import SimilarTrainers from '@/components/profile/similar-trainers';
@@ -33,6 +34,9 @@ import { home } from '@/routes';
 import { book } from '@/routes/trainers';
 import { start as startBooking } from '@/routes/trainers/book';
 import type { TrainerProfile, TrainerReview, TrainerService } from '@/types';
+
+/** Light links on the dark block, as in the search. */
+const crumbLink = 'text-primary-foreground/60 hover:text-primary-foreground';
 
 type ProfileProps = {
     trainer: TrainerProfile;
@@ -63,7 +67,6 @@ export default function Profile({
         );
     };
 
-    const [photoIndex, setPhotoIndex] = useState(0);
     const favorite = useFavorite(trainer.slug, trainer.favorite);
     /** 1 hour when the service offers it, otherwise the shortest duration. */
     const defaultMinutes = (item: TrainerService) => {
@@ -210,95 +213,93 @@ export default function Profile({
             <Head title={trainer.name} />
             <ProfileMobileHeader backHref={citySearchHref} onShare={share} />
 
-            <div className="mx-auto flex w-full max-w-7xl flex-col md:gap-8 md:px-8 md:pt-8">
-                {preview && (
-                    <p
-                        role="status"
-                        className="mx-4 mt-4 rounded-xl border-[1.5px] border-foreground px-3.5 py-3 text-sm md:mx-0 md:mt-0"
+            {/* The dark block, like the header: breadcrumb, photos and name. */}
+            <div className="bg-primary text-primary-foreground">
+                <div className="mx-auto flex w-full max-w-7xl flex-col gap-6.5 px-4 pt-5.5 pb-10 md:px-8">
+                    {preview && (
+                        <p
+                            role="status"
+                            className="rounded-xl border border-primary-foreground/40 px-3.5 py-3 text-sm"
+                        >
+                            <strong>Anteprima:</strong> il profilo non è ancora
+                            pubblico. Lo vedi solo tu (e il nostro team) finché
+                            non viene approvato.
+                        </p>
+                    )}
+                    <Breadcrumb
+                        aria-label="Percorso"
+                        className="hidden md:block"
                     >
-                        <strong>Anteprima:</strong> il profilo non è ancora
-                        pubblico. Lo vedi solo tu (e il nostro team) finché non
-                        viene approvato.
-                    </p>
-                )}
-                <Breadcrumb aria-label="Percorso" className="hidden md:block">
-                    <BreadcrumbList>
-                        <BreadcrumbItem>
-                            <BreadcrumbLink asChild>
-                                <Link href={home()}>Home</Link>
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>
-                        <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                        <BreadcrumbItem>
-                            <BreadcrumbLink asChild>
-                                <Link href={citySearchHref}>
-                                    {trainer.city
-                                        ? `Personal trainer a ${trainer.city.name}`
-                                        : 'Personal trainer'}
-                                </Link>
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>
-                        <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                        <BreadcrumbItem>
-                            <BreadcrumbPage>{trainer.name}</BreadcrumbPage>
-                        </BreadcrumbItem>
-                    </BreadcrumbList>
-                </Breadcrumb>
+                        <BreadcrumbList className="gap-2 text-[13px] leading-[18px] text-primary-foreground/60 sm:gap-2">
+                            <BreadcrumbItem>
+                                <BreadcrumbLink asChild className={crumbLink}>
+                                    <Link href={home()}>Home</Link>
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator>/</BreadcrumbSeparator>
+                            <BreadcrumbItem>
+                                <BreadcrumbLink asChild className={crumbLink}>
+                                    <Link href={citySearchHref}>
+                                        {trainer.city
+                                            ? `Personal trainer a ${trainer.city.name}`
+                                            : 'Personal trainer'}
+                                    </Link>
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator>/</BreadcrumbSeparator>
+                            <BreadcrumbItem>
+                                <BreadcrumbPage className="text-primary-foreground">
+                                    {trainer.name}
+                                </BreadcrumbPage>
+                            </BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
 
-                {/* Only the gallery: the profile photo is in the circle next to the name. */}
-                {trainer.photos.length > 0 && (
-                    <PhotoGallery
-                        trainerName={trainer.name}
-                        photos={trainer.photos}
-                        index={photoIndex}
-                        onIndexChange={setPhotoIndex}
-                    />
-                )}
+                    {/* Only the gallery: the profile photo is next to the name. */}
+                    {trainer.photos.length > 0 && (
+                        <PhotoGallery
+                            trainerName={trainer.name}
+                            photos={trainer.photos}
+                        />
+                    )}
 
-                <div className="flex flex-col gap-8 px-4 pt-6 pb-10 md:px-0 md:pt-0 md:pb-20">
                     <ProfileIntro
                         trainer={trainer}
                         favorite={favorite.canSave ? favorite.pressed : null}
                         onFavoriteChange={favorite.change}
                         onShare={share}
                     />
+                </div>
+            </div>
 
-                    <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-12">
-                        <div className="flex min-w-0 flex-col gap-8">
+            <div className="flex-1 bg-muted">
+                <div className="mx-auto flex w-full max-w-7xl flex-col gap-7 px-4 pt-7 pb-10 md:px-8 md:pb-14">
+                    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(340px,2fr)]">
+                        <div className="flex min-w-0 flex-col gap-4.5">
                             {trainer.bio.length > 0 && (
-                                <section
-                                    aria-labelledby="bio-title"
-                                    className="order-1 flex flex-col gap-3"
+                                <ProfileSection
+                                    titleId="bio-title"
+                                    title="Chi sono"
+                                    className="order-1"
                                 >
-                                    <h2
-                                        id="bio-title"
-                                        className="text-xl font-semibold tracking-tight md:text-2xl"
-                                    >
-                                        Chi sono
-                                    </h2>
                                     {trainer.bio.map((paragraph) => (
                                         <p
                                             key={paragraph}
                                             // break-words: a very long word wraps instead of going under the prices.
-                                            className="text-base leading-[26px] break-words"
+                                            className="text-base leading-[26px] break-words text-foreground/80"
                                         >
                                             {paragraph}
                                         </p>
                                     ))}
-                                </section>
+                                </ProfileSection>
                             )}
 
                             {/* Below lg the booking box is replaced by this section and the bottom bar. */}
-                            <section
-                                aria-labelledby="services-title"
-                                className="order-2 flex flex-col gap-3 lg:hidden"
+                            <ProfileSection
+                                titleId="services-title"
+                                title="Servizi e prezzi"
+                                className="order-2 lg:hidden"
                             >
-                                <h2
-                                    id="services-title"
-                                    className="text-xl font-semibold tracking-tight md:text-2xl"
-                                >
-                                    Servizi e prezzi
-                                </h2>
                                 <ServicePicker
                                     variant="detailed"
                                     legend="Tocca un servizio per sceglierlo, poi giorno e orario qui sotto"
@@ -310,12 +311,12 @@ export default function Profile({
                                     Prezzi indicativi. Il pagamento si concorda
                                     con il trainer.
                                 </p>
-                            </section>
+                            </ProfileSection>
 
-                            <div className="order-4 lg:order-3">
-                                {weeks[weekIndex] && (
+                            {weeks[weekIndex] && (
+                                <div className="order-4 lg:order-3">
                                     <SlotPicker
-                                        trainerFirstName={firstName}
+                                        serviceName={service.name}
                                         week={weeks[weekIndex]}
                                         weekIndex={weekIndex}
                                         weekCount={weeks.length}
@@ -328,13 +329,17 @@ export default function Profile({
                                         selectedStart={start}
                                         onStartChange={setStart}
                                     />
-                                )}
-                            </div>
+                                </div>
+                            )}
 
                             {/* Sections without content are left out, title included. */}
                             {trainer.places.length > 0 && (
                                 <div className="order-3 lg:order-4">
-                                    <TrainingPlaces places={trainer.places} />
+                                    <TrainingPlaces
+                                        places={trainer.places}
+                                        online={trainer.online}
+                                        trainerFirstName={firstName}
+                                    />
                                 </div>
                             )}
                             {trainer.certifications.length > 0 && (
@@ -361,12 +366,16 @@ export default function Profile({
                             onServiceChange={changeService}
                             minutes={minutes}
                             selectedStart={start}
+                            confirmLabel={trainer.confirmLabel}
                             onBook={bookSlot}
                             booking={booking}
                         />
                     </div>
 
-                    <SimilarTrainers trainers={trainer.similarTrainers} />
+                    <SimilarTrainers
+                        trainers={trainer.similarTrainers}
+                        searchHref={citySearchHref}
+                    />
                 </div>
             </div>
 

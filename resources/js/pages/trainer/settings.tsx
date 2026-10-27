@@ -1,8 +1,10 @@
 import { Head } from '@inertiajs/react';
+import { Eye, LockKeyhole, Mail, Power, Trash2, UserRound } from 'lucide-react';
 import AccessSection from '@/components/account/access-section';
 import DeleteAccountSection from '@/components/account/delete-account-section';
 import PersonalDataSection from '@/components/account/personal-data-section';
 import SettingsNav from '@/components/account/settings-nav';
+import type { SettingsNavSection } from '@/components/account/settings-nav';
 import ClientContactsSection from '@/components/account/trainer/client-contacts-section';
 import CloseTrainerProfileSection from '@/components/account/trainer/close-trainer-profile-section';
 import ProfileVisibilitySection from '@/components/account/trainer/profile-visibility-section';
@@ -18,43 +20,44 @@ type TrainerSettingsProps = {
     /** Null until the registration is sent: the section is hidden. */
     contacts: TrainerContacts | null;
     visibility: TrainerVisibility | null;
-    upcoming: { sessions: number; requests: number };
 };
 
-/** Order of the design "Impostazioni account · trainer". */
-const sections = [
-    { id: 'dati', title: 'Dati personali' },
-    { id: 'contatti', title: 'Contatti per i clienti' },
-    { id: 'accesso', title: 'Accesso e sicurezza' },
-    { id: 'visibilita', title: 'Visibilità del profilo' },
-    { id: 'chiudi', title: 'Chiudi il profilo' },
-    { id: 'elimina', title: 'Elimina account' },
+/** Order of the design "Area trainer · Impostazioni account". */
+const allSections: SettingsNavSection[] = [
+    { id: 'dati', title: 'Dati personali', icon: UserRound },
+    { id: 'contatti', title: 'Contatti per i clienti', icon: Mail },
+    { id: 'accesso', title: 'Accesso e sicurezza', icon: LockKeyhole },
+    { id: 'visibilita', title: 'Visibilità del profilo', icon: Eye },
+    { id: 'chiudi', title: 'Chiudi il profilo', icon: Power },
+    { id: 'elimina', title: 'Elimina account', icon: Trash2 },
 ];
+
+/** Before the registration is sent there are no contacts and no visibility. */
+const sectionsWithoutProfile = allSections.filter(
+    (section) => section.id !== 'contatti' && section.id !== 'visibilita',
+);
 
 export default function TrainerSettings({
     account,
     contacts,
     visibility,
-    upcoming,
 }: TrainerSettingsProps) {
     return (
         <>
             <Head title="Impostazioni account" />
 
-            <PageHeading
-                title="Impostazioni account"
-                description="Profilo e visibilità del tuo account da trainer."
-            />
+            <PageHeading title="Impostazioni account" />
 
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-8">
-                <SettingsNav sections={sections} columnFrom="xl" />
-                <div className="flex min-w-0 flex-1 flex-col gap-4 md:gap-5">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-5">
+                <SettingsNav
+                    sections={visibility ? allSections : sectionsWithoutProfile}
+                    columnFrom="xl"
+                />
+                <div className="flex min-w-0 flex-1 flex-col gap-4">
                     <PersonalDataSection
                         firstName={account.firstName}
                         lastName={account.lastName}
                         phone={account.phone}
-                        description="Nome e cognome compaiono sul tuo profilo pubblico."
-                        phoneHint="I clienti lo vedono solo dopo che hai confermato la prenotazione."
                     />
                     {contacts && <ClientContactsSection {...contacts} />}
                     <AccessSection
@@ -65,10 +68,12 @@ export default function TrainerSettings({
                     />
                     {visibility && <ProfileVisibilitySection {...visibility} />}
                     <CloseTrainerProfileSection
-                        upcoming={upcoming}
-                        paused={visibility?.paused ?? null}
+                        canPause={visibility !== null}
                     />
-                    <DeleteAccountSection />
+                    <DeleteAccountSection
+                        description="Cancelliamo account, profilo, preferiti e recensioni."
+                        hasPassword={account.hasPassword}
+                    />
                 </div>
             </div>
         </>

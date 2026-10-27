@@ -1,4 +1,4 @@
-import { Check, Minus, PenLine } from 'lucide-react';
+import { Check, Minus } from 'lucide-react';
 import type { TrainerDraft } from '@/components/onboarding/trainer/draft';
 import {
     experienceOptions,
@@ -14,7 +14,6 @@ import {
 } from '@/components/onboarding/trainer/onboarding-shell';
 import SearchCardPreview from '@/components/onboarding/trainer/search-card-preview';
 import { weekRangesLabel } from '@/components/trainer/hours/availability-summary';
-import { Button } from '@/components/ui/button';
 import { formatHours, formatPrice } from '@/lib/format';
 import { trainingGoals } from '@/lib/goals';
 import { cn } from '@/lib/utils';
@@ -31,23 +30,9 @@ type StepReviewProps = {
     /** From the catalog, to show names instead of slugs. */
     disciplines: CatalogOption[];
     cities: CatalogOption[];
-    onEdit: (step: number) => void;
     confirmed: boolean;
     onConfirmedChange: (confirmed: boolean) => void;
 };
-
-/** What happens after "Invia per approvazione" (also on "Profilo inviato"). */
-export const nextSteps = [
-    {
-        title: 'Invii il profilo',
-        text: 'Lo trovi subito nella tua area trainer.',
-    },
-    { title: 'Il team lo controlla', text: 'Verifichiamo dati e attestati.' },
-    {
-        title: 'Vai online',
-        text: 'Ti scriviamo appena i clienti possono prenotarti.',
-    },
-];
 
 const plural = (n: number, one: string, many: string) =>
     `${n} ${n === 1 ? one : many}`;
@@ -61,7 +46,6 @@ export default function StepReview({
     editing = false,
     disciplines,
     cities,
-    onEdit,
     confirmed,
     onConfirmedChange,
 }: StepReviewProps) {
@@ -165,7 +149,7 @@ export default function StepReview({
                       ),
             sub:
                 certifications.length === 0
-                    ? 'Puoi aggiungerle anche dopo, da Il mio profilo'
+                    ? 'Puoi aggiungerle anche dopo, da Modifica profilo'
                     : certifications.map((item) => item.title).join(' · '),
         },
     ];
@@ -173,7 +157,7 @@ export default function StepReview({
     return (
         <StepColumns
             aside={
-                <DarkPanel title="Anteprima nella ricerca">
+                <DarkPanel title="Anteprima">
                     <SearchCardPreview
                         draft={draft}
                         name={name}
@@ -183,30 +167,6 @@ export default function StepReview({
                         search
                         price
                     />
-                    <div className="flex flex-col gap-3 border-t border-sidebar-border pt-4">
-                        <span className="text-[15px] leading-5.5 font-semibold">
-                            Cosa succede dopo
-                        </span>
-                        <ol className="flex flex-col gap-3">
-                            {nextSteps.map((item, index) => (
-                                <li key={item.title} className="flex gap-3">
-                                    <span
-                                        className={cn(
-                                            'flex size-6 flex-none items-center justify-center rounded-full text-xs font-bold tabular-nums',
-                                            index === 0
-                                                ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                                                : 'bg-sidebar-border',
-                                        )}
-                                    >
-                                        {index + 1}
-                                    </span>
-                                    <span className="text-sm font-semibold">
-                                        {item.title}
-                                    </span>
-                                </li>
-                            ))}
-                        </ol>
-                    </div>
                 </DarkPanel>
             }
         >
@@ -263,18 +223,6 @@ export default function StepReview({
                                         </span>
                                     )}
                                 </span>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    aria-label={`Modifica ${row.title.toLowerCase()}`}
-                                    onClick={() => onEdit(row.step)}
-                                    className="h-9 flex-none self-center rounded-[10px] px-3 text-[13px] font-semibold"
-                                >
-                                    <PenLine aria-hidden="true" />
-                                    <span className="hidden sm:inline">
-                                        Modifica
-                                    </span>
-                                </Button>
                             </li>
                         ))}
                 </ul>

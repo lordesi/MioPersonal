@@ -33,7 +33,7 @@ export default function StepHours({ draft, update }: StepProps) {
                         {formatHours(total)} a settimana
                     </span>
                     <dl className="grid grid-cols-2 gap-2">
-                        <div className="flex flex-col-reverse gap-0.5 rounded-xl bg-sidebar-accent p-3">
+                        <div className="flex flex-col gap-0.5 rounded-xl bg-sidebar-accent p-3">
                             <dt className="text-xs text-sidebar-muted-foreground">
                                 Giorni attivi
                             </dt>
@@ -41,7 +41,7 @@ export default function StepHours({ draft, update }: StepProps) {
                                 {activeDays}
                             </dd>
                         </div>
-                        <div className="flex flex-col-reverse gap-0.5 rounded-xl bg-sidebar-accent p-3">
+                        <div className="flex flex-col gap-0.5 rounded-xl bg-sidebar-accent p-3">
                             <dt className="text-xs text-sidebar-muted-foreground">
                                 Conferma
                             </dt>

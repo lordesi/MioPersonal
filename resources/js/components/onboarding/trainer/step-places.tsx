@@ -49,7 +49,7 @@ const placeIcons: Record<PlaceType, LucideIcon> = {
 };
 
 /** A studio counts once it has both name and address (as on the server). */
-export function studiosComplete(draft: TrainerDraft): boolean {
+function studiosComplete(draft: TrainerDraft): boolean {
     return (
         !draft.places.includes('studio') ||
         draft.studios.every(
@@ -59,32 +59,26 @@ export function studiosComplete(draft: TrainerDraft): boolean {
     );
 }
 
-/** The checks of step 3; `short` goes in "Scegli almeno …" of the bottom bar. */
-export function placesChecks(
-    draft: TrainerDraft,
-): (PanelCheck & { short: string })[] {
+/** The checks of step 3: all done to continue. */
+export function placesChecks(draft: TrainerDraft): PanelCheck[] {
     const onlineOnly = draft.places.length > 0 && !needsCity(draft);
     const checks = [
         {
             label: 'Almeno una disciplina',
-            short: 'una disciplina',
             done: draft.disciplines.length > 0,
         },
         {
             label: 'Almeno un obiettivo',
-            short: 'un obiettivo',
             done: draft.goals.length > 0,
         },
         {
             label: 'Almeno un luogo',
-            short: 'un luogo',
             done: draft.places.length > 0,
         },
         {
             label: onlineOnly
                 ? 'Città facoltativa (solo online)'
                 : 'Almeno una città',
-            short: 'una città',
             done: onlineOnly || draft.city !== '',
         },
     ];
@@ -92,7 +86,6 @@ export function placesChecks(
     if (draft.places.includes('studio')) {
         checks.push({
             label: 'Nome e indirizzo di ogni studio',
-            short: 'nome e indirizzo degli studi',
             done: studiosComplete(draft),
         });
     }
@@ -141,8 +134,7 @@ export default function StepPlaces({
         >
             <NumberedSection
                 step={1}
-                title="Cosa insegni"
-                description="Le discipline sono come alleni, gli obiettivi sono cosa aiuti a raggiungere. I clienti possono cercarti per entrambi."
+                title="Discipline e obiettivi"
                 className="gap-5.5"
             >
                 <Group
@@ -210,12 +202,7 @@ export default function StepPlaces({
                 </Group>
             </NumberedSection>
 
-            <NumberedSection
-                step={2}
-                title="Dove alleni"
-                description="Scegli tutti i modi in cui lavori. Almeno uno."
-                className="gap-5.5"
-            >
+            <NumberedSection step={2} title="Dove alleni" className="gap-5.5">
                 <PlaceCards draft={draft} update={update} />
                 {draft.places.includes('studio') && (
                     <Studios draft={draft} update={update} />
@@ -240,7 +227,7 @@ function PlaceCards({ draft, update }: Pick<StepProps, 'draft' | 'update'>) {
             role="group"
             aria-label="Dove alleni"
             aria-describedby={labelId}
-            className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,170px),1fr))] gap-2.5"
+            className="grid grid-cols-2 gap-2 sm:grid-cols-4"
         >
             <span id={labelId} className="sr-only">
                 Puoi sceglierne più di uno.
@@ -264,7 +251,7 @@ function PlaceCards({ draft, update }: Pick<StepProps, 'draft' | 'update'>) {
                             })
                         }
                         className={cn(
-                            'flex flex-col items-start gap-3.5 rounded-2xl border p-3.5 text-left transition-colors',
+                            'flex min-w-0 flex-col items-start gap-3 rounded-2xl border p-3 text-left transition-colors',
                             on
                                 ? 'border-foreground bg-foreground text-background'
                                 : 'bg-card hover:bg-muted/50',

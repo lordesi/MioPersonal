@@ -1,18 +1,10 @@
-import {
-    Award,
-    MapPin,
-    MessageCircle,
-    RotateCcw,
-    Share,
-    ShieldCheck,
-    Star,
-    Video,
-} from 'lucide-react';
+import { Award, MapPin, Share, Star, Target, Video } from 'lucide-react';
 import FavoriteButton from '@/components/shared/favorite-button';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useInitials } from '@/hooks/use-initials';
 import { formatRating } from '@/lib/format';
+import { trainingGoals } from '@/lib/goals';
+import { cn } from '@/lib/utils';
 import type { TrainerProfile } from '@/types';
 
 type ProfileIntroProps = {
@@ -23,9 +15,15 @@ type ProfileIntroProps = {
     onShare: () => void;
 };
 
-const pill = 'h-5.5 rounded-full px-2 text-xs font-medium';
+/** The chips under the name, on the dark block. */
+const chip =
+    'inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] leading-[18px] font-medium [&>svg]:size-3.5 [&>svg]:shrink-0';
 
-/** Photo, name, verified badge, key facts and disciplines. */
+/** Outline buttons on the dark block: "Salva" and "Condividi". */
+const darkButton =
+    'h-10 rounded-[10px] border-primary-foreground/20 bg-transparent px-3.5 text-primary-foreground shadow-none hover:bg-primary-foreground/10 hover:text-primary-foreground dark:bg-transparent';
+
+/** Photo, name, rating, where, experience, disciplines and goals. */
 export default function ProfileIntro({
     trainer,
     favorite,
@@ -33,177 +31,135 @@ export default function ProfileIntro({
     onShare,
 }: ProfileIntroProps) {
     const getInitials = useInitials();
-    const onlineLabel =
-        trainer.online === 'also'
-            ? 'Anche online'
-            : trainer.online === 'only'
-              ? 'Solo online'
-              : null;
+    const goals = trainingGoals.filter((goal) =>
+        trainer.goals.includes(goal.value),
+    );
+    const portrait =
+        'size-20 shrink-0 rounded-3xl shadow-[0_0_0_6px] shadow-primary-foreground/10 md:size-29 md:rounded-[32px]';
 
     return (
         <section
             aria-labelledby="profile-name"
-            className="flex flex-col gap-3.5 md:flex-row md:flex-wrap md:items-center md:gap-8"
+            className="flex flex-wrap items-start gap-x-6 gap-y-4 md:items-center"
         >
-            <div className="flex items-center gap-4 md:contents">
-                {trainer.portraitUrl ? (
-                    <img
-                        src={trainer.portraitUrl}
-                        alt={`Foto profilo di ${trainer.name}`}
-                        className="size-24 shrink-0 rounded-xl bg-muted object-cover md:size-30 md:rounded-full"
-                    />
-                ) : (
-                    <span
-                        role="img"
-                        aria-label={`Foto profilo di ${trainer.name}`}
-                        className="flex size-24 shrink-0 items-center justify-center rounded-xl bg-muted text-[32px] font-bold tracking-tight text-muted-foreground md:size-30 md:rounded-full md:text-5xl"
-                    >
-                        {getInitials(trainer.name)}
-                    </span>
-                )}
-
-                <div className="flex min-w-0 flex-col gap-1 md:flex-[1_1_400px] md:gap-3">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <h1
-                            id="profile-name"
-                            className="flex items-center gap-2 text-3xl font-bold tracking-tight md:gap-3 md:text-4xl"
-                        >
-                            {trainer.name}
-                            {trainer.verified && (
-                                <span
-                                    role="img"
-                                    aria-label="Profilo approvato"
-                                    title="Profilo approvato"
-                                    className="flex size-6.5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground md:size-8"
-                                >
-                                    <ShieldCheck className="size-3.5 md:size-5" />
-                                </span>
-                            )}
-                        </h1>
-                        <div className="hidden gap-2 md:flex">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={onShare}
-                            >
-                                <Share />
-                                Condividi
-                            </Button>
-                            {favorite !== null && (
-                                <FavoriteButton
-                                    variant="labeled"
-                                    trainerName={trainer.name}
-                                    pressed={favorite}
-                                    onPressedChange={onFavoriteChange}
-                                />
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Mobile: headline and rating under the name */}
-                    <span className="text-sm text-muted-foreground md:hidden">
-                        {trainer.headline}
-                    </span>
-                    {trainer.rating !== null && (
-                        <a
-                            href="#recensioni"
-                            className="flex items-center gap-1.5 text-sm font-semibold tabular-nums md:hidden"
-                        >
-                            <Star
-                                aria-hidden="true"
-                                className="size-3.5 fill-current"
-                            />
-                            {formatRating(trainer.rating)}{' '}
-                            <span className="font-normal text-muted-foreground">
-                                · {trainer.reviewCount} recensioni
-                            </span>
-                        </a>
+            {trainer.portraitUrl ? (
+                <img
+                    src={trainer.portraitUrl}
+                    alt={`Foto profilo di ${trainer.name}`}
+                    className={cn(
+                        portrait,
+                        'bg-primary-foreground object-cover',
                     )}
+                />
+            ) : (
+                <span
+                    role="img"
+                    aria-label={`Foto profilo di ${trainer.name}`}
+                    className={cn(
+                        portrait,
+                        'flex items-center justify-center bg-primary-foreground text-[28px] font-bold tracking-[-0.03em] text-primary md:text-[40px]',
+                    )}
+                >
+                    {getInitials(trainer.name)}
+                </span>
+            )}
 
-                    {/* Desktop: facts row */}
-                    <div className="hidden flex-wrap items-center gap-x-5 gap-y-2 text-sm tabular-nums md:flex">
-                        <span className="flex items-center gap-1.5 text-muted-foreground">
-                            <Award aria-hidden="true" className="size-4" />
-                            {trainer.experienceLabel}
-                        </span>
-                        {trainer.rating !== null && (
+            <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-2.5">
+                <h1
+                    id="profile-name"
+                    className="text-[32px] leading-10 font-bold tracking-[-0.03em] md:text-[44px] md:leading-12"
+                >
+                    {trainer.name}
+                </h1>
+
+                <ul className="flex flex-wrap gap-2">
+                    {trainer.rating !== null && (
+                        <li>
                             <a
                                 href="#recensioni"
-                                className="flex items-center gap-1.5 font-semibold"
+                                className={cn(
+                                    chip,
+                                    'bg-primary-foreground/10 font-semibold tabular-nums hover:bg-primary-foreground/15',
+                                )}
                             >
                                 <Star
                                     aria-hidden="true"
-                                    className="size-4 fill-current"
+                                    className="fill-current"
                                 />
-                                {formatRating(trainer.rating)}{' '}
-                                <span className="font-normal text-muted-foreground">
-                                    · {trainer.reviewCount} recensioni
+                                {formatRating(trainer.rating)}
+                                <span className="font-normal text-primary-foreground/60">
+                                    · {trainer.reviewCount}{' '}
+                                    {trainer.reviewCount === 1
+                                        ? 'recensione'
+                                        : 'recensioni'}
                                 </span>
                             </a>
-                        )}
-                        <span className="flex items-center gap-1.5 text-muted-foreground">
-                            <MapPin aria-hidden="true" className="size-4" />
+                        </li>
+                    )}
+                    {trainer.online !== 'only' && (
+                        <li className={cn(chip, 'bg-primary-foreground/10')}>
+                            <MapPin aria-hidden="true" />
                             {trainer.cities.join(', ')}
-                        </span>
-                        {onlineLabel && (
-                            <span className="flex items-center gap-1.5 text-muted-foreground">
-                                <Video aria-hidden="true" className="size-4" />
-                                {onlineLabel}
-                            </span>
-                        )}
-                    </div>
-
-                    <div className="hidden flex-wrap gap-1.5 md:flex">
-                        {trainer.disciplines.map((discipline) => (
-                            <Badge
-                                key={discipline}
-                                variant="secondary"
-                                className={`${pill} border-transparent`}
-                            >
-                                {discipline}
-                            </Badge>
-                        ))}
-                    </div>
-                </div>
+                        </li>
+                    )}
+                    {trainer.online && (
+                        <li className={cn(chip, 'bg-primary-foreground/10')}>
+                            <Video aria-hidden="true" />
+                            {trainer.online === 'only'
+                                ? 'Solo online'
+                                : 'Anche online'}
+                        </li>
+                    )}
+                    <li className={cn(chip, 'bg-primary-foreground/10')}>
+                        <Award aria-hidden="true" />
+                        {trainer.experienceLabel}
+                    </li>
+                    {trainer.disciplines.map((discipline) => (
+                        <li
+                            key={discipline}
+                            className={cn(
+                                chip,
+                                'bg-primary-foreground font-semibold text-primary',
+                            )}
+                        >
+                            {discipline}
+                        </li>
+                    ))}
+                    {goals.map((goal) => (
+                        <li
+                            key={goal.value}
+                            className={cn(
+                                chip,
+                                'border border-dashed border-primary-foreground/35 text-primary-foreground/90',
+                            )}
+                        >
+                            <Target aria-hidden="true" />
+                            {goal.label}
+                        </li>
+                    ))}
+                </ul>
             </div>
 
-            {/* Mobile only: pills, zones and extra facts */}
-            <div className="flex flex-wrap gap-1.5 md:hidden">
-                {onlineLabel && (
-                    <Badge variant="outline" className={`${pill} gap-1`}>
-                        <Video aria-hidden="true" />
-                        {onlineLabel}
-                    </Badge>
+            <div className="flex gap-2 md:ml-auto">
+                {favorite !== null && (
+                    <FavoriteButton
+                        variant="labeled"
+                        trainerName={trainer.name}
+                        pressed={favorite}
+                        onPressedChange={onFavoriteChange}
+                        className={darkButton}
+                    />
                 )}
-                {trainer.disciplines.map((discipline) => (
-                    <Badge
-                        key={discipline}
-                        variant="secondary"
-                        className={`${pill} border-transparent`}
-                    >
-                        {discipline}
-                    </Badge>
-                ))}
-            </div>
-            <span className="flex items-center gap-1.5 text-sm text-muted-foreground md:hidden">
-                <MapPin aria-hidden="true" className="size-3.5" />
-                {trainer.cities.join(', ')}
-            </span>
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] leading-5 tabular-nums md:hidden">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <Award aria-hidden="true" className="size-3.5" />
-                    {trainer.experienceLabel}
-                </span>
-                {trainer.responseTimeLabel && (
-                    <span className="flex items-center gap-1.5">
-                        <MessageCircle aria-hidden="true" className="size-4" />
-                        {trainer.responseTimeLabel}
-                    </span>
-                )}
-                <span className="flex items-center gap-1.5">
-                    <RotateCcw aria-hidden="true" className="size-4" />
-                    {trainer.cancellationLabel}
-                </span>
+                {/* On mobile "Condividi" is in the header. */}
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onShare}
+                    className={cn(darkButton, 'hidden md:inline-flex')}
+                >
+                    <Share />
+                    Condividi
+                </Button>
             </div>
         </section>
     );

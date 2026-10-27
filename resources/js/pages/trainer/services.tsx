@@ -21,7 +21,7 @@ import {
 import { register } from '@/routes/trainer';
 
 type ServicesProps = {
-    /** null until the team approves the profile: it is changed from "Diventa trainer". */
+    /** null until the registration is sent. */
     pricing: Pricing | null;
     /** Trains both online and in person: online may have its own prices. */
     asksOnlinePrice: boolean;
@@ -32,22 +32,18 @@ export default function Services({ pricing, asksOnlinePrice }: ServicesProps) {
         <>
             <Head title="Servizi e prezzi" />
 
-            <PageHeading
-                title="Servizi e prezzi"
-                description="I prezzi sono indicativi: il pagamento lo concordi tu con il cliente."
-            />
+            <PageHeading title="Servizi e prezzi" />
 
             {pricing === null ? (
                 <p className="text-sm text-muted-foreground">
-                    Finché il profilo non è approvato i servizi li modifichi
-                    dalla{' '}
+                    Scegli i tuoi servizi nella{' '}
                     <Link
                         href={register()}
                         className="font-medium text-foreground underline underline-offset-4"
                     >
                         registrazione da trainer
                     </Link>
-                    .
+                    : poi potrai cambiarli da qui.
                 </p>
             ) : (
                 <ServicesForm
@@ -148,14 +144,15 @@ function ServicesForm({
     // "Online" (only for who trains both ways) comes right after the price list.
     const firstStep = asksOnlinePrice ? 3 : 2;
 
-    let status = 'Modifiche non salvate';
+    // Nothing to save: no status, only the button.
+    let status: string | undefined;
 
     if (form.processing) {
         status = 'Salvataggio…';
-    } else if (!changed) {
-        status = 'Tutto salvato';
-    } else if (!complete) {
-        status = 'Completa i prezzi per salvare';
+    } else if (changed) {
+        status = complete
+            ? 'Modifiche non salvate'
+            : 'Completa i prezzi per salvare';
     }
 
     return (

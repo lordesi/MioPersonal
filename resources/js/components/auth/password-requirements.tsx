@@ -28,6 +28,16 @@ export function meetsPasswordRequirements(value: string): boolean {
     return requirements.every(({ test }) => test(value));
 }
 
+/** The criteria still missing, e.g. ["Una lettera maiuscola", "Un numero"]. */
+export function missingPasswordRequirements(value: string): string[] {
+    return requirements
+        .filter(({ test }) => !test(value))
+        .map(({ label }) => label);
+}
+
+/** How many criteria there are: one segment each in the strength bar. */
+export const PASSWORD_REQUIREMENTS_COUNT = requirements.length;
+
 /**
  * The list under the password field, as the `hint` of its FormField: each
  * criterion is ticked as you type.

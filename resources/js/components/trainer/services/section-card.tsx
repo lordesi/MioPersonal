@@ -6,7 +6,7 @@ type SectionCardProps = {
     /** The number in the black circle. */
     step: number;
     title: string;
-    description: string;
+    description?: string;
     /** On the right of the title, e.g. "1 di 3". */
     action?: ReactNode;
     /** Messages from the server for this card. */

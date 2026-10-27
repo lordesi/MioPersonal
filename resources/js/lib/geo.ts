@@ -38,14 +38,44 @@ export function closestCity<T extends Point>(
 }
 
 /**
+ * Why the position couldn't be read: 'denied' when the user blocked it,
+ * 'insecure' on http:// pages (the browsers allow it only on HTTPS).
+ */
+export type PositionProblem =
+    | 'unsupported'
+    | 'insecure'
+    | 'denied'
+    | 'unavailable';
+
+export class PositionError extends Error {
+    readonly problem: PositionProblem;
+
+    constructor(problem: PositionProblem) {
+        super(`Position not available: ${problem}`);
+        this.problem = problem;
+    }
+}
+
+/**
  * The user's position, asked to the browser (it shows its own permission
  * prompt). It works only on HTTPS: on http:// pages it always fails.
  * The position stays in the browser, it is never sent to the server.
+ * When it fails, the promise is rejected with a PositionError.
  */
 export function currentPosition(): Promise<Point> {
     return new Promise((resolve, reject) => {
+        if (!window.isSecureContext) {
+            // A hint for who works on the site, e.g. on http://miopersonal.test.
+            console.warn(
+                'The position needs HTTPS: open the site with https://',
+            );
+            reject(new PositionError('insecure'));
+
+            return;
+        }
+
         if (!('geolocation' in navigator)) {
-            reject(new Error('Geolocation not available'));
+            reject(new PositionError('unsupported'));
 
             return;
         }
@@ -53,7 +83,14 @@ export function currentPosition(): Promise<Point> {
         navigator.geolocation.getCurrentPosition(
             ({ coords }) =>
                 resolve({ lat: coords.latitude, lng: coords.longitude }),
-            reject,
+            ({ code }) =>
+                reject(
+                    new PositionError(
+                        code === GeolocationPositionError.PERMISSION_DENIED
+                            ? 'denied'
+                            : 'unavailable',
+                    ),
+                ),
             // The city is enough: a rough and recent position is fine.
             { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 },
         );

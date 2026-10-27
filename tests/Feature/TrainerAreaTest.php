@@ -86,7 +86,7 @@ class TrainerAreaTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->where('availability', null));
     }
 
-    public function test_settings_have_account_contacts_and_upcoming_sessions()
+    public function test_settings_have_account_contacts_and_visibility()
     {
         $user = User::factory()->trainer()->create(['name' => 'Giulia Rossi']);
         TrainerProfile::factory()->for($user)->create();
@@ -98,8 +98,9 @@ class TrainerAreaTest extends TestCase
                 ->where('account.lastName', 'Rossi')
                 ->where('contacts.email', $user->email)
                 ->whereType('contacts.arrivalNotes', 'string')
-                ->whereType('upcoming.sessions', 'integer')
-                ->whereType('upcoming.requests', 'integer')
+                ->whereType('visibility.visibleInSearch', 'boolean')
+                // The design no longer counts the sessions that get cancelled.
+                ->missing('upcoming')
             );
     }
 

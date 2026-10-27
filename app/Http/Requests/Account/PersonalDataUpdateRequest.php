@@ -19,7 +19,8 @@ class PersonalDataUpdateRequest extends FormRequest
         return [
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
-            'phone' => $this->phoneNumberRules(),
+            // The user's own number doesn't count as "already used".
+            'phone' => $this->phoneNumberRules($this->user()?->id),
         ];
     }
 }

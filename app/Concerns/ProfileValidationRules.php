@@ -2,7 +2,10 @@
 
 namespace App\Concerns;
 
+use App\Actions\Fortify\CreateNewUser;
 use App\Models\User;
+use App\Rules\ItalianMobile;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 
@@ -33,14 +36,27 @@ trait ProfileValidationRules
 
     /**
      * Italian mobile without the prefix (always +39): exactly 10 digits,
-     * single spaces allowed (e.g. 333 000 0000). Required: the trainer calls
-     * the client after confirming a booking.
+     * single spaces allowed (e.g. 347 521 8846), that looks real and that no
+     * other account has. Required: the trainer calls the client after
+     * confirming a booking. Pass the user's id when they change their own number.
      *
-     * @return array<int, ValidationRule|array<mixed>|string>
+     * @return array<int, ValidationRule|Closure|string>
      */
-    protected function phoneNumberRules(): array
+    protected function phoneNumberRules(?int $userId = null): array
     {
-        return ['required', 'string', 'regex:/^[0-9]( ?[0-9]){9}$/'];
+        return [
+            // Stop at the first error: one message, and no query for a wrong number.
+            'bail',
+            'required',
+            'string',
+            'regex:/^[0-9]( ?[0-9]){9}$/',
+            new ItalianMobile,
+            function (string $attribute, mixed $value, Closure $fail) use ($userId): void {
+                if (CreateNewUser::phoneInUse((string) $value, $userId)) {
+                    $fail('Esiste già un account con questo numero.');
+                }
+            },
+        ];
     }
 
     /**

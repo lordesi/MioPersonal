@@ -64,7 +64,7 @@ export default function ClientCard({ client }: { client: TrainerClient }) {
                             key={number.label}
                             className="flex flex-col-reverse gap-0.5 rounded-xl bg-sidebar-accent p-3"
                         >
-                            <dt className="text-xs text-sidebar-muted-foreground">
+                            <dt className="text-xs whitespace-nowrap text-sidebar-muted-foreground">
                                 {number.label}
                             </dt>
                             <dd className="text-2xl font-bold tabular-nums">

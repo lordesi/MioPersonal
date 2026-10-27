@@ -29,7 +29,7 @@ type StepProps = {
 const REQUIRED = 'Obbligatorio se aggiungi la certificazione.';
 
 /** The year is wrong only once the 4 digits are there: not while typing. */
-export function wrongYear(certification: Certification): boolean {
+function wrongYear(certification: Certification): boolean {
     return certification.year.length === 4 && !isValidYear(certification.year);
 }
 
@@ -352,7 +352,7 @@ function CertificationsPreview({ draft }: { draft: TrainerDraft }) {
                 {[
                     'Sul profilo compaiono titolo, ente e anno.',
                     'Gli attestati restano privati: servono solo per l’approvazione.',
-                    'Puoi aggiungerle anche dopo, da Il mio profilo.',
+                    'Puoi aggiungerle anche dopo, da Modifica profilo.',
                 ].map((text) => (
                     <li
                         key={text}

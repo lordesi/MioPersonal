@@ -182,7 +182,7 @@ class ClientPackageTest extends TestCase
         $client = User::factory()->create();
         $package = ClientPackage::factory()->for($this->trainer)->for($client, 'client')->create(['sessions_total' => 3]);
         Booking::factory()->for($this->trainer)->for($client, 'client')->for($package)->confirmed()->at(CarbonImmutable::now()->subDay())->create();
-        $next = Booking::factory()->for($this->trainer)->for($client, 'client')->for($package)->confirmed()->at(CarbonImmutable::now()->addDay())->create();
+        Booking::factory()->for($this->trainer)->for($client, 'client')->for($package)->confirmed()->at(CarbonImmutable::now()->addDay())->create();
         // All done: nothing left.
         $full = ClientPackage::factory()->for($this->trainer)->for($client, 'client')->create(['sessions_total' => 1]);
         Booking::factory()->for($this->trainer)->for($client, 'client')->for($full)->confirmed()->at(CarbonImmutable::now()->subDay())->create();
@@ -195,7 +195,6 @@ class ClientPackageTest extends TestCase
                 ->where('packages.0.done', 1)
                 ->where('packages.0.booked', 2)
                 ->where('packages.0.total', 3)
-                ->where('packages.0.nextStart', $next->starts_at->utc()->format('Y-m-d\TH:i:s\Z'))
                 ->where('packages.0.trainerHref', route('trainers.show', $this->trainer->slug, false))
                 // The session of the package says which one it is.
                 ->where('upcoming.0.serviceLabel', $package->name.' · seduta 2 di 3')

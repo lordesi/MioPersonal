@@ -19,7 +19,6 @@ import AccountFields from '@/components/auth/account-fields';
 import {
     CheckRow,
     DarkPanel,
-    PanelNote,
     StepColumns,
 } from '@/components/onboarding/trainer/onboarding-shell';
 import NumberedSection from '@/components/trainer/area/numbered-section';
@@ -31,7 +30,10 @@ type StepAccountProps = {
     /** A logged-in client keeps the account; null for a guest, who creates one. */
     account: { name: string; email: string } | null;
     /** The account fields of a guest (see AccountFields). */
-    fields: Pick<ComponentProps<typeof AccountFields>, 'errors' | 'bind'>;
+    fields: Pick<
+        ComponentProps<typeof AccountFields>,
+        'errors' | 'bind' | 'onAccountExists'
+    >;
     termsAccepted: boolean;
     onTermsChange: (accepted: boolean) => void;
     termsError?: string;
@@ -52,17 +54,17 @@ const changes = [
     {
         icon: Info,
         title: 'Addio pagine cliente',
-        text: 'Prenotazioni e preferiti da cliente non saranno più disponibili.',
+        text: 'Alcune funzionalità non saranno più disponibili.',
     },
 ];
 
 /** What the next steps ask for, in "Tieni a portata di mano". */
 const needs = [
-    { icon: Camera, label: 'Una foto del viso, con luce naturale', step: 2 },
-    { icon: PenLine, label: 'Qualche riga su di te', step: 2 },
-    { icon: Tag, label: 'Le tue tariffe', step: 4 },
-    { icon: Calendar, label: 'I giorni e gli orari in cui alleni', step: 5 },
-    { icon: Award, label: 'Attestati e certificazioni', step: 6 },
+    { icon: Camera, label: 'Una tua foto' },
+    { icon: PenLine, label: 'Qualche riga su di te' },
+    { icon: Tag, label: 'Le tue tariffe' },
+    { icon: Calendar, label: 'I giorni e gli orari in cui alleni' },
+    { icon: Award, label: 'Attestati e certificazioni' },
 ];
 
 /**
@@ -108,7 +110,6 @@ export default function StepAccount({
             <NumberedSection
                 step={<ShieldCheck aria-hidden="true" />}
                 title="Termini e privacy"
-                description="Valgono per tutta la tua attività da trainer sulla piattaforma."
                 className="gap-4"
             >
                 <div className="flex flex-wrap gap-2">
@@ -239,15 +240,9 @@ function BeforeYouStart() {
                         <span className="min-w-0 flex-1 text-sm text-sidebar-foreground/90">
                             {item.label}
                         </span>
-                        <span className="flex-none text-xs font-semibold text-sidebar-muted-foreground tabular-nums">
-                            Passo {item.step}
-                        </span>
                     </li>
                 ))}
             </ul>
-            <PanelNote icon={<ShieldCheck aria-hidden="true" />}>
-                Prima della pubblicazione il nostro team controlla ogni profilo.
-            </PanelNote>
         </DarkPanel>
     );
 }

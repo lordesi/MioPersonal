@@ -64,8 +64,6 @@ class TrainerCalendarController extends Controller
             'focus' => $focus->toDateString(),
             'minDate' => $minDate->toDateString(),
             'maxDate' => $maxDate->toDateString(),
-            // For "Oggi, lunedì 19 ottobre · 2 sedute", whatever period is shown.
-            'todayCount' => $profile === null ? 0 : $this->sessions($profile, $today, $today->addDay())->count(),
             // No profile yet (registration not sent): nothing to show.
             'events' => $profile === null ? [] : $this->sessions($profile, $from, $to)
                 ->with(TrainerSessions::WITH)

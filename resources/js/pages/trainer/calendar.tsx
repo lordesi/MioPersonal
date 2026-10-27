@@ -20,7 +20,6 @@ import {
     mondayOf,
     monthName,
     romeParts,
-    sessionsLabel,
     shiftMonth,
     weekDates,
 } from '@/lib/calendar';
@@ -37,8 +36,6 @@ type CalendarProps = {
     maxDate: string;
     /** The bookings of the week (day and week) or of the weeks of the month, confirmed or waiting. */
     events: CalendarEvent[];
-    /** The sessions of today, for the line above the title. */
-    todayCount: number;
 };
 
 /** The words of ?vista= in the URL. */
@@ -54,7 +51,6 @@ export default function Calendar({
     minDate,
     maxDate,
     events,
-    todayCount,
 }: CalendarProps) {
     const today = romeParts(new Date()).date;
     const items = calendarItems(events);
@@ -116,14 +112,7 @@ export default function Calendar({
             {
                 preserveState: true,
                 preserveScroll: true,
-                only: [
-                    'view',
-                    'focus',
-                    'minDate',
-                    'maxDate',
-                    'events',
-                    'todayCount',
-                ],
+                only: ['view', 'focus', 'minDate', 'maxDate', 'events'],
             },
         );
 
@@ -143,7 +132,6 @@ export default function Calendar({
 
             <PageHeading
                 title="Calendario"
-                eyebrow={`Oggi, ${formatDayLong(today).toLowerCase()} · ${sessionsLabel(todayCount).toLowerCase()}`}
                 action={
                     <Link
                         href={availability()}
@@ -163,7 +151,6 @@ export default function Calendar({
                 canGoForward={period.canGoForward}
                 onPrevious={() => show(view, period.previous)}
                 onNext={() => show(view, period.next)}
-                onToday={() => show(view, today)}
                 days={view === 'month' ? [] : week}
                 items={items}
                 today={today}

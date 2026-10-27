@@ -61,7 +61,6 @@ class ClientHomeTest extends TestCase
                 ->has('packages', 0)
                 ->has('trainers', 0)
                 ->where('hasPreferences', false)
-                ->where('citySlug', null)
             );
     }
 
@@ -109,6 +108,28 @@ class ClientHomeTest extends TestCase
             );
     }
 
+    /** The page shows the last three: "Vedi tutte" needs every one. */
+    public function test_every_session_done_is_sent()
+    {
+        $client = User::factory()->create();
+        $trainer = TrainerProfile::factory()->approved()->create();
+        $yesterday = CarbonImmutable::now('Europe/Rome')->startOfDay()->subDay()->setTime(18, 0);
+        $sessions = [];
+
+        foreach (range(0, 20) as $daysBefore) {
+            $sessions[] = Booking::factory()->for($client, 'client')->for($trainer)
+                ->confirmed()->at($yesterday->subDays($daysBefore))->create();
+        }
+
+        $this->actingAs($client)
+            ->get(route('client.home'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('past', 21)
+                ->where('past.0.id', $sessions[0]->id)
+                ->where('past.20.id', $sessions[20]->id)
+            );
+    }
+
     public function test_a_session_done_shows_the_review_left()
     {
         $client = User::factory()->create();
@@ -137,6 +158,8 @@ class ClientHomeTest extends TestCase
         $favorite = TrainerProfile::factory()->approved()->create(['next_free_slot_at' => now()->addDay()]);
         $notApproved = TrainerProfile::factory()->create();
         Booking::factory()->for($client, 'client')->for($booked)->confirmed()->at(CarbonImmutable::now()->subDay())->create();
+        // Booked but not done yet: it doesn't count in "sedute insieme".
+        Booking::factory()->for($client, 'client')->for($booked)->confirmed()->at(CarbonImmutable::now()->addDays(2))->create();
         // Only a request: not one of "your" trainers yet.
         Booking::factory()->for($client, 'client')->for(TrainerProfile::factory()->approved())->at(CarbonImmutable::now()->addDay())->create();
         $client->favoriteTrainers()->attach($favorite, ['created_at' => now()]);
@@ -150,9 +173,13 @@ class ClientHomeTest extends TestCase
                 ->where('trainers.0.booked', true)
                 ->where('trainers.0.favorite', false)
                 ->where('trainers.0.discipline', 'Yoga')
+                ->where('trainers.0.firstName', $booked->user->first_name)
+                ->where('trainers.0.slug', $booked->slug)
+                ->where('trainers.0.sessionsDone', 1)
                 ->where('trainers.1.href', route('trainers.show', $favorite->slug, false))
                 ->where('trainers.1.booked', false)
                 ->where('trainers.1.favorite', true)
+                ->where('trainers.1.sessionsDone', 0)
                 // With trainers of their own, no recommendations.
                 ->has('recommended', 0)
             );
@@ -183,7 +210,6 @@ class ClientHomeTest extends TestCase
             ->get(route('client.home'))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('hasPreferences', true)
-                ->where('citySlug', 'milano')
                 // Yoga first, then the other trainers of the city fill the row.
                 ->has('recommended', 2)
                 ->where('recommended.0.slug', $yogaInMilano->slug)
@@ -210,10 +236,6 @@ class ClientHomeTest extends TestCase
     {
         $client = User::factory()->create();
         Booking::factory()->for($client, 'client')->create();
-        $client->favoriteTrainers()->attach(
-            TrainerProfile::factory()->approved()->create(['next_free_slot_at' => now()->addDay()]),
-            ['created_at' => now()],
-        );
 
         $this->actingAs($client)
             ->get(route('client.home'))
@@ -222,7 +244,6 @@ class ClientHomeTest extends TestCase
 
                 $this->assertMatchesRegularExpression(self::UTC_ISO, $props['pending'][0]['start']);
                 $this->assertMatchesRegularExpression(self::UTC_ISO, $props['pending'][0]['expiresAt']);
-                $this->assertMatchesRegularExpression(self::UTC_ISO, $props['trainers'][0]['nextSlotStart']);
             });
     }
 }

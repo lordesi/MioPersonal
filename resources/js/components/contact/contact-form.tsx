@@ -175,11 +175,7 @@ export default function ContactForm({
                         )}
                     </div>
 
-                    <FormField
-                        label="Messaggio"
-                        hint="Non inserire dati sulla salute o di pagamento."
-                        error={errors.message}
-                    >
+                    <FormField label="Messaggio" error={errors.message}>
                         {({ id, describedBy }) => (
                             <Textarea
                                 id={id}

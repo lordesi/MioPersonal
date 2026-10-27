@@ -14,7 +14,8 @@ export default function ActivePackages({
     packages: TrainerPackage[];
 }) {
     return (
-        <Panel title="Pacchetti attivi" className="gap-3.5">
+        // flex-1: it fills the column down to the bottom of Agenda.
+        <Panel title="Pacchetti attivi" className="flex-1 gap-3.5">
             {packages.length === 0 ? (
                 <span className="text-sm text-muted-foreground">
                     Nessun pacchetto attivo. Quando un cliente compra un
@@ -59,9 +60,11 @@ export default function ActivePackages({
                                 done={pack.done}
                                 total={pack.total}
                             />
-                            <span className="text-[13px] leading-4.5 text-muted-foreground tabular-nums">
-                                {nextLabel(pack)}
-                            </span>
+                            {pack.nextStart !== null && (
+                                <span className="text-[13px] leading-4.5 text-muted-foreground tabular-nums">
+                                    {nextLabel(pack.nextStart, pack.done)}
+                                </span>
+                            )}
                         </li>
                     ))}
                 </ul>
@@ -71,23 +74,9 @@ export default function ActivePackages({
 }
 
 /** "Prima seduta del pacchetto: lunedì 19 ottobre, ore 14:00" */
-function nextLabel(pack: TrainerPackage): string {
-    if (pack.nextStart === null) {
-        const left = pack.total - pack.booked;
+function nextLabel(nextStart: string, done: number): string {
+    const day = formatDayLong(romeParts(nextStart).date).toLowerCase();
+    const label = done === 0 ? 'Prima seduta del pacchetto' : 'Prossima seduta';
 
-        // The ones not done were marked "Saltata": none left to book.
-        if (left <= 0) {
-            return 'Tutte le sedute sono già state prenotate.';
-        }
-
-        return left === 1
-            ? 'Nessuna seduta prenotata: ne resta 1 da prenotare.'
-            : `Nessuna seduta prenotata: ne restano ${left} da prenotare.`;
-    }
-
-    const day = formatDayLong(romeParts(pack.nextStart).date).toLowerCase();
-    const label =
-        pack.done === 0 ? 'Prima seduta del pacchetto' : 'Prossima seduta';
-
-    return `${label}: ${day}, ore ${formatTime(pack.nextStart)}`;
+    return `${label}: ${day}, ore ${formatTime(nextStart)}`;
 }

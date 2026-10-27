@@ -2,6 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\TrainingGoal;
+use App\Enums\TrainingMode;
+use App\Models\City;
+use App\Models\Discipline;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -36,6 +40,7 @@ class TrainerSearchTest extends TestCase
                 ->has('trainers', 9)
                 ->where('total', 9)
                 ->where('pagination', ['currentPage' => 1, 'lastPage' => 1])
+                ->where('filters.nome', null)
                 ->where('filters.disciplina', [])
                 ->where('filters.obiettivo', [])
                 // Only when nothing matches.
@@ -104,6 +109,54 @@ class TrainerSearchTest extends TestCase
                 ->where('total', 2)
                 ->where('trainers', fn ($trainers) => collect($trainers)->pluck('name')->sort()->values()->all() === ['Elena Ricci', 'Sara Colombo'])
             );
+    }
+
+    public function test_the_name_filter_finds_every_word_in_any_order()
+    {
+        // Marco Ferri is still waiting for the team: only Marco Bianchi.
+        foreach (['bianchi', 'MARCO', 'bianchi marco', '  marco   bian '] as $name) {
+            $this->get(route('trainers.search', ['nome' => $name]))
+                ->assertInertia(fn (Assert $page) => $page
+                    ->where('total', 1)
+                    ->where('trainers.0.name', 'Marco Bianchi')
+                );
+        }
+
+        // The spaces at the ends and the double ones go away.
+        $this->get(route('trainers.search', ['nome' => '  marco   bian ']))
+            ->assertInertia(fn (Assert $page) => $page->where('filters.nome', 'marco bian'));
+    }
+
+    public function test_the_name_filter_works_with_the_city_and_the_other_filters()
+    {
+        // Conti: Andrea in Milano (Laura is waiting for the team).
+        $this->get(route('trainers.search', ['city' => 'milano', 'nome' => 'conti']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('total', 1)
+                ->where('trainers.0.name', 'Andrea Conti')
+            );
+
+        $this->get(route('trainers.search', ['city' => 'roma', 'nome' => 'conti']))
+            ->assertInertia(fn (Assert $page) => $page->where('total', 0));
+    }
+
+    public function test_an_unknown_name_suggests_the_trainers_without_the_name()
+    {
+        // Nobody is called Mario: the 3 of Pilates.
+        $this->get(route('trainers.search', ['nome' => 'mario', 'disciplina' => 'pilates']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('total', 0)
+                ->where('suggestions.step', 'fewer-filters')
+                ->has('suggestions.trainers', 3)
+            );
+    }
+
+    public function test_percent_and_underscore_in_the_name_are_plain_characters()
+    {
+        foreach (['%', '_', 'm%o'] as $name) {
+            $this->get(route('trainers.search', ['nome' => $name]))
+                ->assertInertia(fn (Assert $page) => $page->where('total', 0));
+        }
     }
 
     public function test_the_goal_filter_finds_the_trainers_with_all_the_goals()
@@ -357,5 +410,90 @@ class TrainerSearchTest extends TestCase
                 ->where('total', 9)
                 ->where('pagination.currentPage', 1)
             );
+    }
+
+    public function test_the_preferred_city_comes_first_without_filtering()
+    {
+        $names = $this->namesFor(['city_id' => $this->cityId('milano')]);
+
+        // Milano (and Elena, from Monza, who also goes there) first, the most reviewed first;
+        // then everybody else: it's an order, not a filter.
+        $this->assertSame([
+            'Marco Bianchi', 'Giulia Rossi', 'Andrea Conti', 'Elena Ricci',
+            'Chiara Galli', 'Luca Ferrari', 'Sara Colombo', 'Davide Greco', 'Francesca Marino',
+        ], $names);
+    }
+
+    public function test_more_preferred_disciplines_come_first_within_the_city()
+    {
+        $names = $this->namesFor([
+            'city_id' => $this->cityId('milano'),
+            'discipline_ids' => Discipline::query()->whereIn('slug', ['yoga', 'pilates'])->pluck('id')->all(),
+        ]);
+
+        // Elena does both, Giulia only Pilates; outside Milano Sara does both, Chiara only Yoga.
+        $this->assertSame([
+            'Elena Ricci', 'Giulia Rossi', 'Marco Bianchi', 'Andrea Conti',
+            'Sara Colombo', 'Chiara Galli', 'Luca Ferrari', 'Davide Greco', 'Francesca Marino',
+        ], $names);
+    }
+
+    public function test_the_preferred_goal_and_budget_come_after_the_city()
+    {
+        $milano = $this->cityId('milano');
+
+        $byGoal = $this->namesFor(['city_id' => $milano, 'goal' => TrainingGoal::from('muscle')]);
+        $this->assertSame(['Marco Bianchi', 'Andrea Conti', 'Giulia Rossi', 'Elena Ricci'], array_slice($byGoal, 0, 4));
+
+        // 40 €: Andrea and Elena are within the budget, Giulia (45 €) and Marco (50 €) aren't.
+        $byBudget = $this->namesFor(['city_id' => $milano, 'budget_max_cents' => 4000]);
+        $this->assertSame(['Andrea Conti', 'Elena Ricci', 'Marco Bianchi', 'Giulia Rossi'], array_slice($byBudget, 0, 4));
+    }
+
+    public function test_online_clients_get_the_online_trainers_first_whatever_the_city()
+    {
+        $names = $this->namesFor(['city_id' => $this->cityId('milano'), 'mode' => TrainingMode::Online]);
+
+        $this->assertSame([
+            'Chiara Galli', 'Giulia Rossi', 'Andrea Conti', 'Sara Colombo', 'Elena Ricci',
+            'Marco Bianchi', 'Luca Ferrari', 'Davide Greco', 'Francesca Marino',
+        ], $names);
+    }
+
+    public function test_a_sort_chosen_in_the_page_wins_over_the_preferences()
+    {
+        $names = $this->namesFor(['city_id' => $this->cityId('milano')], ['ordina' => 'prezzo']);
+
+        $this->assertSame('Sara Colombo', $names[0]);
+        $this->assertSame('Francesca Marino', $names[8]);
+    }
+
+    /**
+     * The names of the trainers, in order, for a client with these preferences.
+     *
+     * @param  array<string, mixed>  $preference
+     * @param  array<string, string>  $query
+     * @return list<string>
+     */
+    private function namesFor(array $preference, array $query = []): array
+    {
+        $client = User::factory()->create();
+        $client->clientPreference()->create($preference);
+
+        $names = [];
+
+        $this->actingAs($client)
+            ->get(route('trainers.search', $query))
+            ->assertOk()
+            ->assertInertia(function (Assert $page) use (&$names) {
+                $names = array_column($page->toArray()['props']['trainers'], 'name');
+            });
+
+        return $names;
+    }
+
+    private function cityId(string $slug): int
+    {
+        return City::query()->where('slug', $slug)->value('id');
     }
 }

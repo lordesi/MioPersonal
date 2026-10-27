@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import type { CalendarItem } from '@/lib/calendar';
 import { hourLabel } from '@/lib/calendar';
@@ -8,11 +9,15 @@ import {
 } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
-/** The hours shown when the week has nothing earlier or later (as in the design). */
-const FIRST_HOUR = 7;
-const LAST_HOUR = 21;
+/** The hours a trainer can open in Disponibilità: from 06:00 to 24:00. */
+const FIRST_HOUR = 6;
+const LAST_HOUR = 24;
 /** Height of one hour, in px. */
 const ROW = 64;
+/** Hours visible at once: the others scroll inside the grid. */
+const VISIBLE_HOURS = 10;
+/** Height of the row of the days, in px (h-20). */
+const HEADER = 80;
 
 /** A session in the white calendar: black when confirmed, dashed while waiting. */
 export const itemStyles: Record<CalendarItem['kind'], string> = {
@@ -52,8 +57,9 @@ type WeekGridProps = {
 };
 
 /**
- * The week hour by hour, from 07:00 to 21:00 or wider when a session is
- * earlier or later. Each session is a button that opens its details.
+ * The week hour by hour, from 06:00 to 24:00: 10 hours are visible, the
+ * others scroll under the row of the days. Each session is a button that
+ * opens its details.
  */
 export default function WeekGrid({
     days,
@@ -77,16 +83,42 @@ export default function WeekGrid({
         (_, index) => firstHour + index,
     );
 
+    // The grid opens one hour before the first session of the week (06:00
+    // when the week is empty), always with 10 full hours in view.
+    const earliest =
+        weekItems.length > 0
+            ? Math.floor(Math.min(...weekItems.map((item) => item.from))) - 1
+            : firstHour;
+    const startHour = Math.min(
+        Math.max(firstHour, earliest),
+        lastHour - VISIBLE_HOURS,
+    );
+    const scroller = useRef<HTMLDivElement>(null);
+    const monday = days[0];
+
+    // Only when the week changes: choosing a day or a session keeps the scroll.
+    useEffect(() => {
+        if (scroller.current) {
+            scroller.current.scrollTop = (startHour - firstHour) * ROW;
+        }
+    }, [monday, startHour, firstHour]);
+
     return (
-        <div className="overflow-x-auto">
+        <div
+            ref={scroller}
+            className="overflow-auto"
+            style={{
+                maxHeight: `min(${HEADER + VISIBLE_HOURS * ROW}px, 75svh)`,
+            }}
+        >
             <div className="min-w-170">
-                <div className="grid grid-cols-[60px_repeat(7,minmax(0,1fr))] border-b">
+                <div className="sticky top-0 z-20 grid h-20 grid-cols-[60px_repeat(7,minmax(0,1fr))] border-b bg-card">
                     <span />
                     {days.map((date) => (
                         <div
                             key={date}
                             className={cn(
-                                'flex flex-col items-center gap-1 border-l border-border/60 px-1 py-3',
+                                'flex flex-col items-center justify-center gap-1 border-l border-border/60 px-1',
                                 date === selectedDay && 'bg-secondary/60',
                             )}
                         >

@@ -2,11 +2,10 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { Check } from 'lucide-react';
 import AddToCalendar from '@/components/booking/add-to-calendar';
 import BookingSummary from '@/components/booking/booking-summary';
-import NextSteps from '@/components/booking/next-steps';
 import VerifyEmailNotice from '@/components/booking/verify-email-notice';
+import AccountMenu from '@/components/layout/account-menu';
 import MinimalHeader from '@/components/layout/minimal-header';
 import SectionLabel from '@/components/shared/section-label';
-import UserAvatar from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
 import {
     addHours,
@@ -36,11 +35,10 @@ export default function BookingSent({ booking }: BookingSentProps) {
             <Head title="Prenotazione inviata" />
 
             <MinimalHeader>
-                <UserAvatar
-                    name={auth.user.name}
-                    src={auth.user.avatar}
-                    label={`Account di ${auth.user.name}`}
-                    className="text-foreground"
+                <AccountMenu
+                    variant="client"
+                    userName={auth.user.name}
+                    headerHeight={16}
                 />
             </MinimalHeader>
 
@@ -70,22 +68,13 @@ export default function BookingSent({ booking }: BookingSentProps) {
                         <br />
                         {formatTime(booking.start)} – {formatTime(end)}
                     </h1>
-                    <p className="max-w-115 opacity-80">
-                        {/* Trainers with automatic confirmation: already confirmed. */}
-                        {booking.status === 'confirmed' ? (
-                            <>
-                                {trainer.firstName} conferma le prenotazioni in
-                                automatico: la seduta è già confermata.
-                            </>
-                        ) : (
-                            <>
-                                {trainer.firstName} conferma entro{' '}
-                                {booking.confirmWithinHours} ore. Se non
-                                risponde, lo slot si libera e ti avvisiamo
-                                subito.
-                            </>
-                        )}
-                    </p>
+                    {/* Trainers with automatic confirmation: already confirmed. */}
+                    {booking.status === 'confirmed' && (
+                        <p className="max-w-115 opacity-80">
+                            {trainer.firstName} conferma le prenotazioni in
+                            automatico: la seduta è già confermata.
+                        </p>
+                    )}
                 </section>
 
                 {/* Only on mobile, as in the design. */}
@@ -136,13 +125,9 @@ export default function BookingSent({ booking }: BookingSentProps) {
                               ]
                             : []),
                         {
-                            label: 'Prezzo indicativo',
-                            value: `${formatPrice(booking.priceCents)}, da pagare a ${trainer.firstName}`,
+                            label: 'Prezzo',
+                            value: formatPrice(booking.priceCents),
                             emphasis: true,
-                        },
-                        {
-                            label: 'Cancellazione',
-                            value: `Gratis fino a ${formatHours(booking.freeCancellationHours)} prima`,
                         },
                     ]}
                 >
@@ -155,11 +140,6 @@ export default function BookingSent({ booking }: BookingSentProps) {
                         <Link href={home()}>Annulla la prenotazione</Link>
                     </Button>
                 </BookingSummary>
-
-                <NextSteps
-                    trainerFirstName={trainer.firstName}
-                    confirmWithinHours={booking.confirmWithinHours}
-                />
 
                 <div className="flex flex-wrap gap-2">
                     <Button

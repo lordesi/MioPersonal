@@ -9,17 +9,17 @@ type ProfileMobileHeaderProps = {
     onShare: () => void;
 };
 
-/** Profile header on mobile: back to results, logo, share. */
+/** Profile header on mobile: back to results, logo, share. Dark like the block under it. */
 export default function ProfileMobileHeader({
     backHref,
     onShare,
 }: ProfileMobileHeaderProps) {
     return (
-        <header className="flex h-16 items-center justify-between border-b bg-background px-2 md:hidden">
+        <header className="flex h-16 items-center justify-between bg-primary px-2 text-primary-foreground md:hidden">
             <Link
                 href={backHref}
                 aria-label="Torna ai risultati"
-                className="flex size-11 items-center justify-center rounded-lg"
+                className="flex size-11 items-center justify-center rounded-lg hover:bg-primary-foreground/10"
             >
                 <ChevronLeft className="size-5" />
             </Link>
@@ -36,7 +36,7 @@ export default function ProfileMobileHeader({
                 size="icon"
                 aria-label="Condividi il profilo"
                 onClick={onShare}
-                className="size-11"
+                className="size-11 hover:bg-primary-foreground/10 hover:text-primary-foreground"
             >
                 <Share className="size-5" />
             </Button>

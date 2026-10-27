@@ -37,7 +37,7 @@ class TrainerSettingsController extends Controller
                 'acceptsNewClients' => $profile->accepts_new_clients,
                 // The first day bookable again, in Rome ("YYYY-MM-DD").
                 'pausedUntil' => $pausedUntil?->setTimezone(TrainerSlots::TIMEZONE)->toDateString(),
-                // "Metti in pausa", without an end: hidden from the search until "Riattiva profilo".
+                // The old "Metti in pausa" without an end: ended by "Riprendi ora".
                 'paused' => $profile->paused_at !== null,
             ],
             'contacts' => $profile === null ? null : [
@@ -47,8 +47,6 @@ class TrainerSettingsController extends Controller
                 'showPhone' => $profile->show_phone,
                 'showEmail' => $profile->show_email,
             ],
-            // TODO (step 5): the confirmed sessions and requests that get cancelled.
-            'upcoming' => ['sessions' => 0, 'requests' => 0],
         ]);
     }
 }

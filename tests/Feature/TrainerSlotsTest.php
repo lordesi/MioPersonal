@@ -129,8 +129,49 @@ class TrainerSlotsTest extends TestCase
         $days = TrainerSlots::days($profile, 1, $now);
 
         // At 18:00 only 45 minutes are left before the break: a 30-minute session fits.
-        // 20:00 is still blocked by the break.
-        $this->assertSame([['start' => '2026-10-12T16:00:00Z', 'maxMinutes' => 45]], $days[0]['slots']);
+        // 20:00 is still blocked by the break; 20:30 is free for 30 minutes.
+        $this->assertSame([
+            ['start' => '2026-10-12T16:00:00Z', 'maxMinutes' => 45],
+            ['start' => '2026-10-12T18:30:00Z', 'maxMinutes' => 30],
+        ], $days[0]['slots']);
+    }
+
+    public function test_the_other_half_hour_after_a_30_minute_session()
+    {
+        $now = CarbonImmutable::parse('2026-10-12 08:00', 'Europe/Rome');
+        $profile = $this->profile([[1, '18:00', '21:00']], ['break_minutes' => 0, 'session_minutes' => [30, 60]]);
+        Booking::factory()->for($profile)->confirmed()->at(CarbonImmutable::parse('2026-10-12 18:00', 'Europe/Rome'), 30)->create();
+
+        $days = TrainerSlots::days($profile, 1, $now);
+
+        // 18:00–18:30 is booked: 18:30 is free, for a 30-minute session only.
+        $this->assertSame([
+            ['start' => '2026-10-12T16:30:00Z', 'maxMinutes' => 30],
+            ['start' => '2026-10-12T17:00:00Z', 'maxMinutes' => 60],
+            ['start' => '2026-10-12T18:00:00Z', 'maxMinutes' => 60],
+        ], $days[0]['slots']);
+    }
+
+    public function test_no_half_hour_without_30_minute_sessions_or_when_the_break_takes_it()
+    {
+        $now = CarbonImmutable::parse('2026-10-12 08:00', 'Europe/Rome');
+        $start = CarbonImmutable::parse('2026-10-12 18:00', 'Europe/Rome');
+
+        // Only 1-hour sessions: nobody can book the half hour.
+        $hourOnly = $this->profile([[1, '18:00', '21:00']], ['break_minutes' => 0, 'session_minutes' => [60]]);
+        Booking::factory()->for($hourOnly)->confirmed()->at($start, 30)->create();
+
+        $this->assertSame(['2026-10-12T17:00:00Z', '2026-10-12T18:00:00Z'], array_column(TrainerSlots::days($hourOnly, 1, $now)[0]['slots'], 'start'));
+
+        // 30 minutes of break: blocked until 19:00.
+        $withBreak = $this->profile([[1, '18:00', '21:00']], ['break_minutes' => 30, 'session_minutes' => [30, 60]]);
+        Booking::factory()->for($withBreak)->confirmed()->create([
+            'starts_at' => $start->utc(),
+            'ends_at' => $start->addMinutes(30)->utc(),
+            'blocked_until' => $start->addMinutes(60)->utc(),
+        ]);
+
+        $this->assertSame(['2026-10-12T17:00:00Z', '2026-10-12T18:00:00Z'], array_column(TrainerSlots::days($withBreak, 1, $now)[0]['slots'], 'start'));
     }
 
     public function test_a_full_day_and_expired_requests()

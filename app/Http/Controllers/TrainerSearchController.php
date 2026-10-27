@@ -4,13 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Enums\PlaceType;
 use App\Enums\TrainingGoal;
+use App\Enums\TrainingMode;
+use App\Enums\UserRole;
+use App\Http\Requests\ClientPreferencesRequest;
 use App\Models\City;
+use App\Models\ClientPreference;
 use App\Models\TrainerProfile;
 use App\Support\CatalogOptions;
 use App\Support\TrainerCard;
 use App\Support\TrainerSlots;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,7 +29,12 @@ use Inertia\Response;
  * the trainer must have all of them. When nobody matches, the page also gets
  * some similar profiles (see suggestions()).
  *
- * @phpstan-type Filters array{disciplina: list<string>, obiettivo: list<string>, modalita: string|null, disponibilita: string|null, prezzo: string|null, valutazione: string|null, domicilio: string|null, preferiti: string|null, ordina: string|null}
+ * For a client, "Più pertinenti" follows the answers of "Modifica profilo"
+ * (see preferenceOrder()): they change the order only, never filter.
+ *
+ * "Nome" (?nome=marco bianchi): every word must be in the trainer's name.
+ *
+ * @phpstan-type Filters array{nome: string|null, disciplina: list<string>, obiettivo: list<string>, modalita: string|null, disponibilita: string|null, prezzo: string|null, valutazione: string|null, domicilio: string|null, preferiti: string|null, ordina: string|null}
  */
 class TrainerSearchController extends Controller
 {
@@ -52,7 +62,10 @@ class TrainerSearchController extends Controller
     private const RATING_MIN_TENTHS = ['3' => 30, '4' => 40, '4-5' => 45];
 
     /** The filters left out by the second step of suggestions(). */
-    private const MINOR_FILTERS = ['disponibilita', 'prezzo', 'valutazione', 'domicilio', 'preferiti'];
+    private const MINOR_FILTERS = ['nome', 'disponibilita', 'prezzo', 'valutazione', 'domicilio', 'preferiti'];
+
+    /** "Nome": as long as `users.first_name`, longer text is cut. */
+    private const NAME_MAX_LENGTH = 100;
 
     public function __invoke(Request $request, ?City $city = null): Response
     {
@@ -65,9 +78,13 @@ class TrainerSearchController extends Controller
         // The client's saved trainers: for the full hearts and the "Preferiti" filter.
         $favoriteIds = TrainerCard::favoriteIds($request->user());
 
+        // The client's preferences, for the order (guests and the other roles have none).
+        $user = $request->user();
+        $preference = $user?->role === UserRole::Client ? $user->clientPreference : null;
+
         $query = TrainerProfile::query()->published()->with(TrainerCard::RELATIONS);
         $this->filter($query, $filters, $city, $favoriteIds);
-        $this->sort($query, $filters['ordina'], $city, $filters['modalita']);
+        $this->sort($query, $filters['ordina'], $city, $filters['modalita'], $preference);
 
         $page = $query->paginate(self::PER_PAGE, ['*'], 'pagina');
 
@@ -82,7 +99,7 @@ class TrainerSearchController extends Controller
             'total' => $page->total(),
             'pagination' => ['currentPage' => $page->currentPage(), 'lastPage' => $page->lastPage()],
             'filters' => $filters,
-            'suggestions' => $page->total() === 0 ? $this->suggestions($filters, $city, $favoriteIds) : null,
+            'suggestions' => $page->total() === 0 ? $this->suggestions($filters, $city, $favoriteIds, $preference) : null,
             'disciplines' => $disciplines,
             'cities' => CatalogOptions::cities(),
         ]);
@@ -107,7 +124,11 @@ class TrainerSearchController extends Controller
             'ordina' => ['slot', 'prezzo', 'valutazione'],
         ];
 
+        // Free text: the spaces at the ends and the double ones go away.
+        $name = $request->string('nome')->squish()->limit(self::NAME_MAX_LENGTH, '')->value();
+
         $filters = [
+            'nome' => $name === '' ? null : $name,
             'disciplina' => $this->listFilter($request, 'disciplina', $disciplineSlugs),
             'obiettivo' => $this->listFilter($request, 'obiettivo', array_column(TrainingGoal::cases(), 'value')),
         ];
@@ -146,6 +167,18 @@ class TrainerSearchController extends Controller
     {
         $disciplines = $filters['disciplina'];
         $goals = $filters['obiettivo'];
+
+        if ($filters['nome'] !== null) {
+            // Each word on its own, anywhere in "first last": "bianchi marco" finds Marco Bianchi.
+            // Lowercase on both sides; a % or _ typed by the client is a plain character.
+            $words = explode(' ', mb_strtolower($filters['nome']));
+
+            $query->whereHas('user', function (Builder $user) use ($words) {
+                foreach ($words as $word) {
+                    $user->whereRaw("lower(first_name || ' ' || last_name) like ? escape '\\'", ['%'.addcslashes($word, '%_\\').'%']);
+                }
+            });
+        }
 
         if ($disciplines !== []) {
             // All of them: among the chosen disciplines the trainer has as many as were chosen.
@@ -211,7 +244,7 @@ class TrainerSearchController extends Controller
      * closest. Each step leaves out more and the first one that finds
      * somebody wins; the city and the mode always stay.
      *  - some: at least one of the chosen disciplines and goals;
-     *  - fewer-filters: like "some", without availability, price, rating, home and favorites;
+     *  - fewer-filters: like "some", without name, availability, price, rating, home and favorites;
      *  - city: every trainer of the city (or of Italy).
      * The trainers with more of the chosen disciplines and goals come first.
      *
@@ -219,7 +252,7 @@ class TrainerSearchController extends Controller
      * @param  list<int>  $favoriteIds
      * @return array{step: string, trainers: list<array<string, mixed>>}|null
      */
-    private function suggestions(array $filters, ?City $city, array $favoriteIds): ?array
+    private function suggestions(array $filters, ?City $city, array $favoriteIds, ?ClientPreference $preference): ?array
     {
         $fewer = $filters;
 
@@ -236,7 +269,7 @@ class TrainerSearchController extends Controller
         foreach (array_filter($steps) as $step => $relaxed) {
             $query = TrainerProfile::query()->published();
             $this->filter($query, $relaxed, $city, $favoriteIds, matchAll: false);
-            $this->sort($query, $relaxed['ordina'], $city, $relaxed['modalita']);
+            $this->sort($query, $relaxed['ordina'], $city, $relaxed['modalita'], $preference);
 
             $ids = $this->closestIds($query, $relaxed);
 
@@ -293,13 +326,19 @@ class TrainerSearchController extends Controller
     }
 
     /**
-     * "Più pertinenti" (no sort): in a city, its own trainers before the online-only
-     * ones, then the most reviewed. Trainers without free slots go last.
+     * "Più pertinenti" (no sort): first the client's preferences (see
+     * preferenceOrder()), then in a city its own trainers before the
+     * online-only ones, then the most reviewed. A sort chosen in the page
+     * wins over the preferences.
      *
      * @param  Builder<TrainerProfile>  $query
      */
-    private function sort(Builder $query, ?string $sort, ?City $city, ?string $mode): void
+    private function sort(Builder $query, ?string $sort, ?City $city, ?string $mode, ?ClientPreference $preference): void
     {
+        if ($sort === null && $preference !== null) {
+            $this->preferenceOrder($query, $preference, $city, $mode);
+        }
+
         match ($sort) {
             'slot' => $query->orderByRaw('next_free_slot_at is null')->orderBy('next_free_slot_at'),
             'prezzo' => $query->orderBy('price_from_cents'),
@@ -310,5 +349,58 @@ class TrainerSearchController extends Controller
         };
 
         $query->orderBy('id');
+    }
+
+    /**
+     * The answers of "Modifica profilo", one after the other: the next one
+     * only counts between trainers equal in the ones before.
+     *  1. the preferred city (based there or going there), only for the whole
+     *     of Italy and not for online sessions, where the city doesn't count;
+     *  2. the preferred mode (in person or online);
+     *  3. more of the preferred disciplines;
+     *  4. the preferred goal;
+     *  5. a price within the budget.
+     * The preferred times are left out: they would need every trainer's slots.
+     *
+     * @param  Builder<TrainerProfile>  $query
+     */
+    private function preferenceOrder(Builder $query, ClientPreference $preference, ?City $city, ?string $mode): void
+    {
+        if ($city === null && $mode !== 'online' && $preference->city_id !== null && $preference->mode !== TrainingMode::Online) {
+            $query->orderByRaw(
+                'case when trainer_profiles.city_id = ? or exists (select 1 from trainer_profile_city where trainer_profile_city.trainer_profile_id = trainer_profiles.id and trainer_profile_city.city_id = ?) then 0 else 1 end',
+                [$preference->city_id, $preference->city_id],
+            );
+        }
+
+        match ($preference->mode) {
+            TrainingMode::InPerson => $query->orderByRaw('case when trains_in_person then 0 else 1 end'),
+            TrainingMode::Online => $query->orderByRaw('case when trains_online then 0 else 1 end'),
+            default => null,
+        };
+
+        $disciplineIds = $preference->discipline_ids ?? [];
+
+        if ($disciplineIds !== []) {
+            $query->orderByDesc(DB::table('trainer_profile_discipline')
+                ->selectRaw('count(*)')
+                ->whereColumn('trainer_profile_discipline.trainer_profile_id', 'trainer_profiles.id')
+                ->whereIn('trainer_profile_discipline.discipline_id', $disciplineIds));
+        }
+
+        if ($preference->goal !== null) {
+            // Same check as the "Obiettivo" filter, on a copy of the row (it also works in the tests' SQLite).
+            $query->orderByDesc(DB::table('trainer_profiles as same')
+                ->selectRaw('count(*)')
+                ->whereColumn('same.id', 'trainer_profiles.id')
+                ->whereJsonContains('same.goals', $preference->goal->value));
+        }
+
+        // The end of the slider is "Nessun limite".
+        $budget = $preference->budget_max_cents;
+
+        if ($budget !== null && $budget < ClientPreferencesRequest::BUDGET_MAX_CENTS) {
+            $query->orderByRaw('case when price_from_cents <= ? then 0 else 1 end', [$budget]);
+        }
     }
 }

@@ -1,52 +1,119 @@
 import { Building2, House, Trees, Video } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { TrainingPlace } from '@/types';
+import ProfileSection from '@/components/profile/profile-section';
+import { cn } from '@/lib/utils';
+import type { TrainerProfile, TrainingPlace } from '@/types';
 
-const icons: Record<TrainingPlace['type'], LucideIcon> = {
-    studio: Building2,
-    home: House,
-    park: Trees,
-    online: Video,
+/** The 4 options, always shown in this order: the missing ones are "Non disponibile". */
+const options: {
+    type: TrainingPlace['type'];
+    title: string;
+    icon: LucideIcon;
+}[] = [
+    { type: 'online', title: 'Online', icon: Video },
+    { type: 'studio', title: 'Studio o palestra', icon: Building2 },
+    { type: 'home', title: 'A domicilio', icon: House },
+    { type: 'park', title: "All'aperto", icon: Trees },
+];
+
+type TrainingPlacesProps = Pick<TrainerProfile, 'places' | 'online'> & {
+    trainerFirstName: string;
 };
 
-/** "Dove ci alleniamo": cards on desktop, one bordered list on mobile. */
+/** "Dove alleno": online, studio, at home and outdoors, side by side. */
 export default function TrainingPlaces({
     places,
-}: {
-    places: TrainingPlace[];
-}) {
+    online,
+    trainerFirstName,
+}: TrainingPlacesProps) {
+    // Only who trains online alone gets a line under the title.
+    const description =
+        online === 'only'
+            ? `${trainerFirstName} allena solo online: puoi prenotare da qualsiasi città.`
+            : undefined;
+
+    /** What the card says under the title; null = not offered. */
+    const detail = (type: TrainingPlace['type']): string | null => {
+        const rows = places.filter((place) => place.type === type);
+
+        if (rows.length === 0) {
+            return null;
+        }
+
+        if (type === 'online') {
+            return 'Il link arriva con la conferma';
+        }
+
+        // Every studio: "Studio Fit, Milano, via Roma 1".
+        return rows
+            .map((place) =>
+                type === 'studio'
+                    ? [place.title, place.detail].filter(Boolean).join(', ')
+                    : place.detail,
+            )
+            .join(' · ');
+    };
+
     return (
-        <section aria-labelledby="places-title" className="flex flex-col gap-3">
-            <h2
-                id="places-title"
-                className="text-xl font-semibold tracking-tight md:text-2xl"
-            >
-                Dove ci alleniamo
-            </h2>
-            <ul className="overflow-hidden rounded-xl border md:grid md:grid-cols-[repeat(auto-fit,minmax(min(100%,240px),1fr))] md:gap-3 md:overflow-visible md:rounded-none md:border-0">
-                {places.map((place) => {
-                    const Icon = icons[place.type];
+        <ProfileSection
+            titleId="places-title"
+            title="Dove alleno"
+            description={description}
+        >
+            <ul className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+                {options.map(({ type, title, icon: Icon }) => {
+                    const text = detail(type);
+                    const available = text !== null;
 
                     return (
                         <li
-                            key={place.type}
-                            className="flex items-center gap-3 border-t px-4 py-3.5 first:border-t-0 md:items-start md:rounded-xl md:border md:p-4 md:first:border-t"
+                            key={type}
+                            className={cn(
+                                'flex flex-col gap-3.5 rounded-[18px] border p-4',
+                                available
+                                    ? 'border-primary bg-primary text-primary-foreground'
+                                    : 'border-dashed border-ring/60 bg-muted/50 text-muted-foreground',
+                            )}
                         >
-                            <span className="flex shrink-0 items-center justify-center md:size-10 md:rounded-lg md:bg-secondary">
-                                <Icon aria-hidden="true" className="size-5" />
-                            </span>
-                            <span className="flex flex-col gap-0.5">
-                                <span className="text-sm font-semibold">
-                                    {place.title}
+                            <span className="flex items-center justify-between gap-2">
+                                <span
+                                    className={cn(
+                                        'flex size-9.5 items-center justify-center rounded-xl',
+                                        available
+                                            ? 'bg-primary-foreground/10'
+                                            : 'bg-muted',
+                                    )}
+                                >
+                                    <Icon
+                                        aria-hidden="true"
+                                        className="size-4.5"
+                                    />
                                 </span>
-                                <span className="text-sm text-muted-foreground">
-                                    {place.detail}
+                                {available && (
+                                    <span className="inline-flex h-5.5 items-center rounded-full bg-primary-foreground px-2 text-[11px] leading-3.5 font-bold text-primary">
+                                        Disponibile
+                                    </span>
+                                )}
+                            </span>
+                            <span className="flex min-w-0 flex-col gap-0.5 break-words">
+                                <span className="text-[15px] leading-[22px] font-semibold">
+                                    {title}
+                                </span>
+                                <span
+                                    className={cn(
+                                        'text-[13px] leading-[18px]',
+                                        available
+                                            ? 'text-primary-foreground/60'
+                                            : 'text-muted-foreground',
+                                    )}
+                                >
+                                    {text ?? 'Non disponibile'}
                                 </span>
                             </span>
                         </li>
                     );
                 })}
             </ul>
-        </section>
+        </ProfileSection>
     );
 }

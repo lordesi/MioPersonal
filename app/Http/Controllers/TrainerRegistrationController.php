@@ -8,6 +8,7 @@ use App\Enums\TrainerProfileStatus;
 use App\Enums\TrainerReviewDecision;
 use App\Enums\UserRole;
 use App\Http\Requests\TrainerProfileRequest;
+use App\Http\Requests\TrainerRegistrationStepRequest;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\CatalogOptions;
@@ -90,6 +91,24 @@ class TrainerRegistrationController extends Controller
         }
 
         return to_route('trainer.register')->with('status', 'trainer-registered');
+    }
+
+    /**
+     * "Continua": the fields of the step being left are checked now, so their
+     * errors show up in that step. Nothing is saved: everything goes with "Invia".
+     */
+    public function check(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user !== null && ! $this->canSend($user)) {
+            return to_route($user->role->homeRoute());
+        }
+
+        // With errors, Laravel goes back to the page with them.
+        app(TrainerRegistrationStepRequest::class);
+
+        return to_route('trainer.register');
     }
 
     /**

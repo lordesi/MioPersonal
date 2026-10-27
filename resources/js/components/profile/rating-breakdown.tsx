@@ -37,13 +37,13 @@ export default function RatingBreakdown({
                         disabled={row.count === 0}
                         onClick={() => onSelect(pressed ? null : row.stars)}
                         className={cn(
-                            '-mx-1.5 flex items-center gap-2.5 rounded-md px-1.5 py-1 text-xs font-medium tabular-nums outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50',
+                            '-mx-1.5 flex items-center gap-2.5 rounded-md px-1.5 py-0.5 text-[13px] leading-[18px] tabular-nums outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50',
                             pressed && 'bg-muted',
                             // A filter is on: the other rows step back.
                             selected !== null && !pressed && 'opacity-50',
                         )}
                     >
-                        <span className="w-5 text-left text-muted-foreground">
+                        <span className="w-7 text-left text-muted-foreground">
                             {row.stars}★
                         </span>
                         <span aria-hidden="true" className="flex-1">

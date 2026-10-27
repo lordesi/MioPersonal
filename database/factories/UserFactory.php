@@ -29,8 +29,8 @@ class UserFactory extends Factory
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
-            // Required for everyone, as saved by the sign-up: "+39" + 10 digits.
-            'phone' => '+393'.fake()->numerify('#########'),
+            // Required for everyone, as saved by the sign-up: "+39" + a 10-digit mobile.
+            'phone' => '+39'.fake()->randomElement(['320', '333', '347', '351', '380', '393']).fake()->numerify('#######'),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),

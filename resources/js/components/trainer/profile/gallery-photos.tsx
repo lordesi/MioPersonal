@@ -15,7 +15,7 @@ type GalleryPhotosProps = {
 };
 
 /**
- * "Foto della galleria" (section 2 of "Il mio profilo"): the photos of the
+ * "Foto della galleria" (section 2 of "Modifica profilo"): the photos of the
  * carousel after the profile photo. Each action (add, delete) is saved right
  * away by TrainerPhotoController, not with "Salva modifiche".
  */
@@ -69,7 +69,7 @@ export default function GalleryPhotos({ photos, max }: GalleryPhotosProps) {
         <NumberedSection
             step={2}
             title="Foto della galleria"
-            description="JPG o PNG, almeno 800 × 500 px. Puoi sceglierne più di una insieme."
+            description="JPG o PNG, almeno 800 × 500 px."
             action={
                 <span className="inline-flex h-6.5 items-center rounded-full bg-secondary px-2.5 text-xs font-semibold tabular-nums">
                     {photos.length} di {max}
@@ -139,7 +139,7 @@ export default function GalleryPhotos({ photos, max }: GalleryPhotosProps) {
 
             {photos.length === 0 && (
                 <p className="text-[13px] leading-4.5 text-muted-foreground">
-                    I profili con qualche foto ricevono più visite.
+                    I profili con più di una foto ricevono più visite.
                 </p>
             )}
         </NumberedSection>

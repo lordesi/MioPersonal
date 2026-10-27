@@ -68,6 +68,7 @@ class TrainerProfileEditTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('trainer/profile')
+                ->where('editable', true)
                 ->where('draft.headline', $profile->headline)
                 ->where('draft.disciplines', ['yoga'])
                 ->where('draft.pricing.sessions.0.name', 'Seduta singola')
@@ -80,14 +81,17 @@ class TrainerProfileEditTest extends TestCase
             );
     }
 
-    public function test_a_profile_not_approved_yet_is_changed_from_the_registration()
+    public function test_a_profile_not_approved_yet_is_shown_but_locked()
     {
         $profile = TrainerProfile::factory()->status(TrainerProfileStatus::Review)->create();
 
         $this->actingAs($profile->user)
             ->get(route('trainer.profile.edit'))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->where('draft', null));
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('editable', false)
+                ->where('draft.headline', $profile->headline)
+            );
 
         $this->actingAs($profile->user)
             ->put(route('trainer.profile.update'), $this->payload([

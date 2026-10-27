@@ -16,6 +16,9 @@ use Illuminate\Support\Collection;
  * Working hours are in Rome time and every day is converted on its own, so
  * "18:00" stays 18:00 when the clocks change.
  *
+ * Start times are on the hour, plus the half hour left free by a 30-minute
+ * session (18:00–18:30 booked → 18:30, for 30-minute sessions only).
+ *
  * TODO (step 4): remove holidays and imported calendars.
  */
 final class TrainerSlots
@@ -26,9 +29,11 @@ final class TrainerSlots
      * Day by day, from today in Rome. maxMinutes is the longest session that
      * fits from that start: the working hours in a row, up to the longest
      * duration the trainer accepts (e.g. 18:00 and 19:00 free → 120), and
-     * ending a break before the next booking.
+     * ending a break before the next booking. closed: the trainer doesn't work
+     * that day (no working hours, paused, after the booking window); without
+     * slots and not closed, the day is full.
      *
-     * @return list<array{date: string, slots: list<array{start: string, maxMinutes: int}>}>
+     * @return list<array{date: string, closed: bool, slots: list<array{start: string, maxMinutes: int}>}>
      */
     public static function days(TrainerProfile $profile, int $days, ?CarbonImmutable $now = null): array
     {
@@ -45,7 +50,7 @@ final class TrainerSlots
 
             // "Metti in pausa": no free slots until the trainer turns the profile back on.
             if ($profile->paused_at !== null) {
-                $result[] = ['date' => $date->toDateString(), 'slots' => []];
+                $result[] = ['date' => $date->toDateString(), 'closed' => true, 'slots' => []];
 
                 continue;
             }
@@ -54,11 +59,12 @@ final class TrainerSlots
             // "Massimo sedute al giorno": that day is full.
             $full = $profile->max_sessions_per_day !== null && $dayBookings->count() >= $profile->max_sessions_per_day;
 
-            if ($date->lessThan($lastDay) && ! $full) {
-                $hours = $hoursByWeekday[$date->dayOfWeekIso] ?? [];
+            $hours = $date->lessThan($lastDay) ? $hoursByWeekday[$date->dayOfWeekIso] ?? [] : [];
 
+            if (! $full) {
                 foreach ($hours as $hour) {
-                    $slot = self::slot($profile, $date, $hour, $hours, $earliest, $bookings);
+                    $slot = self::slot($profile, $date, $hour, $hours, $earliest, $bookings)
+                        ?? self::halfHourSlot($profile, $date, $hour, $earliest, $bookings);
 
                     if ($slot !== null) {
                         $slots[] = $slot;
@@ -66,7 +72,7 @@ final class TrainerSlots
                 }
             }
 
-            $result[] = ['date' => $date->toDateString(), 'slots' => $slots];
+            $result[] = ['date' => $date->toDateString(), 'closed' => $hours === [], 'slots' => $slots];
         }
 
         return $result;
@@ -140,15 +146,7 @@ final class TrainerSlots
             $hoursInARow++;
         }
 
-        $end = $date->setTime($hour + $hoursInARow, 0);
-        // The next booking: the session must end a break before it.
-        $next = $bookings->first(fn (array $booking) => $booking['start']->greaterThan($start) && $booking['start']->lessThan($end));
-
-        if ($next !== null) {
-            $end = $next['start']->subMinutes($profile->break_minutes);
-        }
-
-        $freeMinutes = max(0, (int) $start->diffInMinutes($end));
+        $freeMinutes = self::freeMinutes($profile, $start, $date->setTime($hour + $hoursInARow, 0), $bookings);
 
         // Not even the shortest session fits (e.g. only 2-hour sessions and one free hour).
         if (min($durations) > $freeMinutes) {
@@ -159,6 +157,54 @@ final class TrainerSlots
             'start' => $start->utc()->format('Y-m-d\TH:i:s\Z'),
             'maxMinutes' => min($freeMinutes, max($durations)),
         ];
+    }
+
+    /**
+     * "L'altra mezz'ora": a booking took the start of the hour and ended at the
+     * half (e.g. a 30-minute session at 18:00), so 18:30 is free for another
+     * 30-minute session, and only for that (maxMinutes is always 30).
+     *
+     * @param  Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable}>  $bookings
+     * @return array{start: string, maxMinutes: int}|null
+     */
+    private static function halfHourSlot(TrainerProfile $profile, CarbonImmutable $date, int $hour, CarbonImmutable $earliest, Collection $bookings): ?array
+    {
+        $hourStart = $date->setTime($hour, 0);
+        $start = $date->setTime($hour, 30);
+
+        if (! in_array(30, $profile->session_minutes ?: [60], true) || $start->lessThan($earliest)) {
+            return null;
+        }
+
+        $takenAt = fn (CarbonImmutable $time) => $bookings->contains(fn (array $booking) => $booking['start']->lessThanOrEqualTo($time) && $booking['blockedUntil']->greaterThan($time));
+
+        // An hour all free stays whole; a half taken (or still in its break) isn't free.
+        if (! $takenAt($hourStart) || $takenAt($start)) {
+            return null;
+        }
+
+        if (self::freeMinutes($profile, $start, $date->setTime($hour + 1, 0), $bookings) < 30) {
+            return null;
+        }
+
+        return ['start' => $start->utc()->format('Y-m-d\TH:i:s\Z'), 'maxMinutes' => 30];
+    }
+
+    /**
+     * The minutes from `$start` to `$end`, or to a break before the next booking.
+     *
+     * @param  Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable}>  $bookings
+     */
+    private static function freeMinutes(TrainerProfile $profile, CarbonImmutable $start, CarbonImmutable $end, Collection $bookings): int
+    {
+        // The next booking: the session must end a break before it.
+        $next = $bookings->first(fn (array $booking) => $booking['start']->greaterThan($start) && $booking['start']->lessThan($end));
+
+        if ($next !== null) {
+            $end = $next['start']->subMinutes($profile->break_minutes);
+        }
+
+        return max(0, (int) $start->diffInMinutes($end));
     }
 
     /**

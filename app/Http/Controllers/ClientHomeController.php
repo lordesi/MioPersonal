@@ -26,9 +26,6 @@ class ClientHomeController extends Controller
 {
     private const RECOMMENDED = 3;
 
-    /** "Sedute svolte": the most recent ones are enough. */
-    private const PAST_LIMIT = 20;
-
     public function __invoke(Request $request): Response
     {
         /** @var User $client */
@@ -51,18 +48,16 @@ class ClientHomeController extends Controller
                 ->filter(ClientBookingData::isPending(...))
                 ->map(ClientBookingData::pending(...))
                 ->values()->all(),
+            // All of them: the page shows the last three, "Vedi tutte" the others.
             'past' => ClientBookingData::past($client, $bookings
                 ->filter(ClientBookingData::isDone(...))
                 ->sortByDesc('starts_at')
-                ->take(self::PAST_LIMIT)
                 ->values()),
             'packages' => ClientBookingData::packages($client),
             'trainers' => $trainers,
             // Only for a client without trainers yet: one query less for the others.
             'recommended' => $trainers === [] ? $this->recommended($client, $preference) : [],
             'hasPreferences' => $preference !== null,
-            // "Prenota una seduta" opens the search in the client's city (not a switched-off one: 404).
-            'citySlug' => $preference?->city?->is_active ? $preference->city->slug : null,
         ]);
     }
 

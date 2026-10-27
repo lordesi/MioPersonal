@@ -16,12 +16,9 @@ type AvailabilityProps = {
 export default function Availability({ availability }: AvailabilityProps) {
     return (
         <>
-            <Head title="Disponibilità e regole" />
+            <Head title="Le tue disponibilità" />
 
-            <PageHeading
-                title="Disponibilità e regole"
-                description="Da qui nascono gli slot che i clienti vedono sul tuo profilo."
-            />
+            <PageHeading title="Le tue disponibilità" />
 
             {availability === null ? (
                 <p className="text-sm text-muted-foreground">
@@ -71,12 +68,13 @@ function AvailabilityForm({
         }));
         form.put(TrainerAvailabilityController.update.url(), {
             preserveScroll: true,
-            // Back to "Tutto salvato" until the next change.
+            // Back to no status until the next change.
             onSuccess: () => form.setDefaults(),
         });
     };
 
-    let status = 'Tutto salvato';
+    // Nothing to save: no status, only the button.
+    let status: string | undefined;
 
     if (form.processing) {
         status = 'Salvataggio…';
@@ -89,11 +87,7 @@ function AvailabilityForm({
     return (
         <form onSubmit={submit} className="flex flex-wrap items-start gap-5">
             <div className="flex min-w-0 flex-[3_1_600px] flex-col gap-4">
-                <NumberedSection
-                    step={1}
-                    title="Orari di lavoro"
-                    description="Le prenotazioni già fatte restano valide anche se togli quelle ore."
-                >
+                <NumberedSection step={1} title="Orari di lavoro">
                     <WeeklyHoursGrid
                         hours={form.data.hours}
                         onChange={(hours) => form.setData('hours', hours)}
@@ -103,11 +97,7 @@ function AvailabilityForm({
                     )}
                 </NumberedSection>
 
-                <NumberedSection
-                    step={2}
-                    title="Regole di prenotazione"
-                    description="Valgono per le prossime prenotazioni."
-                >
+                <NumberedSection step={2} title="Regole di prenotazione">
                     <BookingRulesFields
                         rules={form.data.rules}
                         autoConfirm={form.data.autoConfirm}

@@ -46,7 +46,7 @@ type PublicProfileSectionProps = {
 };
 
 /**
- * "Il tuo profilo pubblico" (section 1 of "Il mio profilo"): photo,
+ * "Il tuo profilo pubblico" (section 1 of "Modifica profilo"): photo,
  * headline, bio and years of experience, all required.
  */
 export default function PublicProfileSection({
@@ -66,11 +66,7 @@ export default function PublicProfileSection({
         : `Almeno ${BIO_MIN} caratteri${bioLength > 0 ? ` · ne mancano ${BIO_MIN - draft.bio.trim().length}` : ''}. ${CONTACTS_NOTE}`;
 
     return (
-        <NumberedSection
-            step={1}
-            title="Il tuo profilo pubblico"
-            description="Tutti i campi di questa sezione sono obbligatori."
-        >
+        <NumberedSection step={1} title="Il tuo profilo pubblico">
             <StepErrors title="Da sistemare:" errors={errors} />
 
             <div className="flex flex-wrap items-center gap-4.5 rounded-[18px] border bg-muted/50 p-4">
@@ -94,8 +90,7 @@ export default function PublicProfileSection({
                         Foto profilo
                     </span>
                     <span className="text-[13px] leading-4.5 text-muted-foreground">
-                        JPG o PNG, almeno 400 × 400 px. Viso ben visibile, luce
-                        naturale.
+                        JPG o PNG, almeno 400 × 400 px.
                     </span>
                     <div className="flex flex-wrap gap-2">
                         {/* Hidden: the button opens it. Sent with "Salva modifiche". */}

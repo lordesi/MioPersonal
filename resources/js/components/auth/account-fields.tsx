@@ -7,6 +7,8 @@ import PasswordRequirements, {
     PASSWORD_PATTERN_MESSAGE,
 } from '@/components/auth/password-requirements';
 import { Input } from '@/components/ui/input';
+import { useAccountCheck } from '@/hooks/use-account-check';
+import type { CheckedField } from '@/hooks/use-account-check';
 
 export type AccountField =
     | 'first_name'
@@ -31,6 +33,11 @@ type AccountFieldsProps = {
      * Leave it out inside an Inertia <Form>, which reads the inputs by name.
      */
     bind?: Bind;
+    /**
+     * Sign-ups pass it: email and phone are checked while typed, and this
+     * runs when they already belong to an account (to open the login pop-up).
+     */
+    onAccountExists?: (field: CheckedField, value: string) => void;
 };
 
 const inputClass = 'h-11 text-base md:text-base';
@@ -45,12 +52,20 @@ export default function AccountFields({
     emailHint,
     phoneHint,
     bind,
+    onAccountExists,
 }: AccountFieldsProps) {
     // Inside a <Form> the password is not in React state: the criteria list
     // needs it, so it is copied here as you type.
     const [typedPassword, setTypedPassword] = useState('');
     const passwordBinding = bind?.('password');
     const password = passwordBinding?.value ?? typedPassword;
+    const emailBinding = bind?.('email');
+    const emailCheck = useAccountCheck(
+        'email',
+        onAccountExists && ((value) => onAccountExists('email', value)),
+    );
+    // The answer of the check is newer than the error of the last submit.
+    const emailError = emailCheck.error ?? errors.email;
 
     return (
         <>
@@ -87,12 +102,12 @@ export default function AccountFields({
                 </FormField>
             </div>
 
-            <FormField label="Email" hint={emailHint} error={errors.email}>
+            <FormField label="Email" hint={emailHint} error={emailError}>
                 {({ id, describedBy }) => (
                     <Input
                         id={id}
                         aria-describedby={describedBy}
-                        aria-invalid={!!errors.email}
+                        aria-invalid={!!emailError}
                         type="email"
                         name="email"
                         required
@@ -102,12 +117,25 @@ export default function AccountFields({
                         autoComplete="email"
                         placeholder="nome@esempio.it"
                         className={inputClass}
-                        {...bind?.('email')}
+                        {...emailBinding}
+                        onChange={(event) => {
+                            emailBinding?.onChange(event);
+                            emailCheck.onChange(event.target);
+                        }}
+                        onBlur={(event) => emailCheck.onBlur(event.target)}
                     />
                 )}
             </FormField>
 
-            <PhoneFields errors={errors} hint={phoneHint} bind={bind} />
+            <PhoneFields
+                errors={errors}
+                hint={phoneHint}
+                bind={bind}
+                onAccountExists={
+                    onAccountExists &&
+                    ((value) => onAccountExists('phone', value))
+                }
+            />
 
             <FormField
                 label="Password"
@@ -162,14 +190,19 @@ export function PhoneFields({
     hint,
     bind,
     defaultPhone,
+    onAccountExists,
 }: {
     errors: Partial<Record<'phone', string>>;
     hint?: string;
     bind?: Bind;
     /** Starting number inside a <Form>, e.g. the saved one in the settings. */
     defaultPhone?: string;
+    /** Sign-ups only: the number is checked while typed (see AccountFields). */
+    onAccountExists?: (value: string) => void;
 }) {
     const phoneBinding = bind?.('phone');
+    const phoneCheck = useAccountCheck('phone', onAccountExists);
+    const phoneError = phoneCheck.error ?? errors.phone;
 
     return (
         <div className="flex items-start gap-2">
@@ -187,12 +220,12 @@ export function PhoneFields({
                 </FormField>
             </div>
             <div className="min-w-0 flex-1">
-                <FormField label="Telefono" hint={hint} error={errors.phone}>
+                <FormField label="Telefono" hint={hint} error={phoneError}>
                     {({ id, describedBy }) => (
                         <Input
                             id={id}
                             aria-describedby={describedBy}
-                            aria-invalid={!!errors.phone}
+                            aria-invalid={!!phoneError}
                             type="tel"
                             name="phone"
                             required
@@ -201,11 +234,12 @@ export function PhoneFields({
                                     ? undefined
                                     : cleanPhone(defaultPhone ?? '')
                             }
-                            pattern={`[0-9]{${PHONE_DIGITS}}`}
-                            data-pattern-message="Inserisci un cellulare di 10 cifre, es. 3330000000."
+                            // Mobiles start with 3; the server also refuses fake ones (3333333333).
+                            pattern={`3[0-9]{${PHONE_DIGITS - 1}}`}
+                            data-pattern-message="Inserisci un cellulare di 10 cifre, es. 3475218846."
                             inputMode="numeric"
                             autoComplete="tel-national"
-                            placeholder="3330000000"
+                            placeholder="3475218846"
                             className={inputClass}
                             {...phoneBinding}
                             onChange={(event) => {
@@ -214,7 +248,9 @@ export function PhoneFields({
                                     event.target.value,
                                 );
                                 phoneBinding?.onChange(event);
+                                phoneCheck.onChange(event.target);
                             }}
+                            onBlur={(event) => phoneCheck.onBlur(event.target)}
                         />
                     )}
                 </FormField>

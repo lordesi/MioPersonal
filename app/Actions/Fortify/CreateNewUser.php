@@ -76,6 +76,19 @@ class CreateNewUser implements CreatesNewUsers
         return $number === null ? null : self::PHONE_PREFIX.$number;
     }
 
+    /**
+     * Another account already has this number ("347 521 8846" is saved as
+     * +393475218846). In the settings the user's own account doesn't count.
+     */
+    public static function phoneInUse(?string $number, ?int $exceptUserId = null): bool
+    {
+        $phone = self::italianPhone($number);
+
+        return $phone !== null && User::where('phone', $phone)
+            ->when($exceptUserId !== null, fn ($query) => $query->whereKeyNot($exceptUserId))
+            ->exists();
+    }
+
     /** "333 000 0000" → "3330000000"; empty → null. */
     public static function normalizePhone(?string $phone): ?string
     {

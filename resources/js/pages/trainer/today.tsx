@@ -2,10 +2,9 @@ import { Head, Link } from '@inertiajs/react';
 import { Bell, Clock } from 'lucide-react';
 import { useState } from 'react';
 import PageHeading from '@/components/trainer/area/page-heading';
-import Panel from '@/components/trainer/area/panel';
 import ActivePackages from '@/components/trainer/dashboard/active-packages';
 import NextSessionCard from '@/components/trainer/dashboard/next-session-card';
-import PastSessionList from '@/components/trainer/dashboard/past-session-list';
+import PastWeekSessions from '@/components/trainer/dashboard/past-week-sessions';
 import PendingRequestsSummary from '@/components/trainer/dashboard/pending-requests-summary';
 import type { StatCard } from '@/components/trainer/dashboard/stat-cards';
 import StatCards from '@/components/trainer/dashboard/stat-cards';
@@ -13,11 +12,7 @@ import WeekAgenda from '@/components/trainer/dashboard/week-agenda';
 import { Button } from '@/components/ui/button';
 import { romeParts } from '@/lib/calendar';
 import { formatDayLong } from '@/lib/format';
-import {
-    availability,
-    pastSessions,
-    requests as requestsPage,
-} from '@/routes/trainer';
+import { availability, requests as requestsPage } from '@/routes/trainer';
 import type {
     TrainerBookingRequest,
     TrainerPackage,
@@ -117,7 +112,8 @@ export default function Today({
                 <StatCards stats={statCards} />
             </div>
 
-            <div className="flex flex-wrap items-start gap-4">
+            {/* Stretch: Agenda as tall as the column next to it, no gap below. */}
+            <div className="flex flex-wrap items-stretch gap-4">
                 <WeekAgenda sessions={agenda} today={parts.date} />
 
                 <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-4">
@@ -126,32 +122,10 @@ export default function Today({
                         total={stats.pending}
                     />
                     <ActivePackages packages={packages} />
-                    <Panel
-                        title="Ultimi 7 giorni"
-                        className="gap-2.5"
-                        action={
-                            <Link
-                                href={pastSessions()}
-                                className="inline-flex min-h-11 items-center text-sm font-medium hover:underline"
-                            >
-                                Vedi tutte
-                            </Link>
-                        }
-                    >
-                        {past.length === 0 ? (
-                            <span className="text-[15px] leading-5.5 font-medium">
-                                Nessuna seduta svolta.
-                            </span>
-                        ) : (
-                            <PastSessionList sessions={past} />
-                        )}
-                        <span className="text-[13px] leading-4.5 text-muted-foreground">
-                            Le sedute passate risultano effettuate: segna
-                            «Saltata» se il cliente non si è presentato.
-                        </span>
-                    </Panel>
                 </div>
             </div>
+
+            <PastWeekSessions sessions={past} />
         </>
     );
 }

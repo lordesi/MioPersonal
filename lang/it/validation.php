@@ -31,7 +31,7 @@ return [
 
     'custom' => [
         'phone' => [
-            'regex' => 'Inserisci un cellulare di 10 cifre, es. 333 000 0000.',
+            'regex' => 'Inserisci un cellulare di 10 cifre, es. 347 521 8846.',
         ],
     ],
 

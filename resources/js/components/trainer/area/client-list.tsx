@@ -21,8 +21,9 @@ type ClientListProps = {
     empty: ReactNode;
 };
 
+// "In programma" is never narrower than its title: on one line.
 const columns =
-    'md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1.2fr)] md:gap-4';
+    'md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.4fr)_minmax(max-content,1fr)_minmax(0,1.2fr)] md:gap-4';
 
 /** Clients table on desktop, compact list on mobile. */
 export default function ClientList({
@@ -45,7 +46,7 @@ export default function ClientList({
             >
                 <span>CLIENTE</span>
                 <span>PROSSIMA SEDUTA</span>
-                <span>IN PROGRAMMA</span>
+                <span className="whitespace-nowrap">IN PROGRAMMA</span>
                 <span>PACCHETTO</span>
             </div>
 
@@ -124,8 +125,8 @@ export default function ClientList({
             })}
 
             <p className="mx-2 mt-2 mb-1 rounded-xl bg-secondary/60 p-3 text-[13px] leading-4.5 text-muted-foreground">
-                I nuovi clienti compaiono qui dopo la prima richiesta che
-                confermi.
+                I nuovi clienti compaiono qui dopo la prima prenotazione
+                confermata.
             </p>
         </section>
     );

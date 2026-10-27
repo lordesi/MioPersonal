@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\BookingStatus;
 use App\Models\Booking;
+use App\Models\ClientPackage;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -114,6 +115,29 @@ class TrainerDashboardTest extends TestCase
                 ->where('past.0.canChangeNoShow', true)
                 ->where('past.1.id', $sixDaysAgo->id)
                 ->where('past.1.noShow', false)
+            );
+    }
+
+    /** The cells of the package on the cards of "Ultimi 7 giorni": "seduta 2 di 5". */
+    public function test_past_tells_which_session_of_the_package_it_is()
+    {
+        $now = CarbonImmutable::parse('2026-10-15 09:00', 'Europe/Rome');
+        $this->travelTo($now);
+        $trainer = TrainerProfile::factory()->approved()->create();
+        $client = User::factory()->create();
+        $package = ClientPackage::factory()->for($trainer)->for($client, 'client')->create(['sessions_total' => 5]);
+        Booking::factory()->for($trainer)->for($client, 'client')->for($package)->confirmed()->at($now->subDays(3)->setTime(10, 0))->create();
+        $second = Booking::factory()->for($trainer)->for($client, 'client')->for($package)->confirmed()->at($now->subDays(2)->setTime(10, 0))->create();
+        $single = Booking::factory()->for($trainer)->for($client, 'client')->confirmed()->at($now->subDay()->setTime(10, 0))->create();
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.today'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('past', 3)
+                ->where('past.0.id', $single->id)
+                ->where('past.0.package', null)
+                ->where('past.1.id', $second->id)
+                ->where('past.1.package', ['position' => 2, 'total' => 5])
             );
     }
 }

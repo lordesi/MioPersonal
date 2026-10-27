@@ -7,23 +7,6 @@ import type { CatalogOption } from '@/types';
 /** How many disciplines the design shows, before "Tutte le discipline". */
 const SHOWN = 7;
 
-/**
- * The line under each discipline, by slug. Here and not in the database
- * because only the home shows it; a discipline missing here has no line.
- */
-const descriptions: Record<string, string> = {
-    functional: 'Forza e resistenza per la vita di tutti i giorni',
-    'pesi-e-bodybuilding': 'Forza e massa muscolare',
-    pilates: 'Postura, core e mobilità',
-    yoga: 'Flessibilità e respirazione',
-    crossfit: 'Allenamenti intensi e sempre diversi',
-    'preparazione-atletica': 'Allenamento mirato per il tuo sport',
-    boxe: 'Tecnica, cardio e coordinazione',
-    calisthenics: 'Allenamento a corpo libero',
-    postura: 'Schiena, equilibrio e mobilità',
-    running: 'Corsa, fiato e resistenza',
-};
-
 type PopularDisciplinesProps = {
     /**
      * From the catalog, in the team's order.
@@ -41,25 +24,18 @@ export default function PopularDisciplines({
             aria-labelledby="disciplines-title"
             className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 pt-6 md:gap-6 md:px-8 md:pt-18"
         >
-            <div className="flex flex-col gap-1.5">
-                <h2
-                    id="disciplines-title"
-                    className="text-2xl font-semibold tracking-tight md:text-3xl"
-                >
-                    Cosa vuoi allenare?
-                </h2>
-                <p className="text-muted-foreground">
-                    Parti da una disciplina: ti mostriamo subito i trainer che
-                    la insegnano.
-                </p>
-            </div>
+            <h2
+                id="disciplines-title"
+                className="text-2xl font-semibold tracking-tight md:text-3xl"
+            >
+                Cosa vuoi allenare?
+            </h2>
             <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-3">
                 {disciplines.slice(0, SHOWN).map((discipline) => (
                     <li key={discipline.value} className="flex">
                         <DisciplineLink
                             href={searchUrl({ disciplina: [discipline.value] })}
                             name={discipline.label}
-                            description={descriptions[discipline.value]}
                         />
                     </li>
                 ))}
@@ -67,7 +43,6 @@ export default function PopularDisciplines({
                     <DisciplineLink
                         href={searchUrl()}
                         name="Tutte le discipline"
-                        description="Sfoglia tutti i trainer"
                         highlighted
                     />
                 </li>
@@ -79,12 +54,10 @@ export default function PopularDisciplines({
 function DisciplineLink({
     href,
     name,
-    description,
     highlighted = false,
 }: {
     href: string;
     name: string;
-    description?: string;
     /** Dark card: the last one, "Tutte le discipline". */
     highlighted?: boolean;
 }) {
@@ -98,21 +71,7 @@ function DisciplineLink({
                     : 'bg-card text-foreground hover:bg-accent',
             )}
         >
-            <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="font-semibold">{name}</span>
-                {description && (
-                    <span
-                        className={cn(
-                            'text-[13px] leading-[18px]',
-                            highlighted
-                                ? 'text-primary-foreground/75'
-                                : 'text-muted-foreground',
-                        )}
-                    >
-                        {description}
-                    </span>
-                )}
-            </span>
+            <span className="min-w-0 font-semibold">{name}</span>
             <ArrowRight aria-hidden="true" className="size-4.5 shrink-0" />
         </Link>
     );

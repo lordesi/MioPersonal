@@ -266,7 +266,7 @@ export function DayPanel({
                 >
                     {items.length > 0
                         ? sessionsLabel(items.length)
-                        : 'Giornata libera'}
+                        : 'Nessuna seduta'}
                 </h2>
                 <span className="text-sm text-sidebar-muted-foreground tabular-nums">
                     {items.length > 0
@@ -275,7 +275,7 @@ export function DayPanel({
                 </span>
             </div>
 
-            {items.length > 0 ? (
+            {items.length > 0 && (
                 <div className="flex flex-col gap-2">
                     {items.map((item) => (
                         <button
@@ -304,16 +304,12 @@ export function DayPanel({
                         </button>
                     ))}
                 </div>
-            ) : (
-                <span className="rounded-[14px] bg-sidebar-accent p-3.5 text-sm text-sidebar-foreground/85">
-                    Nessuna seduta. Giornata libera.
-                </span>
             )}
         </section>
     );
 }
 
-/** "I tuoi orari aperti": the way to "Disponibilità". */
+/** "I tuoi slot": the way to "Disponibilità". */
 export function OpenHoursCard() {
     return (
         <section
@@ -321,11 +317,11 @@ export function OpenHoursCard() {
             className="flex flex-col gap-2 rounded-3xl border bg-card p-5.5"
         >
             <h2 id="open-hours-title" className="text-base font-semibold">
-                I tuoi orari aperti
+                I tuoi slot
             </h2>
             <p className="text-sm text-muted-foreground">
-                I clienti possono chiederti una seduta solo negli orari che apri
-                in Disponibilità.
+                I clienti possono proporti una seduta solo negli orari scelti da
+                te.
             </p>
             <Link
                 href={availability()}

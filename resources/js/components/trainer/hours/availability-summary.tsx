@@ -88,8 +88,8 @@ export function ruleSentences({
 
 type AvailabilitySummaryProps = {
     availability: TrainerAvailability;
-    /** "Tutto salvato", "Modifiche non salvate"… */
-    status: string;
+    /** "Modifiche non salvate", "Salvataggio…"; none when there is nothing to save. */
+    status?: string;
     changed: boolean;
     saving: boolean;
 };
@@ -123,9 +123,6 @@ export default function AvailabilitySummary({
                 </h2>
                 <span className="text-[30px] leading-9 font-bold tracking-[-0.03em] tabular-nums">
                     {formatHours(total)} a settimana
-                </span>
-                <span className="text-sm text-sidebar-foreground/80 tabular-nums">
-                    {weekRangesLabel(hours)}
                 </span>
             </div>
 
@@ -167,20 +164,25 @@ export default function AvailabilitySummary({
             </ul>
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sidebar-border pt-4">
+                {/* Always there, also empty: screen readers hear the changes. */}
                 <span
                     role="status"
                     className="flex items-center gap-2 text-[13px] leading-4.5 text-sidebar-foreground/80"
                 >
-                    <span
-                        aria-hidden="true"
-                        className={cn(
-                            'size-2 rounded-full',
-                            changed
-                                ? 'bg-sidebar-primary'
-                                : 'bg-muted-foreground',
-                        )}
-                    />
-                    {status}
+                    {status && (
+                        <>
+                            <span
+                                aria-hidden="true"
+                                className={cn(
+                                    'size-2 rounded-full',
+                                    changed
+                                        ? 'bg-sidebar-primary'
+                                        : 'bg-muted-foreground',
+                                )}
+                            />
+                            {status}
+                        </>
+                    )}
                 </span>
                 <Button
                     type="submit"

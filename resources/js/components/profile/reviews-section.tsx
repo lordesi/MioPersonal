@@ -1,7 +1,9 @@
 import { router } from '@inertiajs/react';
 import { useRef, useState } from 'react';
+import ProfileSection from '@/components/profile/profile-section';
 import RatingBreakdown from '@/components/profile/rating-breakdown';
 import ReviewCard from '@/components/trainer/review-card';
+import StarRating from '@/components/trainer/star-rating';
 import { Button } from '@/components/ui/button';
 import {
     Select,
@@ -102,25 +104,19 @@ export default function ReviewsSection({
         0;
 
     return (
-        <section
+        <ProfileSection
             ref={sectionRef}
             id="recensioni"
-            aria-labelledby="reviews-title"
-            className="flex scroll-mt-6 flex-col gap-3 md:gap-5"
+            titleId="reviews-title"
+            title="Recensioni"
         >
-            <h2
-                id="reviews-title"
-                className="text-xl font-semibold tracking-tight md:text-2xl"
-            >
-                Recensioni
-            </h2>
-
-            <div className="flex flex-col gap-4 rounded-xl border p-4 md:flex-row md:flex-wrap md:items-center md:gap-8 md:p-6">
-                <div className="flex items-baseline gap-2 tabular-nums md:flex-col md:items-start md:gap-1">
-                    <span className="text-4xl font-bold tracking-tight md:text-5xl">
+            <div className="flex flex-wrap items-center gap-6">
+                <div className="flex w-42 shrink-0 flex-col gap-1.5 rounded-[20px] bg-primary p-4.5 text-primary-foreground tabular-nums">
+                    <span className="text-[44px] leading-11.5 font-bold tracking-[-0.03em]">
                         {formatRating(trainer.rating)}
                     </span>
-                    <span className="text-sm text-muted-foreground">
+                    <StarRating value={Math.round(trainer.rating)} />
+                    <span className="text-[13px] leading-[18px] text-primary-foreground/60">
                         {trainer.reviewCount}{' '}
                         {trainer.reviewCount === 1
                             ? 'recensione'
@@ -132,12 +128,8 @@ export default function ReviewsSection({
                     total={trainer.reviewCount}
                     selected={stars}
                     onSelect={changeStars}
-                    className="md:flex-[1_1_260px]"
+                    className="min-w-60 flex-1"
                 />
-                <p className="text-xs font-medium text-muted-foreground md:basis-full">
-                    Le recensioni arrivano solo da clienti che hanno svolto una
-                    seduta con questo trainer.
-                </p>
             </div>
 
             {trainer.reviewCount > 1 && (
@@ -192,6 +184,7 @@ export default function ReviewsSection({
                         meta={reviewMeta(review)}
                         rating={review.rating}
                         text={review.text}
+                        className="rounded-[18px] border-muted bg-muted/50 p-4.5 md:p-4.5"
                         reply={
                             review.reply
                                 ? {
@@ -238,7 +231,12 @@ export default function ReviewsSection({
                         </Button>
                     )
                 ))}
-        </section>
+
+            <p className="text-[13px] leading-[18px] text-muted-foreground">
+                Le recensioni arrivano solo da clienti che hanno svolto una
+                seduta con questo trainer.
+            </p>
+        </ProfileSection>
     );
 }
 

@@ -129,8 +129,7 @@ final class ClientBookingData
 
     /**
      * "Il tuo pacchetto" (ClientPackage): the bought ones not all done yet.
-     * `booked` counts the sessions that take a place (done ones included),
-     * `nextStart` is the next session already booked.
+     * `booked` counts the sessions that take a place (done ones included).
      *
      * @return list<array<string, mixed>>
      */
@@ -139,25 +138,19 @@ final class ClientBookingData
         return array_values($client->clientPackages()
             ->bought()
             ->withSessionCounts()
-            ->with(['trainerProfile.user', 'bookings' => fn ($bookings) => $bookings->active()->where('ends_at', '>', now())->orderBy('starts_at')])
+            ->with('trainerProfile.user')
             ->oldest('bought_at')
             ->get()
             ->filter(fn (ClientPackage $package) => ($package->done_count ?? 0) < $package->sessions_total)
-            ->map(function (ClientPackage $package) {
-                /** @var Booking|null $next */
-                $next = $package->bookings->first();
-
-                return [
-                    'id' => $package->id,
-                    'name' => $package->name,
-                    'trainerName' => $package->trainerProfile->user->name,
-                    'trainerHref' => route('trainers.show', $package->trainerProfile->slug, false),
-                    'total' => $package->sessions_total,
-                    'done' => $package->done_count ?? 0,
-                    'booked' => $package->bookedCount(),
-                    'nextStart' => $next === null ? null : self::iso($next->starts_at),
-                ];
-            })->all());
+            ->map(fn (ClientPackage $package) => [
+                'id' => $package->id,
+                'name' => $package->name,
+                'trainerName' => $package->trainerProfile->user->name,
+                'trainerHref' => route('trainers.show', $package->trainerProfile->slug, false),
+                'total' => $package->sessions_total,
+                'done' => $package->done_count ?? 0,
+                'booked' => $package->bookedCount(),
+            ])->all());
     }
 
     /**
@@ -183,14 +176,23 @@ final class ClientBookingData
             ->unique('id');
         $bookedIds = $booked->pluck('id')->all();
 
+        // "5 sedute insieme": the sessions done with each trainer.
+        $doneCounts = $bookings
+            ->filter(self::isDone(...))
+            ->countBy('trainer_profile_id');
+
         return array_values($booked
             ->concat($favorites->whereNotIn('id', $bookedIds))
             ->take(self::TRAINERS_LIMIT)
             ->map(fn (TrainerProfile $trainer) => [
                 'name' => $trainer->user->name,
+                // "Riprendi con Alessandro" when nothing is booked.
+                'firstName' => $trainer->user->first_name,
+                // The heart saves the favorite by slug.
+                'slug' => $trainer->slug,
                 'href' => route('trainers.show', $trainer->slug, false),
+                'sessionsDone' => $doneCounts->get($trainer->id, 0),
                 'discipline' => $trainer->disciplines->first()?->name,
-                'nextSlotStart' => $trainer->next_free_slot_at === null ? null : self::iso($trainer->next_free_slot_at),
                 'favorite' => in_array($trainer->id, $favoriteIds, true),
                 'booked' => in_array($trainer->id, $bookedIds, true),
             ])->all());

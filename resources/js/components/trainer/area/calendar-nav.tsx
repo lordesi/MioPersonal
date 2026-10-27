@@ -32,7 +32,6 @@ type CalendarNavProps = {
     canGoForward: boolean;
     onPrevious: () => void;
     onNext: () => void;
-    onToday: () => void;
     /** The 7 days of the strip; empty in the month view. */
     days: string[];
     items: CalendarItem[];
@@ -45,7 +44,7 @@ const arrowClassName =
     'flex size-10 items-center justify-center rounded-[10px] border border-sidebar-border bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-border disabled:pointer-events-none disabled:opacity-35';
 
 /**
- * The black panel on top of "Calendario": arrows, period, "Oggi", legend,
+ * The black panel on top of "Calendario": arrows, period, legend,
  * the views and, for a day or a week, the strip of the 7 days.
  */
 export default function CalendarNav({
@@ -56,7 +55,6 @@ export default function CalendarNav({
     canGoForward,
     onPrevious,
     onNext,
-    onToday,
     days,
     items,
     today,
@@ -94,13 +92,6 @@ export default function CalendarNav({
                     >
                         {label}
                     </h2>
-                    <button
-                        type="button"
-                        onClick={onToday}
-                        className="h-10 rounded-full border border-sidebar-border px-3.5 text-sm font-semibold hover:bg-sidebar-border"
-                    >
-                        Oggi
-                    </button>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4">

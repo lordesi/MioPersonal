@@ -37,7 +37,7 @@ class RegistrationTest extends TestCase
         $this->assertSame('Luca', $user->first_name);
         $this->assertSame('Moretti', $user->last_name);
         $this->assertSame('Luca Moretti', $user->name);
-        $this->assertSame('+393330000000', $user->phone);
+        $this->assertSame('+393475218846', $user->phone);
         $this->assertNotNull($user->terms_accepted_at);
         // No "novità via email" checkbox any more.
         $this->assertNull($user->marketing_opt_in_at);
@@ -49,13 +49,13 @@ class RegistrationTest extends TestCase
         $this->post(route('register.store'), $this->validData([
             'last_name' => 'De Simone',
             'phone_prefix' => '+41',
-            'phone' => '333 000 0000',
+            'phone' => '347 521 8846',
         ]))->assertSessionHasNoErrors();
 
         $user = User::firstOrFail();
         $this->assertSame('De Simone', $user->last_name);
         // Saved without spaces.
-        $this->assertSame('+393330000000', $user->phone);
+        $this->assertSame('+393475218846', $user->phone);
     }
 
     public function test_the_phone_is_required()
@@ -63,6 +63,17 @@ class RegistrationTest extends TestCase
         $this->post(route('register.store'), $this->validData([
             'phone' => '',
         ]))->assertSessionHasErrors('phone');
+
+        $this->assertGuest();
+    }
+
+    public function test_a_phone_with_an_account_is_rejected()
+    {
+        User::factory()->create(['phone' => '+393475218846']);
+
+        $this->post(route('register.store'), $this->validData([
+            'phone' => '347 521 8846',
+        ]))->assertSessionHasErrors(['phone' => 'Esiste già un account con questo numero.']);
 
         $this->assertGuest();
     }
@@ -89,6 +100,8 @@ class RegistrationTest extends TestCase
             'phone with 9 digits' => ['phone', '333 000 000', 'phone'],
             'phone with 11 digits' => ['phone', '333 000 00000', 'phone'],
             'phone with the prefix inside' => ['phone', '+39 333 000 0000', 'phone'],
+            'phone that is not a mobile' => ['phone', '999 999 9999', 'phone'],
+            'phone with the same digit' => ['phone', '333 333 3333', 'phone'],
             'password too short' => ['password', 'Pass1', 'password'],
             'password without a capital letter' => ['password', 'password1', 'password'],
             'password without a lowercase letter' => ['password', 'PASSWORD1', 'password'],
@@ -124,7 +137,7 @@ class RegistrationTest extends TestCase
             'first_name' => 'Luca',
             'last_name' => 'Moretti',
             'email' => 'test@example.com',
-            'phone' => '333 000 0000',
+            'phone' => '347 521 8846',
             'password' => 'Password1',
             'terms' => '1',
             ...$overrides,

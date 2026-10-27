@@ -1,6 +1,9 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { useState } from 'react';
 import AccountFields from '@/components/auth/account-fields';
 import ConsentCheckbox from '@/components/auth/consent-checkbox';
+import ExistingAccountDialog from '@/components/auth/existing-account-dialog';
+import type { ExistingAccount } from '@/components/auth/existing-account-dialog';
 import SocialSignIn from '@/components/auth/social-sign-in';
 import MinimalHeader from '@/components/layout/minimal-header';
 import { Button } from '@/components/ui/button';
@@ -18,6 +21,9 @@ export default function Register({
 }: {
     googleEnabled: boolean;
 }) {
+    // An email or phone that already has an account: "Hai già un account?".
+    const [existing, setExisting] = useState<ExistingAccount | null>(null);
+
     return (
         <div className="flex min-h-screen flex-col bg-secondary">
             <Head title="Crea il tuo account" />
@@ -60,7 +66,12 @@ export default function Register({
                                 googleEnabled={googleEnabled}
                             />
 
-                            <AccountFields errors={errors} />
+                            <AccountFields
+                                errors={errors}
+                                onAccountExists={(field, value) =>
+                                    setExisting({ field, value })
+                                }
+                            />
 
                             <div className="border-t pt-4">
                                 <ConsentCheckbox
@@ -107,6 +118,13 @@ export default function Register({
                         </>
                     )}
                 </Form>
+
+                {/* Outside the <Form>: its "Accedi" must not send the sign-up. */}
+                <ExistingAccountDialog
+                    account={existing}
+                    onClose={() => setExisting(null)}
+                    googleEnabled={googleEnabled}
+                />
             </main>
         </div>
     );

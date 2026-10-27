@@ -109,7 +109,7 @@ class GoogleAuthTest extends TestCase
         $this->post(route('google.register.store'), [
             'first_name' => 'Giulia',
             'last_name' => 'Rossi',
-            'phone' => '333 000 0000',
+            'phone' => '347 521 8846',
             'terms' => '1',
         ])->assertRedirect(route('client.complete-profile', absolute: false));
 
@@ -120,7 +120,7 @@ class GoogleAuthTest extends TestCase
         $this->assertNull($user->password);
         $this->assertNotNull($user->email_verified_at);
         $this->assertNotNull($user->terms_accepted_at);
-        $this->assertSame('+393330000000', $user->phone);
+        $this->assertSame('+393475218846', $user->phone);
     }
 
     public function test_the_terms_must_be_accepted()
@@ -153,6 +153,82 @@ class GoogleAuthTest extends TestCase
         ])->assertSessionHasErrors('email');
 
         $this->assertGuest();
+    }
+
+    public function test_a_logged_in_user_links_google_from_the_settings()
+    {
+        $user = User::factory()->create();
+        $this->fakeGoogle(email: 'altra@example.com');
+
+        $this->actingAs($user)
+            ->get(route('account.google.link'))
+            ->assertRedirect()
+            ->assertSessionHas('google_link', true);
+
+        $this->get(route('google.callback'))
+            ->assertRedirect(route('account.settings'));
+
+        $this->assertSame('google-123', $user->refresh()->google_id);
+        $this->assertFalse(session()->has('google_link'));
+    }
+
+    public function test_a_trainer_goes_back_to_the_trainer_settings()
+    {
+        $user = User::factory()->trainer()->create();
+        $this->fakeGoogle();
+
+        $this->actingAs($user)->get(route('account.google.link'));
+
+        $this->get(route('google.callback'))
+            ->assertRedirect(route('trainer.settings'));
+    }
+
+    public function test_a_google_account_of_someone_else_is_not_linked()
+    {
+        User::factory()->create()->forceFill(['google_id' => 'google-123'])->save();
+        $user = User::factory()->create();
+        $this->fakeGoogle();
+
+        $this->actingAs($user)->get(route('account.google.link'));
+        $this->get(route('google.callback'))->assertRedirect(route('account.settings'));
+
+        $this->assertNull($user->refresh()->google_id);
+    }
+
+    public function test_a_logged_in_user_without_link_is_not_changed()
+    {
+        $user = User::factory()->create();
+        $this->fakeGoogle();
+
+        $this->actingAs($user)
+            ->get(route('google.callback'))
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertNull($user->refresh()->google_id);
+    }
+
+    public function test_google_is_unlinked_only_with_a_password()
+    {
+        $withoutPassword = User::factory()->create(['password' => null]);
+        $withoutPassword->forceFill(['google_id' => 'google-1'])->save();
+
+        $this->actingAs($withoutPassword)->delete(route('account.google.unlink'));
+        $this->assertSame('google-1', $withoutPassword->refresh()->google_id);
+
+        $withPassword = User::factory()->create();
+        $withPassword->forceFill(['google_id' => 'google-2'])->save();
+
+        $this->actingAs($withPassword)->delete(route('account.google.unlink'));
+        $this->assertNull($withPassword->refresh()->google_id);
+    }
+
+    public function test_link_is_not_available_without_the_keys()
+    {
+        config(['services.google.client_id' => null]);
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('account.google.link'))
+            ->assertNotFound();
     }
 
     private function fakeGoogle(string $email = 'giulia@example.com', bool $verified = true): void

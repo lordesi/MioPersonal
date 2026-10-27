@@ -145,6 +145,27 @@ class BookingTest extends TestCase
         $this->assertSame(0, Booking::count());
     }
 
+    public function test_a_30_minute_session_can_book_the_other_half_hour()
+    {
+        $trainer = $this->trainer(['session_minutes' => [30, 60, 120]]);
+        $trainer->services()->create(['name' => 'Seduta singola', 'minutes' => 30, 'price_cents' => 2500, 'fixed_duration' => false, 'sort' => 30]);
+        Booking::factory()->for($trainer)->confirmed()->at(CarbonImmutable::parse(self::SLOT), 30)->create();
+        // 18:30 in Rome.
+        $halfHour = '2026-10-19T16:30:00Z';
+
+        // Not for a 1-hour session…
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainers.book', $trainer->slug), $this->request($trainer, ['start' => $halfHour]))
+            ->assertSessionHasErrors(['start' => CreateBooking::SLOT_TAKEN]);
+
+        // …but a 30-minute one fits.
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainers.book', $trainer->slug), $this->request($trainer, ['start' => $halfHour, 'minutes' => 30]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(1, $trainer->bookings()->where('status', BookingStatus::Pending)->count());
+    }
+
     public function test_a_trainer_with_automatic_confirmation_is_booked_at_once()
     {
         $trainer = $this->trainer(['auto_confirm' => true]);

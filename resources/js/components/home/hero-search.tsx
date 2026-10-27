@@ -105,8 +105,7 @@ export default function HeroSearch({ disciplines, cities }: HeroSearchProps) {
                             ))}
                         </ToggleGroup>
                         <p className="text-center text-[13px] leading-[18px] text-primary-foreground/70">
-                            Gratis per chi si allena · per guardare i profili
-                            non serve registrarsi
+                            Per guardare i profili non serve registrarsi
                         </p>
                     </div>
                 </div>
