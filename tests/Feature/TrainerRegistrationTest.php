@@ -9,8 +9,10 @@ use App\Enums\UserRole;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use Database\Seeders\CatalogSeeder;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -144,6 +146,23 @@ class TrainerRegistrationTest extends TestCase
                 ->where('submitted', true)
                 ->where('previewHref', route('trainers.show', 'giulia-rossi', false))
             );
+    }
+
+    public function test_a_new_trainer_gets_the_email_to_verify_the_address()
+    {
+        Notification::fake();
+
+        $this->post(route('trainer.register.store'), [
+            'first_name' => 'Giulia',
+            'last_name' => 'Rossi',
+            'email' => 'giulia@example.com',
+            'phone' => '347 521 8846',
+            'password' => 'Password1',
+            'terms' => '1',
+            ...$this->profile(),
+        ])->assertSessionHasNoErrors();
+
+        Notification::assertSentTo(User::where('email', 'giulia@example.com')->firstOrFail(), VerifyEmail::class);
     }
 
     public function test_a_client_becomes_a_trainer_with_the_same_account()

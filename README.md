@@ -436,6 +436,18 @@ In locale le email restano nel log. Online servono davvero (conferma email, pass
 
 > Le chiavi vanno **solo** nel `.env` del server, mai su GitHub.
 
+### Email delle prenotazioni e coda
+
+**Nuova richiesta di prenotazione** (al trainer) e **Prenotazione confermata** (al cliente) partono
+**in coda**: la pagina non aspetta il server di posta, e le email vengono spedite subito dopo da un
+processo a parte, il _worker_ (`php artisan queue:work`).
+
+- **In locale**: metti `QUEUE_CONNECTION=sync` nel tuo `.env`. Le email vengono spedite subito, senza worker, e
+  le trovi in `storage/logs/laravel.log`. Con `QUEUE_CONNECTION=database` restano in attesa finché
+  non lanci `php artisan queue:work`.
+- **Sul server**: lascia `QUEUE_CONNECTION=database` e attiva il worker (su Forge: **Queue**).
+  Senza worker queste email non partono mai.
+
 ---
 
 ## 11. Lavoro di tutti i giorni

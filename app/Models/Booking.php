@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\BookingActor;
 use App\Enums\BookingStatus;
+use App\Notifications\BookingConfirmed;
 use Carbon\CarbonImmutable;
 use Database\Factories\BookingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -191,7 +192,8 @@ class Booking extends Model
 
     /**
      * The trainer said yes (or confirms automatically: then `$actor` is null).
-     * The first session of a package also buys the package.
+     * The first session of a package also buys the package. Both ways the
+     * client gets the "Prenotazione confermata" email.
      */
     public function confirm(?User $actor = null): void
     {
@@ -206,6 +208,8 @@ class Booking extends Model
         if ($this->client_package_id !== null) {
             ClientPackage::whereKey($this->client_package_id)->whereNull('bought_at')->update(['bought_at' => now()]);
         }
+
+        $this->client?->notify(new BookingConfirmed($this));
     }
 
     /**

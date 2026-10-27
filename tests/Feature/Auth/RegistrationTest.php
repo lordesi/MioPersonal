@@ -3,7 +3,9 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Fortify\Features;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -41,6 +43,15 @@ class RegistrationTest extends TestCase
         $this->assertNotNull($user->terms_accepted_at);
         // No "novità via email" checkbox any more.
         $this->assertNull($user->marketing_opt_in_at);
+    }
+
+    public function test_new_users_get_the_email_to_verify_their_address()
+    {
+        Notification::fake();
+
+        $this->post(route('register.store'), $this->validData())->assertSessionHasNoErrors();
+
+        Notification::assertSentTo(User::firstOrFail(), VerifyEmail::class);
     }
 
     public function test_the_prefix_is_always_plus_39()

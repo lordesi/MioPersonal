@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Notifications\BookingRequested;
 use App\Support\TrainerSlots;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
@@ -135,6 +136,9 @@ class CreateBooking
 
         // The search shows the first free slot: it may have just been taken.
         TrainerSlots::refresh($profile);
+
+        // "Nuova richiesta di prenotazione" (or "confermata", with automatic confirmation).
+        $profile->user->notify(new BookingRequested($booking));
 
         return $booking;
     }
