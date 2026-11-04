@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
-use Laravel\Fortify\Events\TwoFactorAuthenticationChallenged;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as GoogleUser;
 use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirect;
@@ -216,20 +215,9 @@ class GoogleAuthController extends Controller
         return to_route($settings);
     }
 
-    /** Like the email login: who turned on two-factor authentication still has to type the code. */
+    /** Like the email login, then the area of the role. */
     private function logIn(Request $request, User $user): RedirectResponse
     {
-        if ($user->hasEnabledTwoFactorAuthentication()) {
-            $request->session()->put([
-                'login.id' => $user->getKey(),
-                'login.remember' => true,
-            ]);
-
-            TwoFactorAuthenticationChallenged::dispatch($user);
-
-            return to_route('two-factor.login');
-        }
-
         Auth::login($user, remember: true);
         $request->session()->regenerate();
 

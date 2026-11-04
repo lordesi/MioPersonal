@@ -57,6 +57,11 @@ export default function Overview({ todo, stats }: OverviewProps) {
     const weekChange =
         (stats.bookingsThisWeek - stats.bookingsLastWeek) /
         stats.bookingsLastWeek;
+    // No bookings the week before: a percentage would be "infinite".
+    const weekDetail =
+        stats.bookingsLastWeek === 0
+            ? 'Nessuna la settimana prima'
+            : `${weekChange >= 0 ? '+' : '−'}${percent(Math.abs(weekChange))} rispetto alla settimana prima`;
 
     const statCards = [
         {
@@ -72,7 +77,7 @@ export default function Overview({ todo, stats }: OverviewProps) {
         {
             label: 'Prenotazioni (7 giorni)',
             value: String(stats.bookingsThisWeek),
-            detail: `${weekChange >= 0 ? '+' : '−'}${percent(Math.abs(weekChange))} rispetto alla settimana prima`,
+            detail: weekDetail,
         },
         {
             label: 'Prenotazioni confermate',

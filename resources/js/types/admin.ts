@@ -43,6 +43,7 @@ export type AdminBookingStatus =
     | 'confirmed'
     | 'completed'
     | 'expired'
+    | 'declined'
     | 'cancelled'
     | 'no_show';
 

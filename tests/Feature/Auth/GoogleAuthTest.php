@@ -79,19 +79,6 @@ class GoogleAuthTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_two_factor_is_still_asked()
-    {
-        $user = User::factory()->withTwoFactor()->create();
-        $user->forceFill(['google_id' => 'google-123'])->save();
-        $this->fakeGoogle();
-
-        $this->get(route('google.callback'))
-            ->assertRedirect(route('two-factor.login'))
-            ->assertSessionHas('login.id', $user->id);
-
-        $this->assertGuest();
-    }
-
     public function test_a_new_user_completes_the_sign_up()
     {
         $this->fakeGoogle();

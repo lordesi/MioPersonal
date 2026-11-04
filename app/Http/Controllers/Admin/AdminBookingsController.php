@@ -2,47 +2,99 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\BookingActor;
+use App\Enums\BookingStatus;
 use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
 use App\Http\Controllers\Controller;
+use App\Models\Booking;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/** "Prenotazioni": every booking on the platform, newest first. */
+/**
+ * "Prenotazioni": the bookings of the platform, the newest first. ?cerca=1048
+ * (from the search box, "#1048") shows that one only.
+ */
 class AdminBookingsController extends Controller
 {
     use BuildsAdminPlaceholderData;
 
-    public function __invoke(): Response
-    {
-        // TODO: load the bookings from the database.
-        $now = $this->romeNow();
+    /** Enough for the beta: older ones are found by number. */
+    private const LIMIT = 200;
 
-        // id, client, trainer, [days from today, hour, minute], hours, service, status,
-        // hours until the request expires (pending only), note.
-        $bookings = [
-            [1048, 'Luca M.', 'Giulia Rossi', [1, 18, 0], 1, 'Seduta singola · 1 ora', 'pending', 22, null],
-            [1047, 'Francesca D.', 'Giulia Rossi', [5, 18, 0], 1, 'Seduta singola · 1 ora', 'pending', 5, null],
-            [1046, 'Chiara G.', 'Andrea Conti', [-2, 19, 0], 1, 'Calisthenics · 1 ora', 'confirmed', null, null],
-            [1045, 'Paolo R.', 'Giulia Rossi', [-3, 19, 30], 1, 'Seduta online', 'completed', null, null],
-            [1044, 'Luca M.', 'Marco Bianchi', [-2, 13, 0], 1, 'Valutazione iniziale', 'expired', null, 'Nessuna risposta in 24 h'],
-            [1043, 'Anna B.', 'Giulia Rossi', [-3, 7, 30], 1, 'Seduta singola', 'no_show', null, 'Segnata dal trainer'],
-            [1042, 'Marta S.', 'Sara Colombo', [-4, 10, 0], 1, 'Seduta online', 'cancelled', null, 'Dal cliente, 30 h prima'],
-            [1041, 'Stefano V.', 'Giulia Rossi', [-5, 9, 0], 2, 'Seduta singola · 2 ore', 'completed', null, null],
-        ];
+    public function __invoke(Request $request): Response
+    {
+        $id = $request->integer('cerca');
+
+        $bookings = Booking::query()
+            ->with(['client', 'trainerProfile.user'])
+            ->when($id > 0, fn ($query) => $query->whereKey($id))
+            ->latest('id')
+            ->limit(self::LIMIT)
+            ->get();
 
         return Inertia::render('admin/bookings', [
             'adminArea' => $this->adminArea(),
-            'bookings' => array_map(fn (array $b) => [
-                'id' => $b[0],
-                'clientName' => $b[1],
-                'trainerName' => $b[2],
-                'start' => $this->iso($this->at($now, ...$b[3])),
-                'hours' => $b[4],
-                'serviceName' => $b[5],
-                'status' => $b[6],
-                'expiresAt' => $b[7] === null ? null : $this->iso($now->addHours($b[7])),
-                'note' => $b[8],
-            ], $bookings),
+            'search' => $id > 0 ? $id : null,
+            'bookings' => $bookings->map(fn (Booking $booking) => [
+                'id' => $booking->id,
+                // Deleted accounts leave their past bookings without the client.
+                'clientName' => $booking->client->name ?? 'Account eliminato',
+                'trainerName' => $booking->trainerProfile->user->name,
+                'start' => $booking->starts_at->toIso8601ZuluString(),
+                'hours' => round($booking->starts_at->diffInMinutes($booking->ends_at) / 60, 1),
+                'serviceName' => $booking->service_name,
+                'status' => self::status($booking),
+                'expiresAt' => self::status($booking) === 'pending' ? $booking->expires_at?->toIso8601ZuluString() : null,
+                'note' => self::note($booking),
+            ])->all(),
         ]);
+    }
+
+    /**
+     * The status of the page: a confirmed session already over is "completed"
+     * (or "no_show"), a request past its deadline is "expired" even before
+     * `bookings:expire` runs.
+     */
+    private static function status(Booking $booking): string
+    {
+        return match ($booking->status) {
+            BookingStatus::Pending => $booking->isExpired() ? 'expired' : 'pending',
+            BookingStatus::Confirmed => match (true) {
+                $booking->no_show_at !== null => 'no_show',
+                $booking->ends_at->isPast() => 'completed',
+                default => 'confirmed',
+            },
+            default => $booking->status->value,
+        };
+    }
+
+    /** "Dal cliente, 30 h prima", "Nessuna risposta in tempo", "Segnata dal trainer". */
+    private static function note(Booking $booking): ?string
+    {
+        return match (self::status($booking)) {
+            'cancelled' => self::cancelledNote($booking),
+            'expired' => 'Nessuna risposta in tempo',
+            'no_show' => 'Segnata dal trainer',
+            default => null,
+        };
+    }
+
+    private static function cancelledNote(Booking $booking): ?string
+    {
+        $who = match ($booking->cancelled_by) {
+            BookingActor::Client => 'Dal cliente',
+            BookingActor::Trainer => 'Dal trainer',
+            BookingActor::System => 'In automatico',
+            null => null,
+        };
+
+        if ($who === null || $booking->cancelled_at === null) {
+            return $who;
+        }
+
+        $hours = (int) $booking->cancelled_at->diffInHours($booking->starts_at);
+
+        return $hours > 0 ? "{$who}, {$hours} h prima" : $who;
     }
 }

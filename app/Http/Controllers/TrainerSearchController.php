@@ -14,8 +14,11 @@ use App\Support\CatalogOptions;
 use App\Support\TrainerCard;
 use App\Support\TrainerSlots;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -67,12 +70,21 @@ class TrainerSearchController extends Controller
     /** "Nome": as long as `users.first_name`, longer text is cut. */
     private const NAME_MAX_LENGTH = 100;
 
-    public function __invoke(Request $request, ?City $city = null): Response
+    public function __invoke(Request $request, ?City $city = null): Response|RedirectResponse
     {
         // A city the team switched off is like a missing one.
         abort_if($city !== null && ! $city->is_active, 404);
 
         $disciplines = CatalogOptions::disciplines();
+
+        // The search box of the 404 page: "pilates roma" becomes /personal-trainer/roma?disciplina=pilates.
+        if ($request->filled('q')) {
+            return redirect($this->freeTextUrl($request->string('q')->value(), array_column($disciplines, 'value')));
+        }
+
+        // The "Quando" filter and "Primo slot libero" read the saved first free slot.
+        TrainerSlots::refreshStale();
+
         $filters = $this->filters($request, array_column($disciplines, 'value'));
 
         // The client's saved trainers: for the full hearts and the "Preferiti" filter.
@@ -103,6 +115,44 @@ class TrainerSearchController extends Controller
             'disciplines' => $disciplines,
             'cities' => CatalogOptions::cities(),
         ]);
+    }
+
+    /**
+     * Free text like "pilates roma": the disciplines and the city it names
+     * become filters, the other words a search by name. Longer names first,
+     * so "pesi e bodybuilding" is one discipline.
+     *
+     * @param  list<string>  $disciplineSlugs
+     */
+    private function freeTextUrl(string $text, array $disciplineSlugs): string
+    {
+        // "-pilates-roma-": every name is found between two dashes, never inside a word.
+        $rest = '-'.Str::slug($text).'-';
+        $byLength = fn (string $a, string $b) => strlen($b) <=> strlen($a);
+
+        $found = [];
+        usort($disciplineSlugs, $byLength);
+        foreach ($disciplineSlugs as $slug) {
+            if (str_contains($rest, "-{$slug}-")) {
+                $found[] = $slug;
+                $rest = str_replace("-{$slug}-", '-', $rest);
+            }
+        }
+
+        $citySlugs = City::query()->where('is_active', true)->pluck('slug')->all();
+        usort($citySlugs, $byLength);
+        $city = Arr::first($citySlugs, fn (string $slug) => str_contains($rest, "-{$slug}-"));
+        if ($city !== null) {
+            $rest = str_replace("-{$city}-", '-', $rest);
+        }
+
+        $name = trim(str_replace('-', ' ', $rest));
+
+        return route('trainers.search', array_filter([
+            'city' => $city,
+            'disciplina' => implode(',', $found),
+            'nome' => $name,
+        ], fn (?string $value) => $value !== null && $value !== ''));
     }
 
     /**

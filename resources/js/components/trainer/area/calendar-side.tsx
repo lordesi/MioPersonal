@@ -131,7 +131,10 @@ export function SessionDetails({
     );
 }
 
-/** "La settimana": sessions, hours and clients of the week of the chosen day. */
+/**
+ * "La settimana": sessions, hours and clients of the week of the chosen day.
+ * Confirmed sessions only: the requests still waiting stay dashed in the grid.
+ */
 export function WeekSummary({
     days,
     items,
@@ -141,7 +144,9 @@ export function WeekSummary({
     items: CalendarItem[];
     selectedDay: string;
 }) {
-    const weekItems = items.filter((item) => days.includes(item.date));
+    const weekItems = items.filter(
+        (item) => item.kind === 'confirmed' && days.includes(item.date),
+    );
     const hours = totalHours(weekItems);
     const clients = new Set(
         weekItems.map((item) => item.clientId ?? item.title),

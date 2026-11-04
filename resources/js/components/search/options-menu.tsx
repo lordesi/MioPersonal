@@ -85,6 +85,9 @@ export default function OptionsMenu<T extends string>(
     // Used only when nobody opens the menu from outside.
     const [ownOpen, setOwnOpen] = useState(false);
     const isOpen = open ?? ownOpen;
+    // Set when a finger (or pen) touches the button: was the menu open then?
+    // null after a mouse press or once the tap is done.
+    const openOnTouch = useRef<boolean | null>(null);
 
     const setOpen = (next: boolean) => {
         setOwnOpen(next);
@@ -146,7 +149,34 @@ export default function OptionsMenu<T extends string>(
 
     return (
         <DropdownMenu open={isOpen} onOpenChange={setOpen} modal={modal}>
-            <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+            <DropdownMenuTrigger
+                asChild
+                onPointerDown={(event) => {
+                    if (event.pointerType === 'mouse') {
+                        openOnTouch.current = null;
+
+                        return;
+                    }
+
+                    // The menu would open as soon as the finger touches the screen,
+                    // even when it is only scrolling the page: wait for the click.
+                    openOnTouch.current = isOpen;
+                    event.preventDefault();
+                }}
+                onClick={() => {
+                    // The browser sends the click only for a tap, not for a scroll.
+                    if (openOnTouch.current === null) {
+                        return;
+                    }
+
+                    // An open menu already closes at the touch (it is outside of it):
+                    // so the click looks at how the menu was then, not now.
+                    setOpen(!openOnTouch.current);
+                    openOnTouch.current = null;
+                }}
+            >
+                {trigger}
+            </DropdownMenuTrigger>
             <DropdownMenuContent
                 align={align}
                 sideOffset={8}
@@ -258,8 +288,15 @@ function SearchField({
     const ref = useRef<HTMLInputElement>(null);
 
     // The menu puts the focus on itself when it opens: then move it here.
+    // Only with a mouse: on phones it would open the keyboard and move the page.
     useEffect(() => {
-        const frame = requestAnimationFrame(() => ref.current?.focus());
+        if (!window.matchMedia('(pointer: fine)').matches) {
+            return;
+        }
+
+        const frame = requestAnimationFrame(() =>
+            ref.current?.focus({ preventScroll: true }),
+        );
 
         return () => cancelAnimationFrame(frame);
     }, []);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\TrainerProfileStatus;
 use App\Models\User;
 use App\Support\TrainerCard;
+use App\Support\TrainerSlots;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,6 +17,8 @@ class ClientFavoritesController extends Controller
     {
         /** @var User $client */
         $client = $request->user();
+
+        TrainerSlots::refreshStale();
 
         return Inertia::render('client/favorites', [
             // A profile the team takes back for review disappears from here too.

@@ -212,3 +212,13 @@ export function previewRows(
 
     return rows;
 }
+
+/**
+ * Phones: the prices side by side under the name, each with its duration.
+ * From sm, "contents" drops these wrappers and the cells are table columns.
+ */
+export const priceCellsClassName =
+    'grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-2 sm:contents';
+export const priceCellClassName = 'flex flex-col gap-1 sm:contents';
+export const cellLabelClassName =
+    'text-xs font-semibold text-muted-foreground sm:hidden';

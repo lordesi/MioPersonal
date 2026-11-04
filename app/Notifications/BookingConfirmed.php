@@ -4,7 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Booking;
 use App\Models\User;
-use Carbon\CarbonInterface;
+use App\Support\BookingMailData;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -33,32 +33,28 @@ class BookingConfirmed extends Notification implements ShouldQueue
         return ['mail'];
     }
 
-    /** Sent to the client's account. */
+    /** Sent to the client's account: resources/views/mail/booking/confirmed. */
     public function toMail(User $notifiable): MailMessage
     {
         $booking = $this->booking;
         $trainer = $booking->trainerProfile;
+        $day = BookingMailData::day($booking);
+        $cancelUntil = $booking->freeCancellationEndsAt();
 
-        $mail = (new MailMessage)
-            ->subject('Prenotazione confermata')
-            ->greeting("Ciao {$notifiable->first_name}!")
-            ->line("{$trainer->user->name} ha confermato la tua seduta.")
-            ->line("Servizio: {$booking->service_name}")
-            ->line('Quando: '.self::rome($booking->starts_at));
-
-        if ($booking->place_label !== '') {
-            $mail->line("Dove: {$booking->place_label}");
-        }
-
-        return $mail
-            ->line("Cancellazione gratuita fino a {$trainer->free_cancellation_hours} ore prima.")
-            ->action('Le mie prenotazioni', route('client.home'))
-            ->salutation('Il team di MioPersonal');
-    }
-
-    /** "lunedì 3 novembre alle 18:00": dates are saved in UTC, shown in Rome. */
-    private static function rome(CarbonInterface $date): string
-    {
-        return $date->timezone('Europe/Rome')->locale('it')->isoFormat('dddd D MMMM [alle] HH:mm');
+        return (new MailMessage)
+            ->subject("Seduta confermata: {$day}, ".BookingMailData::hour($booking))
+            ->view(['mail.booking.confirmed', 'mail.booking.confirmed-text'], [
+                'card' => BookingMailData::card($booking, "con {$trainer->user->name}"),
+                'day' => $day,
+                'trainerName' => $trainer->user->name,
+                // Only what the trainer chose to show in the settings.
+                'contacts' => [
+                    'Telefono' => $trainer->show_phone ? BookingMailData::phone($trainer->user->phone) : null,
+                    'Email' => $trainer->show_email ? $trainer->user->email : null,
+                ],
+                'arrivalNotes' => $trainer->arrival_notes,
+                'cancelUntil' => $cancelUntil->isFuture() ? BookingMailData::when($cancelUntil) : null,
+                'url' => route('client.home'),
+            ]);
     }
 }

@@ -5,7 +5,7 @@ namespace App\Notifications;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\User;
-use Carbon\CarbonInterface;
+use App\Support\BookingMailData;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -39,38 +39,36 @@ class BookingRequested extends Notification implements ShouldQueue
         return ['mail'];
     }
 
-    /** Sent to the trainer's account. */
+    /** Sent to the trainer's account: resources/views/mail/booking/new-request. */
     public function toMail(User $notifiable): MailMessage
     {
         $booking = $this->booking;
         $client = $booking->client->name ?? 'Un cliente';
+        $day = BookingMailData::day($booking);
+        $hour = BookingMailData::hour($booking);
 
-        $mail = (new MailMessage)
-            ->subject($this->alreadyConfirmed ? 'Nuova prenotazione confermata' : 'Nuova richiesta di prenotazione')
-            ->greeting("Ciao {$notifiable->first_name}!")
-            ->line($this->alreadyConfirmed
-                ? "{$client} ha prenotato una seduta con te. Con la conferma automatica è già confermata."
-                : "{$client} ha chiesto una seduta con te.")
-            ->line("Servizio: {$booking->service_name}")
-            ->line('Quando: '.self::rome($booking->starts_at));
-
-        if ($booking->place_label !== '') {
-            $mail->line("Dove: {$booking->place_label}");
-        }
-
-        if ($this->alreadyConfirmed) {
-            $mail->action('Vedi la tua giornata', route('trainer.today'));
-        } else {
-            $mail->line('Rispondi entro '.self::rome($booking->expires_at).': dopo, la richiesta scade e lo slot torna libero.')
-                ->action('Rispondi alla richiesta', route('trainer.requests'));
-        }
-
-        return $mail->salutation('Il team di MioPersonal');
+        return (new MailMessage)
+            ->subject(($this->alreadyConfirmed ? 'Nuova prenotazione' : 'Nuova richiesta').": {$client}, {$day} alle {$hour}")
+            ->view(['mail.booking.new-request', 'mail.booking.new-request-text'], [
+                'card' => BookingMailData::card($booking, $client),
+                'day' => $day,
+                'clientName' => $client,
+                'isNewClient' => $this->isNewClient(),
+                'clientNote' => $booking->client_note,
+                'alreadyConfirmed' => $this->alreadyConfirmed,
+                'expiresAt' => $booking->expires_at === null ? null : BookingMailData::when($booking->expires_at),
+                'url' => route($this->alreadyConfirmed ? 'trainer.today' : 'trainer.requests'),
+            ]);
     }
 
-    /** "lunedì 3 novembre alle 18:00": dates are saved in UTC, shown in Rome. */
-    private static function rome(?CarbonInterface $date): string
+    /** "· nuovo cliente": never had a confirmed session with this trainer. */
+    private function isNewClient(): bool
     {
-        return (string) $date?->timezone('Europe/Rome')->locale('it')->isoFormat('dddd D MMMM [alle] HH:mm');
+        return $this->booking->client_id !== null && Booking::query()
+            ->where('client_id', $this->booking->client_id)
+            ->where('trainer_profile_id', $this->booking->trainer_profile_id)
+            ->where('status', BookingStatus::Confirmed)
+            ->whereKeyNot($this->booking->id)
+            ->doesntExist();
     }
 }

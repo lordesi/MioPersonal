@@ -127,9 +127,16 @@ class PasswordResetTest extends TestCase
 
         Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use ($user) {
             $mail = $notification->toMail($user);
+            $html = (string) $mail->render();
 
             $this->assertSame('Reimposta la tua password', $mail->subject);
-            $this->assertSame('Reimposta password', $mail->actionText);
+            $this->assertStringContainsString('Scegli una nuova password', $html);
+            $this->assertStringContainsString('Il link è valido per 60 minuti.', $html);
+            // The link opens the page to choose the password, with the email already filled in.
+            $this->assertSame(
+                route('password.reset', ['token' => $notification->token, 'email' => $user->email]),
+                $mail->viewData['url'],
+            );
 
             return true;
         });

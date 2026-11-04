@@ -22,15 +22,21 @@ type BrandLogoProps = {
     linkToHome?: boolean;
     /** Where the link goes, e.g. the client area home. Defaults to the public home page. */
     href?: string;
-    /** Show only the mark on small screens (trainer area header). */
-    hideNameOnMobile?: boolean;
+    /**
+     * Show only the mark below this breakpoint: 'md' in the trainer area
+     * header, 'sm' in the public header next to its two buttons.
+     */
+    hideNameBelow?: 'sm' | 'md';
     className?: string;
 };
+
+/** Written out in full so Tailwind can find them. */
+const hideName = { sm: 'hidden sm:inline', md: 'hidden md:inline' } as const;
 
 export default function BrandLogo({
     linkToHome = true,
     href,
-    hideNameOnMobile = false,
+    hideNameBelow,
     className,
 }: BrandLogoProps) {
     const content = (
@@ -39,7 +45,7 @@ export default function BrandLogo({
             <span
                 className={cn(
                     'text-lg leading-7 font-semibold tracking-tight',
-                    hideNameOnMobile && 'hidden md:inline',
+                    hideNameBelow && hideName[hideNameBelow],
                 )}
             >
                 MioPersonal

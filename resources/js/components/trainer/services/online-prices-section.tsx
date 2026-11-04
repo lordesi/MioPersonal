@@ -4,7 +4,10 @@ import { NOTE_MAX, onlinePrices } from '@/components/onboarding/trainer/draft';
 import SwitchRow from '@/components/shared/switch-row';
 import EuroInput from '@/components/trainer/services/euro-input';
 import {
+    cellLabelClassName,
     NEW_SESSION_NAME,
+    priceCellClassName,
+    priceCellsClassName,
     shortDuration,
 } from '@/components/trainer/services/pricing';
 import SectionCard from '@/components/trainer/services/section-card';
@@ -79,11 +82,12 @@ export default function OnlinePricesSection({
             />
 
             {!samePrice && (
-                <div className="overflow-x-auto">
-                    <div className="flex min-w-115 flex-col gap-2.5">
+                // Same layout as "Listino prezzi": cards on phones, a table from sm.
+                <div className="sm:overflow-x-auto">
+                    <div className="flex flex-col gap-2.5 sm:min-w-115">
                         <div
                             aria-hidden="true"
-                            className="grid gap-2.5 px-3.25 text-xs font-semibold tracking-[0.04em] text-muted-foreground"
+                            className="hidden gap-2.5 px-3.25 text-xs font-semibold tracking-[0.04em] text-muted-foreground sm:grid"
                             style={gridColumns(columns)}
                         >
                             <span>Tipo di seduta</span>
@@ -102,7 +106,7 @@ export default function OnlinePricesSection({
                             return (
                                 <div
                                     key={index}
-                                    className="grid items-start gap-2.5 rounded-2xl border bg-secondary/50 p-3"
+                                    className="flex flex-col gap-2.5 rounded-2xl border bg-secondary/50 p-3 sm:grid sm:items-start"
                                     style={gridColumns(columns)}
                                 >
                                     <div className="flex min-w-0 flex-col gap-2">
@@ -123,35 +127,53 @@ export default function OnlinePricesSection({
                                             }
                                         />
                                     </div>
-                                    {columns.map((minutes) => {
-                                        const price = prices.find(
-                                            (item) => item.minutes === minutes,
-                                        );
+                                    <div className={priceCellsClassName}>
+                                        {columns.map((minutes) => {
+                                            const price = prices.find(
+                                                (item) =>
+                                                    item.minutes === minutes,
+                                            );
 
-                                        return price ? (
-                                            <EuroInput
-                                                key={minutes}
-                                                aria-label={`Prezzo online ${name} ${formatDuration(minutes)}`}
-                                                required
-                                                value={price.priceCents}
-                                                onChange={(cents) =>
-                                                    setPrice(
-                                                        index,
-                                                        minutes,
-                                                        cents,
-                                                    )
-                                                }
-                                            />
-                                        ) : (
-                                            // Not offered in the price list: not online either.
-                                            <span
-                                                key={minutes}
-                                                className="flex h-11 items-center justify-end pr-3 text-sm text-muted-foreground"
-                                            >
-                                                —
-                                            </span>
-                                        );
-                                    })}
+                                            const cell = price ? (
+                                                <EuroInput
+                                                    aria-label={`Prezzo online ${name} ${formatDuration(minutes)}`}
+                                                    required
+                                                    value={price.priceCents}
+                                                    onChange={(cents) =>
+                                                        setPrice(
+                                                            index,
+                                                            minutes,
+                                                            cents,
+                                                        )
+                                                    }
+                                                />
+                                            ) : (
+                                                // Not offered in the price list: not online either.
+                                                <span className="flex h-11 items-center justify-end pr-3 text-sm text-muted-foreground">
+                                                    —
+                                                </span>
+                                            );
+
+                                            return (
+                                                <div
+                                                    key={minutes}
+                                                    className={
+                                                        priceCellClassName
+                                                    }
+                                                >
+                                                    <span
+                                                        aria-hidden="true"
+                                                        className={
+                                                            cellLabelClassName
+                                                        }
+                                                    >
+                                                        {shortDuration(minutes)}
+                                                    </span>
+                                                    {cell}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             );
                         })}

@@ -169,14 +169,8 @@ return [
         Features::registration(),
         Features::resetPasswords(),
         Features::emailVerification(),
-        Features::twoFactorAuthentication([
-            'confirm' => true,
-            'confirmPassword' => true,
-            // 'window' => 0
-        ]),
-        Features::passkeys([
-            'confirmPassword' => true,
-        ]),
+        // No two-factor authentication or passkeys: the English pages of the
+        // starter kit were removed (the columns stay unused in `users`).
     ],
 
 ];

@@ -1,3 +1,4 @@
+import type { CookieConsent } from '@/lib/cookie-consent';
 import type { Auth } from '@/types/auth';
 
 declare module 'react' {
@@ -12,6 +13,8 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            /** null until the cookie banner is answered. */
+            cookieConsent: CookieConsent | null;
             [key: string]: unknown;
         };
     }

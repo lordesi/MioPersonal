@@ -1,13 +1,17 @@
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminBadge from '@/components/admin/admin-badge';
+import SearchNotice from '@/components/admin/search-notice';
 import ChoiceChips from '@/components/shared/choice-chips';
 import { bookingStatuses } from '@/lib/admin';
 import { formatHoursShort, formatSlot, hoursUntil } from '@/lib/format';
+import { bookings as bookingsPage } from '@/routes/admin';
 import type { AdminBooking, AdminBookingStatus } from '@/types';
 
 type BookingsProps = {
     bookings: AdminBooking[];
+    /** The booking number searched with "#1048" in the box at the top. */
+    search: number | null;
 };
 
 type Filter = 'all' | AdminBookingStatus;
@@ -18,6 +22,7 @@ const filterOrder: AdminBookingStatus[] = [
     'confirmed',
     'completed',
     'expired',
+    'declined',
     'cancelled',
     'no_show',
 ];
@@ -25,7 +30,7 @@ const filterOrder: AdminBookingStatus[] = [
 const headCell = 'px-3 py-3 font-semibold first:pl-4 last:pr-4';
 const bodyCell = 'px-3 py-3 first:pl-4 last:pr-4';
 
-export default function Bookings({ bookings }: BookingsProps) {
+export default function Bookings({ bookings, search }: BookingsProps) {
     const [filter, setFilter] = useState<Filter>('all');
 
     const countOf = (status: AdminBookingStatus) =>
@@ -48,6 +53,10 @@ export default function Bookings({ bookings }: BookingsProps) {
         <>
             <Head title="Admin · Prenotazioni" />
 
+            {search !== null && (
+                <SearchNotice text={'#' + search} clearHref={bookingsPage()} />
+            )}
+
             <ChoiceChips
                 options={filters}
                 value={filter}
@@ -58,7 +67,8 @@ export default function Bookings({ bookings }: BookingsProps) {
 
             <section
                 aria-label="Elenco prenotazioni"
-                className="overflow-x-auto rounded-[14px] border bg-card"
+                // relative: absolutely positioned text stays inside the scroll, not on the page.
+                className="relative overflow-x-auto rounded-[14px] border bg-card"
             >
                 <table className="w-full min-w-200 text-left text-sm">
                     <thead>

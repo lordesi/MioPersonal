@@ -34,6 +34,9 @@ class TrainerProfileController extends Controller
 
     public function __invoke(Request $request, string $slug): Response
     {
+        // "Trainer simili" show their first free slot.
+        TrainerSlots::refreshStale();
+
         $profile = TrainerProfile::where('slug', $slug)
             ->with(['user', 'city', 'otherCities', 'disciplines', 'places.city', 'services', 'photos', 'documents', 'workingHours'])
             ->first();

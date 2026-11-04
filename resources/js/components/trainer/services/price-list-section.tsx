@@ -11,7 +11,10 @@ import {
 import ChoiceChips from '@/components/shared/choice-chips';
 import EuroInput from '@/components/trainer/services/euro-input';
 import {
+    cellLabelClassName,
     NEW_SESSION_NAME,
+    priceCellClassName,
+    priceCellsClassName,
     removeDuration,
     shortDuration,
 } from '@/components/trainer/services/pricing';
@@ -105,11 +108,12 @@ export default function PriceListSection({
                 />
             </div>
 
-            <div className="overflow-x-auto">
-                <div className="flex min-w-115 flex-col gap-2.5">
+            {/* Phones: a card per row, the duration above each price. From sm: the table. */}
+            <div className="sm:overflow-x-auto">
+                <div className="flex flex-col gap-2.5 sm:min-w-115">
                     <div
                         aria-hidden="true"
-                        className="grid gap-2.5 px-3.25 text-xs font-semibold tracking-[0.04em] text-muted-foreground"
+                        className="hidden gap-2.5 px-3.25 text-xs font-semibold tracking-[0.04em] text-muted-foreground sm:grid"
                         style={gridColumns(columns)}
                     >
                         <span>Tipo di seduta</span>
@@ -207,7 +211,7 @@ function SessionRow({
     return (
         <div className="rounded-2xl border bg-secondary/50 p-3">
             <div
-                className="grid items-start gap-2.5"
+                className="flex flex-col gap-2.5 sm:grid sm:items-start"
                 style={gridColumns(columns)}
             >
                 <div className="flex min-w-0 flex-col gap-2">
@@ -243,24 +247,33 @@ function SessionRow({
                     )}
                 </div>
 
-                {columns.map((minutes) => (
-                    <EuroInput
-                        key={minutes}
-                        aria-label={`Prezzo ${name} ${formatDuration(minutes)}`}
-                        value={
-                            session.prices.find(
-                                (price) => price.minutes === minutes,
-                            )?.priceCents ?? null
-                        }
-                        onChange={(cents) => setPrice(minutes, cents)}
-                    />
-                ))}
+                <div className={priceCellsClassName}>
+                    {columns.map((minutes) => (
+                        <div key={minutes} className={priceCellClassName}>
+                            <span
+                                aria-hidden="true"
+                                className={cellLabelClassName}
+                            >
+                                {shortDuration(minutes)}
+                            </span>
+                            <EuroInput
+                                aria-label={`Prezzo ${name} ${formatDuration(minutes)}`}
+                                value={
+                                    session.prices.find(
+                                        (price) => price.minutes === minutes,
+                                    )?.priceCents ?? null
+                                }
+                                onChange={(cents) => setPrice(minutes, cents)}
+                            />
+                        </div>
+                    ))}
+                </div>
 
                 <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-11 w-10 text-muted-foreground"
+                    className="h-11 w-10 self-end text-muted-foreground sm:self-auto"
                     aria-label={`Rimuovi ${name}`}
                     disabled={!onRemove}
                     onClick={onRemove}

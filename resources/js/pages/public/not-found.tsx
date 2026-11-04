@@ -33,10 +33,12 @@ const usefulLinks = [
 
 /** Shown by bootstrap/app.php for every 404 (unknown address, missing trainer…). */
 export default function NotFound() {
-    const submit = (event: FormEvent) => {
+    const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        // TODO: pass the text once the search accepts free text ("pilates Isola").
-        router.get(searchUrl());
+        // The search turns "pilates roma" into its filters (TrainerSearchController::freeTextUrl).
+        const value = new FormData(event.currentTarget).get('q');
+        const text = typeof value === 'string' ? value.trim() : '';
+        router.get(searchUrl(), text === '' ? {} : { q: text });
     };
 
     return (
@@ -70,13 +72,15 @@ export default function NotFound() {
                         <label htmlFor="not-found-search" className="sr-only">
                             Cerca un trainer
                         </label>
-                        <div className="flex h-12 flex-1 items-center gap-2.5 rounded-lg border border-input bg-background px-3.5">
+                        {/* flex-1 only in a row: in the column of phones it would squash the h-12. */}
+                        <div className="flex h-12 items-center gap-2.5 rounded-lg border border-input bg-background px-3.5 sm:flex-1">
                             <Search
                                 aria-hidden="true"
                                 className="size-4.5 text-muted-foreground"
                             />
                             <input
                                 id="not-found-search"
+                                name="q"
                                 type="search"
                                 placeholder="Disciplina o città, es. pilates Roma"
                                 className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"

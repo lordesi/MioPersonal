@@ -17,9 +17,6 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
-use Laravel\Fortify\Contracts\PasskeyUser;
-use Laravel\Fortify\PasskeyAuthenticatable;
-use Laravel\Fortify\TwoFactorAuthenticatable;
 
 /**
  * @property int $id
@@ -39,9 +36,9 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $password_changed_at
  * @property Carbon|null $suspended_at
  * @property Carbon|null $last_active_at when the user last used the web app (TrackLastActivity)
- * @property string|null $two_factor_secret
- * @property string|null $two_factor_recovery_codes
- * @property Carbon|null $two_factor_confirmed_at
+ * @property string|null $two_factor_secret unused: two-factor authentication is off
+ * @property string|null $two_factor_recovery_codes unused
+ * @property Carbon|null $two_factor_confirmed_at unused
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -49,10 +46,10 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 #[Fillable(['first_name', 'last_name', 'name', 'email', 'phone', 'password', 'terms_accepted_at', 'marketing_opt_in_at'])]
 #[Hidden(['password', 'google_id', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 #[Appends(['name', 'avatar'])]
-class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable;
 
     /** Where the photos of "Completa il tuo profilo" are stored. */
     public const AVATAR_DISK = 'public';

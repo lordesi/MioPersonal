@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\TrainerProfileStatus;
 use App\Models\Booking;
 use App\Models\TrainerProfile;
 use Carbon\CarbonImmutable;
@@ -94,6 +95,20 @@ final class TrainerSlots
     public static function refresh(TrainerProfile $profile, ?CarbonImmutable $now = null): void
     {
         $profile->forceFill(['next_free_slot_at' => self::next($profile, $now)])->save();
+    }
+
+    /**
+     * The saved first free slots already passed, computed again before a page
+     * shows the cards: the hourly `trainers:refresh-slots` may not have run yet
+     * (or the scheduler is off), and "gio 22" must never be in the past.
+     */
+    public static function refreshStale(?CarbonImmutable $now = null): void
+    {
+        TrainerProfile::query()
+            ->where('status', TrainerProfileStatus::Approved)
+            ->where('next_free_slot_at', '<', $now ?? CarbonImmutable::now())
+            ->with('workingHours')
+            ->each(fn (TrainerProfile $profile) => self::refresh($profile, $now));
     }
 
     /**

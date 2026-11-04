@@ -145,7 +145,18 @@ function menuGroups({
     ];
 }
 
-const sheetTop = { 15: 'top-15', 16: 'top-16' } as const;
+/** The dark background starts right under the header, the card 8px lower. */
+const sheetTop = {
+    15: { overlay: 'top-15', card: 'top-17' },
+    16: { overlay: 'top-16', card: 'top-18' },
+} as const;
+
+/**
+ * The mobile menu appears and goes away at once, without sliding or fading.
+ * With "!": the sheet's "animate-out" would otherwise win when closing.
+ */
+const noAnimation =
+    'data-[state=open]:animate-none! data-[state=closed]:animate-none!';
 
 /** The avatar turns dark while its menu is open. */
 const avatarOpen =
@@ -153,7 +164,7 @@ const avatarOpen =
 
 /**
  * Menu opened from the avatar in the top right corner.
- * Desktop: dropdown under the avatar. Mobile: panel sliding from the top.
+ * Desktop: dropdown under the avatar. Mobile: rounded card under the header.
  */
 export default function AccountMenu(props: AccountMenuProps) {
     const {
@@ -328,7 +339,8 @@ export default function AccountMenu(props: AccountMenuProps) {
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                 <SheetTrigger
                     aria-label={label}
-                    className="flex size-11 items-center justify-center rounded-full md:hidden"
+                    // text-foreground: on the dark public header the initials would be white on white.
+                    className="flex size-11 items-center justify-center rounded-full text-foreground md:hidden"
                 >
                     <UserAvatar
                         name={userName}
@@ -340,10 +352,16 @@ export default function AccountMenu(props: AccountMenuProps) {
                     side="top"
                     showCloseButton={false}
                     aria-describedby={undefined}
-                    overlayClassName={cn(sheetTop[headerHeight], 'bg-black/35')}
+                    overlayClassName={cn(
+                        sheetTop[headerHeight].overlay,
+                        'bg-black/35',
+                        noAnimation,
+                    )}
+                    // A card floating under the header, 12px from the edges.
                     className={cn(
-                        sheetTop[headerHeight],
-                        'gap-0 bg-card px-2.5 pt-1.5 pb-3 shadow-xl md:hidden',
+                        sheetTop[headerHeight].card,
+                        'inset-x-3 max-h-[calc(100dvh-6rem)] gap-0 overflow-y-auto rounded-3xl border bg-card p-2 shadow-xl md:hidden',
+                        noAnimation,
                     )}
                 >
                     <SheetTitle className="sr-only">{label}</SheetTitle>
@@ -354,7 +372,7 @@ export default function AccountMenu(props: AccountMenuProps) {
                                 <div
                                     role="separator"
                                     className={cn(
-                                        '-mx-1.5 h-px bg-border',
+                                        '-mx-2 h-px bg-border',
                                         index === 0 ? 'mb-1.5' : 'my-1.5',
                                     )}
                                 />
@@ -364,7 +382,7 @@ export default function AccountMenu(props: AccountMenuProps) {
                                         href={item.href}
                                         onClick={() => setMobileOpen(false)}
                                         className={cn(
-                                            'flex min-h-13 items-center gap-2.5 rounded-lg px-2.5 text-[15px] leading-5 font-medium hover:bg-accent',
+                                            'flex min-h-13 items-center gap-2.5 rounded-xl px-2.5 text-[15px] leading-5 font-medium hover:bg-accent',
                                             item.hint && 'py-2',
                                         )}
                                     >
@@ -375,7 +393,7 @@ export default function AccountMenu(props: AccountMenuProps) {
                         ))}
                         <div
                             role="separator"
-                            className="-mx-1.5 my-1.5 h-px bg-border"
+                            className="-mx-2 my-1.5 h-px bg-border"
                         />
                         <Link
                             href={logout()}
@@ -384,7 +402,7 @@ export default function AccountMenu(props: AccountMenuProps) {
                                 setMobileOpen(false);
                                 handleLogout();
                             }}
-                            className="flex h-13 w-full items-center gap-2.5 rounded-lg px-2.5 text-[15px] leading-5 font-medium hover:bg-accent"
+                            className="flex h-13 w-full items-center gap-2.5 rounded-xl px-2.5 text-[15px] leading-5 font-medium hover:bg-accent"
                         >
                             {logoutContent}
                         </Link>

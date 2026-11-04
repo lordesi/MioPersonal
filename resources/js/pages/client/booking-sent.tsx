@@ -78,10 +78,7 @@ export default function BookingSent({ booking }: BookingSentProps) {
                 </section>
 
                 {/* Only on mobile, as in the design. */}
-                <AddToCalendar
-                    trainerFirstName={trainer.firstName}
-                    className="md:hidden"
-                />
+                <AddToCalendar booking={booking} className="md:hidden" />
 
                 {auth.user.email_verified_at === null && (
                     <VerifyEmailNotice

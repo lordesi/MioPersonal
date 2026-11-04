@@ -2,6 +2,15 @@ import { router } from '@inertiajs/react';
 import { ChevronDown, Heart, Star } from 'lucide-react';
 import ActiveFilters from '@/components/search/active-filters';
 import type { ActiveChip } from '@/components/search/active-filters';
+import {
+    modeOptions,
+    pillClassName,
+    pillOff,
+    pillOn,
+    priceOptions,
+    ratingOptions,
+} from '@/components/search/filter-options';
+import MobileFilters from '@/components/search/mobile-filters';
 import NameSearch from '@/components/search/name-search';
 import OptionsMenu from '@/components/search/options-menu';
 import SearchBar from '@/components/search/search-bar';
@@ -38,21 +47,6 @@ export const availabilityOptions: Option<'disponibilita'>[] = [
     { value: 'settimana', label: 'Questa settimana' },
 ];
 
-const priceOptions: Option<'prezzo'>[] = [
-    { value: 'fino-35', label: 'Fino a 35 €' },
-    { value: '35-50', label: '35–50 €' },
-    { value: '50-75', label: '50–75 €' },
-    { value: '75-100', label: '75–100 €' },
-    { value: 'oltre-100', label: 'Oltre 100 €' },
-];
-
-/** `short` on the button, `label` in "Filtri attivi". */
-const ratingOptions: (Option<'valutazione'> & { short: string })[] = [
-    { value: '3', short: '3+', label: '★ 3 e più' },
-    { value: '4', short: '4+', label: '★ 4 e più' },
-    { value: '4-5', short: '4,5+', label: '★ 4,5 e più' },
-];
-
 /** "Tutte · ★ 3+ · ★ 4+ · ★ 4,5+" on a light background, as tall as the pills. */
 const ratingItemClassName =
     'h-9 rounded-full px-3 whitespace-nowrap first:rounded-full last:rounded-full hover:bg-accent data-[state=on]:bg-primary data-[state=on]:font-semibold data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary/90';
@@ -62,12 +56,6 @@ const sortOptions: Option<'ordina'>[] = [
     { value: 'prezzo', label: 'Prezzo più basso' },
     { value: 'valutazione', label: 'Valutazione' },
 ];
-
-const modeOptions = [
-    { value: 'tutte', label: 'Tutte' },
-    { value: 'presenza', label: 'In presenza' },
-    { value: 'online', label: 'Online' },
-] as const;
 
 /** "Tutte / In presenza / Online" on a dark background: also the home hero. */
 export const modeTrackClassName =
@@ -81,13 +69,6 @@ function labelOf<T>(
 ): string | undefined {
     return options.find((option) => option.value === value)?.label;
 }
-
-/** The round filters above the results; black while on. */
-const pillClassName =
-    'inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium whitespace-nowrap outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
-const pillOff = 'border-input bg-background text-foreground hover:bg-accent';
-const pillOn =
-    'border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground';
 
 type SearchControlsProps = {
     filters: ActiveFilters;
@@ -146,7 +127,8 @@ export function SearchControls({
                                 : (value as ActiveFilters['modalita']),
                     })
                 }
-                className={cn(modeTrackClassName, 'max-w-115')}
+                // On phones it is in the "Filtri" panel.
+                className={cn(modeTrackClassName, 'hidden max-w-115 md:flex')}
             >
                 {modeOptions.map((option) => (
                     <ToggleGroupItem
@@ -163,17 +145,23 @@ export function SearchControls({
 }
 
 type FilterBarProps = SearchControlsProps & {
+    /** Trainers matching the filters, for the "Filtri" panel on phones. */
+    total: number;
     /** The "Preferiti" filter: missing for trainers and admins, who have no favorites. */
     favorites?: { count: number; guest: boolean };
     onReset: () => void;
 };
 
-/** Above the results: name, price, rating, favorites, sort and "Filtri attivi". */
+/**
+ * Above the results: name, price, rating, favorites, sort and "Filtri attivi".
+ * On phones the filters go in the "Filtri" panel: one row with "Ordina".
+ */
 export default function FilterBar({
     filters,
     disciplines,
     cities,
     city,
+    total,
     favorites,
     onChange,
     onReset,
@@ -252,7 +240,7 @@ export default function FilterBar({
                     // No `key`: a new field while typing would lose the cursor.
                     applied={filters.nome}
                     onSearch={(nome) => onChange({ nome })}
-                    className="w-full sm:w-60"
+                    className="hidden w-60 md:block"
                 />
 
                 <OptionsMenu
@@ -269,6 +257,7 @@ export default function FilterBar({
                             className={cn(
                                 pillClassName,
                                 priceLabel ? pillOn : pillOff,
+                                'hidden md:inline-flex',
                             )}
                         >
                             {priceLabel ?? 'Prezzo'}
@@ -296,6 +285,7 @@ export default function FilterBar({
                             className={cn(
                                 pillClassName,
                                 goalLabel ? pillOn : pillOff,
+                                'hidden md:inline-flex',
                             )}
                         >
                             {goalLabel ?? 'Obiettivo'}
@@ -321,7 +311,7 @@ export default function FilterBar({
                                     : (value as ActiveFilters['valutazione']),
                         })
                     }
-                    className="h-11 shrink-0 gap-0.5 rounded-full border border-input bg-background p-0.75"
+                    className="hidden h-11 shrink-0 gap-0.5 rounded-full border border-input bg-background p-0.75 md:flex"
                 >
                     <ToggleGroupItem
                         value="tutte"
@@ -356,7 +346,7 @@ export default function FilterBar({
                         className={cn(
                             pillClassName,
                             pillOff,
-                            'group data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary/90',
+                            'group hidden data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary/90 md:inline-flex',
                         )}
                     >
                         <Heart
@@ -369,6 +359,14 @@ export default function FilterBar({
                         </span>
                     </Toggle>
                 )}
+
+                <MobileFilters
+                    filters={filters}
+                    total={total}
+                    favorites={favorites}
+                    onChange={onChange}
+                    className="md:hidden"
+                />
 
                 <div className="ml-auto">
                     <OptionsMenu
@@ -405,7 +403,13 @@ export default function FilterBar({
                 </div>
             </div>
 
-            <ActiveFilters chips={chips} onClearAll={onReset} />
+            {/* On phones one row that scrolls sideways, edge to edge. */}
+            <ActiveFilters
+                chips={chips}
+                onClearAll={onReset}
+                // py-1: room for the focus ring, which the scrolling row would cut.
+                className="-mx-4 -my-1 flex-nowrap overflow-x-auto px-4 py-1 md:m-0 md:flex-wrap md:overflow-visible md:p-0"
+            />
         </div>
     );
 }

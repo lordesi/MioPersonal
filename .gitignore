@@ -42,3 +42,6 @@ yarn-error.log
 /boost.json
 /opencode.json
 /opencode.jsonc
+
+# Snapshots and screenshots of the Playwright browser tool
+/.playwright-mcp/

@@ -2,14 +2,18 @@ import { Head } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminBadge from '@/components/admin/admin-badge';
 import AdminNotice from '@/components/admin/admin-notice';
+import SearchNotice from '@/components/admin/search-notice';
 import SegmentedControl from '@/components/shared/segmented-control';
 import { Button } from '@/components/ui/button';
 import { formatDateShortYear, formatRating } from '@/lib/format';
+import { users } from '@/routes/admin';
 import type { AdminClient, AdminTrainer } from '@/types';
 
 type UsersProps = {
     clients: AdminClient[];
     trainers: AdminTrainer[];
+    /** The text of the search box at the top, if any. */
+    search: string | null;
 };
 
 type Tab = 'clients' | 'trainers';
@@ -61,7 +65,7 @@ function trainerRow(trainer: AdminTrainer): UserRow {
 const headCell = 'px-3 py-3 font-semibold first:pl-4 last:pr-4';
 const bodyCell = 'px-3 py-3 first:pl-4 last:pr-4';
 
-export default function Users({ clients, trainers }: UsersProps) {
+export default function Users({ clients, trainers, search }: UsersProps) {
     const [tab, setTab] = useState<Tab>('clients');
     // TODO: suspension and deletion only live in the page until the backend exists.
     const [suspended, setSuspended] = useState<Record<string, boolean>>({});
@@ -98,6 +102,8 @@ export default function Users({ clients, trainers }: UsersProps) {
     return (
         <>
             <Head title="Admin · Utenti" />
+
+            {search && <SearchNotice text={search} clearHref={users()} />}
 
             <AdminNotice message={notice} onClose={() => setNotice(null)} />
 
@@ -148,7 +154,8 @@ export default function Users({ clients, trainers }: UsersProps) {
 
             <section
                 aria-label="Elenco utenti"
-                className="overflow-x-auto rounded-[14px] border bg-card"
+                // relative: the sr-only text of the headers stays inside the scroll, not on the page.
+                className="relative overflow-x-auto rounded-[14px] border bg-card"
             >
                 <table className="w-full min-w-225 text-left text-sm">
                     <thead>

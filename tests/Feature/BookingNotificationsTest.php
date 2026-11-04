@@ -8,6 +8,7 @@ use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Notifications\BookingConfirmed;
 use App\Notifications\BookingRequested;
+use App\Support\BookingMailData;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -54,15 +55,17 @@ class BookingNotificationsTest extends TestCase
 
         Notification::assertSentTo($trainer->user, BookingRequested::class, function (BookingRequested $notification) use ($trainer) {
             $mail = $notification->toMail($trainer->user);
+            $html = (string) $mail->render();
 
-            $this->assertSame('Nuova richiesta di prenotazione', $mail->subject);
-            $this->assertContains('Luca Moretti ha chiesto una seduta con te.', $mail->introLines);
             // Saved in UTC, written in Rome time.
-            $this->assertContains('Quando: lunedì 19 ottobre alle 18:00', $mail->introLines);
-            $this->assertContains('Dove: Studio · Milano', $mail->introLines);
+            $this->assertSame('Nuova richiesta: Luca Moretti, lun 19 ott alle 18:00', $mail->subject);
+            $this->assertStringContainsString('Luca Moretti vuole allenarsi con te', $html);
+            $this->assertStringContainsString('18:00–19:00', $html);
+            $this->assertStringContainsString('Luca Moretti · Studio · Milano', $html);
+            $this->assertStringContainsString('Luca Moretti · nuovo cliente', $html);
             // 24 hours to answer (confirm_hours).
-            $this->assertContains('Rispondi entro martedì 20 ottobre alle 08:00: dopo, la richiesta scade e lo slot torna libero.', $mail->introLines);
-            $this->assertSame(route('trainer.requests'), $mail->actionUrl);
+            $this->assertStringContainsString('mar 20 ott alle 08:00', $html);
+            $this->assertStringContainsString(route('trainer.requests'), $html);
 
             return true;
         });
@@ -79,9 +82,11 @@ class BookingNotificationsTest extends TestCase
 
         Notification::assertSentTo($trainer->user, BookingRequested::class, function (BookingRequested $notification) use ($trainer) {
             $mail = $notification->toMail($trainer->user);
+            $html = (string) $mail->render();
 
-            $this->assertSame('Nuova prenotazione confermata', $mail->subject);
-            $this->assertSame(route('trainer.today'), $mail->actionUrl);
+            $this->assertStringStartsWith('Nuova prenotazione: ', $mail->subject);
+            $this->assertStringContainsString('Con la conferma automatica è già confermata', $html);
+            $this->assertStringContainsString(route('trainer.today'), $html);
 
             return true;
         });
@@ -100,13 +105,47 @@ class BookingNotificationsTest extends TestCase
 
         Notification::assertSentTo($client, BookingConfirmed::class, function (BookingConfirmed $notification) use ($booking, $client) {
             $mail = $notification->toMail($client);
+            $html = (string) $mail->render();
 
-            $this->assertSame('Prenotazione confermata', $mail->subject);
-            $this->assertContains("{$booking->trainerProfile->user->name} ha confermato la tua seduta.", $mail->introLines);
-            $this->assertSame(route('client.home'), $mail->actionUrl);
+            // The factory's booking: tomorrow at 10:00 in Rome.
+            $this->assertSame('Seduta confermata: mar 20 ott, 10:00', $mail->subject);
+            $this->assertStringContainsString('La tua seduta è confermata', $html);
+            $this->assertStringContainsString(e("con {$booking->trainerProfile->user->name} · Online"), $html);
+            $this->assertStringContainsString('Cancellazione gratuita fino a', $html);
+            $this->assertStringContainsString(route('client.home'), $html);
 
             return true;
         });
+    }
+
+    public function test_the_confirmation_shows_only_the_contacts_the_trainer_chose()
+    {
+        $booking = Booking::factory()->create();
+        $trainer = $booking->trainerProfile;
+        $trainer->update(['show_phone' => true, 'show_email' => false, 'arrival_notes' => 'Citofono Rossi, secondo piano.']);
+        /** @var User $client */
+        $client = $booking->client;
+
+        $html = (string) (new BookingConfirmed($booking->fresh()))->toMail($client)->render();
+
+        // "+393331234567" is written "+39 333 123 4567".
+        $this->assertStringContainsString((string) BookingMailData::phone($trainer->user->phone), $html);
+        $this->assertStringContainsString(' ', (string) BookingMailData::phone($trainer->user->phone));
+        $this->assertStringNotContainsString($trainer->user->email, $html);
+        $this->assertStringContainsString('Citofono Rossi, secondo piano.', $html);
+    }
+
+    public function test_a_returning_client_is_not_a_new_client()
+    {
+        $trainer = $this->trainer();
+        $client = User::factory()->create(['first_name' => 'Luca', 'last_name' => 'Moretti']);
+        Booking::factory()->confirmed()->for($client, 'client')->for($trainer)->create();
+        $request = Booking::factory()->for($client, 'client')->for($trainer)->create();
+
+        $html = (string) (new BookingRequested($request))->toMail($trainer->user)->render();
+
+        $this->assertStringContainsString('Luca Moretti vuole allenarsi con te', $html);
+        $this->assertStringNotContainsString('nuovo cliente', $html);
     }
 
     public function test_no_confirmation_when_the_request_is_declined_or_expires()

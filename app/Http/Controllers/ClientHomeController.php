@@ -9,6 +9,7 @@ use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\ClientBookingData;
 use App\Support\TrainerCard;
+use App\Support\TrainerSlots;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
@@ -31,6 +32,9 @@ class ClientHomeController extends Controller
         /** @var User $client */
         $client = $request->user();
         $preference = $client->clientPreference;
+
+        // The suggested trainers show their first free slot.
+        TrainerSlots::refreshStale();
 
         $bookings = $client->bookings()
             ->with(ClientBookingData::RELATIONS)

@@ -22,7 +22,7 @@ export default function TrainerHeader({
     return (
         <header className="border-b bg-background">
             <div className="mx-auto flex h-15 max-w-340 items-center gap-2 pr-2 pl-4 md:h-17 md:gap-4 md:px-8">
-                <BrandLogo hideNameOnMobile />
+                <BrandLogo hideNameBelow="md" />
                 <Badge
                     variant="outline"
                     className="h-5.5 rounded-full px-2 text-xs font-medium"

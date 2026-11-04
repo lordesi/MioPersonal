@@ -1,10 +1,11 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import AdminBadge from '@/components/admin/admin-badge';
 import ChoiceChips from '@/components/shared/choice-chips';
 import StarRating from '@/components/trainer/star-rating';
 import { Button } from '@/components/ui/button';
+import { hide, show } from '@/routes/admin/reviews';
 import { formatAgo } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { AdminReview } from '@/types';
@@ -22,11 +23,19 @@ const filters: { value: Filter; label: string }[] = [
 
 export default function Reviews({ reviews }: ReviewsProps) {
     const [filter, setFilter] = useState<Filter>('all');
-    // TODO: hiding a review only lives in the page until the backend exists.
-    const [hidden, setHidden] = useState<Record<number, boolean>>({});
+    // The review being saved: its button waits.
+    const [saving, setSaving] = useState<number | null>(null);
 
-    const isHidden = (review: AdminReview) =>
-        hidden[review.id] ?? review.hidden;
+    const isHidden = (review: AdminReview) => review.hidden;
+
+    // Saved right away: off the trainer's profile and average, or back.
+    const toggle = (review: AdminReview) => {
+        setSaving(review.id);
+        router.visit(review.hidden ? show(review.id) : hide(review.id), {
+            preserveScroll: true,
+            onFinish: () => setSaving(null),
+        });
+    };
 
     const visible = reviews.filter((review) => {
         if (filter === 'hidden') {
@@ -96,12 +105,8 @@ export default function Reviews({ reviews }: ReviewsProps) {
                                 variant="outline"
                                 size="sm"
                                 className="ml-auto"
-                                onClick={() =>
-                                    setHidden({
-                                        ...hidden,
-                                        [review.id]: !isHidden(review),
-                                    })
-                                }
+                                disabled={saving === review.id}
+                                onClick={() => toggle(review)}
                             >
                                 {isHidden(review)
                                     ? 'Mostra di nuovo'

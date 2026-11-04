@@ -27,7 +27,8 @@ export function TrainerReviewHeader({ trainer, status }: HeaderProps) {
                     size="xl"
                     className="size-18 text-[22px] text-muted-foreground"
                 />
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                {/* basis-48: on phones the button wraps below instead of squashing the text. */}
+                <div className="flex min-w-0 flex-1 basis-48 flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-2.5">
                         <h2 className="text-[22px] leading-7 font-bold tracking-tight">
                             {trainer.name}

@@ -40,7 +40,8 @@ export default function SegmentedControl<T extends string>({
                     key={option.value}
                     pressed={option.value === value}
                     onPressedChange={() => onChange(option.value)}
-                    className="h-full flex-1 rounded-md px-3 text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+                    // Phones: a long label ("Personal trainer") fits, or wraps tight inside the track.
+                    className="h-full flex-1 rounded-md px-1.5 text-[13px] leading-4 text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm sm:px-3 sm:text-sm"
                 >
                     {option.label}
                 </Toggle>

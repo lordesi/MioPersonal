@@ -20,6 +20,7 @@ use App\Http\Controllers\ClientHomeController;
 use App\Http\Controllers\ClientReviewController;
 use App\Http\Controllers\CompleteProfileController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\CookieConsentController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\TrainerAvailabilityController;
@@ -54,6 +55,10 @@ Route::get('trainer/{slug}/prenota', [BookingController::class, 'start'])->middl
 Route::inertia('privacy', 'public/privacy')->name('legal.privacy');
 Route::inertia('termini', 'public/terms')->name('legal.terms');
 Route::inertia('cookie', 'public/cookies')->name('legal.cookies');
+// The choice of the cookie banner and of "Impostazioni cookie", also for guests.
+Route::post('cookie/consenso', [CookieConsentController::class, 'store'])
+    ->middleware('throttle:20,1')
+    ->name('cookie-consent.store');
 
 // "Continua con Google": see App\Http\Controllers\Auth\GoogleAuthController.
 Route::middleware('guest')->controller(GoogleAuthController::class)->group(function () {
@@ -214,6 +219,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('prenotazioni', AdminBookingsController::class)->name('bookings');
     Route::get('utenti', AdminUsersController::class)->name('users');
     Route::get('recensioni', AdminReviewsController::class)->name('reviews');
+    // "Nascondi" / "Mostra di nuovo": off the trainer's profile and average, or back.
+    Route::post('recensioni/{review}/nascosta', [AdminReviewsController::class, 'hide'])->whereNumber('review')->name('reviews.hide');
+    Route::delete('recensioni/{review}/nascosta', [AdminReviewsController::class, 'show'])->whereNumber('review')->name('reviews.show');
     Route::get('discipline-e-zone', AdminCatalogController::class)->name('catalog');
     // Disciplines and cities are hidden, never deleted (trainers may use them).
     Route::post('discipline', [AdminDisciplineController::class, 'store'])->name('disciplines.store');
@@ -229,3 +237,7 @@ require __DIR__.'/settings.php';
 if (app()->isLocal()) {
     require __DIR__.'/dev.php';
 }
+
+// Unknown addresses: through the web middleware, so "Questa pagina non esiste (più)."
+// knows who is logged in (header) and the Inertia version. Always the last route.
+Route::fallback(fn () => abort(404));

@@ -19,8 +19,12 @@ export default function PublicHeader({ className }: { className?: string }) {
 
     return (
         <header className={cn('bg-primary text-primary-foreground', className)}>
-            <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-2.5 md:px-8 md:py-5">
-                <BrandLogo className="text-primary-foreground" />
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-3 px-4 py-2.5 md:gap-x-6 md:px-8 md:py-5">
+                {/* Logged out, the name doesn't fit on phones next to the two buttons. */}
+                <BrandLogo
+                    hideNameBelow={user ? undefined : 'sm'}
+                    className="text-primary-foreground"
+                />
 
                 <div className="ml-auto flex flex-wrap items-center gap-3">
                     {user ? (

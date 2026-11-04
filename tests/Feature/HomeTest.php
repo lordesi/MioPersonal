@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\TrainerProfile;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Database\Seeders\CatalogSeeder;
 use Database\Seeders\DemoTrainerSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,5 +69,15 @@ class HomeTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('featuredTrainers', fn ($trainers) => collect($trainers)->where('favorite', true)->pluck('slug')->all() === [$saved->slug])
             );
+    }
+
+    public function test_featured_trainers_never_show_a_first_free_slot_already_passed()
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-10-14 10:00', 'Europe/Rome'));
+        TrainerProfile::query()->published()->update(['next_free_slot_at' => CarbonImmutable::parse('2026-10-12 18:00', 'Europe/Rome')->utc()]);
+
+        $this->get(route('home'))->assertOk();
+
+        $this->assertSame(0, TrainerProfile::query()->published()->where('next_free_slot_at', '<', now())->count());
     }
 }

@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react';
+import { Form, usePage } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { AdminSection } from '@/components/layout/admin-nav';
@@ -7,6 +7,7 @@ import {
     AdminSidebar,
     adminSectionTitle,
 } from '@/components/layout/admin-nav';
+import { users } from '@/routes/admin';
 import type { AdminAreaData } from '@/types';
 
 type AdminLayoutProps = {
@@ -25,7 +26,11 @@ export default function AdminLayout({
     verificationCount,
     flaggedReviews,
 }: AdminLayoutProps) {
-    const { auth, adminArea } = usePage<{ adminArea?: AdminAreaData }>().props;
+    const { auth, adminArea, search } = usePage<{
+        adminArea?: AdminAreaData;
+        /** The text of the search box, on the pages it filters. */
+        search?: string | number | null;
+    }>().props;
     const area: AdminAreaData = {
         verificationCount:
             verificationCount ?? adminArea?.verificationCount ?? 0,
@@ -48,19 +53,31 @@ export default function AdminLayout({
                     <h1 className="text-xl font-bold tracking-tight">
                         {title}
                     </h1>
-                    {/* TODO: search users, trainers and bookings once they are stored. */}
-                    <label className="ml-auto hidden h-10 w-90 items-center gap-2 rounded-lg border border-input bg-background px-3 md:flex">
-                        <Search
-                            aria-hidden="true"
-                            className="size-4 text-muted-foreground"
-                        />
-                        <span className="sr-only">Cerca</span>
-                        <input
-                            type="search"
-                            placeholder="Cerca utenti, trainer, prenotazioni (#1048)…"
-                            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                        />
-                    </label>
+                    {/* Users by name or email; "#1048" opens that booking (AdminUsersController). */}
+                    <Form
+                        action={users()}
+                        options={{ preserveState: false }}
+                        className="ml-auto hidden md:flex"
+                    >
+                        <label className="flex h-10 w-90 items-center gap-2 rounded-lg border border-input bg-background px-3">
+                            <Search
+                                aria-hidden="true"
+                                className="size-4 text-muted-foreground"
+                            />
+                            <span className="sr-only">Cerca</span>
+                            <input
+                                type="search"
+                                name="cerca"
+                                defaultValue={
+                                    typeof search === 'number'
+                                        ? `#${search}`
+                                        : (search ?? '')
+                                }
+                                placeholder="Cerca utenti, trainer, prenotazioni (#1048)…"
+                                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                            />
+                        </label>
+                    </Form>
                 </header>
 
                 <main className="flex flex-1 flex-col gap-5 px-4 pt-6 pb-12 lg:px-8">

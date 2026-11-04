@@ -1,12 +1,11 @@
 import { createInertiaApp } from '@inertiajs/react';
+import CookieConsent from '@/components/cookies/cookie-consent';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import AdminLayout from '@/layouts/admin-layout';
-import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import ClientLayout from '@/layouts/client-layout';
 import PublicLayout from '@/layouts/public-layout';
-import SettingsLayout from '@/layouts/settings/layout';
 import TrainerLayout from '@/layouts/trainer-layout';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -36,18 +35,18 @@ void createInertiaApp({
                 return ClientLayout;
             case name.startsWith('auth/'):
                 return AuthLayout;
-            case name.startsWith('settings/'):
-                return [AppLayout, SettingsLayout];
+            // Every page is in one of the folders above.
             default:
-                return AppLayout;
+                return PublicLayout;
         }
     },
     strictMode: true,
-    withApp(app) {
+    withApp(app, { page }) {
         return (
             <TooltipProvider delayDuration={0}>
                 {app}
                 <Toaster />
+                <CookieConsent initialPage={page} />
             </TooltipProvider>
         );
     },

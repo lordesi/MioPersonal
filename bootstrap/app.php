@@ -37,14 +37,35 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->shouldRenderJsonWhen($wantsJson);
 
-        // Our own "Questa pagina non esiste (più)." instead of Laravel's 404 page.
+        // Our own pages instead of Laravel's English ones: "Questa pagina non esiste (più)."
+        // for 404, public/error for the others. With APP_DEBUG a 500 keeps Laravel's
+        // page, which shows what went wrong.
         $exceptions->respond(function (Response $response, Throwable $exception, Request $request) use ($wantsJson) {
-            if ($response->getStatusCode() !== 404 || $wantsJson($request)) {
+            $status = $response->getStatusCode();
+
+            if ($wantsJson($request)) {
                 return $response;
             }
 
-            return Inertia::render('public/not-found')
-                ->toResponse($request)
-                ->setStatusCode(404);
+            // An address with no route for that method (e.g. GET settings/profile, which
+            // only deletes; or a PATCH that the GET-only fallback route catches): for
+            // the visitor it's a page that doesn't exist.
+            if ($status === 405) {
+                $status = 404;
+            }
+
+            if (! in_array($status, [403, 404, 419, 429, 500, 503], true)) {
+                return $response;
+            }
+
+            if ($status === 500 && config('app.debug')) {
+                return $response;
+            }
+
+            $page = $status === 404
+                ? Inertia::render('public/not-found')
+                : Inertia::render('public/error', ['status' => $status]);
+
+            return $page->toResponse($request)->setStatusCode($status);
         });
     })->create();

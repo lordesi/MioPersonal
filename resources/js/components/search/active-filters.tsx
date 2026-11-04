@@ -27,13 +27,13 @@ export default function ActiveFilters({
 
     return (
         <div className={cn('flex flex-wrap items-center gap-1.5', className)}>
-            <span className="mr-0.5 text-[13px] text-muted-foreground">
+            <span className="mr-0.5 shrink-0 text-[13px] whitespace-nowrap text-muted-foreground">
                 Filtri attivi:
             </span>
             {chips.map((chip) => (
                 <span
                     key={chip.name}
-                    className="inline-flex h-8 items-center gap-1 rounded-full bg-primary pr-1 pl-3 text-[13px] font-medium text-primary-foreground"
+                    className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-primary pr-1 pl-3 text-[13px] font-medium whitespace-nowrap text-primary-foreground"
                 >
                     {chip.label}
                     <button
@@ -53,7 +53,7 @@ export default function ActiveFilters({
             <button
                 type="button"
                 onClick={onClearAll}
-                className="h-8 rounded-md px-2 text-[13px] font-semibold underline outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="h-8 shrink-0 rounded-md px-2 text-[13px] font-semibold whitespace-nowrap underline outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
                 Cancella tutto
             </button>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TrainerProfile;
 use App\Support\CatalogOptions;
 use App\Support\TrainerCard;
+use App\Support\TrainerSlots;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,6 +17,8 @@ class HomeController extends Controller
 
     public function __invoke(Request $request): Response
     {
+        TrainerSlots::refreshStale();
+
         return Inertia::render('public/home', [
             'featuredTrainers' => $this->featuredTrainers(TrainerCard::favoriteIds($request->user())),
             // Options of the search form.

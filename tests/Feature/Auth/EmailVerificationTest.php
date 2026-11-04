@@ -36,12 +36,14 @@ class EmailVerificationTest extends TestCase
     public function test_the_verification_email_is_in_italian()
     {
         app()->setLocale('it');
-        $user = User::factory()->unverified()->create();
+        $user = User::factory()->unverified()->create(['first_name' => 'Giorgio']);
 
         $mail = (new VerifyEmail)->toMail($user);
+        $html = (string) $mail->render();
 
         $this->assertSame('Conferma la tua email', $mail->subject);
-        $this->assertSame('Conferma la tua email', $mail->actionText);
+        $this->assertStringContainsString('Ciao Giorgio, benvenuto!', $html);
+        $this->assertStringContainsString('Il link è valido per 24 ore.', $html);
     }
 
     public function test_the_verification_link_works_for_24_hours()
@@ -49,7 +51,7 @@ class EmailVerificationTest extends TestCase
         $this->freezeTime();
         $user = User::factory()->unverified()->create();
 
-        $url = (new VerifyEmail)->toMail($user)->actionUrl;
+        $url = (new VerifyEmail)->toMail($user)->viewData['url'];
         parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
 
         $this->assertSame(now()->addDay()->getTimestamp(), (int) $query['expires']);

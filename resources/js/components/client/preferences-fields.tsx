@@ -304,7 +304,8 @@ export default function PreferencesFields({
                                     <ToggleGroupItem
                                         key={value}
                                         value={value}
-                                        className="h-10.5 rounded-[10px] px-2.5 text-muted-foreground first:rounded-[10px] last:rounded-[10px] hover:bg-transparent hover:text-foreground data-[state=on]:bg-foreground data-[state=on]:font-semibold data-[state=on]:text-background"
+                                        // Phones: without the icon "In presenza" stays on one line.
+                                        className="h-10.5 rounded-[10px] px-2.5 text-muted-foreground first:rounded-[10px] last:rounded-[10px] hover:bg-transparent hover:text-foreground data-[state=on]:bg-foreground data-[state=on]:font-semibold data-[state=on]:text-background max-sm:[&_svg]:hidden"
                                     >
                                         <Icon aria-hidden="true" />
                                         {label}

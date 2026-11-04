@@ -3,32 +3,52 @@ import LegalPage, {
     LegalNote,
     LegalParagraph,
 } from '@/components/legal/legal-page';
+import { Button } from '@/components/ui/button';
+import { openCookieSettings } from '@/lib/cookie-consent';
 
-/** Names and durations are indicative: check them on the live site. */
+/**
+ * Every cookie and browser storage of the site: names and durations come from
+ * config/session.php, Laravel's remember-me cookie, sidebar.tsx,
+ * CookieConsent and saved-draft.ts. Update the table when one changes.
+ */
 const cookies = [
     {
-        name: 'miopersonal_session',
+        name: 'miopersonal-session',
         purpose: 'Mantiene la sessione e l’accesso al tuo account',
-        duration: 'Fino alla chiusura del browser o 2 ore di inattività',
+        duration: '2 ore dall’ultima attività',
         type: 'Tecnico',
     },
     {
         name: 'XSRF-TOKEN',
         purpose: 'Protegge i moduli da invii fraudolenti',
-        duration: '2 ore',
+        duration: '2 ore dall’ultima attività',
         type: 'Tecnico, sicurezza',
     },
     {
         name: 'remember_web_…',
-        purpose: 'Ti mantiene collegato se scegli «Resta collegato»',
+        purpose:
+            'Ti mantiene collegato se scegli «Resta collegato» o accedi con Google',
         duration: 'Fino a 400 giorni',
         type: 'Tecnico',
     },
     {
-        name: 'mp_tema',
-        purpose: 'Ricorda se preferisci il tema chiaro o scuro',
-        duration: '12 mesi',
+        name: 'sidebar_state',
+        purpose: 'Ricorda se la barra laterale è aperta o chiusa',
+        duration: '7 giorni',
         type: 'Tecnico, preferenza',
+    },
+    {
+        name: 'mp_cookie_consent',
+        purpose: 'Ricorda le tue scelte sui cookie',
+        duration: '6 mesi',
+        type: 'Tecnico',
+    },
+    {
+        name: 'miopersonal:trainer-draft:…',
+        purpose:
+            'Salva nel tuo browser la bozza della registrazione trainer, mai sui nostri server',
+        duration: 'Finché invii il profilo o ricominci',
+        type: 'Tecnico, memoria del browser',
     },
 ];
 
@@ -91,8 +111,9 @@ const sections: LegalSection[] = [
                     </table>
                 </div>
                 <LegalNote>
-                    Nomi e durate sono indicativi: vanno verificati sulla
-                    configurazione definitiva del sito.
+                    Questi sono tutti i cookie e i dati salvati nel browser che
+                    usiamo oggi. Se ne aggiungiamo uno, aggiorniamo questa
+                    tabella.
                 </LegalNote>
             </>
         ),
@@ -101,35 +122,71 @@ const sections: LegalSection[] = [
         id: 'terze',
         title: 'Cookie di terze parti',
         content: (
-            <LegalParagraph>
-                Al momento non usiamo cookie di terze parti, né strumenti di
-                analisi o pubblicità. I caratteri tipografici sono serviti
-                direttamente dai nostri server.
-            </LegalParagraph>
+            <>
+                <LegalParagraph>
+                    Al momento non usiamo cookie di terze parti, né strumenti di
+                    analisi o pubblicità. I caratteri tipografici sono serviti
+                    direttamente dai nostri server.
+                </LegalParagraph>
+                <LegalParagraph>
+                    Se scegli «Continua con Google», per l’accesso passi dal
+                    sito di Google, che usa i propri cookie secondo la sua
+                    privacy policy.
+                </LegalParagraph>
+            </>
         ),
     },
     {
         id: 'consenso',
         title: 'Consenso',
         content: (
-            <LegalParagraph>
-                I cookie tecnici non richiedono consenso. Se in futuro
-                introdurremo cookie di analisi o di terze parti, ti mostreremo
-                un banner per scegliere, con la possibilità di rifiutare con un
-                solo clic.
-            </LegalParagraph>
+            <>
+                <LegalParagraph>
+                    I cookie tecnici non richiedono consenso. Oggi non usiamo
+                    nessun cookie facoltativo, di statistica o di marketing.
+                    Alla prima visita il banner ti chiede comunque cosa
+                    preferisci per il futuro: puoi accettare, rifiutare con un
+                    solo clic o scegliere categoria per categoria. Chiudere il
+                    banner con la X equivale a rifiutare.
+                </LegalParagraph>
+                <LegalParagraph>
+                    Se aggiungeremo cookie facoltativi, in questa pagina
+                    troverai il nome del fornitore e a cosa servono, e il banner
+                    ti chiederà di nuovo la tua scelta.
+                </LegalParagraph>
+                <LegalParagraph>
+                    Ricordiamo la tua scelta per 6 mesi, poi te la chiediamo di
+                    nuovo. Te la chiediamo prima solo se questa policy cambia.
+                    Per poter dimostrare il consenso registriamo la scelta, la
+                    data e la versione della policy, senza il tuo indirizzo IP.
+                </LegalParagraph>
+            </>
         ),
     },
     {
         id: 'gestire',
         title: 'Come gestire i cookie',
         content: (
-            <LegalParagraph>
-                Puoi vedere ed eliminare i cookie dalle impostazioni del tuo
-                browser (Chrome, Safari, Firefox, Edge). Se blocchi i cookie
-                tecnici, l’accesso all’account e le prenotazioni potrebbero non
-                funzionare.
-            </LegalParagraph>
+            <>
+                <LegalParagraph>
+                    Puoi cambiare la tua scelta in ogni momento da «Impostazioni
+                    cookie», in fondo a ogni pagina, o da qui:
+                </LegalParagraph>
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 self-start"
+                    onClick={openCookieSettings}
+                >
+                    Gestisci le preferenze
+                </Button>
+                <LegalParagraph>
+                    Puoi anche vedere ed eliminare i cookie dalle impostazioni
+                    del tuo browser (Chrome, Safari, Firefox, Edge). Se blocchi
+                    i cookie tecnici, l’accesso all’account e le prenotazioni
+                    potrebbero non funzionare.
+                </LegalParagraph>
+            </>
         ),
     },
 ];
@@ -140,12 +197,12 @@ export default function Cookies() {
             pageName="Cookie policy"
             title="Cookie policy"
             intro="Quali cookie usa MioPersonal e come puoi gestirli."
-            updatedOn="8 ottobre 2026"
+            updatedOn="29 ottobre 2026"
             summary={[
-                'Usiamo solo cookie tecnici, necessari a far funzionare il sito.',
-                'Nessun cookie di profilazione e nessuna pubblicità.',
-                'Per questo non ti chiediamo il consenso con un banner.',
-                'Se in futuro aggiungeremo cookie di analisi, te lo chiederemo prima.',
+                'Oggi usiamo solo cookie tecnici, necessari a far funzionare il sito.',
+                'Nessun cookie di statistica, di profilazione o di pubblicità attivo.',
+                'Se li aggiungeremo, li useremo solo con il tuo consenso.',
+                'Puoi cambiare la tua scelta quando vuoi da «Impostazioni cookie».',
             ]}
             sections={sections}
         />

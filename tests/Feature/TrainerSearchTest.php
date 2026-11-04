@@ -496,4 +496,35 @@ class TrainerSearchTest extends TestCase
     {
         return City::query()->where('slug', $slug)->value('id');
     }
+
+    public function test_a_first_free_slot_already_passed_is_computed_again()
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-10-14 10:00', 'Europe/Rome'));
+        // The hourly refresh didn't run: the saved slot is from two days ago.
+        $profile = TrainerProfile::query()->where('slug', 'giulia-rossi')->firstOrFail();
+        $profile->forceFill(['next_free_slot_at' => CarbonImmutable::parse('2026-10-12 18:00', 'Europe/Rome')])->save();
+
+        $this->get(route('trainers.search', ['nome' => 'giulia']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('trainers.0.name', 'Giulia Rossi')
+                ->where('trainers.0.nextSlotLabel', fn (?string $label) => $label === null || ! str_starts_with($label, 'lun 12'))
+            );
+
+        $this->assertTrue($profile->refresh()->next_free_slot_at === null || $profile->next_free_slot_at->isFuture());
+    }
+
+    public function test_the_free_text_of_the_404_page_becomes_the_search_filters()
+    {
+        // Disciplines and city anywhere in the text, in any case.
+        $this->get(route('trainers.search', ['q' => '  Pilates ROMA ']))
+            ->assertRedirect(route('trainers.search', ['city' => 'roma', 'disciplina' => 'pilates']));
+
+        // A discipline of more words.
+        $this->get(route('trainers.search', ['q' => 'pesi e bodybuilding milano']))
+            ->assertRedirect(route('trainers.search', ['city' => 'milano', 'disciplina' => 'pesi-e-bodybuilding']));
+
+        // The other words: a search by name.
+        $this->get(route('trainers.search', ['q' => 'giulia yoga']))
+            ->assertRedirect(route('trainers.search', ['disciplina' => 'yoga', 'nome' => 'giulia']));
+    }
 }

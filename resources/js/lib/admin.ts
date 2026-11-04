@@ -15,6 +15,7 @@ export const bookingStatuses: Record<AdminBookingStatus, StatusStyle> = {
     confirmed: { label: 'Confermata', variant: 'solid' },
     completed: { label: 'Svolta', variant: 'outline' },
     expired: { label: 'Decaduta', variant: 'muted' },
+    declined: { label: 'Rifiutata', variant: 'muted' },
     cancelled: { label: 'Annullata', variant: 'muted' },
     no_show: { label: 'Assenza', variant: 'muted' },
 };

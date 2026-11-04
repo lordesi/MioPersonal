@@ -6,6 +6,7 @@ import LegalPage, {
 } from '@/components/legal/legal-page';
 
 // Draft: the [placeholders] must be filled in and checked by a lawyer.
+// Each sentence describes what the code does today: change them together.
 const sections: LegalSection[] = [
     {
         id: 'titolare',
@@ -31,13 +32,17 @@ const sections: LegalSection[] = [
             <>
                 <LegalList
                     items={[
-                        'Dati dell’account: nome, cognome, email, telefono e password (salvata in forma cifrata).',
-                        'Profilo cliente, se lo completi: foto, città in cui ti alleni, obiettivo, discipline, orari preferiti e budget indicativo.',
-                        'Profilo trainer: foto, presentazione, anni di esperienza, discipline, zone, indirizzi dei luoghi in cui alleni, servizi e prezzi, orari di lavoro, certificazioni e relativi attestati.',
-                        'Prenotazioni: trainer scelto, servizio, data, orario, luogo e l’eventuale messaggio.',
+                        'Dati dell’account: nome, cognome, email, telefono e password (salvata in forma cifrata), con la data in cui hai accettato termini e informativa.',
+                        'Se usi «Continua con Google»: l’identificativo del tuo account Google, nome, cognome ed email. Non riceviamo la tua password Google né la tua foto.',
+                        'Profilo cliente, se lo completi: foto, città in cui ti alleni, obiettivo, discipline, orari preferiti, budget indicativo e trainer salvati nei preferiti.',
+                        'Profilo trainer: foto e galleria, presentazione, anni di esperienza, discipline, obiettivi con cui lavori, zone, nome e indirizzo dei luoghi in cui alleni, indicazioni per arrivare, servizi, pacchetti e prezzi, orari di lavoro, certificazioni e relativi attestati.',
+                        'Prenotazioni: trainer scelto, servizio, data, orario, luogo, stato della prenotazione con la sua storia (richiesta, conferma, annullamento) e i pacchetti di sedute con le sedute usate.',
+                        'Assenze: se non ti presenti a una seduta confermata, il trainer può segnarla come «saltata».',
                         'Recensioni e risposte pubblicate sulla piattaforma.',
                         'Messaggi che ci invii dalla pagina Contatti.',
-                        'Dati tecnici: indirizzo IP, tipo di browser, registri di accesso e cookie tecnici.',
+                        'Dati tecnici: indirizzo IP, tipo di browser, registri di accesso, data dell’ultima attività sul sito e cookie tecnici.',
+                        'Le tue scelte sui cookie, con data e versione della cookie policy, per poter dimostrare il consenso.',
+                        'Solo nel tuo browser, mai sui nostri server: la bozza della registrazione trainer, finché la invii o ricominci.',
                     ]}
                 />
                 <LegalNote>
@@ -53,10 +58,11 @@ const sections: LegalSection[] = [
         content: (
             <LegalList
                 items={[
-                    'Creare e gestire il tuo account e le prenotazioni: esecuzione del servizio che ci chiedi (art. 6.1.b GDPR).',
+                    'Creare e gestire il tuo account, anche con l’accesso tramite Google, e le prenotazioni: esecuzione del servizio che ci chiedi (art. 6.1.b GDPR).',
                     'Verificare i profili dei trainer prima di pubblicarli: esecuzione del servizio e nostro legittimo interesse a una piattaforma affidabile (art. 6.1.b e 6.1.f).',
-                    'Inviarti email di servizio: conferme, promemoria, cambi di orario (art. 6.1.b).',
-                    'Inviarti novità sulla piattaforma, solo se ce lo chiedi: consenso, revocabile in ogni momento (art. 6.1.a).',
+                    'Inviarti email di servizio, per esempio la conferma di una prenotazione (art. 6.1.b).',
+                    'Mostrare ai trainer a cui chiedi una seduta la tua percentuale di presenza, calcolata sulle sedute svolte con tutti i trainer e su quelle segnate come saltate: legittimo interesse dei trainer a organizzare il proprio lavoro (art. 6.1.f). Puoi opporti scrivendoci.',
+                    'Oggi non inviamo newsletter né novità promozionali. Se lo faremo, sarà solo con il tuo consenso, revocabile in ogni momento (art. 6.1.a).',
                     'Proteggere la piattaforma da abusi e accessi non autorizzati: legittimo interesse (art. 6.1.f).',
                     'Rispettare obblighi di legge (art. 6.1.c).',
                 ]}
@@ -70,9 +76,11 @@ const sections: LegalSection[] = [
             <>
                 <LegalList
                     items={[
-                        'Il trainer che prenoti vede nome, servizio, orario e messaggio; email e telefono solo dopo aver confermato.',
-                        'Il cliente vede i contatti del trainer e l’indirizzo esatto solo dopo la conferma.',
-                        'Sul profilo pubblico del trainer compaiono solo le informazioni che sceglie di pubblicare; dei luoghi mostriamo la città, non l’indirizzo.',
+                        'Il trainer a cui chiedi una seduta vede nome e cognome, servizio, data e orario e la tua percentuale di presenza; email e telefono solo dopo che ha confermato una tua prenotazione.',
+                        'Sul profilo pubblico del trainer, visibile a tutti, compaiono nome e cognome, foto, presentazione, servizi e prezzi, certificazioni (titolo ed ente, non l’attestato), il nome e l’indirizzo degli studi in cui allena e le recensioni.',
+                        'Nelle recensioni compaiono il tuo nome e l’iniziale del cognome, per esempio «Anna B.».',
+                        'Il team di MioPersonal, solo per verificare i profili dei trainer, rispondere alle tue richieste e gestire le segnalazioni.',
+                        'Se usi «Continua con Google», Google sa che hai fatto l’accesso a MioPersonal: per quella parte è un titolare autonomo, con la sua informativa.',
                         'I fornitori che ci aiutano a far funzionare il servizio, nominati responsabili del trattamento: hosting [nome del fornitore] e invio email [nome del fornitore].',
                     ]}
                 />
@@ -101,11 +109,14 @@ const sections: LegalSection[] = [
         content: (
             <LegalList
                 items={[
-                    'Dati dell’account: finché l’account è attivo; dopo la cancellazione li eliminiamo entro [X] giorni.',
-                    'Storico delle prenotazioni: [X] mesi dalla seduta, poi in forma anonima.',
-                    'Attestati caricati dai trainer: fino all’approvazione del profilo più [X] mesi.',
+                    'Dati dell’account, del profilo e storico delle prenotazioni: finché l’account è attivo.',
+                    'Quando elimini l’account cancelliamo subito i dati dell’account, la foto, le preferenze e i preferiti; dalle copie di sicurezza spariscono entro [X] giorni.',
+                    'Dopo l’eliminazione restano, senza alcun collegamento a te, le prenotazioni passate nello storico del trainer e le recensioni che hai scritto, che compaiono come «Utente anonimo».',
+                    'Se un trainer chiude il profilo, cancelliamo anche servizi, foto, attestati, recensioni ricevute e prenotazioni legate al profilo.',
+                    'Attestati caricati dai trainer: li cancelliamo appena il team approva o rifiuta il profilo. Restano titolo, ente e anno della certificazione.',
                     'Registri tecnici di accesso: [X] giorni.',
-                    'Messaggi dalla pagina Contatti: [X] mesi dalla risposta.',
+                    'Messaggi dalla pagina Contatti: non li salviamo sul sito. Arrivano nella casella email del team e li teniamo [X] mesi dalla risposta.',
+                    'Scelte sui cookie: [X] mesi dalla scelta, per poter dimostrare il consenso.',
                 ]}
             />
         ),
@@ -119,8 +130,14 @@ const sections: LegalSection[] = [
                     In ogni momento puoi chiederci di accedere ai tuoi dati,
                     correggerli, cancellarli, limitarne l’uso, riceverli in un
                     formato leggibile (portabilità) o opporti al trattamento
-                    basato sul legittimo interesse. Puoi revocare i consensi
-                    dati, senza effetti sui trattamenti già fatti.
+                    basato sul legittimo interesse, come la percentuale di
+                    presenza. Puoi revocare i consensi dati, senza effetti sui
+                    trattamenti già fatti.
+                </LegalParagraph>
+                <LegalParagraph>
+                    Nome e telefono li correggi da solo nelle Impostazioni, dove
+                    puoi anche eliminare l’account. Per cambiare email, ricevere
+                    una copia dei tuoi dati o per tutto il resto scrivici.
                 </LegalParagraph>
                 <LegalParagraph>
                     Rispondiamo entro un mese. Se pensi che i tuoi dati non
@@ -160,12 +177,12 @@ export default function Privacy() {
             pageName="Privacy policy"
             title="Informativa sulla privacy"
             intro="Come MioPersonal raccoglie e usa i tuoi dati quando cerchi un trainer, prenoti una seduta o ti iscrivi come personal trainer."
-            updatedOn="8 ottobre 2026"
+            updatedOn="29 ottobre 2026"
             summary={[
                 'Raccogliamo solo i dati che servono a farti trovare un trainer e a gestire le prenotazioni.',
-                'I tuoi contatti arrivano al trainer solo dopo che ha confermato la prenotazione.',
+                'Email e telefono arrivano al trainer solo dopo che ha confermato una tua prenotazione.',
                 'Non vendiamo i tuoi dati e non li usiamo per pubblicità.',
-                'Puoi vedere, correggere o cancellare i tuoi dati quando vuoi, scrivendoci.',
+                'Puoi correggere i tuoi dati o eliminare l’account dalle Impostazioni, oppure scrivendoci.',
             ]}
             sections={sections}
         />

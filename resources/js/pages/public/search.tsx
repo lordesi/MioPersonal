@@ -114,11 +114,12 @@ export default function Search({
 
     /** The cards with the heart (for clients and guests). */
     const trainerGrid = (list: TrainerSummary[]) => (
-        <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-5">
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-3 sm:gap-5">
             {list.map((trainer) => (
                 <li key={trainer.href} className="flex">
                     <TrainerCard
                         trainer={trainer}
+                        layout="results"
                         className="flex-1"
                         favorite={
                             canSave
@@ -237,6 +238,7 @@ export default function Search({
                         disciplines={disciplines}
                         cities={cities}
                         city={city?.slug ?? null}
+                        total={total}
                         favorites={
                             canSave
                                 ? {

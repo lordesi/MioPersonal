@@ -1,5 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
+import type { ReactNode } from 'react';
 import BrandLogo from '@/components/layout/brand-logo';
+import { openCookieSettings } from '@/lib/cookie-consent';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
 import { home } from '@/routes';
@@ -24,16 +26,24 @@ const legalLinks = [
 const focusRing =
     'rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring';
 
+const linkClassName = cn(
+    'text-left text-sidebar-muted-foreground underline-offset-3 transition-colors hover:text-sidebar-primary hover:underline aria-[current=page]:text-sidebar-primary',
+    focusRing,
+);
+
 function LinkList({
     id,
     title,
     links,
     currentPath,
+    children,
 }: {
     id: string;
     title: string;
     links: { title: string; href: string }[];
     currentPath: string;
+    /** Extra items after the links, e.g. "Impostazioni cookie". */
+    children?: ReactNode;
 }) {
     return (
         <nav
@@ -53,14 +63,12 @@ function LinkList({
                     aria-current={
                         link.href === currentPath ? 'page' : undefined
                     }
-                    className={cn(
-                        'text-sidebar-muted-foreground underline-offset-3 transition-colors hover:text-sidebar-primary hover:underline aria-[current=page]:text-sidebar-primary',
-                        focusRing,
-                    )}
+                    className={linkClassName}
                 >
                     {link.title}
                 </Link>
             ))}
+            {children}
         </nav>
     );
 }
@@ -91,7 +99,15 @@ export default function PublicFooter({ className }: { className?: string }) {
                             title="Legale"
                             links={legalLinks}
                             currentPath={currentPath}
-                        />
+                        >
+                            <button
+                                type="button"
+                                onClick={openCookieSettings}
+                                className={linkClassName}
+                            >
+                                Impostazioni cookie
+                            </button>
+                        </LinkList>
                     </div>
                 </div>
                 <p className="text-[13px] leading-[18px] text-sidebar-muted-foreground">
