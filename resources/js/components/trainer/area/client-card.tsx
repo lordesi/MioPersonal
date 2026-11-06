@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import { Calendar } from 'lucide-react';
 import { useId } from 'react';
 import UserAvatar from '@/components/shared/user-avatar';
+import ClientAbout from '@/components/trainer/area/client-about';
 import ClientContacts from '@/components/trainer/area/client-contacts';
 import PackageProgress from '@/components/trainer/package-progress';
 import { Button } from '@/components/ui/button';
@@ -97,6 +98,13 @@ export default function ClientCard({ client }: { client: TrainerClient }) {
             <div className="flex flex-col gap-3.5 px-6 pt-5 pb-6">
                 <ClientContacts name={client.name} contacts={client.contacts} />
                 <div aria-hidden="true" className="h-px bg-border" />
+
+                {client.about && (
+                    <>
+                        <ClientAbout about={client.about} />
+                        <div aria-hidden="true" className="h-px bg-border" />
+                    </>
+                )}
 
                 <h3
                     id={upcomingTitleId}

@@ -223,6 +223,11 @@ class AccountSettingsTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertSame(BookingStatus::Cancelled, $future->refresh()->status);
+
+        // Deleted for good 30 days later.
+        $this->travel(31)->days();
+        $this->artisan('users:purge-deleted');
+
         // The trainer keeps the past session, without the client.
         $this->assertSame(BookingStatus::Confirmed, $past->refresh()->status);
         $this->assertNull($past->client_id);
@@ -242,7 +247,7 @@ class AccountSettingsTest extends TestCase
         $this->delete(route('profile.destroy'), ['password' => 'password', 'confirmation' => ' elimina '])
             ->assertSessionHasNoErrors();
 
-        $this->assertNull($user->fresh());
+        $this->assertTrue($user->fresh()->hasPendingSelfDeletion());
     }
 
     public function test_who_signed_up_with_google_deletes_the_account_without_a_password()
@@ -255,7 +260,7 @@ class AccountSettingsTest extends TestCase
             ->assertRedirect('/');
 
         $this->assertGuest();
-        $this->assertNull($user->fresh());
+        $this->assertTrue($user->fresh()->hasPendingSelfDeletion());
     }
 
     public function test_deleting_a_trainer_account_removes_the_profile_and_its_files()
@@ -271,6 +276,11 @@ class AccountSettingsTest extends TestCase
         $this->actingAs($profile->user)
             ->delete(route('profile.destroy'), ['password' => 'password', 'confirmation' => 'ELIMINA'])
             ->assertSessionHasNoErrors();
+
+        // Out of the search at once, deleted for good 30 days later.
+        $this->assertSame(0, TrainerProfile::query()->published()->count());
+        $this->travel(31)->days();
+        $this->artisan('users:purge-deleted');
 
         $this->assertSame(0, TrainerProfile::count());
         Storage::disk('public')->assertMissing('trainers/photo.jpg');

@@ -21,7 +21,7 @@ import { saveFavorite } from '@/hooks/use-favorite';
 import { searchUrl } from '@/lib/search';
 import type { SearchFilters } from '@/lib/search';
 import { home, login } from '@/routes';
-import type { TrainerSummary } from '@/types';
+import type { SeoData, TrainerSummary } from '@/types';
 
 /**
  * No trainer matches every filter: similar profiles, found leaving out
@@ -62,6 +62,9 @@ type SearchProps = {
     suggestions: Suggestions | null;
     disciplines: SearchOption[];
     cities: SearchOption[];
+    seo: SeoData;
+    /** A few lines on the city: only on the indexed city pages. */
+    intro: string | null;
 };
 
 /** Light links on the dark block. */
@@ -76,6 +79,8 @@ export default function Search({
     suggestions,
     disciplines,
     cities,
+    seo,
+    intro,
 }: SearchProps) {
     const { auth } = usePage().props;
     // The hearts changed on this page; the others come from the server.
@@ -160,7 +165,7 @@ export default function Search({
 
     return (
         <>
-            <Head title={`Personal trainer ${place}`} />
+            <Head title={seo.title} />
 
             <section
                 aria-labelledby="search-title"
@@ -219,6 +224,11 @@ export default function Search({
                                 ? '1 trainer disponibile'
                                 : `${total} trainer disponibili`}
                         </p>
+                        {intro && (
+                            <p className="mt-1 max-w-3xl text-[15px] leading-6 text-primary-foreground/75">
+                                {intro}
+                            </p>
+                        )}
                     </div>
 
                     <SearchControls

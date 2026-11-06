@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Enums\TrainerProfileStatus;
 use App\Models\Booking;
+use App\Models\TrainerDayOverride;
 use App\Models\TrainerProfile;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -20,7 +21,10 @@ use Illuminate\Support\Collection;
  * Start times are on the hour, plus the half hour left free by a 30-minute
  * session (18:00–18:30 booked → 18:30, for 30-minute sessions only).
  *
- * TODO (step 4): remove holidays and imported calendars.
+ * A day in `trainer_day_overrides` ("Giorni e settimane diverse") uses its
+ * own hours instead of the weekly ones; no hours = closed (holidays).
+ *
+ * TODO: imported calendars.
  */
 final class TrainerSlots
 {
@@ -43,6 +47,8 @@ final class TrainerSlots
         $earliest = self::earliestStart($profile, $now);
         $lastDay = $now->startOfDay()->addDays($profile->booking_window_days);
         $bookings = self::activeBookings($profile, $now, $now->startOfDay()->addDays(min($days, $profile->booking_window_days)));
+        // "Giorni e settimane diverse": these dates have their own hours (or none).
+        $overrides = self::overrides($profile, $now->startOfDay(), $now->startOfDay()->addDays($days - 1));
         $result = [];
 
         for ($index = 0; $index < $days; $index++) {
@@ -60,7 +66,9 @@ final class TrainerSlots
             // "Massimo sedute al giorno": that day is full.
             $full = $profile->max_sessions_per_day !== null && $dayBookings->count() >= $profile->max_sessions_per_day;
 
-            $hours = $date->lessThan($lastDay) ? $hoursByWeekday[$date->dayOfWeekIso] ?? [] : [];
+            $hours = $date->lessThan($lastDay)
+                ? $overrides[$date->toDateString()] ?? $hoursByWeekday[$date->dayOfWeekIso] ?? []
+                : [];
 
             if (! $full) {
                 foreach ($hours as $hour) {
@@ -240,6 +248,25 @@ final class TrainerSlots
 
             return array_values(array_unique($day));
         }, $hours);
+    }
+
+    /**
+     * Rome date => start hours of the days with their own hours ([] = closed).
+     *
+     * @return array<string, list<int>>
+     */
+    private static function overrides(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        return $profile->dayOverrides()
+            ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
+            ->get(['date', 'hours'])
+            ->mapWithKeys(function (TrainerDayOverride $override) {
+                $hours = array_values(array_unique(array_map(intval(...), $override->hours)));
+                sort($hours);
+
+                return [$override->date->toDateString() => $hours];
+            })
+            ->all();
     }
 
     /**

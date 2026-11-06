@@ -9,7 +9,9 @@ use App\Http\Controllers\Admin\AdminMessagesController;
 use App\Http\Controllers\Admin\AdminOverviewController;
 use App\Http\Controllers\Admin\AdminReviewsController;
 use App\Http\Controllers\Admin\AdminSettingsController;
+use App\Http\Controllers\Admin\AdminStatsController;
 use App\Http\Controllers\Admin\AdminUsersController;
+use App\Http\Controllers\Admin\AdminUserStatusController;
 use App\Http\Controllers\Admin\AdminVerificationController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\RegistrationCheckController;
@@ -23,6 +25,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CookieConsentController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TrainerAvailabilityController;
 use App\Http\Controllers\TrainerBookingRequestController;
 use App\Http\Controllers\TrainerCalendarController;
@@ -41,10 +44,13 @@ use App\Http\Controllers\TrainerSearchController;
 use App\Http\Controllers\TrainerServicesController;
 use App\Http\Controllers\TrainerSettingsController;
 use App\Models\User;
+use App\Support\Seo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
+// For search engines, together with public/robots.txt.
+Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
 // /personal-trainer = all of Italy, /personal-trainer/roma = one city (404 if unknown).
 Route::get('personal-trainer/{city:slug?}', TrainerSearchController::class)->name('trainers.search');
 Route::get('trainer/{slug}', TrainerProfileController::class)->name('trainers.show');
@@ -52,9 +58,15 @@ Route::get('trainer/{slug}', TrainerProfileController::class)->name('trainers.sh
 Route::get('trainer/{slug}/prenota', [BookingController::class, 'start'])->middleware('auth')->name('trainers.book.start');
 
 // Legal pages: drafts to be checked by a lawyer before the launch.
-Route::inertia('privacy', 'public/privacy')->name('legal.privacy');
-Route::inertia('termini', 'public/terms')->name('legal.terms');
-Route::inertia('cookie', 'public/cookies')->name('legal.cookies');
+Route::inertia('privacy', 'public/privacy', [
+    'seo' => Seo::page('Informativa privacy', 'Come MioPersonal tratta i dati personali di clienti e trainer: quali dati raccogliamo, perché, per quanto tempo e come esercitare i tuoi diritti.'),
+])->name('legal.privacy');
+Route::inertia('termini', 'public/terms', [
+    'seo' => Seo::page('Termini e condizioni', "Le regole d'uso di MioPersonal per clienti e personal trainer: account, prenotazioni, cancellazioni, recensioni e responsabilità."),
+])->name('legal.terms');
+Route::inertia('cookie', 'public/cookies', [
+    'seo' => Seo::page('Cookie policy', 'Quali cookie usa MioPersonal, a cosa servono e come cambiare in qualsiasi momento le tue preferenze.'),
+])->name('legal.cookies');
 // The choice of the cookie banner and of "Impostazioni cookie", also for guests.
 Route::post('cookie/consenso', [CookieConsentController::class, 'store'])
     ->middleware('throttle:20,1')
@@ -175,6 +187,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::controller(TrainerAvailabilityController::class)->group(function () {
             Route::get('disponibilita', 'show')->name('availability');
             Route::put('disponibilita', 'update')->name('availability.update');
+            // "Giorni e settimane diverse": a day, a week or the holidays.
+            Route::post('disponibilita/eccezioni', 'storeOverride')->name('availability.overrides.store');
+            Route::delete('disponibilita/eccezioni', 'destroyOverride')->name('availability.overrides.destroy');
         });
         // "Servizi e prezzi": public right away, without a new review.
         Route::controller(TrainerServicesController::class)->group(function () {
@@ -209,6 +224,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Only for the MioPersonal team: give access with `php artisan admin:grant {email}`.
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', AdminOverviewController::class)->name('overview');
+    Route::get('statistiche', AdminStatsController::class)->name('stats');
     Route::get('verifica', AdminVerificationController::class)->name('verification');
     Route::post('verifica/{profile}/decisione', [AdminVerificationController::class, 'decide'])->name('verification.decide');
     // Certificates are private: only with the temporary link of the page.
@@ -218,6 +234,13 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('messaggi', AdminMessagesController::class)->name('messages');
     Route::get('prenotazioni', AdminBookingsController::class)->name('bookings');
     Route::get('utenti', AdminUsersController::class)->name('users');
+    Route::controller(AdminUserStatusController::class)->prefix('utenti/{user}')->whereNumber('user')->name('users.')->group(function () {
+        Route::post('sospeso', 'suspend')->name('suspend');
+        Route::delete('sospeso', 'reactivate')->name('reactivate');
+        // Deleted for good 30 days later (users:purge-deleted).
+        Route::post('cancellazione', 'scheduleDeletion')->name('deletion.schedule');
+        Route::delete('cancellazione', 'cancelDeletion')->name('deletion.cancel');
+    });
     Route::get('recensioni', AdminReviewsController::class)->name('reviews');
     // "Nascondi" / "Mostra di nuovo": off the trainer's profile and average, or back.
     Route::post('recensioni/{review}/nascosta', [AdminReviewsController::class, 'hide'])->whereNumber('review')->name('reviews.hide');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TrainerProfile;
 use App\Support\CatalogOptions;
+use App\Support\Seo;
 use App\Support\TrainerCard;
 use App\Support\TrainerSlots;
 use Illuminate\Http\Request;
@@ -24,7 +25,44 @@ class HomeController extends Controller
             // Options of the search form.
             'disciplines' => CatalogOptions::disciplines(),
             'cities' => CatalogOptions::cities(),
+            'seo' => $this->seo(),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function seo(): array
+    {
+        $home = route('home');
+
+        return Seo::page(
+            title: 'Trova il tuo personal trainer',
+            description: 'Cerca personal trainer verificati nella tua città o online: confronta discipline, prezzi e recensioni e prenota la prima seduta in pochi clic. Gratis.',
+            canonical: $home,
+            jsonLd: [
+                [
+                    '@type' => 'Organization',
+                    '@id' => $home.'#organization',
+                    'name' => config('app.name'),
+                    'url' => $home,
+                    'logo' => asset('miopersonal-logo.jpg'),
+                ],
+                [
+                    '@type' => 'WebSite',
+                    'name' => config('app.name'),
+                    'url' => $home,
+                    'inLanguage' => 'it-IT',
+                    'publisher' => ['@id' => $home.'#organization'],
+                    // The search box of the 404 page reads ?q= the same way.
+                    'potentialAction' => [
+                        '@type' => 'SearchAction',
+                        'target' => route('trainers.search').'?q={search_term_string}',
+                        'query-input' => 'required name=search_term_string',
+                    ],
+                ],
+            ],
+        );
     }
 
     /**

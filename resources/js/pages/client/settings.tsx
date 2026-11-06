@@ -46,7 +46,7 @@ export default function Settings({
                             providers={account.providers}
                         />
                         <DeleteAccountSection
-                            description="Eliminando il profilo, accetti di perdere tutti i tuoi dati. Una volta eliminato sarà impossibile recuperarlo"
+                            description="Eliminando il profilo, accetti di perdere tutti i tuoi dati. Hai 30 giorni per ripensarci, poi sarà impossibile recuperarlo."
                             hasPassword={account.hasPassword}
                             pendingBookingTrainers={pendingBookingTrainers}
                         />

@@ -1,19 +1,31 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import TrainerAvailabilityController from '@/actions/App/Http/Controllers/TrainerAvailabilityController';
 import NumberedSection from '@/components/trainer/area/numbered-section';
 import PageHeading from '@/components/trainer/area/page-heading';
 import AvailabilitySummary from '@/components/trainer/hours/availability-summary';
 import BookingRulesFields from '@/components/trainer/hours/booking-rules-fields';
+import DayOverrideDialog from '@/components/trainer/hours/day-override-dialog';
+import DayOverrides from '@/components/trainer/hours/day-overrides';
 import WeeklyHoursGrid from '@/components/trainer/hours/weekly-hours-grid';
+import { Button } from '@/components/ui/button';
 import { register } from '@/routes/trainer';
-import type { TrainerAvailability } from '@/types';
+import type { TrainerAvailability, TrainerDayOverrideBlock } from '@/types';
 
 type AvailabilityProps = {
     /** null until the registration is sent. */
     availability: TrainerAvailability | null;
+    /** "Giorni e settimane diverse", from today on. */
+    overrides: TrainerDayOverrideBlock[];
+    /** Rome date of today. */
+    today: string;
 };
 
-export default function Availability({ availability }: AvailabilityProps) {
+export default function Availability({
+    availability,
+    overrides,
+    today,
+}: AvailabilityProps) {
     return (
         <>
             <Head title="Le tue disponibilità" />
@@ -32,7 +44,39 @@ export default function Availability({ availability }: AvailabilityProps) {
                     : poi potrai cambiarli da qui.
                 </p>
             ) : (
-                <AvailabilityForm availability={availability} />
+                <>
+                    <AvailabilityForm availability={availability} />
+
+                    {/* Outside the form above: saved on its own, right away. */}
+                    <div className="flex flex-wrap gap-5">
+                        <NumberedSection
+                            step={3}
+                            title="Giorni e settimane diverse"
+                            description="Ferie, un giorno libero o una settimana con altri orari: vale solo per quei giorni."
+                            className="min-w-0 flex-[3_1_600px]"
+                        >
+                            <DayOverrides blocks={overrides} />
+                            <DayOverrideDialog
+                                baseHours={availability.hours}
+                                today={today}
+                                trigger={
+                                    <Button
+                                        type="button"
+                                        className="h-11 self-start rounded-[10px] px-4 font-semibold"
+                                    >
+                                        <Plus aria-hidden="true" />
+                                        Modifica un giorno o una settimana
+                                    </Button>
+                                }
+                            />
+                        </NumberedSection>
+                        {/* Keeps the column as wide as the one above. */}
+                        <div
+                            aria-hidden="true"
+                            className="hidden flex-[2_1_320px] lg:block"
+                        />
+                    </div>
+                </>
             )}
         </>
     );
@@ -87,7 +131,11 @@ function AvailabilityForm({
     return (
         <form onSubmit={submit} className="flex flex-wrap items-start gap-5">
             <div className="flex min-w-0 flex-[3_1_600px] flex-col gap-4">
-                <NumberedSection step={1} title="Orari di lavoro">
+                <NumberedSection
+                    step={1}
+                    title="Orari di base"
+                    description="Valgono ogni settimana, tranne i giorni che modifichi più in basso."
+                >
                     <WeeklyHoursGrid
                         hours={form.data.hours}
                         onChange={(hours) => form.setData('hours', hours)}

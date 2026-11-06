@@ -3,12 +3,15 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Support\Stats;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -29,6 +32,27 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureAuthEmails();
+        $this->recordAcquisition();
+    }
+
+    /**
+     * Every sign-up (form, Google, "Diventa trainer") keeps the channel of the
+     * visit it came from, saved in the session by Stats::recordPageView.
+     */
+    protected function recordAcquisition(): void
+    {
+        Event::listen(Registered::class, function (Registered $event) {
+            $request = request();
+
+            if (! $event->user instanceof User || ! $request->hasSession()) {
+                return;
+            }
+
+            $acquisition = $request->session()->get(Stats::ACQUISITION_KEY) ?? Stats::acquisition($request);
+            $id = $event->user->id;
+            // A direct query: no model events, and `acquisition` is not fillable.
+            Stats::safely(fn () => DB::table('users')->where('id', $id)->update(['acquisition' => json_encode($acquisition)]));
+        });
     }
 
     /**

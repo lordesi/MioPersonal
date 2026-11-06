@@ -15,6 +15,7 @@ class AdminTest extends TestCase
     /** @var array<string, string> route name => Inertia component */
     private const PAGES = [
         'admin.overview' => 'admin/overview',
+        'admin.stats' => 'admin/stats',
         'admin.verification' => 'admin/verification',
         'admin.messages' => 'admin/messages',
         'admin.bookings' => 'admin/bookings',

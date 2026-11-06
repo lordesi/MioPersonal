@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ContactRequest;
 use App\Mail\ContactMessage;
+use App\Support\Seo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -28,6 +29,11 @@ class ContactController extends Controller
                 ContactRequest::ROLE_TOPICS,
             ),
             'messageMaxLength' => ContactRequest::MESSAGE_MAX_LENGTH,
+            'seo' => Seo::page(
+                title: 'Contatti',
+                description: 'Scrivi al team di MioPersonal: domande su prenotazioni, profili trainer, account o collaborazioni. Ti rispondiamo il prima possibile.',
+                canonical: route('contact.show'),
+            ),
         ]);
     }
 

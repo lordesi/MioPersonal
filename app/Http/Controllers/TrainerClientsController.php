@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\ClientPackage;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\ClientAbout;
 use App\Support\ClientAttendance;
 use App\Support\TrainerSessions;
 use Carbon\CarbonImmutable;
@@ -54,7 +55,7 @@ class TrainerClientsController extends Controller
             ->where('status', BookingStatus::Confirmed)
             // Deleted accounts: the past sessions stay, but there is nobody to show.
             ->whereNotNull('client_id')
-            ->with(TrainerSessions::WITH)
+            ->with([...TrainerSessions::WITH, 'client.clientPreference'])
             ->orderBy('starts_at')
             ->get();
         $attendance = ClientAttendance::forClients($bookings->pluck('client_id'), $profile);
@@ -125,6 +126,8 @@ class TrainerClientsController extends Controller
                 'total' => $package->sessions_total,
             ],
             'attendance' => $attendance,
+            // "Sul cliente": what the client wrote in "Su di te".
+            'about' => ClientAbout::from($first->client),
             // Everyone here has a confirmed session: the contacts can be shown.
             'contacts' => [
                 'email' => $first->client->email ?? '',

@@ -229,6 +229,16 @@ class TrainerProfile extends Model
     }
 
     /**
+     * Days with their own hours (or closed) instead of the weekly ones, by date.
+     *
+     * @return HasMany<TrainerDayOverride, $this>
+     */
+    public function dayOverrides(): HasMany
+    {
+        return $this->hasMany(TrainerDayOverride::class)->orderBy('date');
+    }
+
+    /**
      * @return HasMany<Booking, $this>
      */
     public function bookings(): HasMany
@@ -280,7 +290,23 @@ class TrainerProfile extends Model
     {
         $query->where('status', TrainerProfileStatus::Approved)
             ->where('visible_in_search', true)
-            ->whereNull('paused_at');
+            ->whereNull('paused_at')
+            // Suspended by the team, or the account is being deleted.
+            ->whereHas('user', fn (Builder $user) => $user->active());
+    }
+
+    /**
+     * Trains in person in the city (main city or one of the others). The search
+     * also shows the online-only trainers in every city: this scope leaves them
+     * out, for the city pages given to search engines (see SitemapController).
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeBasedIn(Builder $query, int $cityId): void
+    {
+        $query->where(fn (Builder $inCity) => $inCity
+            ->where('city_id', $cityId)
+            ->orWhereHas('otherCities', fn (Builder $other) => $other->whereKey($cityId)));
     }
 
     public function isApproved(): bool
@@ -291,12 +317,25 @@ class TrainerProfile extends Model
     /**
      * The public page: anyone once approved (even if hidden from the search,
      * it stays reachable with the link). Before that, only its trainer and the team.
+     * A suspended account, or one being deleted, only the team.
      */
     public function isViewableBy(?User $user): bool
     {
-        return $this->isApproved()
-            || $user?->id === $this->user_id
-            || $user?->role === UserRole::Admin;
+        if ($user?->role === UserRole::Admin) {
+            return true;
+        }
+
+        if (! $this->ownerIsActive()) {
+            return false;
+        }
+
+        return $this->isApproved() || $user?->id === $this->user_id;
+    }
+
+    /** Not suspended and not being deleted: can be seen and booked. */
+    public function ownerIsActive(): bool
+    {
+        return $this->user->suspended_at === null && $this->user->deletion_scheduled_at === null;
     }
 
     /** Average rating with one decimal, null without reviews ("Nuovo"). */

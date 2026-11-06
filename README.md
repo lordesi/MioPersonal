@@ -448,6 +448,29 @@ processo a parte, il _worker_ (`php artisan queue:work`).
 - **Sul server**: lascia `QUEUE_CONNECTION=database` e attiva il worker (su Forge: **Queue**).
   Senza worker queste email non partono mai.
 
+### SEO: rendering lato server (SSR) in produzione
+
+Le pagine pubbliche (home, ricerca, profili trainer, pagine legali, contatti, «Diventa trainer») vengono
+disegnate **sul server** da un piccolo processo Node, così Google e i social ricevono la pagina completa
+e non un foglio bianco. Le aree private (area trainer, area cliente, admin, login…) restano solo nel
+browser: l'elenco è in `app/Http/Middleware/HandleInertiaRequests.php` (`$withoutSsr`).
+
+- **In locale** non serve fare niente: con `composer dev` ci pensa Vite.
+- **Sul server (Ploi)**:
+    1. Nello **script di deploy** sostituisci `npm run build` con `npm run build:ssr`, e aggiungi in fondo
+       `php artisan inertia:stop-ssr` (ferma il vecchio processo: il daemon lo riavvia col codice nuovo).
+    2. In **Daemons** aggiungi `php artisan inertia:start-ssr` (cartella del sito, utente `ploi`).
+    3. Controlla: `curl -s https://miopersonal.it/personal-trainer | grep data-server-rendered` deve
+       trovare una riga.
+
+    Se il processo Node si ferma il sito continua a funzionare (le pagine si disegnano nel browser), ma
+    Google vede di nuovo una pagina vuota. Per spegnerlo apposta: `INERTIA_SSR_ENABLED=false` nel `.env`.
+
+I meta tag (description, canonical, Open Graph) e i dati strutturati per Google li scrive Laravel dalla
+prop `seo` delle pagine (`App\Support\Seo`). Le pagine senza `seo` sono `noindex`. La mappa del sito è
+`/sitemap.xml` (aggiornata al massimo ogni ora). Dopo il primo deploy aggiungila in
+[Google Search Console](https://search.google.com/search-console) e Bing Webmaster Tools.
+
 ---
 
 ## 11. Lavoro di tutti i giorni

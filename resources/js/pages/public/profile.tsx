@@ -33,7 +33,12 @@ import { searchUrl } from '@/lib/search';
 import { home } from '@/routes';
 import { book } from '@/routes/trainers';
 import { start as startBooking } from '@/routes/trainers/book';
-import type { TrainerProfile, TrainerReview, TrainerService } from '@/types';
+import type {
+    SeoData,
+    TrainerProfile,
+    TrainerReview,
+    TrainerService,
+} from '@/types';
 
 /** Light links on the dark block, as in the search. */
 const crumbLink = 'text-primary-foreground/60 hover:text-primary-foreground';
@@ -44,12 +49,14 @@ type ProfileProps = {
     preview: boolean;
     /** Every review, loaded by "Mostra tutte le recensioni". */
     allReviews?: TrainerReview[];
+    seo: SeoData;
 };
 
 export default function Profile({
     trainer,
     preview,
     allReviews,
+    seo,
 }: ProfileProps) {
     const page = usePage();
     const user = page.props.auth?.user;
@@ -210,7 +217,7 @@ export default function Profile({
 
     return (
         <>
-            <Head title={trainer.name} />
+            <Head title={seo.title} />
             <ProfileMobileHeader backHref={citySearchHref} onShare={share} />
 
             {/* The dark block, like the header: breadcrumb, photos and name. */}

@@ -4,13 +4,17 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Middleware\EnsureAccountActive;
 use App\Http\Responses\FailedPasswordResetLinkResponse;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\FailedPasswordResetLinkRequestResponse;
 use Laravel\Fortify\Features;
@@ -43,6 +47,22 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+
+        // As Fortify does, plus: a suspended account (or one the team is deleting)
+        // gets told why, instead of logging in and out (EnsureAccountActive).
+        Fortify::authenticateUsing(function (Request $request) {
+            $user = User::where('email', $request->string(Fortify::username())->value())->first();
+
+            if ($user === null || $user->password === null || ! Hash::check($request->string('password')->value(), $user->password)) {
+                return null;
+            }
+
+            if ($user->isBlocked()) {
+                throw ValidationException::withMessages([Fortify::username() => EnsureAccountActive::blockedMessage($user)]);
+            }
+
+            return $user;
+        });
     }
 
     /**

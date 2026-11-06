@@ -136,7 +136,10 @@ export default function TrainerCard({
                     {trainer.photoUrl ? (
                         <img
                             src={trainer.photoUrl}
+                            // The name is right next to it: a screen reader would say it twice.
                             alt=""
+                            loading="lazy"
+                            decoding="async"
                             className="size-full object-cover"
                         />
                     ) : (

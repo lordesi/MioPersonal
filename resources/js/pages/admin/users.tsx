@@ -1,12 +1,17 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AdminBadge from '@/components/admin/admin-badge';
-import AdminNotice from '@/components/admin/admin-notice';
 import SearchNotice from '@/components/admin/search-notice';
 import SegmentedControl from '@/components/shared/segmented-control';
 import { Button } from '@/components/ui/button';
-import { formatDateShortYear, formatRating } from '@/lib/format';
+import {
+    formatDateMedium,
+    formatDateShortYear,
+    formatRating,
+} from '@/lib/format';
 import { users } from '@/routes/admin';
+import { reactivate, suspend } from '@/routes/admin/users';
+import deletion from '@/routes/admin/users/deletion';
 import type { AdminClient, AdminTrainer } from '@/types';
 
 type UsersProps = {
@@ -20,6 +25,7 @@ type Tab = 'clients' | 'trainers';
 
 /** One table row, the same for clients and trainers. */
 type UserRow = {
+    id: number;
     key: string;
     name: string;
     email: string;
@@ -27,10 +33,13 @@ type UserRow = {
     joinedAt: string;
     activity: string;
     suspended: boolean;
+    deletionAt: string | null;
+    deletionByUser: boolean;
 };
 
 function clientRow(client: AdminClient): UserRow {
     return {
+        id: client.id,
         key: `client-${client.id}`,
         name: client.name,
         email: client.email,
@@ -41,11 +50,14 @@ function clientRow(client: AdminClient): UserRow {
                 ? '1 prenotazione'
                 : `${client.bookingCount} prenotazioni`,
         suspended: client.suspended,
+        deletionAt: client.deletionAt,
+        deletionByUser: client.deletionByUser,
     };
 }
 
 function trainerRow(trainer: AdminTrainer): UserRow {
     return {
+        id: trainer.id,
         key: `trainer-${trainer.id}`,
         name: trainer.name,
         email: trainer.email,
@@ -59,43 +71,40 @@ function trainerRow(trainer: AdminTrainer): UserRow {
                 ? '—'
                 : `${trainer.reviewCount} recensioni · ${formatRating(trainer.rating)}`,
         suspended: trainer.suspended,
+        deletionAt: trainer.deletionAt,
+        deletionByUser: trainer.deletionByUser,
     };
 }
 
 const headCell = 'px-3 py-3 font-semibold first:pl-4 last:pr-4';
 const bodyCell = 'px-3 py-3 first:pl-4 last:pr-4';
 
+/**
+ * "Sospendi" / "Riattiva" and "Cancella dati" / "Annulla cancellazione"
+ * (AdminUserStatusController): saved on the server, the user is logged out
+ * at once. The data goes 30 days after "Cancella dati".
+ */
 export default function Users({ clients, trainers, search }: UsersProps) {
     const [tab, setTab] = useState<Tab>('clients');
-    // TODO: suspension and deletion only live in the page until the backend exists.
-    const [suspended, setSuspended] = useState<Record<string, boolean>>({});
-    const [deleted, setDeleted] = useState<string[]>([]);
     const [toDelete, setToDelete] = useState<UserRow | null>(null);
-    const [notice, setNotice] = useState<string | null>(null);
+    const [busy, setBusy] = useState<string | null>(null);
 
-    const rows = (
-        tab === 'clients' ? clients.map(clientRow) : trainers.map(trainerRow)
-    ).filter((row) => !deleted.includes(row.key));
+    const rows =
+        tab === 'clients' ? clients.map(clientRow) : trainers.map(trainerRow);
 
-    const isSuspended = (row: UserRow) => suspended[row.key] ?? row.suspended;
-
-    const toggleSuspension = (row: UserRow) => {
-        const next = !isSuspended(row);
-        setSuspended({ ...suspended, [row.key]: next });
-        setNotice(
-            `${next ? 'Account sospeso' : 'Account riattivato'}: ${row.name}`,
-        );
-    };
+    const send = (row: UserRow, route: Parameters<typeof router.visit>[0]) =>
+        router.visit(route, {
+            preserveScroll: true,
+            onStart: () => setBusy(row.key),
+            onFinish: () => setBusy(null),
+        });
 
     const confirmDelete = () => {
         if (!toDelete) {
             return;
         }
 
-        setDeleted([...deleted, toDelete.key]);
-        setNotice(
-            `Dati di ${toDelete.name} cancellati. Registrato nel registro attività.`,
-        );
+        send(toDelete, deletion.schedule(toDelete.id));
         setToDelete(null);
     };
 
@@ -104,8 +113,6 @@ export default function Users({ clients, trainers, search }: UsersProps) {
             <Head title="Admin · Utenti" />
 
             {search && <SearchNotice text={search} clearHref={users()} />}
-
-            <AdminNotice message={notice} onClose={() => setNotice(null)} />
 
             <SegmentedControl
                 options={[
@@ -128,12 +135,11 @@ export default function Users({ clients, trainers, search }: UsersProps) {
                     className="flex flex-wrap items-center gap-3 rounded-xl border-[1.5px] border-foreground bg-card px-4 py-3.5 text-sm"
                 >
                     <span className="flex-1">
-                        <strong>
-                            Cancellare definitivamente i dati di {toDelete.name}
-                            ?
-                        </strong>{' '}
-                        Prenotazioni e recensioni restano in forma anonima.
-                        L’operazione finisce nel registro attività.
+                        <strong>Cancellare i dati di {toDelete.name}?</strong>{' '}
+                        L’account viene bloccato subito e le prenotazioni future
+                        annullate; i dati spariscono tra 30 giorni (fino ad
+                        allora puoi annullare). Prenotazioni passate e
+                        recensioni restano in forma anonima.
                     </span>
                     <Button
                         type="button"
@@ -202,35 +208,54 @@ export default function Users({ clients, trainers, search }: UsersProps) {
                                     {row.activity}
                                 </td>
                                 <td className={bodyCell}>
-                                    {isSuspended(row) ? (
-                                        <AdminBadge variant="muted">
-                                            Sospeso
-                                        </AdminBadge>
-                                    ) : (
-                                        <AdminBadge>Attivo</AdminBadge>
-                                    )}
+                                    <StatusBadge row={row} />
                                 </td>
                                 <td className={bodyCell}>
                                     <span className="flex justify-end gap-1.5">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() =>
-                                                toggleSuspension(row)
-                                            }
-                                        >
-                                            {isSuspended(row)
-                                                ? 'Riattiva'
-                                                : 'Sospendi'}
-                                        </Button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setToDelete(row)}
-                                            className="h-8 px-2.5 text-[13px] underline"
-                                        >
-                                            Cancella dati
-                                        </button>
+                                        {row.deletionAt === null && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={busy === row.key}
+                                                onClick={() =>
+                                                    send(
+                                                        row,
+                                                        row.suspended
+                                                            ? reactivate(row.id)
+                                                            : suspend(row.id),
+                                                    )
+                                                }
+                                            >
+                                                {row.suspended
+                                                    ? 'Riattiva'
+                                                    : 'Sospendi'}
+                                            </Button>
+                                        )}
+                                        {row.deletionAt === null ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => setToDelete(row)}
+                                                className="h-8 px-2.5 text-[13px] underline"
+                                            >
+                                                Cancella dati
+                                            </button>
+                                        ) : (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={busy === row.key}
+                                                onClick={() =>
+                                                    send(
+                                                        row,
+                                                        deletion.cancel(row.id),
+                                                    )
+                                                }
+                                            >
+                                                Annulla cancellazione
+                                            </Button>
+                                        )}
                                     </span>
                                 </td>
                             </tr>
@@ -240,6 +265,23 @@ export default function Users({ clients, trainers, search }: UsersProps) {
             </section>
         </>
     );
+}
+
+function StatusBadge({ row }: { row: UserRow }) {
+    if (row.deletionAt !== null) {
+        return (
+            <AdminBadge variant="muted">
+                {row.deletionByUser ? 'Si è cancellato · ' : 'Cancellazione · '}
+                {formatDateMedium(row.deletionAt)}
+            </AdminBadge>
+        );
+    }
+
+    if (row.suspended) {
+        return <AdminBadge variant="muted">Sospeso</AdminBadge>;
+    }
+
+    return <AdminBadge>Attivo</AdminBadge>;
 }
 
 Users.layout = { section: 'users' };

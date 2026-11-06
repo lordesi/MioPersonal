@@ -204,6 +204,28 @@ export type TrainerBookingRequest = TrainerSession & {
     expiresAt: string;
     /** null once the client deleted the account. */
     attendance: ClientAttendance | null;
+    /** What the client wrote in "Su di te"; null when nothing. */
+    about: ClientAbout | null;
+};
+
+/**
+ * "Sul cliente" (App\Support\ClientAbout): the answers of "Su di te", for the
+ * trainers the client booked. Labels in Italian, except `goal` (goals.ts).
+ * Height and weight only with the client's consent.
+ */
+export type ClientAbout = {
+    /** The age the client turns this year (only the birth year is saved). */
+    age: number | null;
+    sex: string | null;
+    goal: string | null;
+    level: string | null;
+    experience: string | null;
+    activity: string | null;
+    sessionsPerWeek: number | null;
+    sports: string[];
+    note: string | null;
+    heightCm: number | null;
+    weightKg: number | null;
 };
 
 /** "Gestite" in "Richieste": a request the trainer already answered. */
@@ -273,6 +295,8 @@ export type TrainerClient = {
     /** The package in progress, null when there is none. */
     package: { name: string; done: number; total: number } | null;
     attendance: ClientAttendance;
+    /** What the client wrote in "Su di te"; null when nothing. */
+    about: ClientAbout | null;
     /** Always sent: everyone in "Clienti" has a confirmed session. */
     contacts: { email: string; phone: string | null };
     /** Every confirmed slot still to come, in order. */
@@ -295,6 +319,22 @@ export type TrainerAvailability = {
     hours: number[][];
     rules: BookingRules;
     autoConfirm: boolean;
+};
+
+/**
+ * "Giorni e settimane diverse" (App\Support\TrainerDayOverrides::blocks):
+ * days in a row with the same note, all closed or all with their own hours.
+ */
+export type TrainerDayOverrideBlock = {
+    /** Rome dates, Y-m-d. */
+    from: string;
+    to: string;
+    closed: boolean;
+    note: string | null;
+    /** Each day with its start hours ([] = closed). */
+    days: { date: string; hours: number[] }[];
+    /** Sessions already booked in those days: they stay valid. */
+    bookings: number;
 };
 
 /** A review as the trainer sees it in their area. */

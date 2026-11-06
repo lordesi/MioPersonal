@@ -1,6 +1,7 @@
 import { Check, Clock } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import UserAvatar from '@/components/shared/user-avatar';
+import ClientAbout from '@/components/trainer/area/client-about';
 import { Button } from '@/components/ui/button';
 import {
     dateBlockParts,
@@ -112,6 +113,13 @@ export default function RequestCard({
                                 />
                             )}
                         </div>
+                    )}
+
+                    {request.about && (
+                        <ClientAbout
+                            about={request.about}
+                            className="mt-1.5 border-t pt-3.5"
+                        />
                     )}
                 </div>
             </div>

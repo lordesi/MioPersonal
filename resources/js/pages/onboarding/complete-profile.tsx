@@ -4,7 +4,10 @@ import type { FormEvent } from 'react';
 import PreferencesFields, {
     preferencesFormData,
 } from '@/components/client/preferences-fields';
-import type { SavedPreferences } from '@/components/client/preferences-fields';
+import type {
+    BirthYears,
+    SavedPreferences,
+} from '@/components/client/preferences-fields';
 import MinimalHeader from '@/components/layout/minimal-header';
 import ProgressBar from '@/components/shared/progress-bar';
 import { Button } from '@/components/ui/button';
@@ -18,6 +21,7 @@ type CompleteProfileProps = {
     cities: CityWithCoordinates[];
     /** Null until the client saves the page once. */
     preferences: SavedPreferences | null;
+    birthYears: BirthYears;
 };
 
 /**
@@ -29,6 +33,7 @@ export default function CompleteProfile({
     disciplines,
     cities,
     preferences,
+    birthYears,
 }: CompleteProfileProps) {
     const form = useForm(preferencesFormData(preferences));
     const { data, setData } = form;
@@ -101,6 +106,7 @@ export default function CompleteProfile({
                     setData={setData}
                     disciplines={disciplines}
                     cities={cities}
+                    birthYears={birthYears}
                 />
 
                 {firstError && (
@@ -127,7 +133,8 @@ export default function CompleteProfile({
                 </div>
                 <p className="text-center text-xs text-muted-foreground">
                     Puoi completare o cambiare tutto quando vuoi da «Modifica
-                    profilo». Non ti chiediamo dati sulla salute.
+                    profilo». Altezza e peso sono facoltativi e li salviamo solo
+                    con il tuo consenso.
                 </p>
             </form>
         </div>

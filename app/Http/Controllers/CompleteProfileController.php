@@ -41,6 +41,11 @@ class CompleteProfileController extends Controller
         $disciplineSlugs = $request->array('disciplines');
         $disciplineIds = Discipline::query()->whereIn('slug', $disciplineSlugs)->pluck('id', 'slug');
 
+        // Height and weight (GDPR art. 9) only with the consent: without it they are deleted.
+        $bodyConsent = $request->boolean('body_data_consent');
+        // A query, not the relation: it would stay cached as it was before saving.
+        $consentedAt = $user->clientPreference()->first()?->body_data_consent_at;
+
         $user->clientPreference()->updateOrCreate([], [
             'city_id' => $request->filled('city')
                 ? City::query()->where('slug', $request->string('city'))->value('id')
@@ -50,6 +55,18 @@ class CompleteProfileController extends Controller
             'times' => $request->array('times'),
             'discipline_ids' => array_map(fn (string $slug) => $disciplineIds[$slug], $disciplineSlugs),
             'budget_max_cents' => $request->filled('budget_max_cents') ? $request->integer('budget_max_cents') : null,
+            'birth_year' => $request->filled('birth_year') ? $request->integer('birth_year') : null,
+            'sex' => $request->input('sex'),
+            'fitness_level' => $request->input('fitness_level'),
+            'training_experience' => $request->input('training_experience'),
+            'activity_level' => $request->input('activity_level'),
+            'sessions_per_week' => $request->filled('sessions_per_week') ? $request->integer('sessions_per_week') : null,
+            'sports' => $request->array('sports'),
+            'trainer_note' => $request->input('trainer_note'),
+            'height_cm' => $bodyConsent && $request->filled('height_cm') ? $request->integer('height_cm') : null,
+            'weight_kg' => $bodyConsent && $request->filled('weight_kg') ? $request->integer('weight_kg') : null,
+            // The first time it was given, kept while it is not withdrawn.
+            'body_data_consent_at' => $bodyConsent ? ($consentedAt ?? now()) : null,
         ]);
 
         // "Modifica profilo" stays on the page; the sign-up goes on to the dashboard.
@@ -121,6 +138,11 @@ class CompleteProfileController extends Controller
             'disciplines' => CatalogOptions::disciplines(),
             'cities' => CatalogOptions::citiesWithCoordinates(),
             'preferences' => $this->savedPreferences($user->clientPreference),
+            // "Anno di nascita": from the youngest adult to the oldest year accepted.
+            'birthYears' => [
+                'from' => ClientPreferencesRequest::youngestBirthYear(),
+                'to' => ClientPreferencesRequest::oldestBirthYear(),
+            ],
         ];
     }
 
@@ -150,6 +172,17 @@ class CompleteProfileController extends Controller
                 ->all(),
             'times' => $preference->times?->map->value->all() ?? [],
             'budgetMaxCents' => $preference->budget_max_cents,
+            'birthYear' => $preference->birth_year,
+            'sex' => $preference->sex?->value,
+            'fitnessLevel' => $preference->fitness_level?->value,
+            'trainingExperience' => $preference->training_experience?->value,
+            'activityLevel' => $preference->activity_level?->value,
+            'sessionsPerWeek' => $preference->sessions_per_week,
+            'sports' => $preference->sports ?? [],
+            'trainerNote' => $preference->trainer_note,
+            'bodyDataConsent' => $preference->body_data_consent_at !== null,
+            'heightCm' => $preference->height_cm,
+            'weightKg' => $preference->weight_kg,
         ];
     }
 }

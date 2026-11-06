@@ -7,8 +7,8 @@ use App\Models\Booking;
 use App\Models\BookingEvent;
 use App\Models\TrainerProfile;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Collection;
 
 /**
  * The bookings waiting for the trainer's answer: the page "Richieste" and the
@@ -37,17 +37,20 @@ final class TrainerBookingRequests
      * In the format of TrainerBookingRequest (resources/js/types/trainer.ts),
      * with how often the client shows up: it helps to decide.
      *
-     * @param  Collection<int, Booking>  $requests
+     * @param  EloquentCollection<int, Booking>  $requests
      * @return list<array<string, mixed>>
      */
-    public static function rows(Collection $requests, TrainerProfile $profile): array
+    public static function rows(EloquentCollection $requests, TrainerProfile $profile): array
     {
         $attendance = ClientAttendance::forClients($requests->pluck('client_id'), $profile);
+        $requests->loadMissing('client.clientPreference');
 
         return array_values($requests
             ->map(fn (Booking $booking) => [
                 ...TrainerSessions::row($booking),
                 'note' => $booking->client_note,
+                // "Sul cliente": what the client wrote in "Su di te", to decide.
+                'about' => ClientAbout::from($booking->client),
                 // From requestedAt to expiresAt: the bar of the time left.
                 'requestedAt' => ClientBookingData::iso($booking->created_at ?? now()),
                 'expiresAt' => $booking->expires_at === null ? null : ClientBookingData::iso($booking->expires_at),

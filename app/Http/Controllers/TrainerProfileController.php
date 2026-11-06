@@ -11,7 +11,9 @@ use App\Models\TrainerPhoto;
 use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\Seo;
 use App\Support\SimilarTrainers;
+use App\Support\Stats;
 use App\Support\TrainerCard;
 use App\Support\TrainerSlots;
 use Illuminate\Http\Request;
@@ -43,6 +45,9 @@ class TrainerProfileController extends Controller
 
         abort_if($profile === null || ! $profile->isViewableBy($request->user()), 404);
 
+        // "Visite al profilo", for the team and later for the trainer.
+        Stats::recordProfileView($request, $profile);
+
         return Inertia::render('public/profile', [
             'trainer' => [
                 ...$this->profile($profile, $request->user()),
@@ -54,7 +59,76 @@ class TrainerProfileController extends Controller
             // "Mostra tutte le recensioni": sent only when the page asks for it
             // (router.reload with only: ['allReviews']), never on the first load.
             'allReviews' => Inertia::optional(fn () => $this->reviews($profile)),
+            'seo' => $this->seo($profile),
         ]);
+    }
+
+    /**
+     * "Marco Bianchi, personal trainer a Roma", with the JSON-LD that gives
+     * Google the stars of the reviews. Only the profiles of the search are
+     * indexed: a preview, or a profile paused or hidden by its trainer, is not.
+     *
+     * @return array<string, mixed>
+     */
+    private function seo(TrainerProfile $profile): array
+    {
+        $name = $profile->user->name;
+        $url = route('trainers.show', $profile->slug);
+        $place = $profile->city === null ? 'online' : "a {$profile->city->name}";
+        $disciplines = $profile->disciplines->pluck('name')->all();
+        $rating = $profile->rating();
+        $portrait = $profile->photos->firstWhere('is_portrait', true)?->url();
+
+        $facts = array_filter([
+            $disciplines === [] ? null : implode(', ', $disciplines),
+            $rating === null ? null : str_replace('.', ',', (string) $rating).'/5 su '.$profile->rating_count.($profile->rating_count === 1 ? ' recensione' : ' recensioni'),
+            $profile->price_from_cents ? 'da '.Seo::euros($profile->price_from_cents).' a seduta' : null,
+        ]);
+        // The facts first: Google cuts the end, the headline goes there.
+        $description = "{$name}, personal trainer {$place}. "
+            .($facts === [] ? '' : implode(' · ', $facts).'. ')
+            .($profile->headline ? rtrim($profile->headline, '.').'. ' : '')
+            .'Prenota su MioPersonal.';
+
+        // A single session: the packages would stretch the range ("50 € - 450 €").
+        $prices = $profile->services->where('is_active', true)->where('kind', 'session')->pluck('price_cents')->filter();
+        $cities = array_values(array_filter([$profile->city?->name, ...$profile->otherCities->pluck('name')->all()]));
+
+        $business = array_filter([
+            '@type' => 'ProfessionalService',
+            '@id' => $url.'#trainer',
+            'name' => "{$name} - Personal trainer",
+            'url' => $url,
+            'description' => $profile->headline,
+            'image' => $portrait,
+            'priceRange' => $prices->isEmpty() ? null : Seo::euros((int) $prices->min()).($prices->min() === $prices->max() ? '' : ' - '.Seo::euros((int) $prices->max())),
+            'areaServed' => $cities === [] ? null : array_map(fn (string $city) => ['@type' => 'City', 'name' => $city], $cities),
+            'knowsAbout' => $disciplines === [] ? null : $disciplines,
+            // Only real reviews: no rating at all for a new profile.
+            'aggregateRating' => $rating === null ? null : [
+                '@type' => 'AggregateRating',
+                'ratingValue' => $rating,
+                'reviewCount' => $profile->rating_count,
+                'bestRating' => 5,
+                'worstRating' => 1,
+            ],
+        ]);
+
+        $crumbs = ['Home' => route('home'), 'Personal trainer' => route('trainers.search')];
+        if ($profile->city !== null) {
+            $crumbs["Personal trainer a {$profile->city->name}"] = route('trainers.search', $profile->city->slug);
+        }
+        $crumbs[$name] = $url;
+
+        return Seo::page(
+            title: "{$name}, personal trainer {$place}",
+            description: $description,
+            index: TrainerProfile::query()->published()->whereKey($profile->id)->exists(),
+            canonical: $url,
+            image: $portrait,
+            type: 'profile',
+            jsonLd: [$business, Seo::breadcrumbs($crumbs)],
+        );
     }
 
     /**

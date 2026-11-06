@@ -10,7 +10,7 @@ import type { TrainerAvailability } from '@/types';
 const dayNames = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 
 /** [12, 13, 14, 18] → "12:00–15:00, 18:00–19:00" */
-function dayRanges(hours: number[]): string {
+export function dayRanges(hours: number[]): string {
     const ranges: string[] = [];
     let start: number | null = null;
 

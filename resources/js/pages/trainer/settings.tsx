@@ -71,7 +71,7 @@ export default function TrainerSettings({
                         canPause={visibility !== null}
                     />
                     <DeleteAccountSection
-                        description="Cancelliamo account, profilo, preferiti e recensioni."
+                        description="Cancelliamo account, profilo, preferiti e recensioni dopo 30 giorni, il tempo per ripensarci. Le sedute future vengono annullate subito."
                         hasPassword={account.hasPassword}
                     />
                 </div>

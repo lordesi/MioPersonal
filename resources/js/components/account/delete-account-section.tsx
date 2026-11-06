@@ -16,7 +16,7 @@ type DeleteAccountSectionProps = {
     pendingBookingTrainers?: string[];
 };
 
-/** Deletes the account on the server (route `profile.destroy`) after typing ELIMINA. */
+/** Asks the deletion (route `profile.destroy`, done 30 days later) after typing ELIMINA. */
 export default function DeleteAccountSection({
     description,
     hasPassword,
@@ -56,8 +56,9 @@ export default function DeleteAccountSection({
                                 id={`${confirmationId}-title`}
                                 className="text-[15px] leading-5.5 font-semibold"
                             >
-                                Non si può annullare. Per confermare scrivi
-                                ELIMINA.
+                                L’account viene bloccato subito e cancellato
+                                dopo 30 giorni: se cambi idea, accedi di nuovo
+                                entro allora. Per confermare scrivi ELIMINA.
                             </span>
                             <PendingBookings
                                 trainers={pendingBookingTrainers}
@@ -117,7 +118,7 @@ export default function DeleteAccountSection({
                                     disabled={!confirmed || processing}
                                     className="h-11 bg-sidebar-primary font-semibold text-sidebar-primary-foreground hover:bg-sidebar-primary/90 disabled:bg-sidebar-border disabled:text-sidebar-muted-foreground disabled:opacity-100"
                                 >
-                                    Elimina per sempre
+                                    Elimina account
                                 </Button>
                             </div>
                             {errors.confirmation && (

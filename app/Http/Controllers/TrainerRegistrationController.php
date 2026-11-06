@@ -12,6 +12,7 @@ use App\Http\Requests\TrainerRegistrationStepRequest;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\CatalogOptions;
+use App\Support\Seo;
 use App\Support\TrainerDraft;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -55,6 +56,13 @@ class TrainerRegistrationController extends Controller
             'draft' => $profile === null ? null : TrainerDraft::fromProfile($profile),
             'changeRequest' => $profile === null ? null : $this->changeRequest($profile),
             'previewHref' => $profile === null ? null : route('trainers.show', $profile->slug, false),
+            // The page that brings new trainers: indexed as guests see it.
+            'seo' => Seo::page(
+                title: 'Diventa trainer',
+                description: 'Sei un personal trainer? Crea gratis il tuo profilo su MioPersonal: ricevi prenotazioni da nuovi clienti nella tua città o online e gestisci agenda, servizi e recensioni.',
+                index: $user === null && ! $submitted,
+                canonical: route('trainer.register'),
+            ),
         ]);
     }
 

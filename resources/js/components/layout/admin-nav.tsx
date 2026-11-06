@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 import {
     Calendar,
+    ChartColumn,
     House,
     List,
     Mail,
@@ -21,6 +22,7 @@ import {
     overview,
     reviews,
     settings,
+    stats,
     users,
     verification,
 } from '@/routes/admin';
@@ -28,6 +30,7 @@ import type { AdminAreaData } from '@/types';
 
 export type AdminSection =
     | 'overview'
+    | 'stats'
     | 'verification'
     | 'messages'
     | 'bookings'
@@ -48,6 +51,12 @@ const sections: {
         title: 'Panoramica',
         icon: House,
         href: overview.url,
+    },
+    {
+        section: 'stats',
+        title: 'Statistiche',
+        icon: ChartColumn,
+        href: stats.url,
     },
     {
         section: 'verification',

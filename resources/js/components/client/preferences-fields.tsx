@@ -15,9 +15,11 @@ import {
     Video,
 } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
-import type { ChangeEvent, ReactNode } from 'react';
+import type { ChangeEvent } from 'react';
 import CompleteProfileController from '@/actions/App/Http/Controllers/CompleteProfileController';
+import AboutFields from '@/components/client/about-fields';
 import PhotoCropDialog from '@/components/client/photo-crop-dialog';
+import { Field, pillClassName } from '@/components/client/profile-field';
 import NumberedSection from '@/components/trainer/area/numbered-section';
 import UserAvatar from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
@@ -108,6 +110,17 @@ export type SavedPreferences = {
     disciplines: string[];
     times: string[];
     budgetMaxCents: number | null;
+    birthYear: number | null;
+    sex: string | null;
+    fitnessLevel: string | null;
+    trainingExperience: string | null;
+    activityLevel: string | null;
+    sessionsPerWeek: number | null;
+    sports: string[];
+    trainerNote: string | null;
+    bodyDataConsent: boolean;
+    heightCm: number | null;
+    weightKg: number | null;
 };
 
 /** The form data, with the names ClientPreferencesRequest expects. */
@@ -118,6 +131,17 @@ export type PreferencesData = {
     disciplines: string[];
     times: string[];
     budget_max_cents: number | null;
+    birth_year: number | null;
+    sex: string | null;
+    fitness_level: string | null;
+    training_experience: string | null;
+    activity_level: string | null;
+    sessions_per_week: number | null;
+    sports: string[];
+    trainer_note: string;
+    body_data_consent: boolean;
+    height_cm: number | null;
+    weight_kg: number | null;
 };
 
 /** Starting values of the form: the saved answers, or all empty. */
@@ -131,8 +155,22 @@ export function preferencesFormData(
         disciplines: preferences?.disciplines ?? [],
         times: preferences?.times ?? [],
         budget_max_cents: preferences?.budgetMaxCents ?? null,
+        birth_year: preferences?.birthYear ?? null,
+        sex: preferences?.sex ?? null,
+        fitness_level: preferences?.fitnessLevel ?? null,
+        training_experience: preferences?.trainingExperience ?? null,
+        activity_level: preferences?.activityLevel ?? null,
+        sessions_per_week: preferences?.sessionsPerWeek ?? null,
+        sports: preferences?.sports ?? [],
+        trainer_note: preferences?.trainerNote ?? '',
+        body_data_consent: preferences?.bodyDataConsent ?? false,
+        height_cm: preferences?.heightCm ?? null,
+        weight_kg: preferences?.weightKg ?? null,
     };
 }
+
+/** "Anno di nascita": the youngest adult first, sent by CompleteProfileController. */
+export type BirthYears = { from: number; to: number };
 
 type PreferencesFieldsProps = {
     data: PreferencesData;
@@ -143,22 +181,21 @@ type PreferencesFieldsProps = {
     /** From the catalog. */
     disciplines: CatalogOption[];
     cities: CityWithCoordinates[];
+    birthYears: BirthYears;
 };
 
-/** Pill of "Il tuo obiettivo" and "Discipline": black when chosen. */
-const pillClassName =
-    'h-10 min-w-0 gap-1.5 rounded-full border bg-card px-3.5 text-sm font-medium text-foreground first:rounded-full last:rounded-full hover:bg-secondary hover:text-foreground data-[state=on]:border-foreground data-[state=on]:bg-foreground data-[state=on]:text-background data-[state=on]:hover:bg-foreground/90';
-
 /**
- * The four numbered sections of "Completa il tuo profilo" (after the sign-up)
+ * The numbered sections of "Completa il tuo profilo" (after the sign-up)
  * and "Modifica profilo" (client area): photo, where and how, goal and
- * disciplines, when and budget. The page adds its title and buttons.
+ * disciplines, when and budget, and "Su di te" for the trainers (AboutFields).
+ * The page adds its title and buttons.
  */
 export default function PreferencesFields({
     data,
     setData,
     disciplines,
     cities,
+    birthYears,
 }: PreferencesFieldsProps) {
     const { auth } = usePage().props;
     const cityId = useId();
@@ -458,6 +495,13 @@ export default function PreferencesFields({
                     onChange={(cents) => setData('budget_max_cents', cents)}
                 />
             </NumberedSection>
+
+            <AboutFields
+                step={5}
+                data={data}
+                setData={setData}
+                birthYears={birthYears}
+            />
         </>
     );
 }
@@ -665,35 +709,6 @@ function PhotoUpload({ name, src }: { name: string; src?: string | null }) {
                     )}
                 </div>
             </div>
-        </div>
-    );
-}
-
-/** A group of choices with its title and a hint on the right, read as one question. */
-function Field({
-    label,
-    hint,
-    children,
-}: {
-    label: string;
-    hint?: string;
-    children: (labelId: string) => ReactNode;
-}) {
-    const labelId = useId();
-
-    return (
-        <div className="flex flex-col gap-2.5">
-            <div className="flex items-baseline justify-between gap-2">
-                <span id={labelId} className="text-sm font-semibold">
-                    {label}
-                </span>
-                {hint && (
-                    <span className="text-[13px] text-muted-foreground tabular-nums">
-                        {hint}
-                    </span>
-                )}
-            </div>
-            {children(labelId)}
         </div>
     );
 }

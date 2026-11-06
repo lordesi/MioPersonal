@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Middleware\EnsureAccountActive;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\TrackLastActivity;
+use App\Http\Middleware\TrackVisit;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -28,8 +30,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             HandleInertiaRequests::class,
+            // After Inertia: its redirects become 303 for PUT/PATCH/DELETE.
+            EnsureAccountActive::class,
             AddLinkHeadersForPreloadedAssets::class,
             TrackLastActivity::class,
+            TrackVisit::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

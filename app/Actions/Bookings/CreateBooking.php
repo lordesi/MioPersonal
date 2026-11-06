@@ -170,7 +170,8 @@ class CreateBooking
     /** "Metti in pausa" in the settings: nobody can book until the trainer turns the profile back on. */
     private function ensureNotPaused(TrainerProfile $profile): void
     {
-        if ($profile->paused_at !== null) {
+        // Or the trainer's account is suspended, or being deleted.
+        if ($profile->paused_at !== null || ! $profile->ownerIsActive()) {
             throw ValidationException::withMessages(['start' => 'Al momento questo trainer non accetta prenotazioni.']);
         }
     }

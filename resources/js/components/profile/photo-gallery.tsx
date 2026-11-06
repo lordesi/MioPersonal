@@ -88,6 +88,9 @@ export default function PhotoGallery({
                     <img
                         src={photo.url}
                         alt={altText(index)}
+                        // The first one is in view right away.
+                        loading={index > 0 ? 'lazy' : undefined}
+                        decoding="async"
                         className="absolute inset-0 size-full object-cover"
                     />
                     {/* A little darker on hover. */}

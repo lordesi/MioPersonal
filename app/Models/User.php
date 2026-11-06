@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use Carbon\CarbonInterface;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Appends;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -34,8 +36,11 @@ use Illuminate\Support\Facades\Storage;
  * @property Carbon|null $terms_accepted_at
  * @property Carbon|null $marketing_opt_in_at
  * @property Carbon|null $password_changed_at
- * @property Carbon|null $suspended_at
+ * @property Carbon|null $suspended_at "Sospendi" of the admin: no access until "Riattiva"
+ * @property Carbon|null $deletion_scheduled_at "Elimina account" / "Cancella dati": deleted DELETION_GRACE_DAYS later
+ * @property string|null $deletion_requested_by DELETION_BY_USER or DELETION_BY_ADMIN
  * @property Carbon|null $last_active_at when the user last used the web app (TrackLastActivity)
+ * @property array{source: string, medium: string|null, campaign: string|null, landing: string}|null $acquisition where the user came from at sign-up (Stats::acquisition())
  * @property string|null $two_factor_secret unused: two-factor authentication is off
  * @property string|null $two_factor_recovery_codes unused
  * @property Carbon|null $two_factor_confirmed_at unused
@@ -53,6 +58,15 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /** Where the photos of "Completa il tuo profilo" are stored. */
     public const AVATAR_DISK = 'public';
+
+    /** Days between "Elimina account" and the real deletion (users:purge-deleted). */
+    public const DELETION_GRACE_DAYS = 30;
+
+    /** From the settings: the user can take it back by logging in. */
+    public const DELETION_BY_USER = 'user';
+
+    /** "Cancella dati" of the team: only the team can take it back. */
+    public const DELETION_BY_ADMIN = 'admin';
 
     /**
      * New users are clients. The role is not fillable on purpose: nobody can
@@ -79,9 +93,45 @@ class User extends Authenticatable implements MustVerifyEmail
             'marketing_opt_in_at' => 'datetime',
             'password_changed_at' => 'datetime',
             'suspended_at' => 'datetime',
+            'deletion_scheduled_at' => 'datetime',
             'last_active_at' => 'datetime',
+            'acquisition' => 'array',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Can't use the site: suspended, or deleted by the team (EnsureAccountActive
+     * logs them out). A deletion the user asked for is not a block: they can log
+     * in to take it back.
+     */
+    public function isBlocked(): bool
+    {
+        return $this->suspended_at !== null
+            || ($this->deletion_scheduled_at !== null && $this->deletion_requested_by !== self::DELETION_BY_USER);
+    }
+
+    /** "Elimina account" from the settings, not deleted yet. */
+    public function hasPendingSelfDeletion(): bool
+    {
+        return $this->deletion_scheduled_at !== null && $this->deletion_requested_by === self::DELETION_BY_USER;
+    }
+
+    /** The day the data goes, null without a deletion. */
+    public function deletionDate(): ?CarbonInterface
+    {
+        return $this->deletion_scheduled_at?->copy()->addDays(self::DELETION_GRACE_DAYS);
+    }
+
+    /**
+     * Not suspended and not in deletion: who can show up on the site (the
+     * trainers of TrainerProfile::scopePublished).
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeActive(Builder $query): void
+    {
+        $query->whereNull('suspended_at')->whereNull('deletion_scheduled_at');
     }
 
     /**

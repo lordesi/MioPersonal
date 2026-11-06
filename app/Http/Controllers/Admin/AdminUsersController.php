@@ -15,10 +15,8 @@ use Inertia\Response;
 /**
  * "Utenti": clients and trainers, the newest first. Also the page of the
  * search box at the top of the admin panel (?cerca=anna): "#1048" opens
- * that booking in "Prenotazioni".
- *
- * TODO: suspension and data deletion only live in the page (they need the
- * activity log of step 7 of docs/database/analisi.md).
+ * that booking in "Prenotazioni". "Sospendi" and "Cancella dati":
+ * AdminUserStatusController.
  */
 class AdminUsersController extends Controller
 {
@@ -52,7 +50,7 @@ class AdminUsersController extends Controller
                 'email' => $user->email,
                 'joinedAt' => $user->created_at?->toIso8601ZuluString(),
                 'bookingCount' => $user->bookings_count,
-                'suspended' => $user->suspended_at !== null,
+                ...$this->status($user),
             ])->all(),
             'trainers' => $trainers->map(fn (User $user) => [
                 'id' => $user->id,
@@ -63,9 +61,24 @@ class AdminUsersController extends Controller
                 'profileStatus' => $user->trainerProfile->status->value ?? 'review',
                 'reviewCount' => $user->trainerProfile->rating_count ?? 0,
                 'rating' => $user->trainerProfile?->rating(),
-                'suspended' => $user->suspended_at !== null,
+                ...$this->status($user),
             ])->all(),
         ]);
+    }
+
+    /**
+     * "Sospeso", "Eliminazione il 6 dic" (AdminUserStatusController).
+     *
+     * @return array{suspended: bool, deletionAt: string|null, deletionByUser: bool}
+     */
+    private function status(User $user): array
+    {
+        return [
+            'suspended' => $user->suspended_at !== null,
+            // ISO UTC string: when the data goes.
+            'deletionAt' => $user->deletionDate()?->toIso8601ZuluString(),
+            'deletionByUser' => $user->hasPendingSelfDeletion(),
+        ];
     }
 
     /**

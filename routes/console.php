@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Account\DeleteUser;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
 use App\Models\Booking;
@@ -72,3 +73,19 @@ Artisan::command('bookings:expire', function () {
 })->purpose('Mark the booking requests the trainer did not answer in time as expired');
 
 Schedule::command('bookings:expire')->everyMinute();
+
+// "Elimina account" and "Cancella dati" of the team: the account is deleted for
+// good User::DELETION_GRACE_DAYS later (until then it can be taken back).
+Artisan::command('users:purge-deleted', function (DeleteUser $deleteUser) {
+    $count = 0;
+
+    User::where('deletion_scheduled_at', '<=', now()->subDays(User::DELETION_GRACE_DAYS))
+        ->each(function (User $user) use ($deleteUser, &$count) {
+            $deleteUser->handle($user);
+            $count++;
+        });
+
+    $this->info("{$count} accounts deleted.");
+})->purpose('Delete the accounts whose deletion was asked more than 30 days ago');
+
+Schedule::command('users:purge-deleted')->daily();

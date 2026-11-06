@@ -70,6 +70,10 @@ export type AdminClient = {
     joinedAt: string;
     bookingCount: number;
     suspended: boolean;
+    /** ISO UTC string: when the data goes (Cancella dati / Elimina account); null = none. */
+    deletionAt: string | null;
+    /** Asked by the user in the settings (they can also take it back). */
+    deletionByUser: boolean;
 };
 
 export type AdminTrainer = {
@@ -82,6 +86,10 @@ export type AdminTrainer = {
     reviewCount: number;
     rating: number | null;
     suspended: boolean;
+    /** ISO UTC string: when the data goes (Cancella dati / Elimina account); null = none. */
+    deletionAt: string | null;
+    /** Asked by the user in the settings (they can also take it back). */
+    deletionByUser: boolean;
 };
 
 export type AdminReview = {

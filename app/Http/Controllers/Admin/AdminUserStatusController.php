@@ -1,0 +1,76 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Actions\Account\ScheduleUserDeletion;
+use App\Enums\UserRole;
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Support\TrainerSlots;
+use Illuminate\Http\RedirectResponse;
+use Inertia\Inertia;
+
+/**
+ * "Sospendi" / "Riattiva" and "Cancella dati" / "Annulla" of Admin · Utenti.
+ * The user is logged out at the next page (EnsureAccountActive). Never on
+ * the team's own accounts.
+ */
+class AdminUserStatusController extends Controller
+{
+    public function suspend(User $user): RedirectResponse
+    {
+        $this->ensureNotAdmin($user);
+
+        $user->forceFill(['suspended_at' => now()])->save();
+        $this->refreshSlots($user);
+
+        return $this->done("Account sospeso: {$user->name}");
+    }
+
+    public function reactivate(User $user): RedirectResponse
+    {
+        $user->forceFill(['suspended_at' => null])->save();
+        $this->refreshSlots($user);
+
+        return $this->done("Account riattivato: {$user->name}");
+    }
+
+    /** Deleted after User::DELETION_GRACE_DAYS (`users:purge-deleted`). */
+    public function scheduleDeletion(User $user, ScheduleUserDeletion $scheduleDeletion): RedirectResponse
+    {
+        $this->ensureNotAdmin($user);
+
+        $scheduleDeletion->handle($user, User::DELETION_BY_ADMIN);
+
+        return $this->done("Dati di {$user->name} in cancellazione: spariscono tra ".User::DELETION_GRACE_DAYS.' giorni.');
+    }
+
+    /** Also a deletion the user asked for: they asked the team to keep the account. */
+    public function cancelDeletion(User $user): RedirectResponse
+    {
+        $user->forceFill(['deletion_scheduled_at' => null, 'deletion_requested_by' => null])->save();
+        $this->refreshSlots($user);
+
+        return $this->done("Cancellazione annullata: {$user->name}");
+    }
+
+    private function ensureNotAdmin(User $user): void
+    {
+        abort_if($user->role === UserRole::Admin, 403);
+    }
+
+    /** The first free slot of the search cards. */
+    private function refreshSlots(User $user): void
+    {
+        if ($user->trainerProfile !== null) {
+            TrainerSlots::refresh($user->trainerProfile->load('workingHours'));
+        }
+    }
+
+    private function done(string $message): RedirectResponse
+    {
+        Inertia::flash('toast', ['type' => 'success', 'message' => $message]);
+
+        return back();
+    }
+}

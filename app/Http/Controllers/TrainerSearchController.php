@@ -11,11 +11,14 @@ use App\Models\City;
 use App\Models\ClientPreference;
 use App\Models\TrainerProfile;
 use App\Support\CatalogOptions;
+use App\Support\Seo;
+use App\Support\Stats;
 use App\Support\TrainerCard;
 use App\Support\TrainerSlots;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -105,6 +108,18 @@ class TrainerSearchController extends Controller
             $page = $query->paginate(self::PER_PAGE, ['*'], 'pagina', $page->lastPage());
         }
 
+        // The demand, for the team: the next pages are the same search.
+        if ($page->currentPage() === 1) {
+            Stats::recordSearch(
+                $request,
+                $city,
+                $filters['disciplina'],
+                $filters['obiettivo'],
+                array_keys(array_filter(Arr::except($filters, ['disciplina', 'obiettivo']), fn ($value) => $value !== null)),
+                $page->total(),
+            );
+        }
+
         return Inertia::render('public/search', [
             'city' => $city === null ? null : ['slug' => $city->slug, 'name' => $city->name],
             'trainers' => $this->cards($page->getCollection(), $favoriteIds),
@@ -114,7 +129,146 @@ class TrainerSearchController extends Controller
             'suggestions' => $page->total() === 0 ? $this->suggestions($filters, $city, $favoriteIds, $preference) : null,
             'disciplines' => $disciplines,
             'cities' => CatalogOptions::cities(),
+            'seo' => $seo = $this->seo($filters, $city, $page, $disciplines),
+            // A few lines on the city for search engines (and people): only on the indexed city pages.
+            'intro' => $city !== null && $seo['index'] ? $this->intro($city, $filters['disciplina'][0] ?? null) : null,
         ]);
+    }
+
+    /**
+     * "A Milano ci sono 5 personal trainer…": the trainers working there in
+     * person (not the online-only ones shown in every city), their disciplines
+     * and the lowest price.
+     */
+    private function intro(City $city, ?string $disciplineSlug): ?string
+    {
+        $profiles = TrainerProfile::query()
+            ->published()
+            ->basedIn($city->id)
+            ->when($disciplineSlug !== null, fn (Builder $query) => $query->whereHas('disciplines', fn (Builder $discipline) => $discipline->where('slug', $disciplineSlug)))
+            ->with('disciplines:id,slug,name')
+            ->get(['id', 'price_from_cents', 'trains_online']);
+
+        if ($profiles->isEmpty()) {
+            return null;
+        }
+
+        $count = $profiles->count();
+        $there = $count === 1 ? "c'è 1 personal trainer verificato" : "ci sono {$count} personal trainer verificati";
+        $sentences = [];
+
+        if ($disciplineSlug === null) {
+            // The most common disciplines first. "Pesi e bodybuilding" has its own "e": commas only.
+            $names = $profiles->flatMap->disciplines->countBy('name')->sortDesc()->keys();
+            $list = implode(', ', $names->take(3)->map(fn (string $name) => mb_strtolower($name))->all());
+            $sentences[] = "A {$city->name} {$there} su MioPersonal"
+                .($list === '' ? '.' : ", per discipline come {$list}".($names->count() > 3 ? ' e altre.' : '.'));
+        } else {
+            $name = mb_strtolower((string) $profiles->firstOrFail()->disciplines->firstWhere('slug', $disciplineSlug)?->name);
+            $sentences[] = "A {$city->name} {$there} di {$name} su MioPersonal.";
+        }
+
+        $minPrice = $profiles->pluck('price_from_cents')->filter()->min();
+        $online = $profiles->where('trains_online', true)->count();
+        $onlineLabel = match (true) {
+            $online === 0 => null,
+            $count === 1 => 'si allena anche online',
+            $online === $count => 'tutti allenano anche online',
+            $online === 1 => '1 trainer allena anche online',
+            default => "{$online} trainer allenano anche online",
+        };
+        $details = array_filter([
+            $minPrice ? 'le sedute partono da '.Seo::euros((int) $minPrice) : null,
+            $onlineLabel,
+        ]);
+
+        if ($details !== []) {
+            $sentences[] = ucfirst(implode(' e ', $details)).'.';
+        }
+
+        $sentences[] = 'Confronta profili, prezzi e recensioni di clienti reali e chiedi la tua prima seduta.';
+
+        return implode(' ', $sentences);
+    }
+
+    /** A published trainer works in person in the city (with the discipline, if any). */
+    private static function hasLocalTrainers(int $cityId, ?string $disciplineSlug = null): bool
+    {
+        return TrainerProfile::query()
+            ->published()
+            ->basedIn($cityId)
+            ->when($disciplineSlug !== null, fn (Builder $query) => $query->whereHas('disciplines', fn (Builder $discipline) => $discipline->where('slug', $disciplineSlug)))
+            ->exists();
+    }
+
+    /**
+     * Indexed: Italy or a city, with at most one discipline and no other
+     * filter, when there are trainers. Every other combination (and the empty
+     * pages) is `noindex`: endless variants of the same list, or thin pages.
+     * The later pages of a list are indexed with their own canonical.
+     *
+     * @param  Filters  $filters
+     * @param  LengthAwarePaginator<int, TrainerProfile>  $page
+     * @param  list<array{value: string, label: string}>  $disciplines
+     * @return array<string, mixed>
+     */
+    private function seo(array $filters, ?City $city, LengthAwarePaginator $page, array $disciplines): array
+    {
+        $discipline = count($filters['disciplina']) === 1
+            ? collect($disciplines)->firstWhere('value', $filters['disciplina'][0])
+            : null;
+        $otherFilters = array_filter(Arr::except($filters, 'disciplina'), fn ($value) => $value !== null && $value !== []);
+        $indexable = $page->total() > 0 && $otherFilters === [] && count($filters['disciplina']) <= 1
+            // The online-only trainers show up in every city: a city page needs a trainer of its own.
+            && ($city === null || self::hasLocalTrainers($city->id, $discipline['value'] ?? null));
+
+        $place = $city === null ? 'in Italia' : "a {$city->name}";
+        $title = $discipline === null
+            ? "Personal trainer {$place}"
+            : "{$discipline['label']} {$place}: personal trainer";
+
+        $total = $page->total();
+        $count = $total === 1 ? '1 personal trainer verificato' : "{$total} personal trainer verificati";
+        $topic = $discipline === null ? '' : ' di '.$discipline['label'];
+        $description = $total === 0
+            ? "Cerca personal trainer{$topic} {$place} su MioPersonal: profili verificati, prezzi chiari e recensioni di clienti reali."
+            : "{$count}{$topic} {$place}. Confronta profili, prezzi e recensioni di clienti reali e prenota la prima seduta su MioPersonal.";
+
+        $listUrl = route('trainers.search', $city?->slug);
+        $query = array_filter([
+            'disciplina' => $discipline['value'] ?? null,
+            'pagina' => $page->currentPage() > 1 ? $page->currentPage() : null,
+        ]);
+        $canonical = $listUrl.($query === [] ? '' : '?'.http_build_query($query));
+
+        $crumbs = ['Home' => route('home'), 'Personal trainer' => route('trainers.search')];
+        if ($city !== null) {
+            $crumbs["Personal trainer a {$city->name}"] = $listUrl;
+        }
+        if ($discipline !== null) {
+            $crumbs["{$discipline['label']} {$place}"] = $listUrl.'?disciplina='.$discipline['value'];
+        }
+
+        $jsonLd = [Seo::breadcrumbs($crumbs)];
+        if ($indexable) {
+            $jsonLd[] = [
+                '@type' => 'ItemList',
+                'itemListElement' => array_values($page->getCollection()->map(fn (TrainerProfile $profile, int $index) => [
+                    '@type' => 'ListItem',
+                    'position' => ($page->currentPage() - 1) * $page->perPage() + $index + 1,
+                    'url' => route('trainers.show', $profile->slug),
+                    'name' => $profile->user->name,
+                ])->all()),
+            ];
+        }
+
+        return Seo::page(
+            title: $page->currentPage() > 1 ? "{$title} (pagina {$page->currentPage()})" : $title,
+            description: $description,
+            index: $indexable,
+            canonical: $canonical,
+            jsonLd: $jsonLd,
+        );
     }
 
     /**

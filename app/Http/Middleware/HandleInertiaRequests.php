@@ -20,6 +20,36 @@ class HandleInertiaRequests extends Middleware
     protected $rootView = 'app';
 
     /**
+     * Pages rendered in the browser only: server-side rendering (resources/js/ssr.tsx)
+     * is for what search engines read, the public pages. The private areas and the
+     * account forms skip it, so they don't load the Node server.
+     *
+     * @var array<int, string>
+     */
+    protected $withoutSsr = [
+        'area-cliente*',
+        'area-trainer*',
+        'admin*',
+        'dashboard',
+        'impostazioni*',
+        'profilo',
+        'preferiti',
+        'prenotazioni*',
+        'completa-profilo',
+        'registrazione/*',
+        'trainer/*/prenota',
+        'login',
+        'register',
+        'forgot-password',
+        'reset-password/*',
+        'email/*',
+        'user/*',
+        'settings*',
+        'dev/*',
+        'account/*',
+    ];
+
+    /**
      * Determines the current asset version.
      *
      * @see https://inertiajs.com/asset-versioning

@@ -3,7 +3,10 @@ import type { FormEvent } from 'react';
 import PreferencesFields, {
     preferencesFormData,
 } from '@/components/client/preferences-fields';
-import type { SavedPreferences } from '@/components/client/preferences-fields';
+import type {
+    BirthYears,
+    SavedPreferences,
+} from '@/components/client/preferences-fields';
 import PreferencesPreview from '@/components/client/preferences-preview';
 import PageHeading from '@/components/trainer/area/page-heading';
 import { update } from '@/routes/client/profile';
@@ -15,6 +18,7 @@ type EditProfileProps = {
     cities: CityWithCoordinates[];
     /** Null until the client saves the answers once. */
     preferences: SavedPreferences | null;
+    birthYears: BirthYears;
 };
 
 /**
@@ -27,6 +31,7 @@ export default function EditProfile({
     disciplines,
     cities,
     preferences,
+    birthYears,
 }: EditProfileProps) {
     const form = useForm(preferencesFormData(preferences));
 
@@ -55,6 +60,7 @@ export default function EditProfile({
                         setData={form.setData}
                         disciplines={disciplines}
                         cities={cities}
+                        birthYears={birthYears}
                     />
 
                     {firstError && (
