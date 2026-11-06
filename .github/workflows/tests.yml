@@ -23,6 +23,8 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.4'
+          # gd and exif: uploaded photos are cleaned with them (app/Support/SafeImage.php).
+          extensions: gd, exif
           tools: composer:v2
           coverage: none
 
@@ -36,3 +38,9 @@ jobs:
 
       - name: Run CI Checks
         run: composer ci:check
+
+      # Known vulnerabilities in the libraries (dev-only npm tools excluded).
+      - name: Audit dependencies
+        run: |
+          composer audit --abandoned=report
+          npm audit --omit=dev --audit-level=high
