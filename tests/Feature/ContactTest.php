@@ -60,6 +60,53 @@ class ContactTest extends TestCase
         Mail::assertSentCount(2);
     }
 
+    /** The confirmation must not carry text typed in the form: it would be a way to spam anyone. */
+    public function test_the_confirmation_to_the_sender_has_no_free_text()
+    {
+        Mail::fake();
+
+        $this->post(route('contact.store'), $this->validForm([
+            'name' => 'Vinci un iPhone su spam.example',
+            'message' => 'Clicca qui: https://spam.example/premio',
+        ]));
+
+        Mail::assertSent(ContactMessage::class, function (ContactMessage $mail) {
+            if (! $mail->isCopy) {
+                return false;
+            }
+
+            $html = $mail->render();
+            $this->assertStringNotContainsString('spam.example', $html);
+            $this->assertStringContainsString('Verifica e approvazione', $html);
+
+            return $mail->to[0]['name'] === null;
+        });
+    }
+
+    public function test_a_filled_honeypot_sends_nothing_but_looks_sent()
+    {
+        Mail::fake();
+
+        $this->post(route('contact.store'), $this->validForm(['website' => 'https://spam.example']))
+            ->assertRedirect(route('contact.show'))
+            ->assertSessionHas('status', 'contact-sent');
+
+        Mail::assertNothingSent();
+    }
+
+    public function test_one_address_can_send_at_most_20_messages_a_day()
+    {
+        Mail::fake();
+
+        for ($i = 0; $i < 20; $i++) {
+            $this->travel(2)->minutes();
+            $this->post(route('contact.store'), $this->validForm())->assertRedirect();
+        }
+
+        $this->travel(2)->minutes();
+        $this->post(route('contact.store'), $this->validForm())->assertTooManyRequests();
+    }
+
     public function test_after_sending_the_page_shows_message_sent()
     {
         Mail::fake();

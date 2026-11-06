@@ -91,7 +91,7 @@ Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->n
 
 Route::get('contatti', [ContactController::class, 'show'])->name('contact.show');
 Route::post('contatti', [ContactController::class, 'store'])
-    ->middleware('throttle:5,1')
+    ->middleware('throttle:contact')
     ->name('contact.store');
 
 // Guests create a trainer account, logged-in clients turn theirs into a trainer one;

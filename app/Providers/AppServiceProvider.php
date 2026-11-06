@@ -11,7 +11,10 @@ use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -32,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureRateLimiting();
         $this->configureAuthEmails();
         $this->recordAcquisition();
     }
@@ -82,6 +86,18 @@ class AppServiceProvider extends ServiceProvider
     private static function validity(int $minutes): string
     {
         return $minutes >= 120 && $minutes % 60 === 0 ? ($minutes / 60).' ore' : "{$minutes} minuti";
+    }
+
+    /**
+     * Limits per IP on the public forms that send emails (a bot with many
+     * addresses could otherwise use them to mail anyone from our domain).
+     */
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('contact', fn (Request $request) => [
+            Limit::perMinute(5)->by('minute|'.$request->ip()),
+            Limit::perDay(20)->by('day|'.$request->ip()),
+        ]);
     }
 
     /**

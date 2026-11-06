@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/** "Contatti": the form sends an email to the team and a copy to the sender. */
+/** "Contatti": the form sends an email to the team and a confirmation to the sender. */
 class ContactController extends Controller
 {
     public function show(Request $request): Response
@@ -42,6 +42,11 @@ class ContactController extends Controller
      */
     public function store(ContactRequest $request): RedirectResponse
     {
+        // The hidden "website" field is filled in only by bots: they see "Messaggio inviato", nothing is sent.
+        if ($request->filled('website')) {
+            return to_route('contact.show')->with('status', 'contact-sent');
+        }
+
         $data = $request->validated();
 
         $contact = [
@@ -53,7 +58,8 @@ class ContactController extends Controller
         ];
 
         Mail::to(config('mail.contact_address'))->send(new ContactMessage($contact));
-        Mail::to($contact['email'], $contact['name'])->send(new ContactMessage($contact, isCopy: true));
+        // The confirmation has fixed text only (see the view), and no name in the address.
+        Mail::to($contact['email'])->send(new ContactMessage($contact, isCopy: true));
 
         return to_route('contact.show')->with('status', 'contact-sent');
     }

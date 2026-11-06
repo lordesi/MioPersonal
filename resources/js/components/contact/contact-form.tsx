@@ -34,7 +34,7 @@ type ContactFormProps = {
     messageMaxLength: number;
 };
 
-/** "Scrivici un messaggio": sends an email to the team and a copy to the sender. */
+/** "Scrivici un messaggio": sends an email to the team and a confirmation to the sender. */
 export default function ContactForm({
     sent,
     roles,
@@ -72,7 +72,7 @@ export default function ContactForm({
                     </span>
                     <strong className="text-xl">Messaggio inviato</strong>
                     <span className="max-w-90 text-sm text-muted-foreground">
-                        Grazie! Ti abbiamo mandato una copia via email e ti
+                        Grazie! Ti abbiamo mandato una conferma via email e ti
                         rispondiamo appena possibile.
                     </span>
                     <Button
@@ -116,6 +116,15 @@ export default function ContactForm({
                             onChange={changeRole}
                         />
                         <input type="hidden" name="role" value={role} />
+                        {/* Honeypot: hidden from people, filled in by spam bots. */}
+                        <input
+                            type="text"
+                            name="website"
+                            tabIndex={-1}
+                            autoComplete="off"
+                            aria-hidden="true"
+                            className="absolute -left-[9999px] size-px opacity-0"
+                        />
                         {errors.role && (
                             <p className="text-sm text-destructive">
                                 {errors.role}
