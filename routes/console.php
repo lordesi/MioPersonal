@@ -25,6 +25,14 @@ Artisan::command('admin:grant {email}', function (string $email) {
         return 1;
     }
 
+    // /admin asks for the password again (password.confirm): an account made with
+    // Google has none and would be locked out.
+    if ($user->password === null) {
+        $this->error("{$email} has no password (signed up with Google): set one in Impostazioni account, then run this again.");
+
+        return 1;
+    }
+
     $user->role = UserRole::Admin;
     $user->save();
 

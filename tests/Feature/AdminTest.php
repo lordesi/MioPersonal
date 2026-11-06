@@ -146,4 +146,29 @@ class AdminTest extends TestCase
     {
         $this->artisan('admin:grant', ['email' => 'nobody@example.com'])->assertFailed();
     }
+
+    public function test_the_admin_grant_command_fails_for_an_account_without_password()
+    {
+        $user = User::factory()->create(['email' => 'team@example.com', 'password' => null]);
+
+        $this->artisan('admin:grant', ['email' => 'team@example.com'])->assertFailed();
+
+        $this->assertFalse($user->fresh()->isAdmin());
+    }
+
+    public function test_admins_confirm_the_password_every_3_hours()
+    {
+        $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+        // be(), not actingAs(): the TestCase override would confirm it already.
+        $this->be($admin)->get(route('admin.overview'))->assertRedirect(route('password.confirm'));
+
+        $this->post(route('password.confirm.store'), ['password' => 'password'])
+            ->assertRedirect(route('admin.overview'));
+        $this->get(route('admin.overview'))->assertOk();
+
+        $this->travel(3)->hours();
+        $this->travel(1)->minutes();
+        $this->get(route('admin.overview'))->assertRedirect(route('password.confirm'));
+    }
 }

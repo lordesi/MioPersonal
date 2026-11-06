@@ -238,7 +238,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 // Only for the MioPersonal team: give access with `php artisan admin:grant {email}`.
-Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+// password.confirm: the password is asked again every 3 hours (auth.password_timeout),
+// so a stolen session or "Ricordami" cookie alone doesn't open the admin area.
+Route::middleware(['auth', 'verified', 'admin', 'password.confirm'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', AdminOverviewController::class)->name('overview');
     Route::get('statistiche', AdminStatsController::class)->name('stats');
     Route::get('verifica', AdminVerificationController::class)->name('verification');
