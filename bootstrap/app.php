@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureAccountActive;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\ThrottleSignups;
 use App\Http\Middleware\TrackLastActivity;
 use App\Http\Middleware\TrackVisit;
 use Illuminate\Foundation\Application;
@@ -38,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
             TrackLastActivity::class,
             TrackVisit::class,
+            ThrottleSignups::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

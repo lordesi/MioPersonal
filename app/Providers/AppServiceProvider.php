@@ -98,6 +98,11 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(5)->by('minute|'.$request->ip()),
             Limit::perDay(20)->by('day|'.$request->ip()),
         ]);
+
+        // App\Http\Middleware\ThrottleSignups: new accounts (each gets "Conferma la tua email")…
+        RateLimiter::for('signups', fn (Request $request) => Limit::perHour(10)->by($request->ip()));
+        // …and "Reimposta la password" links (the broker alone limits only per address).
+        RateLimiter::for('password-reset-links', fn (Request $request) => Limit::perHour(5)->by($request->ip()));
     }
 
     /**
