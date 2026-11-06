@@ -34,6 +34,7 @@ export default function AdminLayout({
     const area: AdminAreaData = {
         verificationCount:
             verificationCount ?? adminArea?.verificationCount ?? 0,
+        gymVerificationCount: adminArea?.gymVerificationCount ?? 0,
         flaggedReviews: flaggedReviews ?? adminArea?.flaggedReviews ?? 0,
     };
     const title = adminSectionTitle(section);

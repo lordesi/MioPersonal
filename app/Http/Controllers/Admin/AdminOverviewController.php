@@ -8,6 +8,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\TrainerSlots;
@@ -35,12 +36,17 @@ class AdminOverviewController extends Controller
         $oldestWait = TrainerProfile::query()
             ->where('status', TrainerProfileStatus::Review)
             ->min('status_changed_at');
+        $oldestGymWait = GymProfile::query()
+            ->where('status', TrainerProfileStatus::Review)
+            ->min('status_changed_at');
 
         return Inertia::render('admin/overview', [
             'adminArea' => $area,
             'todo' => [
                 'verificationCount' => $area['verificationCount'],
                 'oldestWaitDays' => $oldestWait === null ? 0 : (int) CarbonImmutable::parse($oldestWait)->diffInDays(now()),
+                'gymVerificationCount' => $area['gymVerificationCount'],
+                'oldestGymWaitDays' => $oldestGymWait === null ? 0 : (int) CarbonImmutable::parse($oldestGymWait)->diffInDays(now()),
                 // Requests whose deadline passed today, in Rome, without an answer.
                 'expiredToday' => Booking::query()
                     ->whereIn('status', [BookingStatus::Expired, BookingStatus::Pending])
@@ -57,6 +63,8 @@ class AdminOverviewController extends Controller
                     ->where('role', UserRole::Trainer)
                     ->where('last_active_at', '>=', now()->subHours(self::ACTIVE_HOURS))
                     ->count(),
+                // "Palestre attive": the ones clients find in the search.
+                'activeGyms' => GymProfile::query()->published()->count(),
                 'bookingsThisWeek' => Booking::query()->where('created_at', '>=', $weekAgo)->count(),
                 'bookingsLastWeek' => Booking::query()->whereBetween('created_at', [now()->subDays(14), $weekAgo])->count(),
                 ...self::answerRates(),

@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminBookingsController;
 use App\Http\Controllers\Admin\AdminCatalogController;
 use App\Http\Controllers\Admin\AdminCityController;
 use App\Http\Controllers\Admin\AdminDisciplineController;
+use App\Http\Controllers\Admin\AdminGymVerificationController;
 use App\Http\Controllers\Admin\AdminMessagesController;
 use App\Http\Controllers\Admin\AdminOverviewController;
 use App\Http\Controllers\Admin\AdminReviewsController;
@@ -25,6 +26,17 @@ use App\Http\Controllers\CompleteProfileController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CookieConsentController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\GymDashboardController;
+use App\Http\Controllers\GymFavoriteController;
+use App\Http\Controllers\GymPhotoController;
+use App\Http\Controllers\GymPlansController;
+use App\Http\Controllers\GymProfileController;
+use App\Http\Controllers\GymProfileEditController;
+use App\Http\Controllers\GymPromotionsController;
+use App\Http\Controllers\GymRegistrationController;
+use App\Http\Controllers\GymSearchController;
+use App\Http\Controllers\GymSettingsController;
+use App\Http\Controllers\GymTrainersController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TrainerAvailabilityController;
@@ -32,6 +44,7 @@ use App\Http\Controllers\TrainerBookingRequestController;
 use App\Http\Controllers\TrainerCalendarController;
 use App\Http\Controllers\TrainerClientsController;
 use App\Http\Controllers\TrainerDashboardController;
+use App\Http\Controllers\TrainerGymsController;
 use App\Http\Controllers\TrainerNoShowController;
 use App\Http\Controllers\TrainerPastSessionsController;
 use App\Http\Controllers\TrainerPhotoController;
@@ -57,6 +70,9 @@ Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
 // /personal-trainer = all of Italy, /personal-trainer/roma = one city (404 if unknown).
 Route::get('personal-trainer/{city:slug?}', TrainerSearchController::class)->name('trainers.search');
 Route::get('trainer/{slug}', TrainerProfileController::class)->name('trainers.show');
+// /palestre = all of Italy, /palestre/milano = one city (404 if unknown).
+Route::get('palestre/{city:slug?}', GymSearchController::class)->name('gyms.search');
+Route::get('palestra/{slug}', GymProfileController::class)->name('gyms.show');
 // "Prenota questo slot" for guests: login or sign-up, then back to the profile.
 Route::get('trainer/{slug}/prenota', [BookingController::class, 'start'])->middleware('auth')->name('trainers.book.start');
 
@@ -105,6 +121,16 @@ Route::post('registrazione-trainer/passo/{step}', [TrainerRegistrationController
     ->middleware('throttle:20,1')
     ->name('trainer.register.check');
 
+// "Registra la tua palestra": guests create a gym account (another email than
+// their client or trainer one); a gym comes back to fix the profile when the
+// team asks for changes.
+Route::get('registrazione-palestra', [GymRegistrationController::class, 'show'])->name('gym.register');
+Route::post('registrazione-palestra', [GymRegistrationController::class, 'store'])->name('gym.register.store');
+Route::post('registrazione-palestra/passo/{step}', [GymRegistrationController::class, 'check'])
+    ->whereIn('step', ['1', '2', '3', '4'])
+    ->middleware('throttle:20,1')
+    ->name('gym.register.check');
+
 // Clients right after sign-up, before the email is verified.
 Route::middleware(['auth', 'role:client'])->group(function () {
     Route::controller(CompleteProfileController::class)->group(function () {
@@ -130,7 +156,9 @@ Route::middleware(['auth', 'role:client'])->group(function () {
         Route::delete('/', 'decline')->name('client.bookings.reschedule.decline');
     });
 
-    // The heart on search cards and profiles.
+    // The heart on search cards and profiles: the gyms', then the trainers'.
+    Route::post('preferiti/palestre/{slug}', [GymFavoriteController::class, 'store'])->name('client.favorites.gyms.store');
+    Route::delete('preferiti/palestre/{slug}', [GymFavoriteController::class, 'destroy'])->name('client.favorites.gyms.destroy');
     Route::post('preferiti/{slug}', [FavoriteController::class, 'store'])->name('client.favorites.store');
     Route::delete('preferiti/{slug}', [FavoriteController::class, 'destroy'])->name('client.favorites.destroy');
 });
@@ -225,6 +253,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             // The public reply under a review.
             Route::post('recensioni/{review}/risposta', 'reply')->whereNumber('review')->name('reviews.reply');
         });
+        // "Palestre": the gyms where the trainer works; both sides must agree.
+        Route::controller(TrainerGymsController::class)->prefix('palestre')->name('gyms')->group(function () {
+            Route::get('/', 'show');
+            Route::post('{slug}/richiesta', 'request')->middleware('throttle:20,1')->name('.request');
+            Route::post('collegamenti/{link}/accetta', 'accept')->whereNumber('link')->name('.accept');
+            Route::post('collegamenti/{link}/rifiuta', 'decline')->whereNumber('link')->name('.decline');
+            Route::delete('collegamenti/{link}', 'destroy')->whereNumber('link')->name('.destroy');
+        });
         // "Condividi profilo": link, QR code and image for the Instagram stories.
         Route::get('condividi', TrainerShareController::class)->name('share');
         Route::get('impostazioni', TrainerSettingsController::class)->name('settings');
@@ -233,6 +269,42 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::patch('impostazioni/contatti', 'updateContacts')->name('contacts.update');
             // "Chiudi il profilo": the account becomes a client one again.
             Route::delete('profilo', 'close')->name('profile.close');
+        });
+    });
+
+    // The gym area: profile, photos, plans, promotions and trainers, all public right away.
+    Route::middleware('role:gym')->prefix('area-palestra')->name('gym.')->group(function () {
+        Route::get('/', GymDashboardController::class)->name('dashboard');
+        Route::controller(GymProfileEditController::class)->group(function () {
+            Route::get('profilo', 'show')->name('profile.edit');
+            Route::put('profilo', 'update')->name('profile.update');
+        });
+        Route::controller(GymPhotoController::class)->prefix('foto')->name('photos')->group(function () {
+            Route::get('/', 'show');
+            Route::post('/', 'store')->name('.store');
+            Route::post('{photo}/copertina', 'cover')->whereNumber('photo')->name('.cover');
+            Route::delete('{photo}', 'destroy')->whereNumber('photo')->name('.destroy');
+        });
+        Route::controller(GymPlansController::class)->group(function () {
+            Route::get('abbonamenti', 'show')->name('plans');
+            Route::put('abbonamenti', 'update')->name('plans.update');
+        });
+        Route::controller(GymPromotionsController::class)->prefix('promozioni')->name('promotions')->group(function () {
+            Route::get('/', 'show');
+            Route::post('/', 'store')->name('.store');
+            Route::patch('{promotion}', 'update')->whereNumber('promotion')->name('.update');
+            Route::delete('{promotion}', 'destroy')->whereNumber('promotion')->name('.destroy');
+        });
+        Route::controller(GymTrainersController::class)->prefix('trainer')->name('trainers')->group(function () {
+            Route::get('/', 'show');
+            Route::post('invito', 'invite')->middleware('throttle:20,1')->name('.invite');
+            Route::post('{link}/accetta', 'accept')->whereNumber('link')->name('.accept');
+            Route::post('{link}/rifiuta', 'decline')->whereNumber('link')->name('.decline');
+            Route::delete('{link}', 'destroy')->whereNumber('link')->name('.destroy');
+        });
+        Route::controller(GymSettingsController::class)->group(function () {
+            Route::get('impostazioni', 'show')->name('settings');
+            Route::patch('impostazioni/visibilita', 'updateVisibility')->name('visibility.update');
         });
     });
 });
@@ -249,6 +321,8 @@ Route::middleware(['auth', 'verified', 'admin', 'password.confirm'])->prefix('ad
     Route::get('verifica/attestati/{document}', [AdminVerificationController::class, 'certificate'])
         ->middleware('signed')
         ->name('verification.certificate');
+    Route::get('verifica-palestre', AdminGymVerificationController::class)->name('gym-verification');
+    Route::post('verifica-palestre/{gym}/decisione', [AdminGymVerificationController::class, 'decide'])->whereNumber('gym')->name('gym-verification.decide');
     Route::get('messaggi', AdminMessagesController::class)->name('messages');
     Route::get('prenotazioni', AdminBookingsController::class)->name('bookings');
     Route::get('utenti', AdminUsersController::class)->name('users');

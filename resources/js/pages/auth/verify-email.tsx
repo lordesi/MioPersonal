@@ -15,7 +15,9 @@ import { send } from '@/routes/verification';
 export default function VerifyEmail({ status }: { status?: string }) {
     const { user } = usePage().props.auth;
     const area =
-        user.role === 'trainer' ? 'nella tua area trainer' : 'nel tuo account';
+        { trainer: 'nella tua area trainer', gym: 'nella tua area palestra' }[
+            user.role as 'trainer' | 'gym'
+        ] ?? 'nel tuo account';
 
     return (
         <>

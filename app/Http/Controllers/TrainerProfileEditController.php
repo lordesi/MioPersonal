@@ -38,6 +38,8 @@ class TrainerProfileEditController extends Controller
             'editable' => $profile?->isApproved() ?? false,
             'disciplines' => $profile ? CatalogOptions::disciplines() : [],
             'cities' => $profile ? CatalogOptions::cities() : [],
+            // "In palestra": the gyms of MioPersonal.
+            'gyms' => $profile ? CatalogOptions::gyms() : [],
             // "Foto della galleria": saved one action at a time by TrainerPhotoController.
             'gallery' => $profile
                 ? $profile->galleryPhotos->map(fn (TrainerPhoto $photo) => ['id' => $photo->id, 'url' => $photo->url()])->values()->all()

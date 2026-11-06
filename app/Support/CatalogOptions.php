@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\City;
 use App\Models\Discipline;
+use App\Models\GymProfile;
 
 /**
  * The lists of the catalog, in the format of the select menus and chips:
@@ -39,6 +40,27 @@ final class CatalogOptions
             ->orderBy('name')
             ->get(['slug', 'name', 'region'])
             ->map(fn (City $city) => ['value' => $city->slug, 'label' => $city->name, 'region' => $city->region])
+            ->all());
+    }
+
+    /**
+     * The approved gyms, for "In palestra" of the trainer's profile: by city, then name.
+     *
+     * @return list<array{id: int, name: string, city: string}>
+     */
+    public static function gyms(): array
+    {
+        return array_values(GymProfile::query()
+            ->approved()
+            ->join('cities', 'cities.id', '=', 'gym_profiles.city_id')
+            ->orderBy('cities.name')
+            ->orderBy('gym_profiles.name')
+            ->get(['gym_profiles.id', 'gym_profiles.name', 'cities.name as city_name'])
+            ->map(fn (GymProfile $gym) => [
+                'id' => $gym->id,
+                'name' => $gym->name,
+                'city' => (string) $gym->getAttribute('city_name'),
+            ])
             ->all());
     }
 

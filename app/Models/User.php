@@ -206,6 +206,16 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * The gym's profile, for gym accounts (empty until the registration is sent).
+     *
+     * @return HasOne<GymProfile, $this>
+     */
+    public function gymProfile(): HasOne
+    {
+        return $this->hasOne(GymProfile::class);
+    }
+
+    /**
      * The sessions booked as a client.
      *
      * @return HasMany<Booking, $this>
@@ -233,6 +243,18 @@ class User extends Authenticatable implements MustVerifyEmail
     public function favoriteTrainers(): BelongsToMany
     {
         return $this->belongsToMany(TrainerProfile::class, 'favorites', 'client_id')
+            ->withPivot('created_at')
+            ->orderByPivot('created_at', 'desc');
+    }
+
+    /**
+     * The gyms saved with the heart, last saved first.
+     *
+     * @return BelongsToMany<GymProfile, $this>
+     */
+    public function favoriteGyms(): BelongsToMany
+    {
+        return $this->belongsToMany(GymProfile::class, 'gym_favorites', 'client_id')
             ->withPivot('created_at')
             ->orderByPivot('created_at', 'desc');
     }

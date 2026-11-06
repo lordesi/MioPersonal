@@ -36,11 +36,11 @@ class CreateBooking
      * A session of a service. A package service also creates the package:
      * this booking is its first session.
      */
-    public function handle(User $client, TrainerProfile $profile, Service $service, CarbonImmutable $start, int $minutes): Booking
+    public function handle(User $client, TrainerProfile $profile, Service $service, CarbonImmutable $start, int $minutes, ?TrainerPlace $place = null): Booking
     {
         $this->ensureDurationIsAllowed($service, $minutes);
 
-        return $this->book($client, $profile, $start, $minutes, function () use ($client, $profile, $service) {
+        return $this->book($client, $profile, $start, $minutes, function () use ($client, $profile, $service, $place) {
             // Inside the lock: two requests of the same client can't both be "the first".
             $this->ensureFirstSessionIsFirst($profile, $service, $client);
 
@@ -49,7 +49,7 @@ class CreateBooking
                 'client_package_id' => $service->kind === 'package' ? $this->newPackage($client, $profile, $service)->id : null,
                 'service_name' => $service->displayName(),
                 'price_cents' => $service->price_cents,
-                'place_label' => $this->placeLabel($profile, $service->online_only),
+                'place_label' => $this->placeLabel($profile, $service->online_only, $place),
             ];
         });
     }
@@ -58,11 +58,11 @@ class CreateBooking
      * "Il tuo pacchetto": one more session of a package the client bought.
      * Free, it was paid with the package.
      */
-    public function fromPackage(User $client, ClientPackage $package, CarbonImmutable $start): Booking
+    public function fromPackage(User $client, ClientPackage $package, CarbonImmutable $start, ?TrainerPlace $place = null): Booking
     {
         $profile = $package->trainerProfile;
 
-        return $this->book($client, $profile, $start, $package->minutes, function () use ($client, $package, $profile) {
+        return $this->book($client, $profile, $start, $package->minutes, function () use ($client, $package, $profile, $place) {
             // Counted inside the lock: two requests can't both take the last session.
             $booked = $package->activeBookings()->count();
 
@@ -75,7 +75,7 @@ class CreateBooking
                 'client_package_id' => $package->id,
                 'service_name' => $package->name,
                 'price_cents' => 0,
-                'place_label' => $this->placeLabel($profile, false),
+                'place_label' => $this->placeLabel($profile, false, $place),
             ];
         });
     }
@@ -195,16 +195,21 @@ class CreateBooking
     }
 
     /**
-     * The profile page doesn't ask where: "Online" for online services, the
-     * place when the trainer has only one, otherwise empty (the pages hide it).
+     * Copied on the booking: "Online" for online services, the place the
+     * client chose ("Dove", e.g. a gym), else the place when the trainer has
+     * only one, otherwise empty (the pages hide it).
      */
-    private function placeLabel(TrainerProfile $profile, bool $online): string
+    private function placeLabel(TrainerProfile $profile, bool $online, ?TrainerPlace $chosen = null): string
     {
         if ($online) {
             return PlaceType::Online->label();
         }
 
-        $places = $profile->places()->with('city')->get()
+        if ($chosen !== null && $chosen->trainer_profile_id === $profile->id && $chosen->type !== PlaceType::Online) {
+            return $chosen->label();
+        }
+
+        $places = $profile->places()->with(['city', 'gymProfile.city'])->get()
             ->reject(fn (TrainerPlace $place) => $place->type === PlaceType::Online);
 
         if ($places->count() !== 1) {
@@ -214,8 +219,6 @@ class CreateBooking
         /** @var TrainerPlace $place */
         $place = $places->first();
 
-        return $place->type === PlaceType::Studio
-            ? implode(' · ', array_filter([$place->name ?? 'Studio', $place->city?->name]))
-            : $place->type->label();
+        return $place->label();
     }
 }

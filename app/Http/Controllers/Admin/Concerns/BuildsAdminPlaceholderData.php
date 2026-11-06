@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Concerns;
 
 use App\Enums\TrainerProfileStatus;
 use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 
 /**
@@ -19,12 +20,13 @@ trait BuildsAdminPlaceholderData
      * none while the page is "In lavorazione".
      * TODO: the profiles and reviews reported by users (Prompt 9).
      *
-     * @return array{verificationCount: int, flaggedReviews: int}
+     * @return array{verificationCount: int, gymVerificationCount: int, flaggedReviews: int}
      */
     private function adminArea(): array
     {
         return [
             'verificationCount' => TrainerProfile::where('status', TrainerProfileStatus::Review)->count(),
+            'gymVerificationCount' => GymProfile::where('status', TrainerProfileStatus::Review)->count(),
             'flaggedReviews' => 0,
         ];
     }

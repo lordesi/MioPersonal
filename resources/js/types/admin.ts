@@ -1,6 +1,8 @@
 /** Sent by every admin page, read by the admin layout (menu badges). */
 export type AdminAreaData = {
     verificationCount: number;
+    /** Gyms waiting for the team. */
+    gymVerificationCount: number;
     flaggedReviews: number;
 };
 
@@ -92,6 +94,29 @@ export type AdminTrainer = {
     deletionByUser: boolean;
 };
 
+/** A gym account in "Utenti › Palestre". */
+export type AdminGym = {
+    id: number;
+    /** The gym's name; the contact person's while the profile is missing. */
+    name: string;
+    /** The contact person who signed up. */
+    contact: string;
+    email: string;
+    city: string | null;
+    /** ISO UTC string. */
+    joinedAt: string;
+    profileStatus: TrainerReviewStatus;
+    /** Trainers who work there (both sides agreed). */
+    trainerCount: number;
+    /** The public page; null while the profile is missing. */
+    profileHref: string | null;
+    suspended: boolean;
+    /** ISO UTC string: when the data goes (Cancella dati / Elimina account); null = none. */
+    deletionAt: string | null;
+    /** Asked by the user in the settings (they can also take it back). */
+    deletionByUser: boolean;
+};
+
 export type AdminReview = {
     id: number;
     authorName: string;
@@ -127,4 +152,6 @@ export type AdminCity = {
     coordinates: string;
     /** false = hidden from the menus, its search page gives 404. */
     isActive: boolean;
+    /** Approved gyms in the city. */
+    gymCount: number;
 };

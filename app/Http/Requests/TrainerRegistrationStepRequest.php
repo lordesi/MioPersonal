@@ -22,6 +22,7 @@ class TrainerRegistrationStepRequest extends TrainerProfileRequest
         'goals' => 3,
         'places' => 3,
         'studios' => 3,
+        'gyms' => 3,
         'city' => 3,
         'other_cities' => 3,
         'sessions' => 4,

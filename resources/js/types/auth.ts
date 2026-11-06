@@ -7,11 +7,13 @@ export type User = {
     avatar?: string | null;
     email_verified_at: string | null;
     /** See App\Enums\UserRole. */
-    role?: 'client' | 'trainer' | 'admin';
+    role?: 'client' | 'trainer' | 'admin' | 'gym';
 };
 
 export type Auth = {
     user: User;
-    /** Trainers saved by a client (null for the other roles). */
+    /** Trainers and gyms saved by a client, for the menu (null for the other roles). */
     favoritesCount: number | null;
+    /** The same, apart: the "Preferiti" filter of each search. */
+    favoriteCounts: { trainers: number; gyms: number } | null;
 };

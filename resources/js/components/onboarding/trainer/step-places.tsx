@@ -1,4 +1,12 @@
-import { Building2, Check, House, Target, Trees, Video } from 'lucide-react';
+import {
+    Building2,
+    Check,
+    DoorOpen,
+    House,
+    Target,
+    Trees,
+    Video,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useId } from 'react';
 import type {
@@ -24,8 +32,10 @@ import {
     Chip,
     Cities,
     Group,
+    GymPicker,
     Studios,
 } from '@/components/trainer/profile/search-section';
+import type { GymOption } from '@/components/trainer/profile/search-section';
 import { trainingGoals } from '@/lib/goals';
 import { cn } from '@/lib/utils';
 import type { CatalogOption, CityOption } from '@/types';
@@ -39,10 +49,13 @@ type StepProps = {
     /** From the catalog. */
     disciplines: CatalogOption[];
     cities: CityOption[];
+    /** "In palestra": the approved gyms of MioPersonal. */
+    gymOptions: GymOption[];
 };
 
 const placeIcons: Record<PlaceType, LucideIcon> = {
-    studio: Building2,
+    gym: Building2,
+    studio: DoorOpen,
     home: House,
     park: Trees,
     online: Video,
@@ -83,6 +96,13 @@ export function placesChecks(draft: TrainerDraft): PanelCheck[] {
         },
     ];
 
+    if (draft.places.includes('gym')) {
+        checks.push({
+            label: 'Almeno una palestra',
+            done: draft.gyms.length > 0,
+        });
+    }
+
     if (draft.places.includes('studio')) {
         checks.push({
             label: 'Nome e indirizzo di ogni studio',
@@ -105,6 +125,7 @@ export default function StepPlaces({
     photo,
     disciplines,
     cities,
+    gymOptions,
 }: StepProps) {
     const toggle = <T extends string>(list: T[], value: T, max: number) =>
         list.includes(value)
@@ -204,6 +225,13 @@ export default function StepPlaces({
 
             <NumberedSection step={2} title="Dove alleni" className="gap-5.5">
                 <PlaceCards draft={draft} update={update} />
+                {draft.places.includes('gym') && (
+                    <GymPicker
+                        draft={draft}
+                        update={update}
+                        gymOptions={gymOptions}
+                    />
+                )}
                 {draft.places.includes('studio') && (
                     <Studios draft={draft} update={update} />
                 )}
@@ -227,7 +255,7 @@ function PlaceCards({ draft, update }: Pick<StepProps, 'draft' | 'update'>) {
             role="group"
             aria-label="Dove alleni"
             aria-describedby={labelId}
-            className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+            className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5"
         >
             <span id={labelId} className="sr-only">
                 Puoi sceglierne più di uno.

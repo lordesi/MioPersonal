@@ -18,6 +18,7 @@ import Panel from '@/components/trainer/area/panel';
 import { Button } from '@/components/ui/button';
 import { romeParts } from '@/lib/calendar';
 import { formatDayLong } from '@/lib/format';
+import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { profile } from '@/routes/client';
 import type {
@@ -93,15 +94,26 @@ export default function Home({
                 eyebrow={formatDayLong(romeParts(now).date)}
                 title={`Ciao ${firstName}`}
                 action={
-                    <Button
-                        asChild
-                        className="h-11.5 rounded-xl px-5 text-[15px] font-semibold"
-                    >
-                        <Link href={bookUrl}>
-                            <Plus aria-hidden="true" strokeWidth={2.5} />
-                            Prenota una seduta
-                        </Link>
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="h-11.5 rounded-xl px-4 text-[15px] font-semibold"
+                        >
+                            <Link href={gymSearchUrl()}>
+                                Cerca una palestra
+                            </Link>
+                        </Button>
+                        <Button
+                            asChild
+                            className="h-11.5 rounded-xl px-5 text-[15px] font-semibold"
+                        >
+                            <Link href={bookUrl}>
+                                <Plus aria-hidden="true" strokeWidth={2.5} />
+                                Prenota una seduta
+                            </Link>
+                        </Button>
+                    </div>
                 }
             />
 

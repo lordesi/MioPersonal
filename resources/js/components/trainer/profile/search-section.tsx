@@ -8,11 +8,13 @@ import type {
 import {
     MAX_DISCIPLINES,
     MAX_GOALS,
+    MAX_GYMS,
     MAX_OTHER_CITIES,
     MAX_STUDIOS,
     needsCity,
 } from '@/components/onboarding/trainer/draft';
 import StepErrors from '@/components/onboarding/trainer/step-errors';
+import OptionsMenu from '@/components/search/options-menu';
 import NumberedSection from '@/components/trainer/area/numbered-section';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +24,8 @@ import type { CatalogOption, CityOption } from '@/types';
 
 /** The places with the labels of the design ("Diventa trainer" keeps its own). */
 export const placeLabels: { value: PlaceType; label: string }[] = [
-    { value: 'studio', label: 'Studio o palestra' },
+    { value: 'gym', label: 'In palestra' },
+    { value: 'studio', label: 'Studio privato' },
     { value: 'home', label: 'A domicilio' },
     { value: 'park', label: 'All’aperto' },
     { value: 'online', label: 'Online' },
@@ -39,6 +42,8 @@ type SearchSectionProps = {
     cities: CityOption[];
     /** Messages from the server for these fields. */
     errors: string[];
+    /** "In palestra": the approved gyms of MioPersonal. */
+    gymOptions: GymOption[];
 };
 
 /**
@@ -52,6 +57,7 @@ export default function SearchSection({
     disciplines,
     cities,
     errors,
+    gymOptions,
 }: SearchSectionProps) {
     const toggle = <T extends string>(list: T[], value: T, max: number) =>
         list.includes(value)
@@ -130,7 +136,7 @@ export default function SearchSection({
                 })}
             </Group>
 
-            <Places draft={draft} update={update} />
+            <Places draft={draft} update={update} gymOptions={gymOptions} />
 
             {needsCity(draft) && (
                 <Cities draft={draft} update={update} cities={cities} />
@@ -143,7 +149,8 @@ export default function SearchSection({
 function Places({
     draft,
     update,
-}: Pick<SearchSectionProps, 'draft' | 'update'>) {
+    gymOptions,
+}: Pick<SearchSectionProps, 'draft' | 'update' | 'gymOptions'>) {
     const labelId = useId();
 
     return (
@@ -154,7 +161,7 @@ function Places({
             <div
                 role="group"
                 aria-labelledby={labelId}
-                className="grid grid-cols-2 gap-2.5 sm:grid-cols-4"
+                className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5"
             >
                 {placeLabels.map((place) => {
                     const on = draft.places.includes(place.value);
@@ -197,6 +204,13 @@ function Places({
                 })}
             </div>
 
+            {draft.places.includes('gym') && (
+                <GymPicker
+                    draft={draft}
+                    update={update}
+                    gymOptions={gymOptions}
+                />
+            )}
             {draft.places.includes('studio') && (
                 <Studios draft={draft} update={update} />
             )}
@@ -225,7 +239,7 @@ export function Studios({
     return (
         <div className="mt-1.5 flex flex-col gap-2.5">
             <span className="text-sm font-semibold tabular-nums">
-                Studi e palestre{' '}
+                Studi privati{' '}
                 <span className="text-[13px] font-normal text-muted-foreground">
                     · {draft.studios.length} di {MAX_STUDIOS} al massimo
                 </span>
@@ -237,7 +251,7 @@ export function Studios({
                 >
                     <Input
                         aria-label={`Nome del luogo ${index + 1}`}
-                        placeholder="Es. Palestra FitLab"
+                        placeholder="Es. Studio Pilates Rossi"
                         value={studio.name}
                         onChange={(event) =>
                             updateStudio(index, {
@@ -508,5 +522,117 @@ export function Chip({
         >
             {children}
         </button>
+    );
+}
+
+/** An approved gym of MioPersonal (CatalogOptions::gyms). */
+export type GymOption = { id: number; name: string; city: string };
+
+/**
+ * "In palestra": the gyms of MioPersonal where the trainer works. Each new
+ * one gets a request; the gym confirms it before it shows up in the profile.
+ * Also used by step 3 of "Diventa trainer".
+ */
+export function GymPicker({
+    draft,
+    update,
+    gymOptions,
+}: Pick<SearchSectionProps, 'draft' | 'update' | 'gymOptions'>) {
+    const chosen = draft.gyms.map((gym) => String(gym.id));
+    const options = gymOptions.map((gym) => ({
+        value: String(gym.id),
+        label: `${gym.name} · ${gym.city}`,
+    }));
+
+    const change = (ids: string[]) =>
+        update({
+            gyms: ids.slice(0, MAX_GYMS).map((id) => {
+                const kept = draft.gyms.find((gym) => String(gym.id) === id);
+                const option = gymOptions.find((gym) => String(gym.id) === id);
+
+                return (
+                    kept ?? {
+                        id: Number(id),
+                        name: option?.name ?? '',
+                        city: option?.city ?? '',
+                    }
+                );
+            }),
+        });
+
+    return (
+        <div className="mt-1.5 flex flex-col gap-2.5">
+            <span className="text-sm font-semibold tabular-nums">
+                Palestre di MioPersonal{' '}
+                <span className="text-[13px] font-normal text-muted-foreground">
+                    · {draft.gyms.length} di {MAX_GYMS} al massimo
+                </span>
+            </span>
+            {gymOptions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                    Nessuna palestra iscritta per ora: usa “Studio privato” e
+                    collegala più avanti da “Palestre”.
+                </p>
+            ) : (
+                <OptionsMenu
+                    label="Palestre"
+                    noneLabel="Nessuna"
+                    options={options}
+                    multiple
+                    value={chosen}
+                    onChange={change}
+                    searchPlaceholder="Cerca una palestra o una città"
+                    trigger={
+                        <button
+                            type="button"
+                            className="flex h-11 items-center justify-between gap-2 rounded-[10px] border bg-background px-3.5 text-left text-[15px] hover:bg-muted/50"
+                        >
+                            <span className="text-muted-foreground">
+                                Scegli le palestre in cui alleni
+                            </span>
+                            <Plus aria-hidden="true" className="size-4" />
+                        </button>
+                    }
+                />
+            )}
+            {draft.gyms.length > 0 && (
+                <ul className="flex flex-wrap gap-2">
+                    {draft.gyms.map((gym) => (
+                        <li
+                            key={gym.id}
+                            className="inline-flex h-9 items-center gap-2 rounded-full border bg-background pr-1 pl-3.5 text-sm"
+                        >
+                            <span className="font-semibold">{gym.name}</span>
+                            <span className="text-muted-foreground">
+                                {gym.city}
+                            </span>
+                            <span className="rounded-full bg-secondary px-2 py-0.5 text-xs">
+                                {gym.status === 'accepted'
+                                    ? 'Confermata'
+                                    : 'In attesa di conferma'}
+                            </span>
+                            <button
+                                type="button"
+                                aria-label={`Togli ${gym.name}`}
+                                onClick={() =>
+                                    change(
+                                        chosen.filter(
+                                            (id) => id !== String(gym.id),
+                                        ),
+                                    )
+                                }
+                                className="flex size-7 items-center justify-center rounded-full hover:bg-muted"
+                            >
+                                <X aria-hidden="true" className="size-3.5" />
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            <p className="text-xs text-muted-foreground">
+                La palestra riceve la richiesta e la conferma: poi compare nel
+                tuo profilo e tu nel suo.
+            </p>
+        </div>
     );
 }

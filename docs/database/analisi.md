@@ -256,6 +256,53 @@ confermare e 24 ore di cancellazione gratuita.
 
 **`notifications`**: la tabella standard di Laravel. Serve per la campanella del trainer.
 
+**`gym_profile_views`**: come `trainer_profile_views`, per le palestre. `search_logs.kind` dice se la
+ricerca era di trainer o di palestre.
+
+### 3.11 Palestre
+
+Una palestra è un **account suo** (`users.role = 'gym'`): si registra, il team la approva come i
+trainer, poi gestisce profilo, foto, abbonamenti, promozioni e i suoi trainer dall'area palestra.
+
+**`gym_profiles`**: una per account palestra.
+
+- `slug` (in `/palestra/{slug}`), `name`, `description`, `city_id`, `address`, `postal_code`;
+- `amenities` (`jsonb`, valori di `App\Enums\GymAmenity`): i «Servizi» del profilo e del filtro;
+- `opening_notes`, contatti pubblici (`phone`, `email`, `website`, `instagram`);
+- `status` / `status_changed_at` / `approved_at` / `visible_in_search` come i trainer
+  (stessi valori di `TrainerProfileStatus`);
+- `monthly_from_cents`, **calcolato**: l'abbonamento attivo più economico riportato al mese
+  (trimestrale ÷ 3, annuale ÷ 12; i pacchetti di ingressi non contano). Lo legge il filtro
+  «Budget mensile».
+
+**`gym_photos`** (copertina `is_cover` + galleria), **`gym_opening_hours`** (più fasce al giorno,
+ora di Roma, «24 ore» = 00:00–23:59), **`gym_profile_reviews`** (storico delle decisioni del team).
+
+**`gym_plans`**: «Abbonamenti», solo vetrina (si pagano in palestra, come decisione E).
+`period` = mensile / trimestrale / annuale / ingressi (`entries_count`), `price_cents`, `features`
+(`jsonb`, «Cosa include»), `is_active`.
+
+**`gym_promotions`**: titolo, descrizione, **o** `promo_price_cents` **o** `discount_percent`
+(CHECK), facoltativamente su un abbonamento, pubbliche tra `starts_on` e `ends_on` (giorni di
+Roma). «Attiva» si calcola a ogni richiesta: nessun flag da accendere a mezzanotte.
+
+**`gym_trainer`** (con `id`): il trainer in una palestra. `status` pending / accepted / declined,
+`initiated_by` gym / trainer, `message`, `responded_at`. Un lato chiede, l'altro risponde;
+«Rimuovi» cancella la riga. Lo cambia solo `App\Actions\Gym\GymLinks`.
+
+- Quando il collegamento è accettato il trainer riceve una riga **`trainer_places`** di tipo `gym`
+  con `gym_profile_id` (e `city_id` della palestra); quando è tolto la riga sparisce. Così profilo,
+  ricerca per città e prenotazione leggono la palestra come gli altri luoghi. Nome e indirizzo
+  si leggono dalla palestra, non si copiano.
+- Gli «studi» scritti a mano restano `type = studio` («Studio privato»).
+- Una palestra sospesa, in cancellazione o tolta dall'approvazione sparisce anche dal profilo dei
+  suoi trainer e non li fa più comparire nella ricerca della sua città (`TrainerProfile::basedIn`).
+
+**`gym_favorites`**: come `favorites`, per le palestre. Chiave composta (`client_id`,
+`gym_profile_id`) + `created_at`, entrambe le FK in cascata. La pagina Preferiti ha due schede
+(Trainer | Palestre, `?tipo=palestre`); il numero nel menu somma trainer e palestre ancora
+pubbliche (approvate, titolare attivo). Niente recensioni dei clienti sulle palestre, per ora.
+
 ---
 
 ## 4. Le operazioni più frequenti, e come renderle veloci
@@ -292,6 +339,12 @@ ORDER BY next_free_slot_at
 Con qualche centinaio di trainer (la beta) PostgreSQL risponde in pochi millisecondi
 anche senza trucchi. I campi calcolati servono perché **lo slot libero** costa caro, non per il
 numero di righe.
+
+**Ricerca palestre** (`/palestre/{città}`, `GymSearchController`): una query su `gym_profiles`
+pubblicate. Filtri: città, nome, servizi (tutti, `whereJsonContains` per ognuno; indice GIN su
+PostgreSQL), budget su `monthly_from_cents`, «Con promozioni» (`EXISTS` sulle promozioni di oggi).
+Un trainer collegato a una palestra compare anche nella ricerca trainer della città della
+palestra (`TrainerProfile::scopeBasedIn` guarda i luoghi `gym`).
 
 ### 4.2 Slot liberi di un trainer (profilo e prenotazione)
 
@@ -382,6 +435,9 @@ semplici `COUNT` con indici parziali sugli stati. Con i volumi della beta non se
 | H   | Impostazioni notifiche            | colonne booleane / `jsonb`                                 | **`jsonb`** su `users`: sono 4 voci per il cliente e 5 per il trainer, lette sempre insieme                                       |
 | I   | Registro attività admin           | tabella nostra / libreria (spatie/activitylog)             | **Tabella nostra**: serve poco, e niente librerie nuove                                                                           |
 | J   | Obiettivi del trainer per il quiz | chiederli al trainer / ricavarli dalle discipline          | **Superata**: il quiz è stato tolto, e con lui `discipline_goal`                                                                  |
+| K   | Servizi delle palestre            | tabella di catalogo / enum PHP + `jsonb`                   | **Enum + `jsonb`**: lista corta e fissa, il team non deve modificarla; si filtra come `goals`                                     |
+| L   | Trainer ↔ palestra                | dichiarato dal trainer / richiesta + conferma              | **Richiesta + conferma** (`gym_trainer`); da accettato diventa un luogo `gym` del trainer                                         |
+| M   | Abbonamenti e promozioni          | vetrina / acquistabili                                     | **Vetrina**, come E: prezzi indicativi, si paga in palestra                                                                       |
 
 ---
 
@@ -434,6 +490,13 @@ Ogni passo funziona da solo, ha i suoi test e sostituisce i dati d'esempio di al
     - tabelle `client_preferences`, `contact_messages`, `contact_message_replies`,
       `admin_activity_log`, `settings`, `trainer_profile_views`, `notifications`,
       `data_export_requests`.
+8. ✅ **Palestre** (§3.11):
+    - `2026_11_10_000000_create_gym_tables`: `gym_profiles`, `gym_photos`, `gym_opening_hours`,
+      `gym_plans`, `gym_promotions`, `gym_profile_reviews`, `gym_trainer`;
+    - `2026_11_10_000001_add_gyms_to_trainer_places`: tipo `gym` e `gym_profile_id`;
+    - `2026_11_10_000002_add_gym_stats`: `search_logs.kind`, `gym_profile_views`;
+    - `2026_11_11_000000_create_gym_favorites_table`: `gym_favorites`, il cuore sulle palestre;
+    - le palestre d'esempio, solo in locale, le crea `DemoGymSeeder`.
 
 ---
 

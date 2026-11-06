@@ -1,4 +1,5 @@
 import { Clock, CreditCard } from 'lucide-react';
+import type { ReactNode } from 'react';
 import ServicePicker from '@/components/profile/service-picker';
 import { Button } from '@/components/ui/button';
 import { totalPriceLabel } from '@/lib/booking';
@@ -18,6 +19,8 @@ type BookingAsideProps = {
     onBook: () => void;
     /** The request is being sent. */
     booking: boolean;
+    /** "Dove", under the services (PlacePicker). */
+    placePicker?: ReactNode;
 };
 
 /** The black booking box next to the profile content (from lg). */
@@ -30,6 +33,7 @@ export default function BookingAside({
     confirmLabel,
     onBook,
     booking,
+    placePicker,
 }: BookingAsideProps) {
     return (
         <aside
@@ -57,6 +61,8 @@ export default function BookingAside({
                 value={service.id}
                 onChange={onServiceChange}
             />
+
+            {placePicker}
 
             {selectedStart ? (
                 <Button

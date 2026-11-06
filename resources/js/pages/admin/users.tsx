@@ -12,18 +12,19 @@ import {
 import { users } from '@/routes/admin';
 import { reactivate, suspend } from '@/routes/admin/users';
 import deletion from '@/routes/admin/users/deletion';
-import type { AdminClient, AdminTrainer } from '@/types';
+import type { AdminClient, AdminGym, AdminTrainer } from '@/types';
 
 type UsersProps = {
     clients: AdminClient[];
     trainers: AdminTrainer[];
+    gyms: AdminGym[];
     /** The text of the search box at the top, if any. */
     search: string | null;
 };
 
-type Tab = 'clients' | 'trainers';
+type Tab = 'clients' | 'trainers' | 'gyms';
 
-/** One table row, the same for clients and trainers. */
+/** One table row, the same for clients, trainers and gyms. */
 type UserRow = {
     id: number;
     key: string;
@@ -32,6 +33,8 @@ type UserRow = {
     kind: string;
     joinedAt: string;
     activity: string;
+    /** The public profile (gyms): the name opens it. */
+    href?: string | null;
     suspended: boolean;
     deletionAt: string | null;
     deletionByUser: boolean;
@@ -76,6 +79,40 @@ function trainerRow(trainer: AdminTrainer): UserRow {
     };
 }
 
+const gymStatusLabels: Record<AdminGym['profileStatus'], string> = {
+    approved: 'Palestra · approvata',
+    review: 'Palestra · in revisione',
+    changes: 'Palestra · modifiche richieste',
+    rejected: 'Palestra · respinta',
+};
+
+function gymRow(gym: AdminGym): UserRow {
+    return {
+        id: gym.id,
+        key: `gym-${gym.id}`,
+        name: gym.name,
+        // The contact person next to the email: the name is the gym's.
+        email:
+            gym.name === gym.contact
+                ? gym.email
+                : `${gym.contact} · ${gym.email}`,
+        kind: gymStatusLabels[gym.profileStatus],
+        joinedAt: gym.joinedAt,
+        activity: [
+            gym.city,
+            gym.trainerCount === 1
+                ? '1 trainer'
+                : `${gym.trainerCount} trainer`,
+        ]
+            .filter(Boolean)
+            .join(' · '),
+        href: gym.profileHref,
+        suspended: gym.suspended,
+        deletionAt: gym.deletionAt,
+        deletionByUser: gym.deletionByUser,
+    };
+}
+
 const headCell = 'px-3 py-3 font-semibold first:pl-4 last:pr-4';
 const bodyCell = 'px-3 py-3 first:pl-4 last:pr-4';
 
@@ -84,13 +121,16 @@ const bodyCell = 'px-3 py-3 first:pl-4 last:pr-4';
  * (AdminUserStatusController): saved on the server, the user is logged out
  * at once. The data goes 30 days after "Cancella dati".
  */
-export default function Users({ clients, trainers, search }: UsersProps) {
+export default function Users({ clients, trainers, gyms, search }: UsersProps) {
     const [tab, setTab] = useState<Tab>('clients');
     const [toDelete, setToDelete] = useState<UserRow | null>(null);
     const [busy, setBusy] = useState<string | null>(null);
 
-    const rows =
-        tab === 'clients' ? clients.map(clientRow) : trainers.map(trainerRow);
+    const rows = {
+        clients: () => clients.map(clientRow),
+        trainers: () => trainers.map(trainerRow),
+        gyms: () => gyms.map(gymRow),
+    }[tab]();
 
     const send = (row: UserRow, route: Parameters<typeof router.visit>[0]) =>
         router.visit(route, {
@@ -121,6 +161,7 @@ export default function Users({ clients, trainers, search }: UsersProps) {
                         value: 'trainers',
                         label: `Trainer · ${trainers.length}`,
                     },
+                    { value: 'gyms', label: `Palestre · ${gyms.length}` },
                 ]}
                 value={tab}
                 onChange={setTab}
@@ -193,7 +234,23 @@ export default function Users({ clients, trainers, search }: UsersProps) {
                         {rows.map((row) => (
                             <tr key={row.key} className="border-t">
                                 <td className={`${bodyCell} font-semibold`}>
-                                    {row.name}
+                                    {row.href ? (
+                                        <a
+                                            href={row.href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="underline-offset-2 hover:underline"
+                                        >
+                                            {row.name}
+                                            <span className="sr-only">
+                                                {' '}
+                                                (profilo, si apre in una nuova
+                                                scheda)
+                                            </span>
+                                        </a>
+                                    ) : (
+                                        row.name
+                                    )}
                                 </td>
                                 <td
                                     className={`${bodyCell} text-muted-foreground`}

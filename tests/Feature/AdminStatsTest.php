@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Models\Booking;
+use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\AdminStats;
@@ -37,7 +38,7 @@ class AdminStatsTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('admin/stats')
-                ->has('stats.kpis', 9)
+                ->has('stats.kpis', 11)
                 ->has('stats.daily', AdminStats::DAYS)
                 ->has('stats.monthly', 12)
                 ->has('stats.cohorts', 6)
@@ -45,7 +46,41 @@ class AdminStatsTest extends TestCase
                 ->has('stats.funnel', 5)
                 ->has('stats.marketplace.trainers', 4)
                 ->has('stats.demand.empty')
+                ->has('stats.gyms.supply', 4)
+                ->has('stats.gyms.topViewed')
             );
+    }
+
+    public function test_the_gyms_have_their_own_section_and_searches()
+    {
+        $gym = GymProfile::factory()->approved()->create(['name' => 'FitLab']);
+        GymProfile::factory()->create(['created_at' => now()->subDays(2)]);
+        DB::table('gym_profile_views')->insert([
+            ['gym_profile_id' => $gym->id, 'day' => '2026-11-19', 'views' => 4],
+            ['gym_profile_id' => $gym->id, 'day' => '2026-09-01', 'views' => 10],
+        ]);
+        DB::table('search_logs')->insert([
+            ['city_id' => $gym->city_id, 'disciplines' => '[]', 'goals' => '[]', 'filters' => '[]', 'results' => 0, 'role' => 'guest', 'kind' => 'gym', 'created_at' => now()->subDay()],
+            ['city_id' => $gym->city_id, 'disciplines' => '[]', 'goals' => '[]', 'filters' => '[]', 'results' => 1, 'role' => 'guest', 'kind' => 'gym', 'created_at' => now()->subDay()],
+            ['city_id' => null, 'disciplines' => '[]', 'goals' => '[]', 'filters' => '[]', 'results' => 3, 'role' => 'guest', 'kind' => 'trainer', 'created_at' => now()->subDay()],
+        ]);
+
+        $stats = (new AdminStats)->all();
+        $city = $gym->city->name;
+
+        // The gyms' searches stay out of the trainers' demand.
+        $this->assertSame(1, $stats['demand']['searches']);
+        $this->assertSame(2, $stats['gyms']['searches']);
+        $this->assertSame(0.5, $stats['gyms']['emptyRate']);
+        $this->assertSame([['source' => $city, 'count' => 2]], $stats['gyms']['searchCities']);
+        $this->assertSame(4, $stats['gyms']['views']);
+        $this->assertSame([['source' => 'FitLab', 'count' => 4]], $stats['gyms']['topViewed']);
+        $this->assertSame([['source' => $city, 'count' => 1]], $stats['gyms']['cities']);
+        $this->assertSame([2, 1, 1, 1], array_column($stats['gyms']['supply'], 'count'));
+
+        $kpis = collect($stats['kpis'])->keyBy('key');
+        $this->assertSame(2, $kpis['gyms']['value']);
+        $this->assertSame(1, $kpis['publishedGyms']['value']);
     }
 
     public function test_kpis_compare_the_last_30_days_with_the_30_before()

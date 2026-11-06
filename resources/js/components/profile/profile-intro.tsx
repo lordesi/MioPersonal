@@ -152,7 +152,7 @@ export default function ProfileIntro({
                 {favorite !== null && (
                     <FavoriteButton
                         variant="labeled"
-                        trainerName={trainer.name}
+                        name={trainer.name}
                         pressed={favorite}
                         onPressedChange={onFavoriteChange}
                         className={darkButton}

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Gym\GymLinks;
+use App\Enums\GymLinkStatus;
 use App\Enums\PlaceType;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\TrainerReviewDecision;
@@ -44,7 +46,7 @@ class AdminVerificationController extends Controller
     public function __invoke(): Response
     {
         $profiles = TrainerProfile::query()
-            ->with(['user', 'city', 'disciplines', 'places', 'services', 'workingHours', 'documents', 'portrait', 'decisions'])
+            ->with(['user', 'city', 'disciplines', 'places.gymProfile.city', 'gymLinks.gymProfile', 'services', 'workingHours', 'documents', 'portrait', 'decisions'])
             ->where(fn ($query) => $query
                 ->whereIn('status', [TrainerProfileStatus::Review, TrainerProfileStatus::Changes])
                 ->orWhere('status_changed_at', '>=', now()->subHours(self::DECIDED_HOURS)))
@@ -109,6 +111,8 @@ class AdminVerificationController extends Controller
         // The slot saved when the profile was sent may be old by now.
         if ($decision === TrainerReviewDecision::Approved) {
             TrainerSlots::refresh($profile->load('workingHours'));
+            // The requests to gyms made with the registration reach the gyms now.
+            app(GymLinks::class)->sendWaitingRequests($profile);
         }
 
         if ($decision !== TrainerReviewDecision::Undone) {
@@ -159,9 +163,16 @@ class AdminVerificationController extends Controller
             // When the profile was sent, or when the team decided.
             'statusSince' => $this->iso(CarbonImmutable::instance($profile->status_changed_at ?? $profile->created_at ?? now())),
             'bio' => $profile->bio,
-            'places' => $profile->places->map(fn (TrainerPlace $place) => $place->type === PlaceType::Studio
-                ? "{$place->name}, {$place->address}"
-                : $place->type->label())->all(),
+            'places' => [
+                ...$profile->places->map(fn (TrainerPlace $place) => match ($place->type) {
+                    PlaceType::Studio => "{$place->name}, {$place->address}",
+                    PlaceType::Gym => $place->label(),
+                    default => $place->type->label(),
+                })->all(),
+                // Asked with the registration: the gyms see the request after the approval.
+                ...$profile->gymLinks->where('status', GymLinkStatus::Pending)
+                    ->map(fn ($link) => "Palestra {$link->gymProfile->name} (in attesa di conferma)")->values()->all(),
+            ],
             'services' => $profile->services->map(fn ($service) => [
                 'label' => "{$service->name} · {$service->minutes} min",
                 'priceCents' => $service->price_cents,

@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\BookingStatus;
+use App\Enums\GymLinkStatus;
+use App\Enums\PlaceType;
 use App\Enums\TrainerExperience;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
@@ -168,6 +170,30 @@ class TrainerProfile extends Model
     }
 
     /**
+     * Every request and invitation with gyms, whatever the status.
+     *
+     * @return HasMany<GymTrainerLink, $this>
+     */
+    public function gymLinks(): HasMany
+    {
+        return $this->hasMany(GymTrainerLink::class);
+    }
+
+    /**
+     * The gyms where the trainer works: both sides agreed.
+     *
+     * @return BelongsToMany<GymProfile, $this>
+     */
+    public function gyms(): BelongsToMany
+    {
+        return $this->belongsToMany(GymProfile::class, 'gym_trainer')
+            ->wherePivot('status', GymLinkStatus::Accepted->value)
+            ->withPivot('id')
+            ->withTimestamps()
+            ->orderBy('gym_profiles.name');
+    }
+
+    /**
      * @return HasMany<Service, $this>
      */
     public function services(): HasMany
@@ -289,17 +315,19 @@ class TrainerProfile extends Model
      */
     public function scopePublished(Builder $query): void
     {
-        $query->where('status', TrainerProfileStatus::Approved)
-            ->where('visible_in_search', true)
-            ->whereNull('paused_at')
+        // Qualified: through gym_trainer, the pivot has a `status` too.
+        $query->where($query->qualifyColumn('status'), TrainerProfileStatus::Approved)
+            ->where($query->qualifyColumn('visible_in_search'), true)
+            ->whereNull($query->qualifyColumn('paused_at'))
             // Suspended by the team, or the account is being deleted.
             ->whereHas('user', fn (Builder $user) => $user->active());
     }
 
     /**
-     * Trains in person in the city (main city or one of the others). The search
-     * also shows the online-only trainers in every city: this scope leaves them
-     * out, for the city pages given to search engines (see SitemapController).
+     * Trains in person in the city (main city, one of the others, or a gym
+     * there). The search also shows the online-only trainers in every city:
+     * this scope leaves them out, for the city pages given to search engines
+     * (see SitemapController).
      *
      * @param  Builder<self>  $query
      */
@@ -307,7 +335,10 @@ class TrainerProfile extends Model
     {
         $query->where(fn (Builder $inCity) => $inCity
             ->where('city_id', $cityId)
-            ->orWhereHas('otherCities', fn (Builder $other) => $other->whereKey($cityId)));
+            ->orWhereHas('otherCities', fn (Builder $other) => $other->whereKey($cityId))
+            // Only while the gym is public: a gym suspended or taken back for review doesn't count.
+            ->orWhereHas('places', fn (Builder $place) => $place->where('type', PlaceType::Gym)->where('city_id', $cityId)
+                ->whereHas('gymProfile', fn (Builder $gym) => $gym->approved())));
     }
 
     public function isApproved(): bool

@@ -39,6 +39,7 @@ import StepProfile, {
 } from '@/components/onboarding/trainer/step-profile';
 import StepReview from '@/components/onboarding/trainer/step-review';
 import StepServices from '@/components/onboarding/trainer/step-services';
+import type { GymOption } from '@/components/trainer/profile/search-section';
 import Submitted from '@/components/onboarding/trainer/submitted';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -68,6 +69,8 @@ type TrainerRegistrationProps = {
     /** Options of step 3, from the catalog. */
     disciplines: CatalogOption[];
     cities: CityOption[];
+    /** "In palestra": the approved gyms of MioPersonal. */
+    gyms: GymOption[];
     /** A trainer fixing the profile: no step 1, it starts from step 2. */
     editing: boolean;
     /** What the trainer already sent (null the first time). */
@@ -83,6 +86,7 @@ export default function TrainerRegistration({
     account,
     disciplines,
     cities,
+    gyms,
     editing,
     draft: savedDraft,
     changeRequest,
@@ -411,6 +415,7 @@ export default function TrainerRegistration({
                             photo={photo}
                             disciplines={disciplines}
                             cities={cities}
+                            gymOptions={gyms}
                         />
                     )}
                     {step === 4 && (

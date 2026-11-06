@@ -2,6 +2,7 @@
 
 namespace App\Actions\Account;
 
+use App\Actions\Gym\DeleteGymProfile;
 use App\Actions\Trainer\DeleteTrainerProfile;
 use App\Enums\BookingActor;
 use App\Models\Booking;
@@ -16,7 +17,10 @@ use Illuminate\Support\Facades\Storage;
  */
 class DeleteUser
 {
-    public function __construct(private DeleteTrainerProfile $deleteProfile) {}
+    public function __construct(
+        private DeleteTrainerProfile $deleteProfile,
+        private DeleteGymProfile $deleteGym,
+    ) {}
 
     public function handle(User $user): void
     {
@@ -31,6 +35,11 @@ class DeleteUser
         // A trainer's profile goes too, with its photos and certificates on the disk.
         if ($user->trainerProfile !== null) {
             $this->deleteProfile->handle($user->trainerProfile);
+        }
+
+        // A gym's profile too, with its photos.
+        if ($user->gymProfile !== null) {
+            $this->deleteGym->handle($user->gymProfile);
         }
 
         $user->delete();

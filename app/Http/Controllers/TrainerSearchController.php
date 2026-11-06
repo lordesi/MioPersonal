@@ -128,7 +128,8 @@ class TrainerSearchController extends Controller
             'filters' => $filters,
             'suggestions' => $page->total() === 0 ? $this->suggestions($filters, $city, $favoriteIds, $preference) : null,
             'disciplines' => $disciplines,
-            'cities' => CatalogOptions::cities(),
+            // With the center of each city, for "Usa la mia posizione".
+            'cities' => CatalogOptions::citiesWithCoordinates(),
             'seo' => $seo = $this->seo($filters, $city, $page, $disciplines),
             // A few lines on the city for search engines (and people): only on the indexed city pages.
             'intro' => $city !== null && $seo['index'] ? $this->intro($city, $filters['disciplina'][0] ?? null) : null,
@@ -405,9 +406,9 @@ class TrainerSearchController extends Controller
 
         // Online sessions work from anywhere: the city only counts in person.
         if ($city !== null && $filters['modalita'] !== 'online') {
+            // basedIn(): main city, other cities, or a gym there.
             $query->where(fn (Builder $inCity) => $inCity
-                ->where('city_id', $city->id)
-                ->orWhereHas('otherCities', fn (Builder $other) => $other->whereKey($city->id))
+                ->where(fn (Builder $based) => $based->basedIn($city->id))
                 ->orWhere(fn (Builder $onlineOnly) => $onlineOnly->where('trains_online', true)->where('trains_in_person', false)));
         }
 

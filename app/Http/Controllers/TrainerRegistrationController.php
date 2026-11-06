@@ -47,6 +47,8 @@ class TrainerRegistrationController extends Controller
             // Options of step 3.
             'disciplines' => CatalogOptions::disciplines(),
             'cities' => CatalogOptions::cities(),
+            // "In palestra": the gyms of MioPersonal.
+            'gyms' => CatalogOptions::gyms(),
             // A logged-in client keeps the account: step 1 only asks for the trainer terms.
             'account' => $user?->role === UserRole::Client
                 ? ['name' => $user->name, 'email' => $user->email]
@@ -128,7 +130,7 @@ class TrainerRegistrationController extends Controller
         return match ($user->role) {
             UserRole::Client => true,
             UserRole::Trainer => in_array($user->trainerProfile?->status, [null, TrainerProfileStatus::Changes], true),
-            UserRole::Admin => false,
+            UserRole::Admin, UserRole::Gym => false,
         };
     }
 

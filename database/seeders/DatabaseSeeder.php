@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
         // Example trainers, never in production.
         if (app()->isLocal()) {
             $this->call(DemoTrainerSeeder::class);
+            $this->call(DemoGymSeeder::class);
         }
 
         // User::factory(10)->create();

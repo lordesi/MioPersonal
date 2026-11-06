@@ -6,6 +6,7 @@ import type {
     ActiveFilters,
     SearchOption,
 } from '@/components/search/filter-bar';
+import { SearchKindLinks } from '@/components/search/search-kind-toggle';
 import SearchPagination from '@/components/search/search-pagination';
 import TrainerCard from '@/components/trainer/trainer-card';
 import {
@@ -209,6 +210,11 @@ export default function Search({
                         </BreadcrumbList>
                     </Breadcrumb>
 
+                    <SearchKindLinks
+                        current="trainer"
+                        city={city?.slug ?? null}
+                    />
+
                     <div className="flex flex-col gap-1.5">
                         <h1
                             id="search-title"
@@ -252,7 +258,8 @@ export default function Search({
                         favorites={
                             canSave
                                 ? {
-                                      count: auth?.favoritesCount ?? 0,
+                                      count:
+                                          auth?.favoriteCounts?.trainers ?? 0,
                                       guest: !auth?.user,
                                   }
                                 : undefined

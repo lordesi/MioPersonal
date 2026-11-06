@@ -17,6 +17,7 @@ use App\Support\Stats;
 use App\Support\TrainerCard;
 use App\Support\TrainerSlots;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -40,7 +41,7 @@ class TrainerProfileController extends Controller
         TrainerSlots::refreshStale();
 
         $profile = TrainerProfile::where('slug', $slug)
-            ->with(['user', 'city', 'otherCities', 'disciplines', 'places.city', 'services', 'photos', 'documents', 'workingHours'])
+            ->with(['user', 'city', 'otherCities', 'disciplines', 'places.city', 'places.gymProfile.city', 'places.gymProfile.user', 'places.gymProfile.cover', 'services', 'photos', 'documents', 'workingHours'])
             ->first();
 
         abort_if($profile === null || ! $profile->isViewableBy($request->user()), 404);
@@ -169,7 +170,8 @@ class TrainerProfileController extends Controller
             'portraitUrl' => $profile->photos->firstWhere('is_portrait', true)?->url(),
             'photos' => $this->photos($profile),
             'services' => $this->services($profile, $viewer),
-            'places' => $profile->places->map(fn (TrainerPlace $place) => $this->place($place, $cities))->all(),
+            'places' => self::visiblePlaces($profile)->map(fn (TrainerPlace $place) => $this->place($place, $cities))->all(),
+            'gyms' => $this->gyms($profile),
             'certifications' => $profile->documents->where('type', 'certificate')->map(fn (TrainerDocument $document) => [
                 'title' => $document->title,
                 'issuer' => $document->issuerLabel(),
@@ -381,19 +383,61 @@ class TrainerProfileController extends Controller
 
     /**
      * @param  list<string>  $cities
-     * @return array{type: string, title: string, detail: string}
+     * @return array{id: int, type: string, title: string, detail: string, href: string|null}
      */
     private function place(TrainerPlace $place, array $cities): array
     {
+        $gym = $place->gymProfile;
+
         return [
+            // "Dove" of the booking (BookingController: luogo).
+            'id' => $place->id,
             'type' => $place->type->value,
-            'title' => $place->type === PlaceType::Studio ? ($place->name ?? 'Studio') : $place->type->label(),
+            'title' => match ($place->type) {
+                PlaceType::Studio => $place->name ?? 'Studio',
+                PlaceType::Gym => $gym->name ?? 'Palestra',
+                default => $place->type->label(),
+            },
             'detail' => match ($place->type) {
                 PlaceType::Studio => implode(', ', array_filter([$place->city?->name, $place->address])),
+                PlaceType::Gym => $gym === null ? '' : $gym->fullAddress(),
                 PlaceType::Online => 'In videochiamata',
                 default => implode(', ', $cities),
             },
+            'href' => $gym === null ? null : route('gyms.show', $gym->slug, false),
         ];
+    }
+
+    /**
+     * The places shown: a gym only while it is public (approved, owner active).
+     *
+     * @return Collection<int, TrainerPlace>
+     */
+    public static function visiblePlaces(TrainerProfile $profile): Collection
+    {
+        return $profile->places
+            ->filter(fn (TrainerPlace $place) => $place->type !== PlaceType::Gym
+                || ($place->gymProfile?->isApproved() && $place->gymProfile->ownerIsActive()))
+            ->values();
+    }
+
+    /**
+     * "Palestre dove allena".
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function gyms(TrainerProfile $profile): array
+    {
+        return array_values(self::visiblePlaces($profile)
+            ->filter(fn (TrainerPlace $place) => $place->type === PlaceType::Gym && $place->gymProfile !== null)
+            ->map(fn (TrainerPlace $place) => [
+                'slug' => $place->gymProfile->slug,
+                'name' => $place->gymProfile->name,
+                'city' => $place->gymProfile->city->name,
+                'address' => $place->gymProfile->fullAddress(),
+                'coverUrl' => $place->gymProfile->cover?->url(),
+                'href' => route('gyms.show', $place->gymProfile->slug, false),
+            ])->all());
     }
 
     /**

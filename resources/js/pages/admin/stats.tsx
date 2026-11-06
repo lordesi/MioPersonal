@@ -71,6 +71,19 @@ type Stats = {
         empty: Count[];
         cities: Count[];
     };
+    gyms: {
+        supply: Step[];
+        /** Gym profiles opened, last 30 days. */
+        views: number;
+        searches: number;
+        emptyRate: number | null;
+        searchCities: Count[];
+        /** Published gyms by city. */
+        cities: Count[];
+        acceptedLinks: number;
+        pendingLinks: number;
+        topViewed: Count[];
+    };
 };
 
 /** Channels as people say them. */
@@ -306,7 +319,9 @@ export default function AdminStats({ stats }: { stats: Stats }) {
                 </AdminPanel>
             </div>
 
-            <h2 className="mt-3 text-lg font-bold tracking-tight">Domanda</h2>
+            <h2 className="mt-3 text-lg font-bold tracking-tight">
+                Domanda di trainer
+            </h2>
             <div className="grid gap-3 lg:grid-cols-2">
                 <AdminPanel
                     title="Ricerche senza risultati"
@@ -319,6 +334,79 @@ export default function AdminStats({ stats }: { stats: Stats }) {
                 </AdminPanel>
                 <AdminPanel title="Città più cercate" aside="Ultimi 30 giorni">
                     <BarList rows={stats.demand.cities} />
+                </AdminPanel>
+            </div>
+
+            <h2 className="mt-3 text-lg font-bold tracking-tight">Palestre</h2>
+            <section
+                aria-label="Indicatori delle palestre"
+                className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+            >
+                <KpiTile
+                    label="Visite ai profili delle palestre"
+                    value={formatNumber(stats.gyms.views)}
+                    detail={
+                        <span className="text-xs text-muted-foreground">
+                            Ultimi 30 giorni
+                        </span>
+                    }
+                />
+                <KpiTile
+                    label="Ricerche di palestre"
+                    value={formatNumber(stats.gyms.searches)}
+                    detail={
+                        <span className="text-xs text-muted-foreground">
+                            Ultimi 30 giorni
+                        </span>
+                    }
+                />
+                <KpiTile
+                    label="Ricerche senza risultati"
+                    value={formatPercent(stats.gyms.emptyRate)}
+                    detail={
+                        <span className="text-xs text-muted-foreground">
+                            Sulle ricerche di palestre
+                        </span>
+                    }
+                />
+                <KpiTile
+                    label="Trainer collegati"
+                    value={formatNumber(stats.gyms.acceptedLinks)}
+                    detail={
+                        <span className="text-xs text-muted-foreground">
+                            {formatNumber(stats.gyms.pendingLinks)} richieste in
+                            attesa
+                        </span>
+                    }
+                />
+            </section>
+            <div className="grid gap-3 lg:grid-cols-2">
+                <AdminPanel title="Palestre" aside="Oggi">
+                    <Funnel steps={stats.gyms.supply} rates={false} />
+                </AdminPanel>
+                <AdminPanel title="Palestre visibili per città" aside="Oggi">
+                    <BarList
+                        rows={stats.gyms.cities}
+                        empty="Nessuna palestra visibile."
+                    />
+                </AdminPanel>
+                <AdminPanel
+                    title="Palestre più visitate"
+                    aside="Ultimi 30 giorni"
+                >
+                    <BarList
+                        rows={stats.gyms.topViewed}
+                        empty="Nessuna visita negli ultimi 30 giorni."
+                    />
+                </AdminPanel>
+                <AdminPanel
+                    title="Città più cercate (palestre)"
+                    aside="Ultimi 30 giorni"
+                >
+                    <BarList
+                        rows={stats.gyms.searchCities}
+                        empty="Nessuna ricerca negli ultimi 30 giorni."
+                    />
                 </AdminPanel>
             </div>
         </>

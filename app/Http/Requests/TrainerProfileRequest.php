@@ -3,12 +3,15 @@
 namespace App\Http\Requests;
 
 use App\Actions\Fortify\CreateNewUser;
+use App\Actions\Gym\GymLinks;
 use App\Enums\PlaceType;
 use App\Enums\TrainerExperience;
+use App\Enums\TrainerProfileStatus;
 use App\Enums\TrainingGoal;
 use App\Enums\UserRole;
 use App\Models\City;
 use App\Models\Discipline;
+use App\Models\GymProfile;
 use App\Models\Service;
 use App\Models\TrainerProfile;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -103,6 +106,9 @@ class TrainerProfileRequest extends FormRequest
             'goals.*' => [Rule::enum(TrainingGoal::class), 'distinct'],
             'places' => ['required', 'array', 'min:1'],
             'places.*' => [Rule::enum(PlaceType::class), 'distinct'],
+            // "In palestra": gyms of MioPersonal, by id. Each one gets a request (GymLinks).
+            'gyms' => ['array', 'max:'.GymLinks::MAX_GYMS_PER_TRAINER],
+            'gyms.*' => ['integer', 'distinct', Rule::exists(GymProfile::class, 'id')->where('status', TrainerProfileStatus::Approved->value)],
             'studios' => ['array', 'max:'.self::MAX_STUDIOS],
             'studios.*.name' => ['required', 'string', 'max:100'],
             'studios.*.address' => ['required', 'string', 'max:200'],
@@ -306,6 +312,10 @@ class TrainerProfileRequest extends FormRequest
                         $validator->errors()->add('studios', 'Aggiungi almeno uno studio con nome e indirizzo.');
                     }
 
+                    if (in_array(PlaceType::Gym->value, $places, true) && $this->input('gyms', []) === []) {
+                        $validator->errors()->add('gyms', 'Scegli almeno una palestra in cui alleni.');
+                    }
+
                     // Online-only trainers don't need a city.
                     if (array_diff($places, [PlaceType::Online->value]) !== [] && ! $this->filled('city')) {
                         $validator->errors()->add('city', 'Scegli la tua città principale.');
@@ -371,7 +381,9 @@ class TrainerProfileRequest extends FormRequest
             'places.required' => 'Scegli almeno un luogo in cui alleni.',
             'places.min' => 'Scegli almeno un luogo in cui alleni.',
             'places.*.*' => 'Scegli i luoghi tra quelli proposti.',
-            'studios.max' => 'Puoi indicare al massimo 3 luoghi in presenza.',
+            'gyms.max' => 'Puoi scegliere al massimo '.GymLinks::MAX_GYMS_PER_TRAINER.' palestre.',
+            'gyms.*.*' => 'Una delle palestre scelte non è più disponibile.',
+            'studios.max' => 'Puoi indicare al massimo 3 studi privati.',
             'studios.*.name.required' => 'Scrivi il nome di ogni studio.',
             'studios.*.address.required' => 'Scrivi l’indirizzo di ogni studio.',
             'studios.*.*.max' => 'Il nome o l’indirizzo di uno studio è troppo lungo.',

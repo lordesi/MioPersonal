@@ -2,10 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Gym\GymLinks;
+use App\Enums\GymLinkSide;
+use App\Enums\GymLinkStatus;
 use App\Enums\PlaceType;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\TrainerReviewDecision;
 use App\Enums\UserRole;
+use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use Database\Seeders\CatalogSeeder;
@@ -146,6 +150,47 @@ class TrainerRegistrationTest extends TestCase
                 ->where('submitted', true)
                 ->where('previewHref', route('trainers.show', 'giulia-rossi', false))
             );
+    }
+
+    public function test_in_palestra_asks_the_chosen_gyms_and_keeps_the_ones_that_agreed()
+    {
+        $gym = GymProfile::factory()->approved()->create(['name' => 'FitLab']);
+        $client = User::factory()->create();
+
+        $this->actingAs($client)
+            ->post(route('trainer.register.store'), ['terms' => '1', ...$this->profile([
+                'places' => ['gym', 'online'],
+                'gyms' => [$gym->id],
+                'studios' => [],
+            ])])
+            ->assertSessionHasNoErrors();
+
+        $profile = $client->fresh()->trainerProfile;
+        // A request, waiting: the place comes when the gym agrees.
+        $this->assertSame(GymLinkStatus::Pending, $profile->gymLinks()->value('status'));
+        $this->assertSame([PlaceType::Online], $profile->places->pluck('type')->all());
+
+        // "In palestra" without a gym is not allowed.
+        $this->actingAs(User::factory()->create())
+            ->post(route('trainer.register.store'), ['terms' => '1', ...$this->profile(['places' => ['gym'], 'gyms' => []])])
+            ->assertSessionHasErrors('gyms');
+
+        // The gym agrees; sending the profile again keeps the gym's place.
+        $link = $profile->gymLinks()->firstOrFail();
+        app(GymLinks::class)->accept($link, GymLinkSide::Gym);
+        $profile->forceFill(['status' => TrainerProfileStatus::Changes])->save();
+
+        $this->actingAs($client->fresh())
+            ->post(route('trainer.register.store'), $this->profile([
+                'places' => ['gym', 'online'],
+                'gyms' => [$gym->id],
+                'studios' => [],
+                'photo' => null,
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(1, $profile->places()->where('type', PlaceType::Gym)->count());
+        $this->assertSame(GymLinkStatus::Accepted, $link->fresh()->status);
     }
 
     public function test_a_new_trainer_gets_the_email_to_verify_the_address()

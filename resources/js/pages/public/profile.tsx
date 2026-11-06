@@ -12,6 +12,8 @@ import ReviewsSection from '@/components/profile/reviews-section';
 import ServicePicker from '@/components/profile/service-picker';
 import SimilarTrainers from '@/components/profile/similar-trainers';
 import SlotPicker from '@/components/profile/slot-picker';
+import PlacePicker from '@/components/profile/place-picker';
+import TrainerGyms from '@/components/profile/trainer-gyms';
 import TrainingPlaces from '@/components/profile/training-places';
 import {
     Breadcrumb,
@@ -21,8 +23,8 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { useClipboard } from '@/hooks/use-clipboard';
 import { useFavorite } from '@/hooks/use-favorite';
+import { useShare } from '@/hooks/use-share';
 import {
     freeStarts,
     serviceDurations,
@@ -97,6 +99,29 @@ export default function Profile({
     );
     const [start, setStart] = useState<string | null>(choice.start);
     const [booking, setBooking] = useState(false);
+    // "Dove": only with more than one place in person (a gym, a studio…).
+    const inPersonPlaces = trainer.places.filter(
+        (place) => place.type !== 'online',
+    );
+    const [placeId, setPlaceId] = useState<number | null>(() => {
+        const wanted = Number(
+            new URLSearchParams(page.url.split('?')[1] ?? '').get('luogo'),
+        );
+
+        return inPersonPlaces.some((place) => place.id === wanted)
+            ? wanted
+            : null;
+    });
+    // With one place the server copies it; online services ignore it.
+    const placePicker = (variant: 'light' | 'dark') =>
+        inPersonPlaces.length > 1 ? (
+            <PlacePicker
+                places={inPersonPlaces}
+                value={placeId}
+                onChange={setPlaceId}
+                variant={variant}
+            />
+        ) : null;
 
     const service =
         trainer.services.find((item) => item.id === serviceId) ??
@@ -153,6 +178,7 @@ export default function Profile({
                         servizio: serviceId,
                         durata: minutes,
                         inizio: start,
+                        luogo: placeId,
                     },
                 }),
             );
@@ -170,8 +196,12 @@ export default function Profile({
             book.url(trainer.slug),
             // "Il tuo pacchetto": the package says service and duration.
             service.packageId !== null
-                ? { client_package_id: service.packageId, start }
-                : { service_id: serviceId, start, minutes },
+                ? {
+                      client_package_id: service.packageId,
+                      start,
+                      place_id: placeId,
+                  }
+                : { service_id: serviceId, start, minutes, place_id: placeId },
             {
                 preserveScroll: true,
                 onStart: () => setBooking(true),
@@ -179,6 +209,7 @@ export default function Profile({
                 onError: (errors) => {
                     toast.error(
                         errors.start ??
+                            errors.place_id ??
                             errors.client_package_id ??
                             errors.minutes ??
                             errors.service_id ??
@@ -195,25 +226,7 @@ export default function Profile({
         );
     };
 
-    const [, copy] = useClipboard();
-
-    const share = async () => {
-        const url = window.location.href;
-
-        if (navigator.share) {
-            try {
-                await navigator.share({ title: trainer.name, url });
-            } catch {
-                // The visitor closed the share sheet: nothing to do.
-            }
-
-            return;
-        }
-
-        if (await copy(url)) {
-            toast('Link copiato');
-        }
-    };
+    const share = useShare(trainer.name);
 
     // Back to the trainers of the same city.
     const citySearchHref = searchUrl({}, trainer.city?.slug);
@@ -330,6 +343,7 @@ export default function Profile({
                                     value={service.id}
                                     onChange={changeService}
                                 />
+                                {placePicker('light')}
                                 <p className="text-xs font-medium text-muted-foreground">
                                     Prezzi indicativi. Il pagamento si concorda
                                     con il trainer.
@@ -365,6 +379,14 @@ export default function Profile({
                                     />
                                 </div>
                             )}
+                            {trainer.gyms.length > 0 && (
+                                <div className="order-3 lg:order-4">
+                                    <TrainerGyms
+                                        gyms={trainer.gyms}
+                                        trainerFirstName={firstName}
+                                    />
+                                </div>
+                            )}
                             {trainer.certifications.length > 0 && (
                                 <div className="order-5">
                                     <Certifications
@@ -392,6 +414,7 @@ export default function Profile({
                             confirmLabel={trainer.confirmLabel}
                             onBook={bookSlot}
                             booking={booking}
+                            placePicker={placePicker('dark')}
                         />
                     </div>
 

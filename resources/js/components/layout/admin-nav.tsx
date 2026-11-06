@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 import {
+    Building2,
     Calendar,
     ChartColumn,
     House,
@@ -25,6 +26,7 @@ import {
     stats,
     users,
     verification,
+    gymVerification,
 } from '@/routes/admin';
 import type { AdminAreaData } from '@/types';
 
@@ -32,6 +34,7 @@ export type AdminSection =
     | 'overview'
     | 'stats'
     | 'verification'
+    | 'gym-verification'
     | 'messages'
     | 'bookings'
     | 'users'
@@ -64,6 +67,13 @@ const sections: {
         icon: ShieldCheck,
         href: verification.url,
         badge: 'verificationCount',
+    },
+    {
+        section: 'gym-verification',
+        title: 'Verifica palestre',
+        icon: Building2,
+        href: gymVerification.url,
+        badge: 'gymVerificationCount',
     },
     {
         section: 'messages',

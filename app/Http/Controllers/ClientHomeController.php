@@ -130,8 +130,7 @@ class ClientHomeController extends Controller
 
         if ($preference->city_id !== null && $preference->mode !== TrainingMode::Online) {
             $query->where(fn (Builder $inCity) => $inCity
-                ->where('city_id', $preference->city_id)
-                ->orWhereHas('otherCities', fn (Builder $other) => $other->whereKey($preference->city_id))
+                ->where(fn (Builder $based) => $based->basedIn($preference->city_id))
                 ->orWhere(fn (Builder $onlineOnly) => $onlineOnly->where('trains_online', true)->where('trains_in_person', false)));
         }
     }

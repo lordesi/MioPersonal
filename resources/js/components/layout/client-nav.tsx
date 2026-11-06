@@ -1,8 +1,9 @@
 import { Link } from '@inertiajs/react';
-import { Calendar, Heart, Search, User } from 'lucide-react';
+import { Building2, Calendar, Heart, Search, User } from 'lucide-react';
 import AccountMenu from '@/components/layout/account-menu';
 import { BrandMark } from '@/components/layout/brand-logo';
 import type { TabItem } from '@/components/layout/mobile-tab-bar';
+import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
 import { home as publicHome } from '@/routes';
@@ -37,6 +38,14 @@ export function clientNavItems(current?: ClientSection): ClientNavItem[] {
             href: searchUrl(),
         },
         {
+            title: 'Cerca palestre',
+            shortTitle: 'Palestre',
+            icon: Building2,
+            href: gymSearchUrl(),
+            // The tab bar has room for four.
+            desktopOnly: true,
+        },
+        {
             section: 'profile',
             title: 'Modifica profilo',
             shortTitle: 'Profilo',
@@ -45,7 +54,7 @@ export function clientNavItems(current?: ClientSection): ClientNavItem[] {
         },
         {
             section: 'favorites',
-            title: 'Trainer preferiti',
+            title: 'Preferiti',
             shortTitle: 'Preferiti',
             icon: Heart,
             href: favorites.url(),

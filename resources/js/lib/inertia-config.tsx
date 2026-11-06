@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import AdminLayout from '@/layouts/admin-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import ClientLayout from '@/layouts/client-layout';
+import GymLayout from '@/layouts/gym-layout';
 import PublicLayout from '@/layouts/public-layout';
 import TrainerLayout from '@/layouts/trainer-layout';
 
@@ -39,6 +40,8 @@ export function layout(
             return PublicLayout;
         case name.startsWith('trainer/'):
             return TrainerLayout;
+        case name.startsWith('gym/'):
+            return GymLayout;
         case name.startsWith('admin/'):
             return AdminLayout;
         case name.startsWith('client/'):

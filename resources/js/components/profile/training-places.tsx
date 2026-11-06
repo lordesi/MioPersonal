@@ -11,7 +11,8 @@ const options: {
     icon: LucideIcon;
 }[] = [
     { type: 'online', title: 'Online', icon: Video },
-    { type: 'studio', title: 'Studio o palestra', icon: Building2 },
+    // Gyms of MioPersonal and private studios share the card.
+    { type: 'studio', title: 'In palestra o studio', icon: Building2 },
     { type: 'home', title: 'A domicilio', icon: House },
     { type: 'park', title: "All'aperto", icon: Trees },
 ];
@@ -34,7 +35,11 @@ export default function TrainingPlaces({
 
     /** What the card says under the title; null = not offered. */
     const detail = (type: TrainingPlace['type']): string | null => {
-        const rows = places.filter((place) => place.type === type);
+        const rows = places.filter(
+            (place) =>
+                place.type === type ||
+                (type === 'studio' && place.type === 'gym'),
+        );
 
         if (rows.length === 0) {
             return null;
@@ -44,7 +49,7 @@ export default function TrainingPlaces({
             return 'Il link arriva con la conferma';
         }
 
-        // Every studio: "Studio Fit, Milano, via Roma 1".
+        // Every gym and studio: "FitLab, Via Roma 1, 20121 Milano".
         return rows
             .map((place) =>
                 type === 'studio'

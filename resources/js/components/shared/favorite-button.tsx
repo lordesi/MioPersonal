@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 type FavoriteButtonProps = {
-    trainerName: string;
+    name: string;
     pressed: boolean;
     onPressedChange: (pressed: boolean) => void;
     /** 'icon' = round heart on cards, 'labeled' = "Salva" button on the profile. */
@@ -12,7 +12,7 @@ type FavoriteButtonProps = {
 };
 
 export default function FavoriteButton({
-    trainerName,
+    name,
     pressed,
     onPressedChange,
     variant = 'icon',
@@ -41,7 +41,7 @@ export default function FavoriteButton({
             variant="outline"
             size="icon"
             aria-pressed={pressed}
-            aria-label={`${pressed ? 'Togli dai preferiti' : 'Aggiungi ai preferiti'} ${trainerName}`}
+            aria-label={`${pressed ? 'Togli dai preferiti' : 'Aggiungi ai preferiti'} ${name}`}
             onClick={() => onPressedChange(!pressed)}
             className={cn('rounded-full border-border md:size-10', className)}
         >

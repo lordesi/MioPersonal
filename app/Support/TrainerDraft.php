@@ -2,7 +2,9 @@
 
 namespace App\Support;
 
+use App\Enums\GymLinkStatus;
 use App\Enums\PlaceType;
+use App\Models\GymTrainerLink;
 use App\Models\Service;
 use App\Models\TrainerProfile;
 use Illuminate\Support\Collection;
@@ -19,7 +21,23 @@ final class TrainerDraft
      */
     public static function fromProfile(TrainerProfile $profile): array
     {
-        $profile->load(['city', 'otherCities', 'disciplines', 'places', 'services', 'workingHours', 'documents', 'portrait']);
+        $profile->load(['city', 'otherCities', 'disciplines', 'places', 'services', 'workingHours', 'documents', 'portrait', 'gymLinks.gymProfile.city']);
+
+        // "In palestra": the gyms asked or agreed (a "no" is not shown again).
+        $gyms = $profile->gymLinks
+            ->where('status', '!=', GymLinkStatus::Declined)
+            ->map(fn (GymTrainerLink $link) => [
+                'id' => $link->gym_profile_id,
+                'name' => $link->gymProfile->name,
+                'city' => $link->gymProfile->city->name,
+                'status' => $link->status->value,
+            ])->values()->all();
+
+        $places = $profile->places->pluck('type')->unique()->map(fn (PlaceType $type) => $type->value)->values()->all();
+
+        if ($gyms !== [] && ! in_array(PlaceType::Gym->value, $places, true)) {
+            $places[] = PlaceType::Gym->value;
+        }
 
         return [
             'headline' => $profile->headline,
@@ -29,7 +47,8 @@ final class TrainerDraft
             'photoUrl' => $profile->portrait?->url(),
             'disciplines' => $profile->disciplines->pluck('slug')->all(),
             'goals' => $profile->goals ?? [],
-            'places' => $profile->places->pluck('type')->unique()->map(fn (PlaceType $type) => $type->value)->values()->all(),
+            'places' => $places,
+            'gyms' => $gyms,
             'studios' => $profile->places
                 ->where('type', PlaceType::Studio)
                 ->map(fn ($place) => ['name' => $place->name ?? '', 'address' => $place->address ?? ''])

@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
 use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\Discipline;
+use App\Models\GymProfile;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,6 +22,11 @@ class AdminCatalogController extends Controller
     public function __invoke(): Response
     {
         $cities = City::query()->orderBy('region')->orderBy('name')->get();
+        // "N palestre": the approved gyms of each city, with the owner active.
+        $gymCounts = GymProfile::query()->approved()
+            ->selectRaw('city_id, count(*) as total')
+            ->groupBy('city_id')
+            ->pluck('total', 'city_id');
 
         return Inertia::render('admin/catalog', [
             'adminArea' => $this->adminArea(),
@@ -46,6 +52,7 @@ class AdminCatalogController extends Controller
                 // "45.4642, 9.19": the same text the form asks for.
                 'coordinates' => $city->lat.', '.$city->lng,
                 'isActive' => $city->is_active,
+                'gymCount' => (int) ($gymCounts[$city->id] ?? 0),
             ])->values()),
             'regions' => $cities->pluck('region')->unique()->sort()->values(),
         ]);

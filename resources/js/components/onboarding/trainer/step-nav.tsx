@@ -13,6 +13,8 @@ export const steps = [
 ];
 
 type StepNavProps = {
+    /** The steps of the sidebar; the trainer's by default. */
+    items?: { label: string }[];
     /** The open step; 8 after sending, when every step is done. */
     step: number;
     /** Highest step reached: the ones after it can't be opened yet. */
@@ -27,6 +29,7 @@ type StepNavProps = {
  * still closed (grey). Only the steps already reached can be opened.
  */
 export default function StepNav({
+    items = steps,
     step,
     reached,
     firstStep = 1,
@@ -35,7 +38,7 @@ export default function StepNav({
     return (
         <nav aria-label="Passi della registrazione">
             <ol className="flex flex-col gap-1">
-                {steps.map((item, index) => {
+                {items.map((item, index) => {
                     const number = index + 1;
                     const current = number === step;
                     const done = number < step;

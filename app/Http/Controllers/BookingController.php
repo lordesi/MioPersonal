@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Actions\Bookings\CreateBooking;
 use App\Enums\BookingActor;
+use App\Enums\PlaceType;
 use App\Models\Booking;
 use App\Models\ClientPackage;
 use App\Models\Service;
+use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Notifications\BookingChanged;
@@ -24,7 +26,7 @@ use Illuminate\Validation\ValidationException;
 class BookingController extends Controller
 {
     /** The choice of the profile page, kept in the URL across login and sign-up. */
-    private const CHOICE = ['servizio', 'durata', 'inizio'];
+    private const CHOICE = ['servizio', 'durata', 'inizio', 'luogo'];
 
     /**
      * "Ti registri solo quando prenoti": guests land here, the `auth` middleware
@@ -44,6 +46,15 @@ class BookingController extends Controller
 
         /** @var User $client */
         $client = $request->user();
+
+        // "Dove": one of the trainer's places in person (a gym, a studio…), optional.
+        $request->validate([
+            'place_id' => [
+                'nullable', 'integer',
+                Rule::exists(TrainerPlace::class, 'id')->where('trainer_profile_id', $profile->id)->whereNot('type', PlaceType::Online->value),
+            ],
+        ], ['place_id.*' => 'Scegli uno dei luoghi del trainer.']);
+        $place = $request->filled('place_id') ? TrainerPlace::with(['city', 'gymProfile.city'])->find($request->integer('place_id')) : null;
 
         // "Il tuo pacchetto": a session of a package bought from this trainer.
         if ($request->filled('client_package_id')) {
@@ -66,6 +77,7 @@ class BookingController extends Controller
                 $client,
                 $package,
                 CarbonImmutable::parse($request->string('start')->value()),
+                $place,
             );
 
             return to_route('client.bookings.sent', $booking);
@@ -90,6 +102,7 @@ class BookingController extends Controller
             Service::findOrFail($request->integer('service_id')),
             CarbonImmutable::parse($request->string('start')->value()),
             $request->integer('minutes'),
+            $place,
         );
 
         return to_route('client.bookings.sent', $booking);

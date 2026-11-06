@@ -7,9 +7,14 @@ import {
     modeItemClassName,
     modeTrackClassName,
 } from '@/components/search/filter-bar';
+import GymSearchBar from '@/components/search/gym-search-bar';
+import type { GymSearchChoices } from '@/components/search/gym-search-bar';
 import SearchBar from '@/components/search/search-bar';
-import type { SearchChoices } from '@/components/search/search-bar';
+import type { CityChoice, SearchChoices } from '@/components/search/search-bar';
+import { SearchKindToggle } from '@/components/search/search-kind-toggle';
+import type { SearchKind } from '@/components/search/search-kind-toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
 import type { CatalogOption } from '@/types';
@@ -29,17 +34,37 @@ const noChoices: SearchChoices = {
     disponibilita: null,
 };
 
+const noGymChoices: GymSearchChoices = {
+    servizi: [],
+    city: null,
+    prezzo: null,
+};
+
+const titles: Record<SearchKind, string> = {
+    trainer: 'Trova il personal trainer giusto, vicino a te.',
+    gym: 'Trova la palestra giusta, vicino a te.',
+};
+
 type HeroSearchProps = {
     /** From the catalog (App\Support\CatalogOptions). */
     disciplines: CatalogOption[];
-    cities: CatalogOption[];
+    /** With their center: "Usa la mia posizione". */
+    cities: CityChoice[];
+    /** "Servizi" of the gyms (App\Enums\GymAmenity). */
+    amenities: CatalogOption[];
 };
 
 /**
- * Dark home hero, right under the dark header: headline, the
- * "Cosa · Dove · Quando" bar and the mode switch.
+ * Dark home hero, right under the dark header: "Personal trainer | Palestre",
+ * the headline, the search bar of the chosen kind and, for trainers, the
+ * mode switch.
  */
-export default function HeroSearch({ disciplines, cities }: HeroSearchProps) {
+export default function HeroSearch({
+    disciplines,
+    cities,
+    amenities,
+}: HeroSearchProps) {
+    const [kind, setKind] = useState<SearchKind>('trainer');
     const [mode, setMode] = useState<Mode>('tutte');
 
     const search = ({ disciplina, city, disponibilita }: SearchChoices) =>
@@ -54,58 +79,83 @@ export default function HeroSearch({ disciplines, cities }: HeroSearchProps) {
             ),
         );
 
+    const searchGyms = ({ servizi, city, prezzo }: GymSearchChoices) =>
+        router.get(gymSearchUrl({ servizi, prezzo }, city));
+
     return (
         <section
             aria-labelledby="hero-title"
             className="bg-primary text-primary-foreground"
         >
             <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pt-8 pb-14 md:px-8 md:pt-12 md:pb-18">
-                <h1
-                    id="hero-title"
-                    className="max-w-195 text-[38px] leading-[42px] font-bold tracking-[-0.03em] md:text-[56px] md:leading-[60px]"
-                >
-                    Trova il personal trainer giusto, vicino a te.
-                </h1>
+                <div className="flex flex-col gap-6">
+                    <SearchKindToggle value={kind} onChange={setKind} />
+                    <h1
+                        id="hero-title"
+                        className="max-w-195 text-[38px] leading-[42px] font-bold tracking-[-0.03em] md:text-[56px] md:leading-[60px]"
+                    >
+                        {titles[kind]}
+                    </h1>
+                </div>
 
                 <div className="flex flex-col gap-5">
-                    <div role="search" aria-label="Cerca un personal trainer">
-                        <SearchBar
-                            variant="hero"
-                            disciplines={disciplines}
-                            cities={cities}
-                            availabilityOptions={availabilityOptions}
-                            applied={noChoices}
-                            onSearch={search}
-                        />
-                    </div>
+                    {kind === 'trainer' ? (
+                        <div
+                            role="search"
+                            aria-label="Cerca un personal trainer"
+                        >
+                            <SearchBar
+                                variant="hero"
+                                disciplines={disciplines}
+                                cities={cities}
+                                availabilityOptions={availabilityOptions}
+                                applied={noChoices}
+                                onSearch={search}
+                            />
+                        </div>
+                    ) : (
+                        <div role="search" aria-label="Cerca una palestra">
+                            <GymSearchBar
+                                variant="hero"
+                                amenities={amenities}
+                                cities={cities}
+                                applied={noGymChoices}
+                                onSearch={searchGyms}
+                            />
+                        </div>
+                    )}
 
                     <div className="flex flex-col items-center gap-3.5">
-                        <ToggleGroup
-                            type="single"
-                            aria-label="Modalità"
-                            value={mode}
-                            // Clicking the chosen option again gives '': keep it.
-                            onValueChange={(value) =>
-                                value && setMode(value as Mode)
-                            }
-                            className={cn(modeTrackClassName, 'max-w-150')}
-                        >
-                            {modes.map((option) => (
-                                <ToggleGroupItem
-                                    key={option.value}
-                                    value={option.value}
-                                    className={cn(
-                                        modeItemClassName,
-                                        'h-11 px-4 text-[15px]',
-                                    )}
-                                >
-                                    <option.icon aria-hidden="true" />
-                                    {option.label}
-                                </ToggleGroupItem>
-                            ))}
-                        </ToggleGroup>
+                        {kind === 'trainer' && (
+                            <ToggleGroup
+                                type="single"
+                                aria-label="Modalità"
+                                value={mode}
+                                // Clicking the chosen option again gives '': keep it.
+                                onValueChange={(value) =>
+                                    value && setMode(value as Mode)
+                                }
+                                className={cn(modeTrackClassName, 'max-w-150')}
+                            >
+                                {modes.map((option) => (
+                                    <ToggleGroupItem
+                                        key={option.value}
+                                        value={option.value}
+                                        className={cn(
+                                            modeItemClassName,
+                                            'h-11 px-4 text-[15px]',
+                                        )}
+                                    >
+                                        <option.icon aria-hidden="true" />
+                                        {option.label}
+                                    </ToggleGroupItem>
+                                ))}
+                            </ToggleGroup>
+                        )}
                         <p className="text-center text-[13px] leading-[18px] text-primary-foreground/70">
-                            Per guardare i profili non serve registrarsi
+                            {kind === 'trainer'
+                                ? 'Per guardare i profili non serve registrarsi'
+                                : 'Orari, abbonamenti, promozioni e i trainer che allenano lì'}
                         </p>
                     </div>
                 </div>

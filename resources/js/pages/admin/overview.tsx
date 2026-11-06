@@ -1,10 +1,17 @@
 import { Head, Link } from '@inertiajs/react';
-import { bookings, reviews, verification } from '@/routes/admin';
+import {
+    bookings,
+    gymVerification,
+    reviews,
+    verification,
+} from '@/routes/admin';
 
 type OverviewProps = {
     todo: {
         verificationCount: number;
         oldestWaitDays: number;
+        gymVerificationCount: number;
+        oldestGymWaitDays: number;
         expiredToday: number;
         /** Profiles and reviews reported by users (reporting system: to do). */
         reportedCount: number;
@@ -14,6 +21,8 @@ type OverviewProps = {
         usersThisWeek: number;
         /** Trainers who used the web app in the last 24 hours. */
         activeTrainers: number;
+        /** Published gyms: the ones clients find in the search. */
+        activeGyms: number;
         bookingsThisWeek: number;
         bookingsLastWeek: number;
         confirmedRate: number;
@@ -39,6 +48,12 @@ export default function Overview({ todo, stats }: OverviewProps) {
             label: 'Trainer da verificare',
             hint: `Il più vecchio aspetta da ${plural(todo.oldestWaitDays, 'giorno', 'giorni')}`,
             href: verification(),
+        },
+        {
+            count: todo.gymVerificationCount,
+            label: 'Palestre da verificare',
+            hint: `La più vecchia aspetta da ${plural(todo.oldestGymWaitDays, 'giorno', 'giorni')}`,
+            href: gymVerification(),
         },
         {
             count: todo.expiredToday,
@@ -75,6 +90,11 @@ export default function Overview({ todo, stats }: OverviewProps) {
             detail: 'Entrati nelle ultime 24 ore',
         },
         {
+            label: 'Palestre attive',
+            value: String(stats.activeGyms),
+            detail: 'Visibili nella ricerca',
+        },
+        {
             label: 'Prenotazioni (7 giorni)',
             value: String(stats.bookingsThisWeek),
             detail: weekDetail,
@@ -92,7 +112,7 @@ export default function Overview({ todo, stats }: OverviewProps) {
 
             <section
                 aria-label="Da fare"
-                className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
             >
                 {todoCards.map((card) => (
                     <Link
@@ -118,7 +138,7 @@ export default function Overview({ todo, stats }: OverviewProps) {
 
             <section
                 aria-label="Numeri"
-                className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+                className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
             >
                 {statCards.map((card) => (
                     <div

@@ -61,6 +61,16 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that the user manages a gym.
+     */
+    public function gym(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Gym,
+        ]);
+    }
+
+    /**
      * Indicate that the user is part of the MioPersonal team.
      */
     public function admin(): static

@@ -1,5 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import {
+    Building2,
     Calendar,
     ChevronDown,
     ChevronsUpDown,
@@ -32,12 +33,19 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
+import { gymSearchUrl } from '@/lib/gym';
 import { cn } from '@/lib/utils';
 import { logout } from '@/routes';
 import { settings } from '@/routes/account';
 import { favorites, home as clientHome } from '@/routes/client';
 import { show as contactPage } from '@/routes/contact';
 import {
+    dashboard as gymDashboard,
+    settings as gymSettings,
+} from '@/routes/gym';
+import { edit as editGymProfile } from '@/routes/gym/profile';
+import {
+    gyms as trainerGyms,
     register as trainerRegister,
     settings as trainerSettings,
     share as trainerShare,
@@ -45,7 +53,7 @@ import {
 } from '@/routes/trainer';
 import { edit as editTrainerProfile } from '@/routes/trainer/profile';
 
-export type AccountMenuVariant = 'client' | 'trainer';
+export type AccountMenuVariant = 'client' | 'trainer' | 'gym';
 
 type MenuItem = {
     title: string;
@@ -84,6 +92,38 @@ function menuGroups({
         icon: CircleHelp,
     };
 
+    if (variant === 'gym') {
+        return [
+            [
+                {
+                    title: 'La mia area',
+                    href: gymDashboard.url(),
+                    icon: LayoutDashboard,
+                },
+                ...(publicProfileHref
+                    ? [
+                          {
+                              title: 'Vedi profilo pubblico',
+                              href: publicProfileHref,
+                              icon: Eye,
+                          },
+                      ]
+                    : []),
+                {
+                    title: 'Modifica profilo',
+                    href: editGymProfile.url(),
+                    icon: User,
+                },
+                {
+                    title: 'Impostazioni account',
+                    href: gymSettings.url(),
+                    icon: Settings,
+                },
+            ],
+            [help],
+        ];
+    }
+
     if (variant === 'trainer') {
         return [
             [
@@ -105,6 +145,11 @@ function menuGroups({
                     title: 'Condividi profilo',
                     href: trainerShare.url(),
                     icon: Share2,
+                },
+                {
+                    title: 'Palestre',
+                    href: trainerGyms.url(),
+                    icon: Building2,
                 },
                 {
                     title: 'Modifica profilo',
@@ -133,6 +178,11 @@ function menuGroups({
                 href: favorites.url(),
                 icon: Heart,
                 badge: favoritesCount,
+            },
+            {
+                title: 'Cerca palestre',
+                href: gymSearchUrl(),
+                icon: Building2,
             },
             {
                 title: 'Impostazioni account',
@@ -189,7 +239,11 @@ export default function AccountMenu(props: AccountMenuProps) {
         favoritesCount:
             props.favoritesCount ?? auth?.favoritesCount ?? undefined,
     });
-    const roleLabel = variant === 'trainer' ? 'Trainer' : 'Cliente';
+    const roleLabel = {
+        trainer: 'Trainer',
+        gym: 'Palestra',
+        client: 'Cliente',
+    }[variant];
     const label = `Menu account di ${userName}`;
 
     const [desktopOpen, setDesktopOpen] = useState(false);
@@ -312,9 +366,13 @@ export default function AccountMenu(props: AccountMenuProps) {
                             {userName}
                         </span>
                         <span className="text-xs text-sidebar-muted-foreground">
-                            {variant === 'trainer'
-                                ? 'Personal trainer'
-                                : 'Il mio account'}
+                            {
+                                {
+                                    trainer: 'Personal trainer',
+                                    gym: 'Palestra',
+                                    client: 'Il mio account',
+                                }[variant]
+                            }
                         </span>
                     </span>
                     <ChevronsUpDown aria-hidden="true" className="size-4" />

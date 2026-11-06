@@ -8,6 +8,8 @@ enum UserRole: string
     case Client = 'client';
     case Trainer = 'trainer';
     case Admin = 'admin';
+    /** The account of a gym: its profile, plans, promotions and trainers. */
+    case Gym = 'gym';
 
     /** Name of the route where each role starts: after login and when a page is not for them. */
     public function homeRoute(): string
@@ -16,6 +18,7 @@ enum UserRole: string
             self::Client => 'client.home',
             self::Trainer => 'trainer.today',
             self::Admin => 'admin.overview',
+            self::Gym => 'gym.dashboard',
         };
     }
 
@@ -26,6 +29,7 @@ enum UserRole: string
             self::Client => 'account.settings',
             self::Trainer => 'trainer.settings',
             self::Admin => 'admin.overview',
+            self::Gym => 'gym.settings',
         };
     }
 }

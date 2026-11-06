@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
 use App\Models\CookieConsent;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -29,6 +30,7 @@ class HandleInertiaRequests extends Middleware
     protected $withoutSsr = [
         'area-cliente*',
         'area-trainer*',
+        'area-palestra*',
         'admin*',
         'dashboard',
         'impostazioni*',
@@ -75,14 +77,36 @@ class HandleInertiaRequests extends Middleware
                 // Only what the pages use (types/auth.ts): not the whole model, which
                 // also holds the phone, acquisition data and the activity times.
                 'user' => $request->user()?->only(['id', 'name', 'email', 'avatar', 'email_verified_at', 'role']),
-                // The number on "Preferiti" in the account menu (the same trainers as the page).
-                'favoritesCount' => fn () => $request->user()?->role === UserRole::Client
-                    ? $request->user()->favoriteTrainers()->where('trainer_profiles.status', TrainerProfileStatus::Approved)->count()
-                    : null,
+                // The number on "Preferiti" in the account menu (the same trainers and gyms as the page).
+                'favoritesCount' => fn () => ($counts = $this->favoriteCounts($request)) === null ? null : $counts['trainers'] + $counts['gyms'],
+                // The numbers on the "Preferiti" filter of the two searches.
+                'favoriteCounts' => fn () => $this->favoriteCounts($request),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             // null shows the cookie banner.
             'cookieConsent' => CookieConsent::current($request),
         ];
+    }
+
+    /**
+     * The saved trainers and gyms still public; null for guests and the other roles.
+     * Counted once per request (kept on the request): both props read it.
+     *
+     * @return array{trainers: int, gyms: int}|null
+     */
+    private function favoriteCounts(Request $request): ?array
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if ($user?->role !== UserRole::Client) {
+            return null;
+        }
+
+        /** @var array{trainers: int, gyms: int} */
+        return $request->attributes->get('favoriteCounts') ?? tap([
+            'trainers' => $user->favoriteTrainers()->where('trainer_profiles.status', TrainerProfileStatus::Approved)->count(),
+            'gyms' => $user->favoriteGyms()->approved()->count(),
+        ], fn (array $counts) => $request->attributes->set('favoriteCounts', $counts));
     }
 }

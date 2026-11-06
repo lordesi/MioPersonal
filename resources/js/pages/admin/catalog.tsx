@@ -163,7 +163,7 @@ export default function Catalog({
                                                 trigger={
                                                     <button
                                                         type="button"
-                                                        aria-label={`Modifica ${city.name}${city.isActive ? '' : ' (nascosta)'}`}
+                                                        aria-label={`Modifica ${city.name}${city.isActive ? '' : ' (nascosta)'}${city.gymCount > 0 ? `, ${city.gymCount === 1 ? '1 palestra' : `${city.gymCount} palestre`}` : ''}`}
                                                         className={cn(
                                                             'flex h-7.5 items-center rounded-full border px-3 text-[13px] hover:bg-accent',
                                                             city.isActive
@@ -172,6 +172,15 @@ export default function Catalog({
                                                         )}
                                                     >
                                                         {city.name}
+                                                        {city.gymCount > 0 && (
+                                                            <span className="ml-1.5 text-muted-foreground tabular-nums">
+                                                                ·{' '}
+                                                                {city.gymCount ===
+                                                                1
+                                                                    ? '1 palestra'
+                                                                    : `${city.gymCount} palestre`}
+                                                            </span>
+                                                        )}
                                                     </button>
                                                 }
                                             />

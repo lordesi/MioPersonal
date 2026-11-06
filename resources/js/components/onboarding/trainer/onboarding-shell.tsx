@@ -14,6 +14,10 @@ type OnboardingShellProps = {
     onSelect: (step: number) => void;
     /** The account at the bottom of the sidebar; null for a guest. */
     user: { name: string; email: string } | null;
+    /** The steps of the sidebar; the trainer's by default. */
+    stepItems?: { label: string }[];
+    /** Above "Passo 1 di 7", e.g. "DIVENTA TRAINER". */
+    eyebrow?: string;
     children: ReactNode;
 };
 
@@ -28,11 +32,13 @@ export default function OnboardingShell({
     firstStep,
     onSelect,
     user,
+    stepItems = steps,
+    eyebrow = 'DIVENTA TRAINER',
     children,
 }: OnboardingShellProps) {
     const getInitials = useInitials();
-    const shown = Math.min(step, steps.length);
-    const percent = Math.round((shown / steps.length) * 100);
+    const shown = Math.min(step, stepItems.length);
+    const percent = Math.round((shown / stepItems.length) * 100);
 
     return (
         <div className="flex min-h-screen flex-col bg-secondary lg:flex-row">
@@ -41,17 +47,17 @@ export default function OnboardingShell({
 
                 <div className="flex flex-col gap-3 px-1">
                     <span className="text-xs font-semibold tracking-[0.08em] text-sidebar-muted-foreground">
-                        DIVENTA TRAINER
+                        {eyebrow}
                     </span>
                     <span className="text-[26px] leading-8 font-bold tracking-[-0.03em] tabular-nums">
-                        Passo {shown} di {steps.length}
+                        Passo {shown} di {stepItems.length}
                     </span>
                     <div
                         role="progressbar"
                         aria-label="Avanzamento della registrazione"
                         aria-valuenow={shown}
                         aria-valuemin={1}
-                        aria-valuemax={steps.length}
+                        aria-valuemax={stepItems.length}
                         className="h-1.5 overflow-hidden rounded-full bg-sidebar-border"
                     >
                         <div
@@ -63,6 +69,7 @@ export default function OnboardingShell({
 
                 <div className="hidden lg:block">
                     <StepNav
+                        items={stepItems}
                         step={step}
                         reached={reached}
                         firstStep={firstStep}
@@ -104,16 +111,20 @@ export function StepHeader({
     step,
     title,
     pill,
+    stepItems = steps,
 }: {
     step: number;
     title: string;
     pill: ReactNode;
+    /** The steps of the registration; the trainer's by default. */
+    stepItems?: { label: string }[];
 }) {
     return (
         <header className="flex flex-wrap items-end justify-between gap-4">
             <div className="flex max-w-180 flex-col gap-2">
                 <span className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase tabular-nums">
-                    Passo {step} di {steps.length} · {steps[step - 1].label}
+                    Passo {step} di {stepItems.length} ·{' '}
+                    {stepItems[step - 1].label}
                 </span>
                 <h1 className="text-[28px] leading-9 font-bold tracking-[-0.03em] md:text-[34px] md:leading-10">
                     {title}

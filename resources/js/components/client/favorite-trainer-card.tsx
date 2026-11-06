@@ -94,7 +94,7 @@ export default function FavoriteTrainerCard({
                         </Button>
                     </div>
                     <FavoriteButton
-                        trainerName={trainer.name}
+                        name={trainer.name}
                         pressed
                         onPressedChange={() => onRemovedChange(true)}
                         className="absolute top-3 right-3 size-10 bg-background"

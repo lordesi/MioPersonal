@@ -3,10 +3,12 @@
 namespace App\Support;
 
 use App\Enums\BookingStatus;
+use App\Enums\GymLinkStatus;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
 use App\Models\Booking;
 use App\Models\City;
+use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -34,6 +36,9 @@ final class AdminStats
     private const CHURN_MONTHS = 6;
 
     private const TOP = 8;
+
+    /** "Palestre più visitate". */
+    private const TOP_GYMS = 5;
 
     private CarbonImmutable $now;
 
@@ -66,6 +71,7 @@ final class AdminStats
             'churn' => $this->churn(),
             'marketplace' => $this->marketplace(),
             'demand' => $this->demand(),
+            'gyms' => $this->gyms(),
         ];
     }
 
@@ -88,6 +94,8 @@ final class AdminStats
             $tile('visits', 'Visite', $both(fn ($from, $to) => $this->dayTable('visit_days', $from, $to)->sum('visits'))),
             $tile('clients', 'Nuovi clienti', $both(fn ($from, $to) => $this->newUsers(UserRole::Client, $from, $to))),
             $tile('trainers', 'Nuovi trainer', $both(fn ($from, $to) => $this->newUsers(UserRole::Trainer, $from, $to))),
+            $tile('gyms', 'Nuove palestre', $both(fn ($from, $to) => $this->newUsers(UserRole::Gym, $from, $to))),
+            $tile('publishedGyms', 'Palestre approvate', $both(fn ($from, $to) => GymProfile::query()->whereBetween('approved_at', [$from->utc(), $to->utc()])->count())),
             $tile('activeClients', 'Clienti attivi', $both(fn ($from, $to) => $this->activeUsers(UserRole::Client, $from, $to))),
             $tile('activeTrainers', 'Trainer attivi', $both(fn ($from, $to) => $this->activeUsers(UserRole::Trainer, $from, $to))),
             $tile('requests', 'Richieste di prenotazione', $both(fn ($from, $to) => Booking::query()->whereBetween('created_at', [$from->utc(), $to->utc()])->count())),
@@ -333,6 +341,8 @@ final class AdminStats
     {
         // Rows as arrays: city id, discipline slugs, number of results.
         $searches = DB::table('search_logs')
+            // The gyms' searches have their own section (gyms()).
+            ->where('kind', 'trainer')
             ->where('created_at', '>=', $this->from->utc())
             ->get(['city_id', 'disciplines', 'results'])
             ->map(fn (object $row) => [
@@ -351,6 +361,61 @@ final class AdminStats
             'emptyRate' => $searches->isEmpty() ? null : round($empty->count() / $searches->count(), 3),
             'empty' => $this->top($empty->countBy($label)),
             'cities' => $this->top($searches->countBy($place)),
+        ];
+    }
+
+    /**
+     * The gyms: how many there are, how much their profiles are opened, what
+     * people look for in the gyms' search (last 30 days) and the links with
+     * the trainers.
+     *
+     * @return array<string, mixed>
+     */
+    private function gyms(): array
+    {
+        $to = $this->now->endOfDay();
+
+        $searches = DB::table('search_logs')
+            ->where('kind', 'gym')
+            ->where('created_at', '>=', $this->from->utc())
+            ->get(['city_id', 'results']);
+        $cities = City::query()->whereIn('id', $searches->pluck('city_id')->filter()->unique())->pluck('name', 'id');
+        $place = fn (object $search) => is_numeric($search->city_id ?? null) ? ($cities[(int) $search->city_id] ?? '—') : 'Tutta Italia';
+        $empty = $searches->filter(fn (object $search) => (int) ($search->results ?? 0) === 0);
+
+        $views = $this->dayTable('gym_profile_views', $this->from, $to)
+            ->selectRaw('gym_profile_id, sum(views) as total')
+            ->groupBy('gym_profile_id')
+            ->pluck('total', 'gym_profile_id')
+            ->map(fn ($total) => (int) $total);
+        $names = GymProfile::query()->whereIn('id', $views->keys())->pluck('name', 'id');
+
+        $links = DB::table('gym_trainer')
+            ->whereIn('status', [GymLinkStatus::Accepted->value, GymLinkStatus::Pending->value])
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $published = GymProfile::query()->published()->with('city:id,name')->get(['id', 'city_id']);
+
+        return [
+            'supply' => [
+                ['label' => 'Registrate', 'count' => GymProfile::query()->count()],
+                ['label' => 'In verifica', 'count' => GymProfile::query()->where('status', TrainerProfileStatus::Review)->count()],
+                ['label' => 'Approvate', 'count' => GymProfile::query()->where('status', TrainerProfileStatus::Approved)->count()],
+                ['label' => 'Visibili nella ricerca', 'count' => $published->count()],
+            ],
+            'views' => (int) $views->sum(),
+            'searches' => $searches->count(),
+            'emptyRate' => $searches->isEmpty() ? null : round($empty->count() / $searches->count(), 3),
+            'searchCities' => $this->top($searches->countBy($place)),
+            'cities' => $this->top($published->countBy(fn (GymProfile $gym) => $gym->city->name)),
+            'acceptedLinks' => (int) ($links[GymLinkStatus::Accepted->value] ?? 0),
+            'pendingLinks' => (int) ($links[GymLinkStatus::Pending->value] ?? 0),
+            // The most opened profiles: a deleted gym has no name any more.
+            'topViewed' => array_values($views->sortDesc()->take(self::TOP_GYMS)
+                ->map(fn (int $count, int|string $id) => ['source' => (string) ($names[(int) $id] ?? '—'), 'count' => $count])
+                ->all()),
         ];
     }
 

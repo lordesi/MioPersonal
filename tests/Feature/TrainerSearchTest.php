@@ -54,7 +54,12 @@ class TrainerSearchTest extends TestCase
                 )
                 ->has('disciplines', 10)
                 ->has('cities', 109)
-                ->where('cities.0', ['value' => 'agrigento', 'label' => 'Agrigento', 'region' => 'Sicilia'])
+                // With the center, for "Usa la mia posizione".
+                ->where('cities.0.value', 'agrigento')
+                ->where('cities.0.label', 'Agrigento')
+                ->where('cities.0.region', 'Sicilia')
+                ->whereType('cities.0.lat', 'double')
+                ->whereType('cities.0.lng', 'double')
             );
     }
 

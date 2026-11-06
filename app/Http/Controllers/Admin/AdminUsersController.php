@@ -13,7 +13,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * "Utenti": clients and trainers, the newest first. Also the page of the
+ * "Utenti": clients, trainers and gyms, the newest first. Also the page of the
  * search box at the top of the admin panel (?cerca=anna): "#1048" opens
  * that booking in "Prenotazioni". "Sospendi" and "Cancella dati":
  * AdminUserStatusController.
@@ -41,6 +41,11 @@ class AdminUsersController extends Controller
             ->with('trainerProfile')
             ->get();
 
+        $gyms = $this->users(UserRole::Gym, $search)
+            // "N trainer": the links both sides accepted.
+            ->with(['gymProfile' => fn ($query) => $query->with('city')->withCount('trainers')])
+            ->get();
+
         return Inertia::render('admin/users', [
             'adminArea' => $this->adminArea(),
             'search' => $search === '' ? null : $search,
@@ -63,6 +68,19 @@ class AdminUsersController extends Controller
                 'rating' => $user->trainerProfile?->rating(),
                 ...$this->status($user),
             ])->all(),
+            'gyms' => $gyms->map(fn (User $user) => [
+                'id' => $user->id,
+                // The gym, or the contact person while the profile is still missing.
+                'name' => $user->gymProfile->name ?? $user->name,
+                'contact' => $user->name,
+                'email' => $user->email,
+                'city' => $user->gymProfile?->city->name,
+                'joinedAt' => $user->created_at?->toIso8601ZuluString(),
+                'profileStatus' => $user->gymProfile->status->value ?? 'review',
+                'trainerCount' => (int) ($user->gymProfile->trainers_count ?? 0),
+                'profileHref' => $user->gymProfile === null ? null : route('gyms.show', $user->gymProfile->slug, false),
+                ...$this->status($user),
+            ])->all(),
         ]);
     }
 
@@ -82,7 +100,8 @@ class AdminUsersController extends Controller
     }
 
     /**
-     * The users of a role, the newest first; the search looks in name and email.
+     * The users of a role, the newest first; the search looks in name and email
+     * (and in the name of the gym).
      *
      * @return Builder<User>
      */
@@ -90,11 +109,13 @@ class AdminUsersController extends Controller
     {
         return User::query()
             ->where('role', $role)
-            ->when($search !== '', function (Builder $query) use ($search) {
+            ->when($search !== '', function (Builder $query) use ($search, $role) {
                 $like = '%'.mb_strtolower($search).'%';
                 $query->where(fn (Builder $query) => $query
                     ->whereRaw("lower(first_name || ' ' || last_name) like ?", [$like])
-                    ->orWhereRaw('lower(email) like ?', [$like]));
+                    ->orWhereRaw('lower(email) like ?', [$like])
+                    ->when($role === UserRole::Gym, fn (Builder $query) => $query
+                        ->orWhereHas('gymProfile', fn (Builder $gym) => $gym->whereRaw('lower(name) like ?', [$like]))));
             })
             ->latest()
             ->limit(self::LIMIT);

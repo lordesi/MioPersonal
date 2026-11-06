@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\City;
+use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -141,8 +142,9 @@ final class Stats
      * @param  list<string>  $disciplines
      * @param  list<string>  $goals
      * @param  list<string>  $filters  names of the other filters in use
+     * @param  'trainer'|'gym'  $kind  the trainers' or the gyms' search
      */
-    public static function recordSearch(Request $request, ?City $city, array $disciplines, array $goals, array $filters, int $results): void
+    public static function recordSearch(Request $request, ?City $city, array $disciplines, array $goals, array $filters, int $results, string $kind = 'trainer'): void
     {
         if (! self::countable($request)) {
             return;
@@ -155,8 +157,25 @@ final class Stats
             'filters' => json_encode($filters),
             'results' => $results,
             'role' => self::role($request->user()),
+            'kind' => $kind,
             'created_at' => now(),
         ]));
+    }
+
+    /** Not the gym looking at its own profile, nor the team. */
+    public static function recordGymView(Request $request, GymProfile $profile): void
+    {
+        $user = $request->user();
+
+        if (! self::countable($request) || $user?->id === $profile->user_id || $user?->isAdmin()) {
+            return;
+        }
+
+        self::safely(fn () => DB::table('gym_profile_views')->upsert(
+            [['gym_profile_id' => $profile->id, 'day' => self::today(), 'views' => 1]],
+            ['gym_profile_id', 'day'],
+            ['views' => DB::raw('gym_profile_views.views + 1')],
+        ));
     }
 
     /** Not the trainer looking at the own profile, nor the team. */
@@ -180,6 +199,7 @@ final class Stats
     {
         return match (true) {
             $request->is('area-trainer*') => 'trainer',
+            $request->is('area-palestra*') => 'gym',
             $request->is('area-cliente*', 'prenotazioni*', 'preferiti*', 'profilo', 'impostazioni*', 'completa-profilo*') => 'client',
             default => 'public',
         };

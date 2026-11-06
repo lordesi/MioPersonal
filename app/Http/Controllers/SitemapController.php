@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\City;
 use App\Models\Discipline;
+use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Response;
@@ -44,7 +45,7 @@ class SitemapController extends Controller
             ->orderBy('id')
             ->get(['id', 'slug', 'city_id', 'updated_at']);
 
-        $urls = [['loc' => route('home'), 'lastmod' => null]];
+        $urls = [['loc' => route('home'), 'lastmod' => null], ...$this->gymUrls()];
 
         if ($profiles->isEmpty()) {
             return $urls;
@@ -82,6 +83,37 @@ class SitemapController extends Controller
 
         foreach ($profiles as $profile) {
             $urls[] = ['loc' => route('trainers.show', $profile->slug), 'lastmod' => $profile->updated_at];
+        }
+
+        return $urls;
+    }
+
+    /**
+     * The gyms' search (Italy and every city with a gym) and the published gyms.
+     *
+     * @return list<array{loc: string, lastmod: CarbonInterface|null}>
+     */
+    private function gymUrls(): array
+    {
+        $gyms = GymProfile::query()
+            ->published()
+            ->whereHas('city', fn ($city) => $city->active())
+            ->with('city:id,slug')
+            ->orderBy('id')
+            ->get(['id', 'slug', 'city_id', 'updated_at']);
+
+        if ($gyms->isEmpty()) {
+            return [];
+        }
+
+        $urls = [['loc' => route('gyms.search'), 'lastmod' => null]];
+
+        foreach ($gyms->pluck('city.slug')->unique()->sort() as $city) {
+            $urls[] = ['loc' => route('gyms.search', $city), 'lastmod' => null];
+        }
+
+        foreach ($gyms as $gym) {
+            $urls[] = ['loc' => route('gyms.show', $gym->slug), 'lastmod' => $gym->updated_at];
         }
 
         return $urls;

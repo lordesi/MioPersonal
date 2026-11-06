@@ -634,12 +634,12 @@ export default function DevComponents() {
                         </div>
                         <div className="flex flex-wrap items-center gap-4">
                             <FavoriteButton
-                                trainerName="Giulia Rossi"
+                                name="Giulia Rossi"
                                 {...favoriteProps('Giulia Rossi')}
                             />
                             <FavoriteButton
                                 variant="labeled"
-                                trainerName="Giulia Rossi"
+                                name="Giulia Rossi"
                                 {...favoriteProps('Giulia Rossi')}
                             />
                         </div>

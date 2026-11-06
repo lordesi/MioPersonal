@@ -1,4 +1,5 @@
 import type { TrainingGoal } from '@/lib/goals';
+import type { TrainerGym } from './gym';
 
 /** Trainer data shown in search results and featured lists. */
 export type TrainerSummary = {
@@ -49,9 +50,13 @@ export type TrainerService = {
 };
 
 export type TrainingPlace = {
-    type: 'studio' | 'home' | 'park' | 'online';
+    /** "Dove" of the booking (place_id). */
+    id: number;
+    type: 'studio' | 'home' | 'park' | 'online' | 'gym';
     title: string;
     detail: string;
+    /** The gym's page, for the gyms of MioPersonal. */
+    href: string | null;
 };
 
 export type TrainerReview = {
@@ -109,6 +114,8 @@ export type TrainerProfile = {
     photos: { caption: string; url: string }[];
     services: TrainerService[];
     places: TrainingPlace[];
+    /** "Palestre dove allena": the gyms of MioPersonal that accepted the trainer. */
+    gyms: TrainerGym[];
     certifications: { title: string; issuer: string }[];
     ratingDistribution: { stars: number; count: number }[];
     reviews: TrainerReview[];

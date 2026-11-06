@@ -3,6 +3,7 @@ import AccountMenu from '@/components/layout/account-menu';
 import BrandLogo from '@/components/layout/brand-logo';
 import { cn } from '@/lib/utils';
 import { login } from '@/routes';
+import { register as gymRegister } from '@/routes/gym';
 import { register as trainerRegister } from '@/routes/trainer';
 
 /** Light outline on the dark background, the "Sei un trainer?" look. */
@@ -30,13 +31,25 @@ export default function PublicHeader({ className }: { className?: string }) {
                     {user ? (
                         <AccountMenu
                             variant={
-                                user.role === 'trainer' ? 'trainer' : 'client'
+                                user.role === 'trainer' || user.role === 'gym'
+                                    ? user.role
+                                    : 'client'
                             }
                             userName={user.name}
                             headerHeight={16}
                         />
                     ) : (
                         <>
+                            {/* No room on phones: there it is in the footer. */}
+                            <Link
+                                href={gymRegister()}
+                                className={cn(
+                                    heroButton,
+                                    'hidden px-2 font-medium text-primary-foreground/80 hover:text-primary-foreground hover:underline md:inline-flex',
+                                )}
+                            >
+                                Hai una palestra?
+                            </Link>
                             <Link
                                 href={trainerRegister()}
                                 className={cn(

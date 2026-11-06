@@ -23,6 +23,8 @@ type BaseProps<T extends string> = {
     title?: string;
     /** Adds a search field above the list, e.g. "Cerca una città". */
     searchPlaceholder?: string;
+    /** Above the search field, e.g. "Usa la mia posizione". */
+    header?: ReactNode;
     /** As wide as the button that opens it (the parts of the search bar). */
     matchTriggerWidth?: boolean;
     /** Open from outside: the search bar keeps one menu open at a time. */
@@ -73,6 +75,7 @@ export default function OptionsMenu<T extends string>(
         options,
         title,
         searchPlaceholder,
+        header,
         matchTriggerWidth = false,
         open,
         onOpenChange,
@@ -145,7 +148,7 @@ export default function OptionsMenu<T extends string>(
         }
     };
 
-    const hasHeader = Boolean(title || searchPlaceholder);
+    const hasHeader = Boolean(title || searchPlaceholder || header);
 
     return (
         <DropdownMenu open={isOpen} onOpenChange={setOpen} modal={modal}>
@@ -211,6 +214,7 @@ export default function OptionsMenu<T extends string>(
                                 {title}
                             </p>
                         )}
+                        {header}
                         {searchPlaceholder && (
                             <SearchField
                                 placeholder={searchPlaceholder}

@@ -21,6 +21,7 @@ import ProfilePreview, {
 } from '@/components/trainer/profile/profile-preview';
 import PublicProfileSection from '@/components/trainer/profile/public-profile-section';
 import SearchSection from '@/components/trainer/profile/search-section';
+import type { GymOption } from '@/components/trainer/profile/search-section';
 import { register } from '@/routes/trainer';
 import type { CatalogOption, CityOption } from '@/types';
 
@@ -32,6 +33,8 @@ type ProfileProps = {
     /** Options of "Discipline, obiettivi, luoghi e città", from the catalog. */
     disciplines: CatalogOption[];
     cities: CityOption[];
+    /** "In palestra": the approved gyms of MioPersonal. */
+    gyms: GymOption[];
     /** "Foto della galleria", saved one action at a time. */
     gallery: GalleryPhoto[];
     maxGalleryPhotos: number;
@@ -44,6 +47,7 @@ export default function Profile({
     editable,
     disciplines,
     cities,
+    gyms,
     gallery,
     maxGalleryPhotos,
     rating,
@@ -71,6 +75,7 @@ export default function Profile({
                     locked={!editable}
                     disciplines={disciplines}
                     cities={cities}
+                    gyms={gyms}
                     gallery={gallery}
                     maxGalleryPhotos={maxGalleryPhotos}
                     rating={rating}
@@ -92,6 +97,7 @@ function ProfileForm({
     locked,
     disciplines,
     cities,
+    gyms,
     gallery,
     maxGalleryPhotos,
     rating,
@@ -100,6 +106,7 @@ function ProfileForm({
     locked: boolean;
     disciplines: CatalogOption[];
     cities: CityOption[];
+    gyms: GymOption[];
     gallery: GalleryPhoto[];
     maxGalleryPhotos: number;
     rating: { value: number | null; count: number };
@@ -128,6 +135,7 @@ function ProfileForm({
         draft.goals.length > 0 &&
         draft.goals.length <= MAX_GOALS &&
         draft.places.length > 0 &&
+        (!draft.places.includes('gym') || draft.gyms.length > 0) &&
         (!draft.places.includes('studio') ||
             draft.studios.every(
                 (studio) =>
@@ -209,6 +217,7 @@ function ProfileForm({
                         disciplines={disciplines}
                         cities={cities}
                         errors={errorsOf(3)}
+                        gymOptions={gyms}
                     />
                     <CertificationsSection
                         draft={draft}

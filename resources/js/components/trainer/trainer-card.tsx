@@ -281,7 +281,7 @@ export default function TrainerCard({
 
             {favorite && (
                 <FavoriteButton
-                    trainerName={trainer.name}
+                    name={trainer.name}
                     pressed={favorite.pressed}
                     onPressedChange={favorite.onPressedChange}
                     className={cn('absolute', styles.favorite)}

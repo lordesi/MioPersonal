@@ -26,6 +26,10 @@ const defaultChangesMessage =
 
 type ReviewDecisionProps = {
     status: TrainerReviewStatus;
+    /** The chips of "Cosa deve sistemare?"; the trainer's by default. */
+    reasons?: string[];
+    /** Who gets the email: "il trainer" by default, e.g. "la palestra". */
+    subject?: string;
     onDecide: (payload: ReviewDecisionPayload) => void;
     onUndo: () => void;
     /** A decision is being sent. */
@@ -37,6 +41,8 @@ type ReviewDecisionProps = {
 /** "Decisione": approve, ask for changes or reject the profile. */
 export default function ReviewDecision({
     status,
+    reasons: reasonLabels,
+    subject = 'il trainer',
     onDecide,
     onUndo,
     processing,
@@ -87,10 +93,8 @@ export default function ReviewDecision({
                             {
                                 approved:
                                     'Approvato: il profilo è visibile nella ricerca.',
-                                changes:
-                                    'Modifiche richieste: il trainer le sistema e reinvia il profilo.',
-                                rejected:
-                                    'Rifiutato: il trainer ha ricevuto l’email con il motivo.',
+                                changes: `Modifiche richieste: ${subject} le sistema e reinvia il profilo.`,
+                                rejected: `Rifiutato: ${subject} ha ricevuto l’email con il motivo.`,
                                 review: '',
                             }[status]
                         }
@@ -145,14 +149,19 @@ export default function ReviewDecision({
                     </span>
                     <ChoiceChips
                         multiple
-                        options={changeReasons}
+                        options={
+                            reasonLabels?.map((reason) => ({
+                                value: reason,
+                                label: reason,
+                            })) ?? changeReasons
+                        }
                         value={reasons}
                         onChange={setReasons}
                         aria-label="Cosa deve sistemare?"
                         className="gap-1.5"
                     />
                     <Label htmlFor={messageId} className="text-[13px]">
-                        Messaggio per il trainer
+                        Messaggio per {subject}
                     </Label>
                     <Textarea
                         id={messageId}
@@ -188,7 +197,7 @@ export default function ReviewDecision({
                     <Textarea
                         id={rejectId}
                         rows={3}
-                        placeholder="Il trainer lo riceverà via email"
+                        placeholder={`Lo riceverà via email ${subject}`}
                         value={rejectMessage}
                         onChange={(event) =>
                             setRejectMessage(event.target.value)

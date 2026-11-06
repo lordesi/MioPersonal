@@ -22,6 +22,8 @@ export type TrainerDraft = {
     /** The goals the trainer works on, see lib/goals.ts. */
     goals: TrainingGoal[];
     places: PlaceType[];
+    /** "In palestra": gyms of MioPersonal (each one gets a request, the gym confirms). */
+    gyms: ChosenGym[];
     studios: { name: string; address: string }[];
     /** Slug of the main city ('' = not chosen yet). Not needed for online only. */
     city: string;
@@ -103,12 +105,21 @@ export type Certification = {
 
 export type Experience = 'lt2' | '2to5' | '5to10' | 'gt10';
 
-export type PlaceType = 'studio' | 'home' | 'park' | 'online';
+export type PlaceType = 'gym' | 'studio' | 'home' | 'park' | 'online';
+
+/** A gym chosen in step 3; status: what the gym answered so far. */
+export type ChosenGym = {
+    id: number;
+    name: string;
+    city: string;
+    status?: 'pending' | 'accepted';
+};
 
 /** Limits, the same as in TrainerProfileRequest. */
 export const MAX_DISCIPLINES = 5;
 export const MAX_GOALS = 3;
 export const MAX_STUDIOS = 3;
+export const MAX_GYMS = 5;
 export const MAX_OTHER_CITIES = 2;
 export const MAX_CERTIFICATIONS = 3;
 export const HEADLINE_MAX = 60;
@@ -124,9 +135,15 @@ export const placeOptions: {
     short: string;
 }[] = [
     {
+        value: 'gym',
+        label: 'In palestra',
+        hint: 'Una palestra di MioPersonal',
+        short: 'Palestra',
+    },
+    {
         value: 'studio',
-        label: 'Studio o palestra',
-        hint: 'Uno o più indirizzi',
+        label: 'Studio privato',
+        hint: 'Nome e indirizzo',
         short: 'Studio',
     },
     {
@@ -193,6 +210,7 @@ export const initialDraft: TrainerDraft = {
     disciplines: [],
     goals: [],
     places: [],
+    gyms: [],
     studios: [{ name: '', address: '' }],
     city: '',
     otherCities: [],
@@ -414,6 +432,9 @@ export function toPayload(draft: TrainerDraft) {
         disciplines: draft.disciplines,
         goals: draft.goals,
         places: draft.places,
+        gyms: draft.places.includes('gym')
+            ? draft.gyms.map((gym) => gym.id)
+            : [],
         studios: draft.places.includes('studio') ? draft.studios : [],
         city: needsCity(draft) ? draft.city : '',
         other_cities: needsCity(draft) ? draft.otherCities : [],
@@ -520,6 +541,7 @@ const fieldSteps: [prefix: string, step: number][] = [
     ['goals', 3],
     ['places', 3],
     ['studios', 3],
+    ['gyms', 3],
     ['city', 3],
     ['other_cities', 3],
     ['sessions', 4],

@@ -1,10 +1,24 @@
 import { Search, X } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useRef, useState } from 'react';
+import LocateItem from '@/components/search/locate-item';
 import OptionsMenu from '@/components/search/options-menu';
 import type { MenuOption } from '@/components/search/options-menu';
 import { Button } from '@/components/ui/button';
 import type { SearchFilters } from '@/lib/search';
 import { cn } from '@/lib/utils';
+import type { CityWithCoordinates } from '@/types';
+
+/** A city of "Dove": with its center, "Usa la mia posizione" can find it. */
+export type CityChoice = MenuOption<string> & { lat?: number; lng?: number };
+
+/** The cities with a center, for "Usa la mia posizione" (none: no button). */
+export function citiesWithCenter(cities: CityChoice[]): CityWithCoordinates[] {
+    return cities.filter(
+        (city): city is CityWithCoordinates =>
+            typeof city.lat === 'number' && typeof city.lng === 'number',
+    );
+}
 
 type Availability = NonNullable<SearchFilters['disponibilita']>;
 
@@ -20,7 +34,7 @@ export type SearchChoices = {
  * search: the pill above the results (desktop only, the page hides it on mobile).
  * hero: bigger, on the dark home hero; on mobile the fields go one under the other.
  */
-const variants = {
+export const variants = {
     search: {
         bar: 'h-16.5 max-w-220 border bg-card pr-2 shadow-md',
         field: 'h-16 px-5.5',
@@ -42,14 +56,14 @@ const variants = {
     },
 } as const;
 
-type Variant = (typeof variants)[keyof typeof variants];
+export type Variant = (typeof variants)[keyof typeof variants];
 
 /** The three parts of the pill, in order: choosing one opens the next. */
 type FieldName = 'cosa' | 'dove' | 'quando';
 
 type SearchBarProps = {
     disciplines: MenuOption<string>[];
-    cities: MenuOption<string>[];
+    cities: CityChoice[];
     availabilityOptions: MenuOption<Availability>[];
     /** The choices of the search on screen. */
     applied: SearchChoices;
@@ -78,6 +92,7 @@ export default function SearchBar({
     const advancing = useRef(false);
     const searchButton = useRef<HTMLButtonElement>(null);
     const styles = variants[variant];
+    const locatable = citiesWithCenter(cities);
 
     /** Saves the choice and opens the next part; after "Quando", "Cerca". */
     const choose = (
@@ -140,6 +155,16 @@ export default function SearchBar({
                 onChange={(city) => choose({ city }, 'quando')}
                 onClear={() => clear({ city: null })}
                 searchPlaceholder="Cerca una città"
+                header={
+                    locatable.length > 0 && (
+                        <LocateItem
+                            cities={locatable}
+                            onFound={(city) =>
+                                choose({ city: city.value }, 'quando')
+                            }
+                        />
+                    )
+                }
                 styles={styles}
                 {...menu('dove')}
             />
@@ -175,7 +200,7 @@ export default function SearchBar({
     );
 }
 
-function Divider({ className }: { className?: string }) {
+export function Divider({ className }: { className?: string }) {
     return (
         <span
             aria-hidden="true"
@@ -191,6 +216,8 @@ type FieldProps<T extends string> = {
     options: MenuOption<T>[];
     onClear: () => void;
     searchPlaceholder?: string;
+    /** Above the list, e.g. "Usa la mia posizione". */
+    header?: ReactNode;
     styles: Variant;
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -204,7 +231,7 @@ type FieldProps<T extends string> = {
  * One part of the pill: name in bold, choice below (more choices separated
  * by commas), × to empty it.
  */
-function Field<T extends string>(props: FieldProps<T>) {
+export function Field<T extends string>(props: FieldProps<T>) {
     const {
         label,
         title,
@@ -212,6 +239,7 @@ function Field<T extends string>(props: FieldProps<T>) {
         options,
         onClear,
         searchPlaceholder,
+        header,
         styles,
         open,
         onOpenChange,
@@ -233,6 +261,7 @@ function Field<T extends string>(props: FieldProps<T>) {
         noneLabel,
         options,
         searchPlaceholder,
+        header: header || undefined,
         matchTriggerWidth: true,
         open,
         onOpenChange,

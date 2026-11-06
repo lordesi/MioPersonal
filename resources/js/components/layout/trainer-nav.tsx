@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import {
+    Building2,
     Calendar,
     Clock,
     Eye,
@@ -19,6 +20,7 @@ import {
     availability,
     calendar,
     clients,
+    gyms,
     requests,
     reviews,
     services,
@@ -34,6 +36,7 @@ export type TrainerSection =
     | 'availability'
     | 'services'
     | 'reviews'
+    | 'gyms'
     | 'share';
 
 /** A link of the trainer area; desktopOnly ones stay out of the mobile tab bar. */
@@ -80,6 +83,14 @@ const sections: {
         desktopOnly: true,
     },
     { section: 'reviews', title: 'Recensioni', icon: Star, href: reviews.url },
+    // The gyms where the trainer works. On mobile: in the account menu.
+    {
+        section: 'gyms',
+        title: 'Palestre',
+        icon: Building2,
+        href: gyms.url,
+        desktopOnly: true,
+    },
     // Link, QR code and image for Instagram. On mobile: in the account menu.
     {
         section: 'share',

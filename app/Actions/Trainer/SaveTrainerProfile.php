@@ -2,10 +2,13 @@
 
 namespace App\Actions\Trainer;
 
+use App\Actions\Gym\GymLinks;
+use App\Enums\GymLinkStatus;
 use App\Enums\PlaceType;
 use App\Enums\TrainerProfileStatus;
 use App\Models\City;
 use App\Models\Discipline;
+use App\Models\GymProfile;
 use App\Models\TrainerDocument;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
@@ -30,7 +33,10 @@ use Illuminate\Support\Facades\Storage;
  */
 class SaveTrainerProfile
 {
-    public function __construct(private SaveTrainerServices $services) {}
+    public function __construct(
+        private SaveTrainerServices $services,
+        private GymLinks $gymLinks,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data  validated by TrainerProfileRequest
@@ -146,6 +152,7 @@ class SaveTrainerProfile
         $profile->otherCities()->sync($otherCityIds);
 
         $this->savePlaces($profile, $places, $data['studios'] ?? [], $mainCityId);
+        $this->syncGyms($profile, in_array(PlaceType::Gym, $places, true) ? array_values(array_map(intval(...), $data['gyms'] ?? [])) : []);
         $newFiles = [...$newFiles, ...$this->savePhoto($profile, $data['photo'] ?? null)];
         $newFiles = [...$newFiles, ...$this->saveCertifications($profile, $data['certifications'] ?? [])];
     }
@@ -164,14 +171,41 @@ class SaveTrainerProfile
     }
 
     /**
-     * One row per studio, then one for home, park and online.
+     * "In palestra": a request to each new gym (sent when the trainer is
+     * approved); the gyms unchecked are left (link and place). A gym that
+     * said no is left alone: the trainer can't ask again from here.
+     *
+     * @param  list<int>  $gymIds
+     */
+    private function syncGyms(TrainerProfile $profile, array $gymIds): void
+    {
+        $links = $profile->gymLinks()->with('gymProfile', 'trainerProfile')->get()->keyBy('gym_profile_id');
+
+        foreach ($links as $gymId => $link) {
+            if ($link->status !== GymLinkStatus::Declined && ! in_array($gymId, $gymIds, true)) {
+                $profile->places()->where('gym_profile_id', $gymId)->delete();
+                $link->delete();
+            }
+        }
+
+        $new = array_diff($gymIds, $links->keys()->all());
+
+        foreach (GymProfile::query()->approved()->whereKey($new)->get() as $gym) {
+            $this->gymLinks->request($profile, $gym);
+        }
+    }
+
+    /**
+     * One row per studio, then one for home, park and online. The gyms'
+     * rows are made by GymLinks, when a gym agrees: they stay.
      *
      * @param  list<PlaceType>  $places
      * @param  list<array{name: string, address: string}>  $studios
      */
     private function savePlaces(TrainerProfile $profile, array $places, array $studios, ?int $cityId): void
     {
-        $profile->places()->delete();
+        $profile->places()->where('type', '!=', PlaceType::Gym)->delete();
+        $gymRows = $profile->places()->count();
         $rows = [];
 
         if (in_array(PlaceType::Studio, $places, true)) {
@@ -192,7 +226,7 @@ class SaveTrainerProfile
         }
 
         foreach ($rows as $index => $row) {
-            $profile->places()->create([...$row, 'sort' => $index]);
+            $profile->places()->create([...$row, 'sort' => $gymRows + $index]);
         }
     }
 
