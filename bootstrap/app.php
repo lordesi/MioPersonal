@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureAccountActive;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\ThrottleSignups;
 use App\Http\Middleware\TrackLastActivity;
 use App\Http\Middleware\TrackVisit;
@@ -41,6 +42,8 @@ return Application::configure(basePath: dirname(__DIR__))
             TrackVisit::class,
             ThrottleSignups::class,
         ]);
+        // First, so its headers are on every response of the group (429s included).
+        $middleware->web(prepend: [SecurityHeaders::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $wantsJson = fn (Request $request) => $request->is('api/*') || $request->expectsJson();
