@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\SafeImage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -51,12 +52,8 @@ class TrainerPhotoController extends Controller
                 $sort = (int) $profile->galleryPhotos()->max('sort');
 
                 foreach ($files as $file) {
-                    // A random name, so the address can't be guessed.
-                    $path = $file->store("trainers/{$profile->id}/gallery", TrainerPhoto::DISK);
-
-                    if ($path === false) {
-                        throw new \RuntimeException('A gallery photo could not be stored.');
-                    }
+                    // A random name, without metadata (GPS position…): see SafeImage.
+                    $path = SafeImage::store($file, "trainers/{$profile->id}/gallery", TrainerPhoto::DISK);
 
                     $written[] = $path;
                     $sort += 10;

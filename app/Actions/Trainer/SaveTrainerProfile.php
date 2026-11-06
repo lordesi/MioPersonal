@@ -10,6 +10,7 @@ use App\Models\TrainerDocument;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\SafeImage;
 use App\Support\TrainerAvailability;
 use App\Support\TrainerSlots;
 use Illuminate\Http\UploadedFile;
@@ -207,11 +208,8 @@ class SaveTrainerProfile
         }
 
         $old = $profile->portrait;
-        $path = $photo->store("trainers/{$profile->id}", TrainerPhoto::DISK);
-
-        if ($path === false) {
-            throw new \RuntimeException('The profile photo could not be stored.');
-        }
+        // Without metadata (GPS position…): see SafeImage.
+        $path = SafeImage::store($photo, "trainers/{$profile->id}", TrainerPhoto::DISK);
 
         $profile->photos()->create(['path' => $path, 'caption' => 'Ritratto', 'is_portrait' => true]);
 

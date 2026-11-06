@@ -4,12 +4,15 @@ use App\Actions\Account\DeleteUser;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
 use App\Models\Booking;
+use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\SafeImage;
 use App\Support\TrainerSlots;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Storage;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -104,3 +107,45 @@ Artisan::command('users:purge-deleted', function (DeleteUser $deleteUser) {
 })->purpose('Delete the accounts whose deletion was asked more than 30 days ago');
 
 Schedule::command('users:purge-deleted')->daily();
+
+// Once, for the photos uploaded before SafeImage: each one is drawn again in
+// place, without metadata (GPS position…), upright and at most 2000 px.
+Artisan::command('photos:strip-metadata', function () {
+    $clean = function (string $disk, string $path): bool {
+        $storage = Storage::disk($disk);
+
+        if (! $storage->exists($path)) {
+            $this->warn("Missing: {$path}");
+
+            return false;
+        }
+
+        try {
+            [$contents] = SafeImage::clean((string) $storage->get($path));
+        } catch (Throwable $exception) {
+            $this->warn("Skipped {$path}: {$exception->getMessage()}");
+
+            return false;
+        }
+
+        return $storage->put($path, $contents) !== false;
+    };
+
+    $done = 0;
+
+    TrainerPhoto::query()->select(['id', 'path'])->chunkById(100, function ($photos) use ($clean, &$done) {
+        foreach ($photos as $photo) {
+            $done += (int) $clean(TrainerPhoto::DISK, $photo->path);
+        }
+    });
+
+    User::query()->whereNotNull('avatar_path')->select(['id', 'avatar_path'])->chunkById(100, function ($users) use ($clean, &$done) {
+        foreach ($users as $user) {
+            $done += (int) $clean(User::AVATAR_DISK, $user->avatar_path);
+        }
+    });
+
+    $this->info("{$done} photos cleaned.");
+
+    return 0;
+})->purpose('Remove metadata (GPS…) from the photos uploaded so far');

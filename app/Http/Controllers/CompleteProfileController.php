@@ -8,6 +8,7 @@ use App\Models\ClientPreference;
 use App\Models\Discipline;
 use App\Models\User;
 use App\Support\CatalogOptions;
+use App\Support\SafeImage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -97,8 +98,8 @@ class CompleteProfileController extends Controller
         $user = $request->user();
         $oldPath = $user->avatar_path;
 
-        // A random name, so the address can't be guessed.
-        $path = $request->file('photo')->store("avatars/{$user->id}", User::AVATAR_DISK);
+        // Without metadata (GPS position…): see SafeImage.
+        $path = SafeImage::store($request->file('photo'), "avatars/{$user->id}", User::AVATAR_DISK);
 
         // Not fillable on purpose: only set here.
         $user->forceFill(['avatar_path' => $path])->save();
