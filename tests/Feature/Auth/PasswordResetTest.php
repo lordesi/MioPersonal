@@ -5,6 +5,7 @@ namespace Tests\Feature\Auth;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Fortify\Features;
 use Tests\TestCase;
@@ -78,6 +79,32 @@ class PasswordResetTest extends TestCase
 
             return true;
         });
+    }
+
+    public function test_resetting_the_password_logs_out_every_device()
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+        DB::table('sessions')->insert([
+            'id' => 'stolen-session', 'user_id' => $user->id, 'ip_address' => '10.0.0.1',
+            'user_agent' => 'test', 'payload' => '', 'last_activity' => now()->timestamp,
+        ]);
+
+        $this->post(route('password.email'), ['email' => $user->email]);
+
+        Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
+            $this->post(route('password.update'), [
+                'token' => $notification->token,
+                'email' => $user->email,
+                'password' => 'Password1',
+                'password_confirmation' => 'Password1',
+            ])->assertSessionHasNoErrors();
+
+            return true;
+        });
+
+        $this->assertSame(0, DB::table('sessions')->where('user_id', $user->id)->count());
     }
 
     public function test_a_weak_password_is_rejected()

@@ -8,6 +8,7 @@ use App\Http\Requests\Account\PasswordUpdateRequest;
 use App\Http\Requests\Account\PersonalDataUpdateRequest;
 use App\Models\Booking;
 use App\Models\User;
+use App\Support\EndSessions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -66,6 +67,8 @@ class AccountSettingsController extends Controller
         $user->update(['password' => $request->string('password')->value()]);
         // Not fillable on purpose: only set here, for «Cambiata l'ultima volta il…».
         $user->forceFill(['password_changed_at' => now()])->save();
+        // Whoever had a stolen session or "Ricordami" cookie is out; this device stays in.
+        EndSessions::others($user, $request);
 
         return back();
     }
