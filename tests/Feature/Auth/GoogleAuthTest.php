@@ -5,6 +5,7 @@ namespace Tests\Feature\Auth;
 use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as GoogleUser;
@@ -67,6 +68,49 @@ class GoogleAuthTest extends TestCase
         $user->refresh();
         $this->assertSame('google-123', $user->google_id);
         $this->assertNotNull($user->email_verified_at);
+    }
+
+    /** Someone signed up with Giulia's email (never verified): their password must stop working. */
+    public function test_linking_an_unverified_account_drops_the_password_and_its_sessions()
+    {
+        $user = User::factory()->unverified()->create(['email' => 'giulia@example.com', 'remember_token' => 'attacker-token']);
+        DB::table('sessions')->insert([
+            'id' => 'attacker-session', 'user_id' => $user->id, 'ip_address' => '10.0.0.1',
+            'user_agent' => 'test', 'payload' => '', 'last_activity' => now()->timestamp,
+        ]);
+        $this->fakeGoogle();
+
+        $this->get(route('google.callback'))
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticatedAs($user);
+        $user->refresh();
+        $this->assertNull($user->password);
+        $this->assertNotSame('attacker-token', $user->remember_token);
+        $this->assertFalse(DB::table('sessions')->where('id', 'attacker-session')->exists());
+    }
+
+    public function test_linking_a_verified_account_keeps_the_password()
+    {
+        $user = User::factory()->create(['email' => 'giulia@example.com']);
+        $this->fakeGoogle();
+
+        $this->get(route('google.callback'));
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotNull($user->fresh()->password);
+    }
+
+    public function test_an_account_linked_to_another_google_account_is_not_taken_over()
+    {
+        $user = User::factory()->create(['email' => 'giulia@example.com']);
+        $user->forceFill(['google_id' => 'google-other'])->save();
+        $this->fakeGoogle();
+
+        $this->get(route('google.callback'))->assertRedirect(route('login'));
+
+        $this->assertGuest();
+        $this->assertSame('google-other', $user->fresh()->google_id);
     }
 
     public function test_an_email_not_verified_by_google_is_not_linked()

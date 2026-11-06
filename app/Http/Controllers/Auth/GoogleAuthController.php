@@ -7,6 +7,7 @@ use App\Concerns\ProfileValidationRules;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Providers\FortifyServiceProvider;
+use App\Support\EndSessions;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -105,6 +106,19 @@ class GoogleAuthController extends Controller
             ?? User::where('email', $email)->first();
 
         if ($user !== null) {
+            // Same email, but already linked to another Google account: not ours to replace.
+            if ($user->google_id !== null && $user->google_id !== $googleUser->getId()) {
+                return to_route('login')->with('status', 'Questa email è già collegata a un altro account Google: accedi con email e password.');
+            }
+
+            // An email never verified may have been typed by someone else, who knows
+            // the password: Google proves the email is this person's, so the password
+            // and any open session go (the account can set a new one in the settings).
+            if ($user->email_verified_at === null) {
+                $user->forceFill(['password' => null]);
+                EndSessions::all($user);
+            }
+
             // Google has verified the email: it is safe to link the two accounts.
             $user->forceFill([
                 'google_id' => $googleUser->getId(),
