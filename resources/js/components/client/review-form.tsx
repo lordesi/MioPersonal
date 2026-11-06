@@ -18,6 +18,8 @@ type ReviewFormProps = {
     processing?: boolean;
     /** The server's answer when the review can't be saved. */
     error?: string;
+    /** The text of the button that closes it. */
+    cancelLabel?: string;
 };
 
 /**
@@ -29,6 +31,7 @@ export default function ReviewForm({
     onPublish,
     processing = false,
     error,
+    cancelLabel = 'Annulla',
 }: ReviewFormProps) {
     const starsId = useId();
     const textId = useId();
@@ -105,7 +108,7 @@ export default function ReviewForm({
                     className="h-9.5 rounded-[10px] px-3.5 text-[13px]"
                     onClick={onCancel}
                 >
-                    Annulla
+                    {cancelLabel}
                 </Button>
                 <Button
                     type="button"

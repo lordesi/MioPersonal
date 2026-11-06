@@ -38,6 +38,28 @@ export default function PendingBookingCard({
                 aside={<BookingStatusBadge status={status} />}
             />
 
+            {booking.status === 'cancelled' && (
+                <>
+                    <span className="text-sm text-muted-foreground">
+                        {booking.trainerFirstName} ha annullato la seduta.
+                        Abbiamo liberato lo slot e, se era in un pacchetto, la
+                        seduta è di nuovo disponibile.
+                    </span>
+                    {booking.cancelNote && (
+                        <blockquote className="rounded-lg bg-muted px-3 py-2.5 text-[13px] leading-4.5">
+                            «{booking.cancelNote}»
+                        </blockquote>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                        <Button asChild className="h-10 px-3.5">
+                            <Link href={booking.trainerHref}>
+                                Scegli un altro orario
+                            </Link>
+                        </Button>
+                    </div>
+                </>
+            )}
+
             {(status === 'expired' || status === 'declined') && (
                 <>
                     <span className="text-sm text-muted-foreground">
@@ -91,7 +113,7 @@ export default function PendingBookingCard({
                 </>
             )}
 
-            {status === 'cancelled' && (
+            {status === 'cancelled' && booking.status !== 'cancelled' && (
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <span
                         role="status"

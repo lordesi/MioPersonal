@@ -69,7 +69,14 @@ Artisan::command('bookings:expire', function () {
             }
         });
 
-    $this->info("{$count} booking requests expired.");
+    // "Sposta" proposals the client didn't answer: the old time holds (the new
+    // one is already free: TrainerSlots ignores proposals past their expiry).
+    $proposals = Booking::query()
+        ->whereNotNull('proposed_starts_at')
+        ->where('proposal_expires_at', '<=', now())
+        ->update(['proposed_starts_at' => null, 'proposal_expires_at' => null]);
+
+    $this->info("{$count} booking requests expired, {$proposals} proposals lapsed.");
 })->purpose('Mark the booking requests the trainer did not answer in time as expired');
 
 Schedule::command('bookings:expire')->everyMinute();

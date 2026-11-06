@@ -28,6 +28,7 @@ use Illuminate\Support\Str;
  * @property string $headline
  * @property string $bio
  * @property TrainerExperience $experience
+ * @property string|null $instagram the username only ("giulia.fit"), shown to everyone
  * @property list<string>|null $goals App\Enums\TrainingGoal values; null = not chosen yet
  * @property int|null $city_id
  * @property TrainerProfileStatus $status
@@ -62,7 +63,7 @@ use Illuminate\Support\Str;
  * @property-read City|null $city
  */
 #[Fillable([
-    'headline', 'bio', 'experience', 'goals', 'city_id',
+    'headline', 'bio', 'experience', 'instagram', 'goals', 'city_id',
     'visible_in_search', 'accepts_new_clients', 'paused_until',
     'notice_hours', 'booking_window_days', 'break_minutes',
     'max_sessions_per_day', 'free_cancellation_hours', 'auto_confirm',
@@ -330,6 +331,12 @@ class TrainerProfile extends Model
         }
 
         return $this->isApproved() || $user?->id === $this->user_id;
+    }
+
+    /** "https://www.instagram.com/giulia.fit/"; only with `instagram` set. */
+    public function instagramUrl(): string
+    {
+        return "https://www.instagram.com/{$this->instagram}/";
     }
 
     /** Not suspended and not being deleted: can be seen and booked. */

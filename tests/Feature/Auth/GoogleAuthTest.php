@@ -110,6 +110,21 @@ class GoogleAuthTest extends TestCase
         $this->assertSame('+393475218846', $user->phone);
     }
 
+    public function test_a_new_user_goes_back_to_the_page_that_asked_to_sign_up()
+    {
+        $this->fakeGoogle();
+        // E.g. "Prenota" on the profile of the trainer who invited the client.
+        $this->withSession(['url.intended' => url('/trainer/giulia-rossi/prenota')]);
+        $this->get(route('google.callback'));
+
+        $this->post(route('google.register.store'), [
+            'first_name' => 'Giulia',
+            'last_name' => 'Rossi',
+            'phone' => '347 521 8846',
+            'terms' => '1',
+        ])->assertRedirect(url('/trainer/giulia-rossi/prenota'));
+    }
+
     public function test_the_terms_must_be_accepted()
     {
         $this->fakeGoogle();

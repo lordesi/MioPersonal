@@ -189,7 +189,7 @@ seduta è confermata). Ogni seduta del pacchetto ha `bookings.client_package_id`
 | Stato                               | `status` (pending, confirmed, declined, expired, cancelled), `expires_at` (solo pending), `confirmed_at`, `cancelled_at`, `cancelled_by` (client / trainer / system), `no_show_at` |
 | Testo                               | `client_note` (con l'avviso «non inserire dati sulla salute»)                                                                                                                      |
 
-- ✍️ Cliente (prenota, annulla, sposta), trainer (accetta, rifiuta, «Saltata»), sistema
+- ✍️ Cliente (prenota, annulla, accetta o rifiuta il nuovo orario), trainer (accetta, rifiuta, annulla, propone un nuovo orario, «Saltata»), sistema
   (scadenza).
 - **Svolta o saltata**: non c'è uno stato `completed`. Una seduta confermata è svolta appena finisce
   (`ends_at` passato). Entro 7 giorni il trainer può segnarla «Saltata» (`no_show_at`) e togliere il

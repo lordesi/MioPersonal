@@ -80,8 +80,11 @@ class TrainerCalendarController extends Controller
                     'serviceName' => BookingLabels::service($booking),
                     'placeLabel' => $booking->place_label,
                     'kind' => $booking->status === BookingStatus::Confirmed ? 'confirmed' : 'pending',
+                    ...TrainerSessions::change($booking),
                 ])
                 ->all(),
+            // "Sposta": the free times, only when the dialog asks for them.
+            'rescheduleSlots' => Inertia::optional(fn () => TrainerSessions::rescheduleSlots($profile, $request->integer('sposta'))),
         ]);
     }
 

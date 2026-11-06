@@ -74,8 +74,8 @@ const sections: LegalSection[] = [
                 items={[
                     'Una richiesta non ancora confermata puoi annullarla dalla tua area fino all’inizio della seduta.',
                     'Una prenotazione confermata puoi annullarla gratuitamente fino al termine indicato sul profilo del trainer: 12, 24 o 48 ore prima (di norma 24). Dopo il termine non si può più annullare dalla piattaforma: accordati direttamente con il trainer.',
-                    'Le prenotazioni non si spostano: per cambiare orario annulli e prenoti di nuovo.',
-                    'Il trainer può rifiutare una richiesta non ancora confermata. Se dopo la conferma non può più fare la seduta, ti contatta direttamente.',
+                    'Per cambiare orario annulli e prenoti di nuovo. Il trainer può proporti un altro orario: la seduta si sposta solo se accetti, e finché non rispondi resta quello di prima. Mentre c’è una proposta puoi anche annullare gratis.',
+                    'Il trainer può rifiutare una richiesta non ancora confermata. Se dopo la conferma non può più fare la seduta, la annulla e ti avvisiamo via email; una seduta di un pacchetto torna disponibile.',
                     'Entro 7 giorni dalla seduta il trainer può segnarla come saltata se non ti presenti. Le sedute saltate contano nella percentuale di presenza che vedono i trainer a cui chiedi una seduta; eventuali penali le concordi con lui. Se pensi che un’assenza sia sbagliata, scrivici.',
                     'Se un trainer chiude il profilo, le sue prenotazioni vengono annullate.',
                 ]}

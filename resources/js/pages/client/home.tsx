@@ -3,6 +3,10 @@ import { Plus, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import LaterSessionRow from '@/components/client/later-session-row';
 import NextSessionHero from '@/components/client/next-session-hero';
+import ProposalCard from '@/components/client/proposal-card';
+import ReviewPrompt, {
+    sessionToReview,
+} from '@/components/client/review-prompt';
 import NoUpcomingSessions from '@/components/client/no-upcoming-sessions';
 import PackageCarousel from '@/components/client/package-carousel';
 import PendingBookingCard from '@/components/client/pending-booking-card';
@@ -24,6 +28,11 @@ import type {
     ClientUpcomingBooking,
     TrainerSummary,
 } from '@/types';
+
+/** An upcoming session with a "Sposta" proposal of the trainer. */
+type ProposalBooking = ClientUpcomingBooking & {
+    proposal: NonNullable<ClientUpcomingBooking['proposal']>;
+};
 
 type HomeProps = {
     firstName: string;
@@ -58,6 +67,18 @@ export default function Home({
     // All of Italy: the client's preferences only change the order.
     const bookUrl = searchUrl();
     const [next, ...later] = upcoming;
+    // "Com'è andata?": read once, localStorage is only in the browser.
+    const [toReview] = useState(() =>
+        typeof window === 'undefined' ? null : sessionToReview(past, now),
+    );
+    // "Sposta": the trainer waits for an answer, on top of everything.
+    const proposals = upcoming.filter(
+        (booking): booking is ProposalBooking => booking.proposal !== null,
+    );
+    const waiting = pending.filter((booking) => booking.status !== 'cancelled');
+    const cancelledByTrainer = pending.filter(
+        (booking) => booking.status === 'cancelled',
+    );
     // "Riprendi con …": the trainer of the last session, when nothing is booked.
     const resumeTrainer = trainers.find((trainer) => trainer.booked) ?? null;
     const resumeSessionsLeft = packages
@@ -86,6 +107,32 @@ export default function Home({
 
             <div className="flex flex-wrap items-start gap-5">
                 <div className="flex min-w-0 flex-[3_1_540px] flex-col gap-5">
+                    {toReview && (
+                        <ReviewPrompt key={toReview.id} session={toReview} />
+                    )}
+
+                    {proposals.length > 0 && (
+                        <Panel title="Nuovo orario proposto" className="gap-3">
+                            {proposals.map((booking) => (
+                                <ProposalCard
+                                    key={booking.id}
+                                    booking={booking}
+                                />
+                            ))}
+                        </Panel>
+                    )}
+
+                    {cancelledByTrainer.length > 0 && (
+                        <Panel title="Annullate dal trainer" className="gap-3">
+                            {cancelledByTrainer.map((booking) => (
+                                <PendingBookingCard
+                                    key={booking.id}
+                                    booking={booking}
+                                />
+                            ))}
+                        </Panel>
+                    )}
+
                     {next ? (
                         <NextSessionHero booking={next} now={now} />
                     ) : (
@@ -96,9 +143,9 @@ export default function Home({
                         />
                     )}
 
-                    {pending.length > 0 && (
+                    {waiting.length > 0 && (
                         <Panel title="In attesa di conferma" className="gap-3">
-                            {pending.map((booking) => (
+                            {waiting.map((booking) => (
                                 <PendingBookingCard
                                     key={booking.id}
                                     booking={booking}

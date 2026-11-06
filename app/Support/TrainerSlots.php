@@ -38,15 +38,18 @@ final class TrainerSlots
      * that day (no working hours, paused, after the booking window); without
      * slots and not closed, the day is full.
      *
+     * $exceptBookingId: a booking (and its proposal) that doesn't take its
+     * time, to move it ("Sposta").
+     *
      * @return list<array{date: string, closed: bool, slots: list<array{start: string, maxMinutes: int}>}>
      */
-    public static function days(TrainerProfile $profile, int $days, ?CarbonImmutable $now = null): array
+    public static function days(TrainerProfile $profile, int $days, ?CarbonImmutable $now = null, ?int $exceptBookingId = null): array
     {
         $now = ($now ?? CarbonImmutable::now())->setTimezone(self::TIMEZONE);
         $hoursByWeekday = self::hoursByWeekday($profile);
         $earliest = self::earliestStart($profile, $now);
         $lastDay = $now->startOfDay()->addDays($profile->booking_window_days);
-        $bookings = self::activeBookings($profile, $now, $now->startOfDay()->addDays(min($days, $profile->booking_window_days)));
+        $bookings = self::activeBookings($profile, $now, $now->startOfDay()->addDays(min($days, $profile->booking_window_days)), $exceptBookingId);
         // "Giorni e settimane diverse": these dates have their own hours (or none).
         $overrides = self::overrides($profile, $now->startOfDay(), $now->startOfDay()->addDays($days - 1));
         $result = [];
@@ -122,7 +125,7 @@ final class TrainerSlots
     /**
      * Whether a session of `$minutes` can start at `$start` (one of the free start times).
      */
-    public static function isFree(TrainerProfile $profile, CarbonImmutable $start, int $minutes, ?CarbonImmutable $now = null): bool
+    public static function isFree(TrainerProfile $profile, CarbonImmutable $start, int $minutes, ?CarbonImmutable $now = null, ?int $exceptBookingId = null): bool
     {
         $now = ($now ?? CarbonImmutable::now())->setTimezone(self::TIMEZONE);
         $start = $start->setTimezone(self::TIMEZONE);
@@ -132,7 +135,7 @@ final class TrainerSlots
             return false;
         }
 
-        $day = self::days($profile, $index + 1, $now)[$index];
+        $day = self::days($profile, $index + 1, $now, $exceptBookingId)[$index];
         $iso = $start->utc()->format('Y-m-d\TH:i:s\Z');
 
         foreach ($day['slots'] as $slot) {
@@ -270,22 +273,41 @@ final class TrainerSlots
     }
 
     /**
-     * The bookings that take time in these days, in Rome time, by start.
+     * The bookings that take time in these days, in Rome time, by start. A
+     * new time proposed by the trainer ("Sposta") takes its time too, until
+     * the client answers or the proposal expires.
      *
      * @return Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable}>
      */
-    private static function activeBookings(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $until): Collection
+    private static function activeBookings(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $until, ?int $exceptBookingId = null): Collection
     {
-        return $profile->bookings()
+        $bookings = $profile->bookings()
             ->active()
-            ->where('blocked_until', '>', $from->startOfDay())
-            ->where('starts_at', '<', $until)
-            ->orderBy('starts_at')
-            ->get(['starts_at', 'blocked_until'])
-            ->map(fn (Booking $booking) => [
-                'start' => $booking->starts_at->setTimezone(self::TIMEZONE),
-                'blockedUntil' => $booking->blocked_until->setTimezone(self::TIMEZONE),
-            ])
+            ->when($exceptBookingId !== null, fn ($query) => $query->whereKeyNot($exceptBookingId))
+            ->where(fn ($query) => $query
+                ->where(fn ($booked) => $booked->where('blocked_until', '>', $from->startOfDay())->where('starts_at', '<', $until))
+                ->orWhere(fn ($proposed) => $proposed->whereNotNull('proposed_starts_at')->where('proposal_expires_at', '>', now())))
+            ->get(['id', 'starts_at', 'ends_at', 'blocked_until', 'proposed_starts_at', 'proposal_expires_at']);
+
+        return $bookings
+            ->flatMap(function (Booking $booking) {
+                $times = [[
+                    'start' => $booking->starts_at->setTimezone(self::TIMEZONE),
+                    'blockedUntil' => $booking->blocked_until->setTimezone(self::TIMEZONE),
+                ]];
+
+                $proposal = $booking->proposal();
+
+                if ($proposal !== null) {
+                    $times[] = [
+                        'start' => $proposal['start']->setTimezone(self::TIMEZONE),
+                        'blockedUntil' => $proposal['blockedUntil']->setTimezone(self::TIMEZONE),
+                    ];
+                }
+
+                return $times;
+            })
+            ->sortBy(fn (array $time) => $time['start']->getTimestamp())
             ->values();
     }
 

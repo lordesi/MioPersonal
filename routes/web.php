@@ -19,6 +19,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BookingSentController;
 use App\Http\Controllers\ClientFavoritesController;
 use App\Http\Controllers\ClientHomeController;
+use App\Http\Controllers\ClientRescheduleController;
 use App\Http\Controllers\ClientReviewController;
 use App\Http\Controllers\CompleteProfileController;
 use App\Http\Controllers\ContactController;
@@ -42,7 +43,9 @@ use App\Http\Controllers\TrainerRequestsController;
 use App\Http\Controllers\TrainerReviewsController;
 use App\Http\Controllers\TrainerSearchController;
 use App\Http\Controllers\TrainerServicesController;
+use App\Http\Controllers\TrainerSessionChangeController;
 use App\Http\Controllers\TrainerSettingsController;
+use App\Http\Controllers\TrainerShareController;
 use App\Models\User;
 use App\Support\Seo;
 use Illuminate\Http\Request;
@@ -121,6 +124,11 @@ Route::middleware(['auth', 'role:client'])->group(function () {
     Route::patch('prenotazioni/{booking}/annulla', [BookingController::class, 'cancel'])
         ->whereNumber('booking')
         ->name('client.bookings.cancel');
+    // The answer to the trainer's "Sposta": accept the new time, or keep the old one.
+    Route::controller(ClientRescheduleController::class)->prefix('prenotazioni/{booking}/nuovo-orario')->whereNumber('booking')->group(function () {
+        Route::post('/', 'accept')->name('client.bookings.reschedule.accept');
+        Route::delete('/', 'decline')->name('client.bookings.reschedule.decline');
+    });
 
     // The heart on search cards and profiles.
     Route::post('preferiti/{slug}', [FavoriteController::class, 'store'])->name('client.favorites.store');
@@ -182,6 +190,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/', 'store')->name('sessions.no-show');
             Route::delete('/', 'destroy')->name('sessions.no-show.destroy');
         });
+        // "Annulla seduta" and "Sposta" (a proposal the client accepts) of a confirmed session.
+        Route::controller(TrainerSessionChangeController::class)->prefix('sedute/{booking}')->whereNumber('booking')->group(function () {
+            Route::patch('annulla', 'cancel')->name('sessions.cancel');
+            Route::post('sposta', 'propose')->name('sessions.reschedule');
+            Route::delete('sposta', 'withdraw')->name('sessions.reschedule.withdraw');
+        });
         Route::get('calendario', TrainerCalendarController::class)->name('calendar');
         Route::get('clienti', TrainerClientsController::class)->name('clients');
         Route::controller(TrainerAvailabilityController::class)->group(function () {
@@ -211,6 +225,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             // The public reply under a review.
             Route::post('recensioni/{review}/risposta', 'reply')->whereNumber('review')->name('reviews.reply');
         });
+        // "Condividi profilo": link, QR code and image for the Instagram stories.
+        Route::get('condividi', TrainerShareController::class)->name('share');
         Route::get('impostazioni', TrainerSettingsController::class)->name('settings');
         Route::controller(TrainerProfileSettingsController::class)->group(function () {
             Route::patch('impostazioni/visibilita', 'updateVisibility')->name('visibility.update');

@@ -10,6 +10,7 @@ import {
     LayoutDashboard,
     LogOut,
     Settings,
+    Share2,
     User,
 } from 'lucide-react';
 import { Fragment, useState } from 'react';
@@ -39,6 +40,7 @@ import { show as contactPage } from '@/routes/contact';
 import {
     register as trainerRegister,
     settings as trainerSettings,
+    share as trainerShare,
     today,
 } from '@/routes/trainer';
 import { edit as editTrainerProfile } from '@/routes/trainer/profile';
@@ -99,6 +101,11 @@ function menuGroups({
                           },
                       ]
                     : []),
+                {
+                    title: 'Condividi profilo',
+                    href: trainerShare.url(),
+                    icon: Share2,
+                },
                 {
                     title: 'Modifica profilo',
                     href: editTrainerProfile.url(),

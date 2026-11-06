@@ -22,6 +22,8 @@ export type ClientUpcomingBooking = {
     status: 'confirmed';
     /** ISO UTC string: after this moment cancelling is no longer free. */
     freeCancellationUntil: string;
+    /** "Sposta": the time the trainer proposes, until the client answers. */
+    proposal: { start: string; hours: number; expiresAt: string } | null;
 };
 
 /** The request just sent, on the "Prenotazione inviata" page. */
@@ -53,10 +55,15 @@ export type ClientPendingBooking = {
     start: string;
     hours: number;
     serviceName: string;
-    /** 'declined' = refused by the trainer, 'expired' = no answer in time. */
-    status: 'pending' | 'expired' | 'declined';
+    /**
+     * 'declined' = refused by the trainer, 'expired' = no answer in time,
+     * 'cancelled' = a confirmed session the trainer cancelled.
+     */
+    status: 'pending' | 'expired' | 'declined' | 'cancelled';
     /** ISO UTC string, null once expired or declined. */
     expiresAt: string | null;
+    /** The trainer's message when cancelling. */
+    cancelNote: string | null;
 };
 
 /** "Il tuo pacchetto": counted from its bookings, see docs/database/analisi.md §3.4. */

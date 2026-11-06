@@ -41,6 +41,8 @@ class TrainerDashboardController extends Controller
         return Inertia::render('trainer/today', [
             'firstName' => Str::before($trainer->name, ' '),
             'trainerArea' => $this->trainerArea(),
+            // "Sposta" of the next session: the free times, only when the dialog asks.
+            'rescheduleSlots' => Inertia::optional(fn () => TrainerSessions::rescheduleSlots($profile, $request->integer('sposta'))),
             // No profile yet (registration not sent): nothing to show.
             ...($profile === null ? self::empty() : $this->dashboard($profile)),
         ]);

@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { Search, Users } from 'lucide-react';
 import { useState } from 'react';
 import EmptyState from '@/components/states/empty-state';
@@ -8,6 +8,8 @@ import ClientFilters, {
     clientFilters,
 } from '@/components/trainer/area/client-filters';
 import ClientList from '@/components/trainer/area/client-list';
+import type { ClientInvite } from '@/components/trainer/area/invite-clients';
+import InviteClients from '@/components/trainer/area/invite-clients';
 import PageHeading from '@/components/trainer/area/page-heading';
 import { Button } from '@/components/ui/button';
 import { sessionsLabel } from '@/lib/calendar';
@@ -17,13 +19,18 @@ type ClientsProps = {
     clients: TrainerClient[];
     /** From "?cliente=37" (Panoramica, Calendario): the client to open first. */
     selectedId: number | null;
+    /** "Invita i tuoi clienti": null until the profile is in the search. */
+    invite: ClientInvite | null;
 };
 
 /** "Clienti" (docs/design/trainer-clienti.html): list on the left, card on the right. */
 export default function Clients({
     clients,
     selectedId: initialId,
+    invite,
 }: ClientsProps) {
+    // "Marco ti ha invitato": the first word of the name, as on the profile.
+    const firstName = usePage().props.auth.user?.name.split(' ')[0] ?? '';
     const [query, setQuery] = useState('');
     const [filter, setFilter] = useState<ClientFilter>('all');
     const [selectedId, setSelectedId] = useState(
@@ -82,6 +89,8 @@ export default function Clients({
                     )
                 }
             />
+
+            {invite && <InviteClients invite={invite} firstName={firstName} />}
 
             {clients.length === 0 ? (
                 <EmptyState

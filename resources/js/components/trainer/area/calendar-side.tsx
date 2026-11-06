@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { ArrowRight, Check, ChevronRight, MapPin, X } from 'lucide-react';
 import UserAvatar from '@/components/shared/user-avatar';
+import SessionChangeActions from '@/components/trainer/area/session-change-actions';
 import { totalHours } from '@/components/trainer/area/day-view';
 import { kindLabels } from '@/components/trainer/area/week-grid';
 import type { CalendarItem } from '@/lib/calendar';
@@ -118,6 +119,16 @@ export function SessionDetails({
                 >
                     Vedi cliente
                 </Link>
+            )}
+            {confirmed && item.canChange && (
+                <SessionChangeActions
+                    key={item.id}
+                    id={item.id}
+                    start={item.start}
+                    end={item.end}
+                    clientName={item.title}
+                    proposedStart={item.proposedStart}
+                />
             )}
             {!confirmed && (
                 <Link

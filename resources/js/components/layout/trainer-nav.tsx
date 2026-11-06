@@ -5,6 +5,7 @@ import {
     Eye,
     House,
     Inbox,
+    Share2,
     Star,
     Tag,
     Users,
@@ -21,6 +22,7 @@ import {
     requests,
     reviews,
     services,
+    share,
     today,
 } from '@/routes/trainer';
 
@@ -31,7 +33,8 @@ export type TrainerSection =
     | 'clients'
     | 'availability'
     | 'services'
-    | 'reviews';
+    | 'reviews'
+    | 'share';
 
 /** A link of the trainer area; desktopOnly ones stay out of the mobile tab bar. */
 export type TrainerNavItem = TabItem & {
@@ -77,6 +80,14 @@ const sections: {
         desktopOnly: true,
     },
     { section: 'reviews', title: 'Recensioni', icon: Star, href: reviews.url },
+    // Link, QR code and image for Instagram. On mobile: in the account menu.
+    {
+        section: 'share',
+        title: 'Condividi profilo',
+        icon: Share2,
+        href: share.url,
+        desktopOnly: true,
+    },
 ];
 
 export function trainerNavItems(

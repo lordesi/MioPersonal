@@ -1,4 +1,12 @@
-import { Award, MapPin, Share, Star, Target, Video } from 'lucide-react';
+import {
+    Award,
+    Instagram,
+    MapPin,
+    Share,
+    Star,
+    Target,
+    Video,
+} from 'lucide-react';
 import FavoriteButton from '@/components/shared/favorite-button';
 import { Button } from '@/components/ui/button';
 import { useInitials } from '@/hooks/use-initials';
@@ -149,6 +157,19 @@ export default function ProfileIntro({
                         onPressedChange={onFavoriteChange}
                         className={darkButton}
                     />
+                )}
+                {trainer.instagram && (
+                    <Button asChild variant="outline" className={darkButton}>
+                        <a
+                            href={trainer.instagram.url}
+                            target="_blank"
+                            rel="noopener noreferrer nofollow"
+                            aria-label={`Instagram di ${trainer.name}: @${trainer.instagram.handle} (si apre in una nuova scheda)`}
+                        >
+                            <Instagram />
+                            <span className="hidden sm:inline">Instagram</span>
+                        </a>
+                    </Button>
                 )}
                 {/* On mobile "Condividi" is in the header. */}
                 <Button

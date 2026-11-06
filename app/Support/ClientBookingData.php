@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\BookingActor;
 use App\Enums\BookingStatus;
 use App\Enums\TrainerProfileStatus;
 use App\Models\Booking;
@@ -31,11 +32,15 @@ final class ClientBookingData
         return $booking->status === BookingStatus::Confirmed && $booking->ends_at->isFuture();
     }
 
-    /** Waiting for the trainer, or refused/expired: shown until the time has passed. */
+    /**
+     * Waiting for the trainer, refused/expired, or cancelled by the trainer:
+     * shown until the time has passed.
+     */
     public static function isPending(Booking $booking): bool
     {
         return $booking->starts_at->isFuture()
-            && in_array($booking->status, [BookingStatus::Pending, BookingStatus::Declined, BookingStatus::Expired], true);
+            && (in_array($booking->status, [BookingStatus::Pending, BookingStatus::Declined, BookingStatus::Expired], true)
+                || ($booking->status === BookingStatus::Cancelled && $booking->cancelled_by === BookingActor::Trainer));
     }
 
     /**
@@ -71,6 +76,8 @@ final class ClientBookingData
             'placeLabel' => $booking->place_label,
             'status' => 'confirmed',
             'freeCancellationUntil' => self::iso($booking->freeCancellationEndsAt()),
+            // "Sposta": the time the trainer proposes, until the client answers.
+            'proposal' => self::proposal($booking),
         ];
     }
 
@@ -88,11 +95,32 @@ final class ClientBookingData
             'hours' => self::hours($booking),
             'serviceName' => $booking->service_name,
             'status' => match (true) {
+                $booking->status === BookingStatus::Cancelled => 'cancelled',
                 $booking->status === BookingStatus::Declined => 'declined',
                 $booking->isExpired() => 'expired',
                 default => 'pending',
             },
             'expiresAt' => $booking->isPending() && $booking->expires_at !== null ? self::iso($booking->expires_at) : null,
+            // The trainer's message when cancelling.
+            'cancelNote' => $booking->status === BookingStatus::Cancelled ? $booking->cancel_note : null,
+        ];
+    }
+
+    /**
+     * @return array{start: string, hours: float, expiresAt: string}|null
+     */
+    private static function proposal(Booking $booking): ?array
+    {
+        $proposal = $booking->proposal();
+
+        if ($proposal === null || $booking->proposal_expires_at === null) {
+            return null;
+        }
+
+        return [
+            'start' => self::iso($proposal['start']),
+            'hours' => self::hours($booking),
+            'expiresAt' => self::iso($booking->proposal_expires_at),
         ];
     }
 

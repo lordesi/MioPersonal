@@ -182,8 +182,10 @@ class GoogleAuthController extends Controller
         Auth::login($user, remember: true);
         $request->session()->regenerate();
 
-        // Where Fortify sends the normal sign-up: "Completa il tuo profilo".
-        return redirect()->to(config()->string('fortify.redirects.register'));
+        // Back to the page that asked to sign up (e.g. booking a trainer who
+        // invited the client), as the normal sign-up does; otherwise where
+        // Fortify sends it: "Completa il tuo profilo".
+        return redirect()->intended(config()->string('fortify.redirects.register'));
     }
 
     /** Back from Google after "Collega": the account gets its google_id. */

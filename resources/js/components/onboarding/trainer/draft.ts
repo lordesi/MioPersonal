@@ -11,6 +11,8 @@ export type TrainerDraft = {
     bio: string;
     /** '' until the trainer chooses. */
     experience: Experience | '';
+    /** Instagram username, optional ('' = none). */
+    instagram: string;
     /** A new profile photo chosen in step 2. */
     photo: File | null;
     /** The photo already saved, shown until a new one is chosen. */
@@ -185,6 +187,7 @@ export const initialDraft: TrainerDraft = {
     headline: '',
     bio: '',
     experience: '',
+    instagram: '',
     photo: null,
     photoUrl: null,
     disciplines: [],
@@ -406,6 +409,7 @@ export function toPayload(draft: TrainerDraft) {
         headline: draft.headline,
         bio: draft.bio,
         experience: draft.experience,
+        instagram: draft.instagram,
         photo: draft.photo,
         disciplines: draft.disciplines,
         goals: draft.goals,
@@ -510,6 +514,7 @@ const fieldSteps: [prefix: string, step: number][] = [
     ['headline', 2],
     ['bio', 2],
     ['experience', 2],
+    ['instagram', 2],
     ['photo', 2],
     ['disciplines', 3],
     ['goals', 3],

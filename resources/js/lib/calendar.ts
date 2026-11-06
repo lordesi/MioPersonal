@@ -115,6 +115,13 @@ export type CalendarItem = {
     detail: string;
     place: string;
     kind: 'confirmed' | 'pending';
+    /** ISO UTC strings, as the server sends them. */
+    start: string;
+    end: string;
+    /** "Sposta" / "Annulla seduta": shown for confirmed sessions not started. */
+    canChange: boolean;
+    /** ISO UTC string of the time proposed to the client, if any. */
+    proposedStart: string | null;
 };
 
 /** The bookings of the server as calendar items, in Rome time. */
@@ -135,6 +142,10 @@ export function calendarItems(events: CalendarEvent[]): CalendarItem[] {
             detail: event.serviceName,
             place: event.placeLabel,
             kind: event.kind,
+            start: event.start,
+            end: event.end,
+            canChange: event.canChange,
+            proposedStart: event.proposedStart,
         };
     });
 }

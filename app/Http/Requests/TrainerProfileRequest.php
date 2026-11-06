@@ -64,6 +64,23 @@ class TrainerProfileRequest extends FormRequest
     public const LAST_HOUR = 23;
 
     /**
+     * "Instagram": "@giulia.fit", "instagram.com/giulia.fit/" or the full link
+     * all become "giulia.fit".
+     */
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('instagram')) {
+            return;
+        }
+
+        $value = trim((string) $this->input('instagram'));
+        $value = (string) preg_replace('~^(https?://)?(www\.)?instagr(am\.com|\.am)/~i', '', $value);
+        $value = trim(explode('?', $value)[0], "/@ \t");
+
+        $this->merge(['instagram' => $value === '' ? null : $value]);
+    }
+
+    /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
@@ -75,6 +92,7 @@ class TrainerProfileRequest extends FormRequest
             'headline' => ['required', 'string', 'max:60'],
             'bio' => ['required', 'string', 'min:60', 'max:500'],
             'experience' => ['required', Rule::enum(TrainerExperience::class)],
+            'instagram' => ['nullable', 'string', 'regex:/^[A-Za-z0-9._]{1,30}$/'],
             // Required, except for a profile that already has one (fixing after "Chiedi modifiche").
             'photo' => [Rule::requiredIf(fn () => $this->user()?->trainerProfile?->portrait === null), 'nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=400,min_height=400'],
 
@@ -335,6 +353,7 @@ class TrainerProfileRequest extends FormRequest
             'bio.min' => 'La presentazione deve avere almeno 60 caratteri.',
             'bio.max' => 'La presentazione può avere al massimo 500 caratteri.',
             'experience.*' => 'Scegli gli anni di esperienza.',
+            'instagram.*' => 'Scrivi il nome del profilo Instagram, es. giulia.fit.',
             'photo.required' => 'Carica una foto del profilo.',
             'photo.image' => 'La foto deve essere un’immagine JPG o PNG.',
             'photo.mimes' => 'La foto deve essere un’immagine JPG o PNG.',

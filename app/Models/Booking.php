@@ -37,6 +37,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property BookingActor|null $cancelled_by
  * @property CarbonImmutable|null $no_show_at set by the trainer: the client didn't come
  * @property string|null $client_note
+ * @property string|null $cancel_note the trainer's message to the client when cancelling
+ * @property CarbonImmutable|null $proposed_starts_at "Sposta": the new start the trainer proposes
+ * @property CarbonImmutable|null $proposal_expires_at after this the proposal lapses and the old time holds
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property-read User|null $client
@@ -73,6 +76,8 @@ class Booking extends Model
             'cancelled_at' => 'datetime',
             'cancelled_by' => BookingActor::class,
             'no_show_at' => 'datetime',
+            'proposed_starts_at' => 'datetime',
+            'proposal_expires_at' => 'datetime',
         ];
     }
 
@@ -168,7 +173,9 @@ class Booking extends Model
     {
         return match (true) {
             $this->isPending() => $this->starts_at->isFuture(),
-            $this->status === BookingStatus::Confirmed => $this->freeCancellationEndsAt()->isFuture(),
+            // While the trainer proposes another time, cancelling is free too.
+            $this->status === BookingStatus::Confirmed => $this->freeCancellationEndsAt()->isFuture()
+                || ($this->proposal() !== null && $this->starts_at->isFuture()),
             default => false,
         };
     }
@@ -182,6 +189,45 @@ class Booking extends Model
         return $this->status === BookingStatus::Confirmed
             && $this->ends_at->isPast()
             && $this->ends_at->addDays(self::NO_SHOW_DAYS)->isFuture();
+    }
+
+    /** Hours a "Sposta" proposal waits for the client (less if the session comes first). */
+    public const PROPOSAL_HOURS = 48;
+
+    /**
+     * A confirmed session not started yet: the trainer can cancel it or
+     * propose another time.
+     */
+    public function canBeChangedByTrainer(): bool
+    {
+        return $this->status === BookingStatus::Confirmed && $this->starts_at->isFuture();
+    }
+
+    /**
+     * The time the trainer proposes, while the client can still accept it:
+     * same length and break as now. Null without a live proposal.
+     *
+     * @return array{start: CarbonImmutable, end: CarbonImmutable, blockedUntil: CarbonImmutable}|null
+     */
+    public function proposal(): ?array
+    {
+        if ($this->proposed_starts_at === null || $this->proposal_expires_at === null || $this->proposal_expires_at->isPast()) {
+            return null;
+        }
+
+        $start = $this->proposed_starts_at;
+
+        return [
+            'start' => $start,
+            'end' => $start->addSeconds((int) $this->starts_at->diffInSeconds($this->ends_at)),
+            'blockedUntil' => $start->addSeconds((int) $this->starts_at->diffInSeconds($this->blocked_until)),
+        ];
+    }
+
+    /** Takes the proposal away: accepted, declined, withdrawn or expired. */
+    public function clearProposal(): void
+    {
+        $this->forceFill(['proposed_starts_at' => null, 'proposal_expires_at' => null])->save();
     }
 
     /** Saves a row of the history: requested, confirmed, declined, cancelled, expired. */
@@ -230,6 +276,9 @@ class Booking extends Model
             'status' => BookingStatus::Cancelled,
             'cancelled_at' => now(),
             'cancelled_by' => $by,
+            // A "Sposta" proposal goes with it.
+            'proposed_starts_at' => null,
+            'proposal_expires_at' => null,
         ])->save();
 
         $this->record('cancelled', $actor);

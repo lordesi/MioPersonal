@@ -25,6 +25,7 @@ final class TrainerDraft
             'headline' => $profile->headline,
             'bio' => $profile->bio,
             'experience' => $profile->experience->value,
+            'instagram' => $profile->instagram ?? '',
             'photoUrl' => $profile->portrait?->url(),
             'disciplines' => $profile->disciplines->pluck('slug')->all(),
             'goals' => $profile->goals ?? [],

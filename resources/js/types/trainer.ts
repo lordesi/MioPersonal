@@ -86,6 +86,8 @@ export type TrainerProfile = {
     verified: boolean;
     bio: string[];
     experienceLabel: string;
+    /** Shown to everyone; null when the trainer didn't add it. */
+    instagram: { handle: string; url: string } | null;
     /** Null until the trainer has answered some bookings. */
     responseTimeLabel: string | null;
     cancellationLabel: string;
@@ -134,11 +136,20 @@ export type TrainerTodaySession = {
  * A session in Panoramica, Richieste and Clienti (App\Support\TrainerSessions).
  * serviceName says which session of a package it is: "Pacchetto 10 sedute · seduta 2 di 10".
  */
-export type TrainerSession = TrainerTodaySession & {
-    /** ISO UTC string. */
-    end: string;
-    /** 'pending' = waiting for the trainer's answer. */
-    kind: 'confirmed' | 'pending';
+export type TrainerSession = TrainerTodaySession &
+    SessionChange & {
+        /** ISO UTC string. */
+        end: string;
+        /** 'pending' = waiting for the trainer's answer. */
+        kind: 'confirmed' | 'pending';
+    };
+
+/** "Sposta" and "Annulla seduta" of a confirmed session (TrainerSessions::change). */
+export type SessionChange = {
+    /** Confirmed and not started: the buttons show. */
+    canChange: boolean;
+    /** ISO UTC string: the time proposed to the client, waiting for the answer. */
+    proposedStart: string | null;
 };
 
 /** "Pacchetti attivi": bought, not all the sessions done yet. */
@@ -262,7 +273,7 @@ export type TrainerAreaData = {
 };
 
 /** A booking in the trainer calendar, confirmed or waiting for an answer. */
-export type CalendarEvent = {
+export type CalendarEvent = SessionChange & {
     id: number;
     /** ISO UTC strings. */
     start: string;

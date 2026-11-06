@@ -47,6 +47,8 @@ type ProfileProps = {
     trainer: TrainerProfile;
     /** Not approved yet: only its trainer and the team can see it. */
     preview: boolean;
+    /** Opened from the trainer's invite link: "Marco ti ha invitato". */
+    invited: boolean;
     /** Every review, loaded by "Mostra tutte le recensioni". */
     allReviews?: TrainerReview[];
     seo: SeoData;
@@ -55,6 +57,7 @@ type ProfileProps = {
 export default function Profile({
     trainer,
     preview,
+    invited,
     allReviews,
     seo,
 }: ProfileProps) {
@@ -223,6 +226,19 @@ export default function Profile({
             {/* The dark block, like the header: breadcrumb, photos and name. */}
             <div className="bg-primary text-primary-foreground">
                 <div className="mx-auto flex w-full max-w-7xl flex-col gap-6.5 px-4 pt-5.5 pb-10 md:px-8">
+                    {invited && !preview && (
+                        <p
+                            role="status"
+                            className="rounded-xl bg-primary-foreground px-4 py-3.5 text-sm text-primary"
+                        >
+                            <strong>
+                                {trainer.name.split(' ')[0]} ti ha invitato su
+                                MioPersonal.
+                            </strong>{' '}
+                            Da qui prenoti le sedute in pochi secondi, vedi gli
+                            orari liberi e trovi tutto nella tua area.
+                        </p>
+                    )}
                     {preview && (
                         <p
                             role="status"

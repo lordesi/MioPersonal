@@ -20,8 +20,8 @@ type CancelBookingDialogProps = {
 
 /**
  * "Annulla" of a booking, confirmed or still waiting: it asks first, because it
- * can't be undone. Bookings can't be moved: for another time the client
- * cancels and books again.
+ * can't be undone. Only the trainer proposes another time (ProposalCard):
+ * for another time the client cancels and books again.
  */
 export default function CancelBookingDialog({
     trainerFirstName,

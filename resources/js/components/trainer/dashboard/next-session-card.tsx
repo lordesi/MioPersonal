@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import { Calendar, Check } from 'lucide-react';
 import { useId } from 'react';
 import UserAvatar from '@/components/shared/user-avatar';
+import SessionChangeActions from '@/components/trainer/area/session-change-actions';
 import { Button } from '@/components/ui/button';
 import { romeParts } from '@/lib/calendar';
 import { formatDayLong, formatDayRelative, formatTime } from '@/lib/format';
@@ -107,6 +108,16 @@ export default function NextSessionCard({
                             </Link>
                         </Button>
                     </div>
+                    {session.canChange && (
+                        <SessionChangeActions
+                            key={session.id}
+                            id={session.id}
+                            start={session.start}
+                            end={session.end}
+                            clientName={session.clientName}
+                            proposedStart={session.proposedStart}
+                        />
+                    )}
                 </>
             ) : (
                 <div className="flex flex-col items-start gap-3">

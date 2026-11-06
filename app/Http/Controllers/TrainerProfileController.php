@@ -56,6 +56,8 @@ class TrainerProfileController extends Controller
             ],
             // Not approved yet: the trainer (or the team) is looking at a preview.
             'preview' => ! $profile->isApproved(),
+            // The link of "Invita i tuoi clienti" (TrainerClientsController::invite).
+            'invited' => $request->boolean('invito'),
             // "Mostra tutte le recensioni": sent only when the page asks for it
             // (router.reload with only: ['allReviews']), never on the first load.
             'allReviews' => Inertia::optional(fn () => $this->reviews($profile)),
@@ -104,6 +106,7 @@ class TrainerProfileController extends Controller
             'priceRange' => $prices->isEmpty() ? null : Seo::euros((int) $prices->min()).($prices->min() === $prices->max() ? '' : ' - '.Seo::euros((int) $prices->max())),
             'areaServed' => $cities === [] ? null : array_map(fn (string $city) => ['@type' => 'City', 'name' => $city], $cities),
             'knowsAbout' => $disciplines === [] ? null : $disciplines,
+            'sameAs' => $profile->instagram === null ? null : [$profile->instagramUrl()],
             // Only real reviews: no rating at all for a new profile.
             'aggregateRating' => $rating === null ? null : [
                 '@type' => 'AggregateRating',
@@ -147,6 +150,8 @@ class TrainerProfileController extends Controller
             // Paragraphs split at the empty lines.
             'bio' => array_values(array_filter(array_map(trim(...), preg_split('/\R\s*\R/', $profile->bio) ?: []))),
             'experienceLabel' => $profile->experience->profileLabel(),
+            // Public on purpose: the trainer chose to show it.
+            'instagram' => $profile->instagram === null ? null : ['handle' => $profile->instagram, 'url' => $profile->instagramUrl()],
             // TODO (step 5): computed from the answers to the bookings.
             'responseTimeLabel' => null,
             'cancellationLabel' => "Cancellazione gratuita fino a {$profile->free_cancellation_hours} ore prima",

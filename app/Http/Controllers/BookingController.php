@@ -9,6 +9,7 @@ use App\Models\ClientPackage;
 use App\Models\Service;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Notifications\BookingChanged;
 use App\Support\TrainerSlots;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -113,6 +114,9 @@ class BookingController extends Controller
 
         $booking->cancel(BookingActor::Client, $client);
         TrainerSlots::refresh($booking->trainerProfile);
+
+        // "Avvisiamo noi il trainer".
+        $booking->trainerProfile->user->notify(new BookingChanged($booking, 'cancelled-by-client'));
 
         return back();
     }

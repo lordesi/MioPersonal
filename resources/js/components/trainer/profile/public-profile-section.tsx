@@ -13,6 +13,7 @@ import StepErrors from '@/components/onboarding/trainer/step-errors';
 import NumberedSection from '@/components/trainer/area/numbered-section';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import InstagramField from '@/components/trainer/profile/instagram-field';
 import {
     Select,
     SelectContent,
@@ -237,6 +238,12 @@ export default function PublicProfileSection({
                     </SelectContent>
                 </Select>
             </div>
+
+            <InstagramField
+                id={`${id}-instagram`}
+                value={draft.instagram}
+                onChange={(instagram) => update({ instagram })}
+            />
         </NumberedSection>
     );
 }

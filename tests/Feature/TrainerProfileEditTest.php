@@ -223,4 +223,42 @@ class TrainerProfileEditTest extends TestCase
             ->get(route('trainer.profile.edit'))
             ->assertRedirect();
     }
+
+    public function test_the_instagram_link_and_the_username_become_the_username()
+    {
+        $profile = $this->approvedTrainer();
+
+        foreach (['@giulia.fit', 'https://www.instagram.com/giulia.fit/?hl=it', 'instagram.com/giulia.fit', ' giulia.fit '] as $value) {
+            $this->actingAs($profile->user)
+                ->put(route('trainer.profile.update'), $this->payload(['instagram' => $value]))
+                ->assertSessionHasNoErrors();
+
+            $this->assertSame('giulia.fit', $profile->fresh()->instagram);
+        }
+
+        $this->put(route('trainer.profile.update'), $this->payload(['instagram' => '']));
+        $this->assertNull($profile->fresh()->instagram);
+    }
+
+    public function test_an_instagram_name_with_other_characters_is_refused()
+    {
+        $profile = $this->approvedTrainer();
+
+        $this->actingAs($profile->user)
+            ->put(route('trainer.profile.update'), $this->payload(['instagram' => 'giulia fit!']))
+            ->assertSessionHasErrors(['instagram' => 'Scrivi il nome del profilo Instagram, es. giulia.fit.']);
+    }
+
+    public function test_the_public_profile_links_the_instagram()
+    {
+        $profile = $this->approvedTrainer();
+        $profile->forceFill(['instagram' => 'giulia.fit'])->save();
+
+        $this->get(route('trainers.show', $profile->slug))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('trainer.instagram.handle', 'giulia.fit')
+                ->where('trainer.instagram.url', 'https://www.instagram.com/giulia.fit/'))
+            // Google links the two profiles (JSON-LD sameAs).
+            ->assertSee('"sameAs":["https:\/\/www.instagram.com\/giulia.fit\/"]', false);
+    }
 }

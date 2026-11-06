@@ -39,7 +39,34 @@ class TrainerClientsController extends Controller
             'clients' => $profile === null ? [] : $this->clients($profile),
             // "?cliente=37" from Panoramica and Calendario: that client opens in the card.
             'selectedId' => $request->integer('cliente') ?: null,
+            // "Invita i tuoi clienti": only once the profile can be booked.
+            'invite' => $profile !== null && TrainerProfile::query()->published()->whereKey($profile->id)->exists()
+                ? self::invite($profile)
+                : null,
         ]);
+    }
+
+    /**
+     * The link for the trainer's own clients: the profile with "Marco ti ha
+     * invitato", and the sign-ups it brought (users.acquisition, Stats).
+     *
+     * @return array{link: string, signups: int}
+     */
+    public static function invite(TrainerProfile $profile): array
+    {
+        return [
+            'link' => route('trainers.show', [
+                'slug' => $profile->slug,
+                'invito' => 1,
+                'utm_source' => 'trainer',
+                'utm_medium' => 'invito',
+                'utm_campaign' => $profile->slug,
+            ]),
+            'signups' => User::query()
+                ->where('acquisition->source', 'trainer')
+                ->where('acquisition->campaign', $profile->slug)
+                ->count(),
+        ];
     }
 
     /**
