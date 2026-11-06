@@ -33,7 +33,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Never served by URL: certificates go through AdminVerificationController.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

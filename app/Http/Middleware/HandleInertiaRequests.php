@@ -72,7 +72,9 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                // Only what the pages use (types/auth.ts): not the whole model, which
+                // also holds the phone, acquisition data and the activity times.
+                'user' => $request->user()?->only(['id', 'name', 'email', 'avatar', 'email_verified_at', 'role']),
                 // The number on "Preferiti" in the account menu (the same trainers as the page).
                 'favoritesCount' => fn () => $request->user()?->role === UserRole::Client
                     ? $request->user()->favoriteTrainers()->where('trainer_profiles.status', TrainerProfileStatus::Approved)->count()

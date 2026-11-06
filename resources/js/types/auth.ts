@@ -1,3 +1,4 @@
+/** The logged-in user: only these fields are shared (HandleInertiaRequests). */
 export type User = {
     id: number;
     name: string;
@@ -7,9 +8,6 @@ export type User = {
     email_verified_at: string | null;
     /** See App\Enums\UserRole. */
     role?: 'client' | 'trainer' | 'admin';
-    created_at: string;
-    updated_at: string;
-    [key: string]: unknown;
 };
 
 export type Auth = {
