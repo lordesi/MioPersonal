@@ -23,6 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['sidebar_state']);
 
+        // Only requests for APP_URL (and its subdomains); off in local and in tests.
+        $middleware->trustHosts();
+
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
             'role' => EnsureUserHasRole::class,

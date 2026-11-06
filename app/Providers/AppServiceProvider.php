@@ -12,6 +12,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -93,6 +94,13 @@ class AppServiceProvider extends ServiceProvider
         DB::prohibitDestructiveCommands(
             app()->isProduction(),
         );
+
+        // Links in emails (password reset, verification) always use APP_URL over
+        // HTTPS, never the Host header of the request that asked for them.
+        if (app()->isProduction()) {
+            URL::forceRootUrl(config()->string('app.url'));
+            URL::forceScheme('https');
+        }
 
         // The criteria listed under the password field (password-requirements.tsx):
         // the same everywhere. In production also refused if found in a data leak.
