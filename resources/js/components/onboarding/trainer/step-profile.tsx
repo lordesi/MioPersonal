@@ -18,7 +18,7 @@ import SearchCardPreview, {
 import NumberedSection from '@/components/trainer/area/numbered-section';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import InstagramField from '@/components/trainer/profile/instagram-field';
+import SocialAccountsField from '@/components/trainer/profile/social-accounts-field';
 import {
     Select,
     SelectContent,
@@ -370,10 +370,9 @@ function Presentation({ draft, update }: Pick<StepProps, 'draft' | 'update'>) {
                 </Select>
             </div>
 
-            <InstagramField
-                id={`${id}-instagram`}
-                value={draft.instagram}
-                onChange={(instagram) => update({ instagram })}
+            <SocialAccountsField
+                instagram={draft.instagram}
+                onInstagramChange={(instagram) => update({ instagram })}
             />
         </>
     );

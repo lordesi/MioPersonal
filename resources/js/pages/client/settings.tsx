@@ -1,7 +1,8 @@
 import { Head } from '@inertiajs/react';
-import { LockKeyhole, Trash2, UserRound } from 'lucide-react';
+import { Bell, LockKeyhole, Trash2, UserRound } from 'lucide-react';
 import AccessSection from '@/components/account/access-section';
 import DeleteAccountSection from '@/components/account/delete-account-section';
+import NotificationsSection from '@/components/account/notifications-section';
 import PersonalDataSection from '@/components/account/personal-data-section';
 import SettingsNav from '@/components/account/settings-nav';
 import type { SettingsNavSection } from '@/components/account/settings-nav';
@@ -17,6 +18,7 @@ type SettingsProps = {
 const sections: SettingsNavSection[] = [
     { id: 'dati', title: 'Dati personali', icon: UserRound },
     { id: 'accesso', title: 'Accesso e sicurezza', icon: LockKeyhole },
+    { id: 'notifiche', title: 'Notifiche', icon: Bell },
     { id: 'elimina', title: 'Elimina account', icon: Trash2 },
 ];
 
@@ -44,6 +46,9 @@ export default function Settings({
                             hasPassword={account.hasPassword}
                             passwordChangedAt={account.passwordChangedAt}
                             providers={account.providers}
+                        />
+                        <NotificationsSection
+                            reminders={account.notifications.reminders}
                         />
                         <DeleteAccountSection
                             description="Eliminando il profilo, accetti di perdere tutti i tuoi dati. Hai 30 giorni per ripensarci, poi sarà impossibile recuperarlo."

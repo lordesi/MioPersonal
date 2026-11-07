@@ -414,6 +414,21 @@ Finché nel `.env` non c'è `GOOGLE_CLIENT_ID`, il pulsante **Continua con Googl
 
 In produzione si aggiunge in Google l'indirizzo vero, es. `https://miopersonal.it/auth/google/callback`.
 
+### Collegamento social dei trainer (facoltativo)
+
+In «Diventa trainer» e in «Il mio profilo» il trainer può premere **Collega** per Instagram, TikTok, Facebook e YouTube. Si apre una finestra in cui fa il login sul social; poi sul profilo pubblico compare l'icona che apre il suo profilo. Non salviamo token: solo ID, nome utente e link. Ogni social resta nascosto finché nel `.env` manca il suo `*_CLIENT_ID` (senza nessun social configurato si vede solo il campo Instagram scritto a mano, come prima).
+
+Le redirect URI da registrare su ogni console sono `https://<dominio>/social/{instagram|tiktok|facebook|youtube}/callback`.
+
+- **Instagram**: [developers.facebook.com](https://developers.facebook.com) → crea un'app di tipo **Business** → aggiungi il prodotto **Instagram** → **API setup with Instagram login**. Permesso `instagram_business_basic`. Copia _Instagram app ID/secret_ in `INSTAGRAM_CLIENT_ID` / `INSTAGRAM_CLIENT_SECRET`. Funziona solo con account Instagram **professionali** (creator o business): per gli altri resta il campo manuale.
+- **Facebook**: nella stessa app Meta aggiungi **Facebook Login**, con i permessi `public_profile` e `user_link`. Copia _App ID/secret_ in `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET`.
+- **TikTok**: [developers.tiktok.com](https://developers.tiktok.com) → crea un'app → **Login Kit** (Web), con gli scope `user.info.basic` e `user.info.profile`. Copia _Client key/secret_ in `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET`.
+- **YouTube**: nel progetto Google Cloud del login abilita la **YouTube Data API v3**, aggiungi lo scope `youtube.readonly` alla schermata di consenso e crea (o riusa) un client OAuth web. Mettilo in `YOUTUBE_CLIENT_ID` / `YOUTUBE_CLIENT_SECRET`.
+
+**In locale**: Meta e TikTok vogliono HTTPS e Google non accetta `.test`. Il modo più semplice è `herd share`, che dà un indirizzo pubblico in HTTPS: apri **tutto il sito da quell'indirizzo** (così la sessione resta la stessa) e registralo come redirect URI. Se serve, l'indirizzo si forza con `INSTAGRAM_REDIRECT_URI`, `TIKTOK_REDIRECT_URI`, `FACEBOOK_REDIRECT_URI` e `YOUTUBE_REDIRECT_URI`. Finché l'app è in modalità sviluppo/sandbox possono collegarsi solo gli account aggiunti come **tester** sulla console.
+
+**Prima di andare online** serve l'approvazione di ogni piattaforma (gratuita): App Review di Meta per `instagram_business_basic` e `user_link`, revisione dell'app su TikTok, verifica dell'app su Google per `youtube.readonly`. Di solito chiedono un video che mostri il collegamento, la privacy policy (`/privacy`) e un URL con le istruzioni per cancellare i dati (`/privacy#conservazione`: basta premere «Scollega»).
+
 ### Email in produzione con Brevo
 
 In locale le email restano nel log. Online servono davvero (conferma email, password dimenticata, esito della verifica trainer, form contatti): le consegna [Brevo](https://www.brevo.com), collegato via **SMTP**. Non serve nessuna libreria: basta il `.env`.
@@ -447,6 +462,32 @@ processo a parte, il _worker_ (`php artisan queue:work`).
   non lanci `php artisan queue:work`.
 - **Sul server**: lascia `QUEUE_CONNECTION=database` e attiva il worker (su Forge: **Queue**).
   Senza worker queste email non partono mai.
+
+### App installabile, notifiche push e promemoria
+
+Il sito si installa sulla schermata Home (`public/manifest.webmanifest`) e manda notifiche push
+(`public/sw.js`). Non ci sono costi: le push passano dai servizi gratuiti di Apple, Google e Mozilla.
+
+1. **Chiavi VAPID**, una volta sola per ogni ambiente:
+    ```
+    php artisan webpush:vapid
+    ```
+    Scrive `VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY` nel `.env`; aggiungi anche
+    `VAPID_SUBJECT="mailto:info@miopersonal.it"`. **Non cambiarle più**: i dispositivi già attivi
+    smetterebbero di ricevere. Senza chiavi il pulsante **Attiva le notifiche** non compare.
+2. **Su Windows** (in locale) OpenSSL ha bisogno del suo file di configurazione, sia per creare le
+   chiavi sia per spedire le push. Prima dei comandi, nello stesso PowerShell:
+    ```
+    $env:OPENSSL_CONF = "$env:USERPROFILE\.config\herd\bin\php84\extras\ssl\openssl.cnf"
+    ```
+    Sul server Linux non serve.
+3. **Promemoria**: `bookings:remind` gira ogni 5 minuti con lo scheduler. Il giorno prima avvisa
+   cliente e trainer (push a chi ha un dispositivo attivo, email solo agli altri, per stare nel
+   limite gratuito di Brevo); 2 ore prima avvisa il cliente, solo con la push. Sul server servono
+   il **cron** di `php artisan schedule:run` ogni minuto e il **worker** della coda.
+4. **Provarle**: le push richiedono HTTPS. In locale `herd secure miopersonal` attiva HTTPS sul sito.
+   Su iPhone funzionano solo dall'app aggiunta alla Home (Condividi → «Aggiungi alla schermata
+   Home»), da iOS 16.4.
 
 ### SEO: rendering lato server (SSR) in produzione
 

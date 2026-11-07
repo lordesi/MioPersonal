@@ -82,6 +82,8 @@ class HandleInertiaRequests extends Middleware
                 // The numbers on the "Preferiti" filter of the two searches.
                 'favoriteCounts' => fn () => $this->favoriteCounts($request),
             ],
+            // For "Attiva le notifiche" (lib/push.ts); null hides it (no keys in the .env).
+            'vapidPublicKey' => fn () => $request->user() === null ? null : (config('webpush.vapid.public_key') ?: null),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             // null shows the cookie banner.
             'cookieConsent' => CookieConsent::current($request),

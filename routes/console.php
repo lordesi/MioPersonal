@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Account\DeleteUser;
+use App\Actions\Bookings\SendSessionReminders;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
 use App\Models\Booking;
@@ -91,6 +92,13 @@ Artisan::command('bookings:expire', function () {
 })->purpose('Mark the booking requests the trainer did not answer in time as expired');
 
 Schedule::command('bookings:expire')->everyMinute();
+
+// The reminders the day before and 2 hours before a confirmed session.
+Artisan::command('bookings:remind', function (SendSessionReminders $reminders) {
+    $this->info("{$reminders->handle()} reminders sent.");
+})->purpose('Remind clients and trainers of their next confirmed sessions');
+
+Schedule::command('bookings:remind')->everyFiveMinutes()->withoutOverlapping();
 
 // "Elimina account" and "Cancella dati" of the team: the account is deleted for
 // good User::DELETION_GRACE_DAYS later (until then it can be taken back).

@@ -5,6 +5,7 @@ import BookingSummary from '@/components/booking/booking-summary';
 import VerifyEmailNotice from '@/components/booking/verify-email-notice';
 import AccountMenu from '@/components/layout/account-menu';
 import MinimalHeader from '@/components/layout/minimal-header';
+import AppNotificationsCard from '@/components/pwa/app-notifications-card';
 import SectionLabel from '@/components/shared/section-label';
 import { Button } from '@/components/ui/button';
 import {
@@ -79,6 +80,20 @@ export default function BookingSent({ booking }: BookingSentProps) {
 
                 {/* Only on mobile, as in the design. */}
                 <AddToCalendar booking={booking} className="md:hidden" />
+
+                <AppNotificationsCard
+                    title={
+                        booking.status === 'confirmed'
+                            ? 'Ricevi i promemoria sul telefono'
+                            : `Ti avvisiamo quando ${trainer.firstName} conferma`
+                    }
+                    description={
+                        booking.status === 'confirmed'
+                            ? 'Una notifica il giorno prima e 2 ore prima della seduta.'
+                            : 'Una notifica sul telefono appena risponde, e i promemoria prima della seduta.'
+                    }
+                    dismissKey="booking-sent"
+                />
 
                 {auth.user.email_verified_at === null && (
                     <VerifyEmailNotice

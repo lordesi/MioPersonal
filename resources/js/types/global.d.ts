@@ -13,6 +13,8 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            /** For "Attiva le notifiche"; null for guests or without the keys in the .env. */
+            vapidPublicKey: string | null;
             /** null until the cookie banner is answered. */
             cookieConsent: CookieConsent | null;
             [key: string]: unknown;

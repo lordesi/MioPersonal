@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\AdminStatsController;
 use App\Http\Controllers\Admin\AdminUsersController;
 use App\Http\Controllers\Admin\AdminUserStatusController;
 use App\Http\Controllers\Admin\AdminVerificationController;
+use App\Http\Controllers\AppStartController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\RegistrationCheckController;
 use App\Http\Controllers\BookingController;
@@ -38,6 +39,7 @@ use App\Http\Controllers\GymSearchController;
 use App\Http\Controllers\GymSettingsController;
 use App\Http\Controllers\GymTrainersController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TrainerAvailabilityController;
 use App\Http\Controllers\TrainerBookingRequestController;
@@ -59,12 +61,15 @@ use App\Http\Controllers\TrainerServicesController;
 use App\Http\Controllers\TrainerSessionChangeController;
 use App\Http\Controllers\TrainerSettingsController;
 use App\Http\Controllers\TrainerShareController;
+use App\Http\Controllers\TrainerSocialController;
 use App\Models\User;
 use App\Support\Seo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
+// The app opened from the icon on the home screen (start_url of public/manifest.webmanifest).
+Route::get('app', AppStartController::class)->name('pwa.start');
 // For search engines, together with public/robots.txt.
 Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
 // /personal-trainer = all of Italy, /personal-trainer/roma = one city (404 if unknown).
@@ -105,6 +110,14 @@ Route::post('registrazione/verifica', RegistrationCheckController::class)
 // Also for logged-in users: "Collega" in the settings comes back here (the address saved on Google).
 Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
 
+// "Collega Instagram / TikTok / Facebook / YouTube" of the trainer profile: also
+// for guests in "Diventa trainer" (see App\Http\Controllers\TrainerSocialController).
+Route::controller(TrainerSocialController::class)->prefix('social/{provider}')->name('social.')->middleware('throttle:20,1')->group(function () {
+    Route::get('collega', 'connect')->name('connect');
+    Route::get('callback', 'callback')->name('callback');
+    Route::delete('/', 'disconnect')->name('disconnect');
+});
+
 Route::get('contatti', [ContactController::class, 'show'])->name('contact.show');
 Route::post('contatti', [ContactController::class, 'store'])
     ->middleware('throttle:contact')
@@ -130,6 +143,17 @@ Route::post('registrazione-palestra/passo/{step}', [GymRegistrationController::c
     ->whereIn('step', ['1', '2', '3', '4'])
     ->middleware('throttle:20,1')
     ->name('gym.register.check');
+
+// "Attiva le notifiche" on this device: also before the email is verified
+// ("Prenotazione inviata" offers it right after the first booking).
+Route::middleware(['auth', 'throttle:20,1'])
+    ->prefix('impostazioni/notifiche-push')
+    ->name('account.push.')
+    ->controller(PushSubscriptionController::class)
+    ->group(function () {
+        Route::post('/', 'store')->name('store');
+        Route::delete('/', 'destroy')->name('destroy');
+    });
 
 // Clients right after sign-up, before the email is verified.
 Route::middleware(['auth', 'role:client'])->group(function () {
@@ -196,6 +220,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('impostazioni')->name('account.')->controller(AccountSettingsController::class)->group(function () {
         Route::patch('dati-personali', 'updatePersonal')->name('personal.update');
         Route::put('password', 'updatePassword')->middleware('throttle:6,1')->name('password.update');
+        Route::patch('notifiche', 'updateNotifications')->name('notifications.update');
     });
     // "Collega" / "Scollega" Google in "Accesso e sicurezza".
     Route::prefix('impostazioni/google')->name('account.google.')->controller(GoogleAuthController::class)->group(function () {

@@ -39,9 +39,9 @@ class AccountSettingsTest extends TestCase
                 ->where('account.hasPassword', true)
                 ->where('account.passwordChangedAt', null)
                 ->has('account.providers', 1)
-                // Removed from the page: devices and notifications.
+                // Removed from the page: devices. "Notifiche" has only the reminders.
                 ->missing('account.devices')
-                ->missing('account.notifications')
+                ->where('account.notifications', ['reminders' => true])
             );
     }
 
@@ -126,13 +126,17 @@ class AccountSettingsTest extends TestCase
             ->assertSessionHasErrors(['first_name', 'last_name', 'phone']);
     }
 
-    public function test_email_and_notifications_can_not_be_changed_anymore()
+    public function test_email_and_the_old_notification_switches_can_not_be_changed_anymore()
     {
-        $this->actingAs(User::factory()->create())
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
             ->patch('/impostazioni/email', ['email' => 'nuovo@esempio.it'])
             ->assertNotFound();
 
-        $this->patch('/impostazioni/notifiche', ['news' => true])->assertNotFound();
+        // "Notifiche" is back with the reminders only: the old switches are not saved.
+        $this->patch('/impostazioni/notifiche', ['news' => true])->assertSessionHasErrors('reminders');
+        $this->assertNull($user->fresh()->notification_settings);
     }
 
     public function test_password_changes_with_the_current_one()

@@ -1,13 +1,6 @@
-import {
-    Award,
-    Instagram,
-    MapPin,
-    Share,
-    Star,
-    Target,
-    Video,
-} from 'lucide-react';
+import { Award, MapPin, Share, Star, Target, Video } from 'lucide-react';
 import FavoriteButton from '@/components/shared/favorite-button';
+import SocialIcon, { socialLabels } from '@/components/shared/social-icon';
 import { Button } from '@/components/ui/button';
 import { useInitials } from '@/hooks/use-initials';
 import { formatRating } from '@/lib/format';
@@ -148,7 +141,7 @@ export default function ProfileIntro({
                 </ul>
             </div>
 
-            <div className="flex gap-2 md:ml-auto">
+            <div className="flex flex-wrap gap-2 md:ml-auto">
                 {favorite !== null && (
                     <FavoriteButton
                         variant="labeled"
@@ -158,19 +151,25 @@ export default function ProfileIntro({
                         className={darkButton}
                     />
                 )}
-                {trainer.instagram && (
-                    <Button asChild variant="outline" className={darkButton}>
+                {/* The socials of the trainer: one icon each, opening the social. */}
+                {trainer.socials.map((social) => (
+                    <Button
+                        key={social.provider}
+                        asChild
+                        variant="outline"
+                        className={cn(darkButton, 'w-10 px-0')}
+                    >
                         <a
-                            href={trainer.instagram.url}
+                            href={social.url}
                             target="_blank"
                             rel="noopener noreferrer nofollow"
-                            aria-label={`Instagram di ${trainer.name}: @${trainer.instagram.handle} (si apre in una nuova scheda)`}
+                            aria-label={`${socialLabels[social.provider]} di ${trainer.name}: @${social.handle} (si apre in una nuova scheda)`}
+                            title={`${socialLabels[social.provider]} · @${social.handle}`}
                         >
-                            <Instagram />
-                            <span className="hidden sm:inline">Instagram</span>
+                            <SocialIcon provider={social.provider} />
                         </a>
                     </Button>
-                )}
+                ))}
                 {/* On mobile "Condividi" is in the header. */}
                 <Button
                     type="button"

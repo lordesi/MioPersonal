@@ -4,11 +4,13 @@ namespace App\Notifications;
 
 use App\Models\Booking;
 use App\Models\User;
+use App\Notifications\Concerns\SendsPush;
 use App\Support\BookingMailData;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushMessage;
 
 /**
  * The email to the client when the session is confirmed: by the trainer from
@@ -18,7 +20,7 @@ use Illuminate\Notifications\Notification;
  */
 class BookingConfirmed extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, SendsPush;
 
     public function __construct(public Booking $booking)
     {
@@ -30,7 +32,19 @@ class BookingConfirmed extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $this->mailAndPush($notifiable);
+    }
+
+    public function toWebPush(User $notifiable): WebPushMessage
+    {
+        $booking = $this->booking;
+
+        return $this->pushMessage(
+            'Seduta confermata',
+            'Con '.$booking->trainerProfile->user->name.' · '.BookingMailData::day($booking).' alle '.BookingMailData::hour($booking),
+            route('client.home'),
+            "booking-{$booking->id}",
+        );
     }
 
     /** Sent to the client's account: resources/views/mail/booking/confirmed. */

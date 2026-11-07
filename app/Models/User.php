@@ -19,6 +19,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use NotificationChannels\WebPush\HasPushSubscriptions;
 
 /**
  * @property int $id
@@ -41,6 +42,7 @@ use Illuminate\Support\Facades\Storage;
  * @property string|null $deletion_requested_by DELETION_BY_USER or DELETION_BY_ADMIN
  * @property Carbon|null $last_active_at when the user last used the web app (TrackLastActivity)
  * @property array{source: string, medium: string|null, campaign: string|null, landing: string}|null $acquisition where the user came from at sign-up (Stats::acquisition())
+ * @property array{reminders?: bool}|null $notification_settings the switches of "Notifiche" in the settings (wantsReminders())
  * @property string|null $two_factor_secret unused: two-factor authentication is off
  * @property string|null $two_factor_recovery_codes unused
  * @property Carbon|null $two_factor_confirmed_at unused
@@ -54,7 +56,7 @@ use Illuminate\Support\Facades\Storage;
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, HasPushSubscriptions, Notifiable;
 
     /** Where the photos of "Completa il tuo profilo" are stored. */
     public const AVATAR_DISK = 'public';
@@ -96,8 +98,23 @@ class User extends Authenticatable implements MustVerifyEmail
             'deletion_scheduled_at' => 'datetime',
             'last_active_at' => 'datetime',
             'acquisition' => 'array',
+            'notification_settings' => 'array',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /** "Promemoria prima delle sedute" in the settings: on until turned off. */
+    public function wantsReminders(): bool
+    {
+        return ($this->notification_settings['reminders'] ?? true) === true;
+    }
+
+    /** At least one device with "Attiva le notifiche" on (HasPushSubscriptions). */
+    public function hasPushDevices(): bool
+    {
+        return $this->relationLoaded('pushSubscriptions')
+            ? $this->pushSubscriptions->isNotEmpty()
+            : $this->pushSubscriptions()->exists();
     }
 
     /**

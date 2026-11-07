@@ -1,5 +1,8 @@
 import { createInertiaApp } from '@inertiajs/react';
 import { layout, title, withApp } from '@/lib/inertia-config';
+import { setUpPwa } from '@/lib/pwa';
+
+setUpPwa();
 
 void createInertiaApp({
     title,

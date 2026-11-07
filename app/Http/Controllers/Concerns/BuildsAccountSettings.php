@@ -26,6 +26,8 @@ trait BuildsAccountSettings
             'passwordChangedAt' => $user->password_changed_at?->utc()->format('Y-m-d\TH:i:s\Z'),
             // "Continua con Google" and "Collega" save google_id. Not available
             // without the keys in the .env: "Collega" is hidden.
+            // "Notifiche": the push devices are read by the browser (lib/push.ts).
+            'notifications' => ['reminders' => $user->wantsReminders()],
             'providers' => [
                 [
                     'name' => 'Google',

@@ -238,6 +238,16 @@ class TrainerProfile extends Model
     }
 
     /**
+     * The socials linked with OAuth (icons of the public profile).
+     *
+     * @return HasMany<TrainerSocialAccount, $this>
+     */
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(TrainerSocialAccount::class);
+    }
+
+    /**
      * The team's decisions, newest first.
      *
      * @return HasMany<TrainerProfileReview, $this>

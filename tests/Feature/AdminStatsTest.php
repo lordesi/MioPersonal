@@ -38,7 +38,7 @@ class AdminStatsTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('admin/stats')
-                ->has('stats.kpis', 11)
+                ->has('stats.kpis', 13)
                 ->has('stats.daily', AdminStats::DAYS)
                 ->has('stats.monthly', 12)
                 ->has('stats.cohorts', 6)
@@ -99,6 +99,22 @@ class AdminStatsTest extends TestCase
         $this->assertSame([3, 1], [$kpis['clients']['value'], $kpis['clients']['previous']]);
         $this->assertSame(1, $kpis['trainers']['value']);
         $this->assertSame([2, 1], [$kpis['visitors']['value'], $kpis['visitors']['previous']]);
+    }
+
+    public function test_app_opens_and_trainers_with_notifications()
+    {
+        $trainer = User::factory()->create(['role' => 'trainer']);
+        $trainer->updatePushSubscription('https://fcm.googleapis.com/fcm/send/abc', 'key', 'token', 'aes128gcm');
+        User::factory()->create()->updatePushSubscription('https://fcm.googleapis.com/fcm/send/def', 'key', 'token', 'aes128gcm');
+
+        $this->withHeader('User-Agent', 'Mozilla/5.0 (iPhone)')->get(route('pwa.start'));
+        $this->withHeader('User-Agent', 'Mozilla/5.0 (iPhone)')->get(route('pwa.start'));
+
+        $kpis = collect((new AdminStats)->all()['kpis'])->keyBy('key');
+
+        $this->assertSame(2, $kpis['appOpens']['value']);
+        // Only the trainers, and no comparison: it's today's number.
+        $this->assertSame([1, null], [$kpis['pushTrainers']['value'], $kpis['pushTrainers']['previous']]);
     }
 
     public function test_done_sessions_and_their_value()

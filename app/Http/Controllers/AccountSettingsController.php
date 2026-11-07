@@ -58,6 +58,21 @@ class AccountSettingsController extends Controller
         return back();
     }
 
+    /** "Notifiche": the switches saved on the user, the push devices have their own controller. */
+    public function updateNotifications(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['reminders' => ['required', 'boolean']]);
+
+        /** @var User $user */
+        $user = $request->user();
+        // Not fillable on purpose, as the other settings saved by the app.
+        $user->forceFill([
+            'notification_settings' => [...($user->notification_settings ?? []), 'reminders' => (bool) $data['reminders']],
+        ])->save();
+
+        return back();
+    }
+
     /** Users who signed up with Google set their first password here, without the current one. */
     public function updatePassword(PasswordUpdateRequest $request): RedirectResponse
     {

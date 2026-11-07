@@ -101,7 +101,19 @@ final class AdminStats
             $tile('requests', 'Richieste di prenotazione', $both(fn ($from, $to) => Booking::query()->whereBetween('created_at', [$from->utc(), $to->utc()])->count())),
             $tile('sessions', 'Sedute svolte', $both(fn ($from, $to) => $this->doneSessions($from, $to)->count())),
             $tile('gmv', 'Valore sedute svolte', $both(fn ($from, $to) => $this->doneSessions($from, $to)->sum('price_cents')), 'cents'),
+            $tile('appOpens', "Aperture dall'app", $both(fn ($from, $to) => $this->dayTable('page_view_days', $from, $to)->where('section', Stats::APP_OPEN_SECTION)->sum('views'))),
+            // Today, not a period: no comparison.
+            $tile('pushTrainers', 'Trainer con notifiche attive', [$this->trainersWithPush(), null]),
         ];
+    }
+
+    /** Trainers with at least one device where "Attiva le notifiche" is on. */
+    private function trainersWithPush(): int
+    {
+        return User::query()
+            ->where('role', UserRole::Trainer)
+            ->whereHas('pushSubscriptions')
+            ->count();
     }
 
     /**

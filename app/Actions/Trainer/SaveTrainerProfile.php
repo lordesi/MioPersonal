@@ -5,6 +5,7 @@ namespace App\Actions\Trainer;
 use App\Actions\Gym\GymLinks;
 use App\Enums\GymLinkStatus;
 use App\Enums\PlaceType;
+use App\Enums\SocialProvider;
 use App\Enums\TrainerProfileStatus;
 use App\Models\City;
 use App\Models\Discipline;
@@ -125,7 +126,10 @@ class SaveTrainerProfile
             'headline' => trim($data['headline']),
             'bio' => trim($data['bio']),
             'experience' => $data['experience'],
-            'instagram' => $data['instagram'] ?? null,
+            // Typed by hand only for accounts that can't be linked: a linked one wins.
+            'instagram' => $profile->exists && $profile->socialAccounts()->where('provider', SocialProvider::Instagram)->exists()
+                ? null
+                : $data['instagram'] ?? null,
             'goals' => array_values($data['goals']),
             'city_id' => $mainCityId,
         ]);

@@ -194,6 +194,23 @@ final class Stats
         ));
     }
 
+    /** Section of `page_view_days` that counts the app opened from the home screen icon. */
+    public const APP_OPEN_SECTION = 'app-open';
+
+    /** The app opened from its icon (AppStartController); not the team. */
+    public static function recordAppOpen(Request $request): void
+    {
+        if (! self::countable($request) || $request->user()?->isAdmin()) {
+            return;
+        }
+
+        self::safely(fn () => DB::table('page_view_days')->upsert(
+            [['day' => self::today(), 'section' => self::APP_OPEN_SECTION, 'views' => 1]],
+            ['day', 'section'],
+            ['views' => DB::raw('page_view_days.views + 1')],
+        ));
+    }
+
     /** The area of the site, for the page views. */
     private static function section(Request $request): string
     {

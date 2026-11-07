@@ -14,6 +14,10 @@
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        {{-- The app on the home screen: public/manifest.webmanifest, public/sw.js. --}}
+        <link rel="manifest" href="/manifest.webmanifest">
+        <meta name="theme-color" content="#ffffff">
+        <meta name="apple-mobile-web-app-title" content="MioPersonal">
 
         @include('partials.seo')
 

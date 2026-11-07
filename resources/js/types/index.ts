@@ -8,3 +8,4 @@ export type * from './trainer';
 export type * from './navigation';
 export type * from './ui';
 export type * from './seo';
+export type * from './social';

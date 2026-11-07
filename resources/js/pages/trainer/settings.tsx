@@ -1,7 +1,16 @@
 import { Head } from '@inertiajs/react';
-import { Eye, LockKeyhole, Mail, Power, Trash2, UserRound } from 'lucide-react';
+import {
+    Bell,
+    Eye,
+    LockKeyhole,
+    Mail,
+    Power,
+    Trash2,
+    UserRound,
+} from 'lucide-react';
 import AccessSection from '@/components/account/access-section';
 import DeleteAccountSection from '@/components/account/delete-account-section';
+import NotificationsSection from '@/components/account/notifications-section';
 import PersonalDataSection from '@/components/account/personal-data-section';
 import SettingsNav from '@/components/account/settings-nav';
 import type { SettingsNavSection } from '@/components/account/settings-nav';
@@ -27,6 +36,7 @@ const allSections: SettingsNavSection[] = [
     { id: 'dati', title: 'Dati personali', icon: UserRound },
     { id: 'contatti', title: 'Contatti per i clienti', icon: Mail },
     { id: 'accesso', title: 'Accesso e sicurezza', icon: LockKeyhole },
+    { id: 'notifiche', title: 'Notifiche', icon: Bell },
     { id: 'visibilita', title: 'Visibilità del profilo', icon: Eye },
     { id: 'chiudi', title: 'Chiudi il profilo', icon: Power },
     { id: 'elimina', title: 'Elimina account', icon: Trash2 },
@@ -65,6 +75,10 @@ export default function TrainerSettings({
                         hasPassword={account.hasPassword}
                         passwordChangedAt={account.passwordChangedAt}
                         providers={account.providers}
+                    />
+                    <NotificationsSection
+                        reminders={account.notifications.reminders}
+                        forTrainer
                     />
                     {visibility && <ProfileVisibilitySection {...visibility} />}
                     <CloseTrainerProfileSection

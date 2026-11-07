@@ -42,4 +42,31 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
     ],
 
+    // "Collega" the socials of the trainer profile (App\Http\Controllers\TrainerSocialController):
+    // each one is off until its client_id is set. See "Collegamento social" in the README.
+    'instagram' => [
+        'client_id' => env('INSTAGRAM_CLIENT_ID'),
+        'client_secret' => env('INSTAGRAM_CLIENT_SECRET'),
+        'redirect' => env('INSTAGRAM_REDIRECT_URI', '/social/instagram/callback'),
+    ],
+
+    'tiktok' => [
+        'client_id' => env('TIKTOK_CLIENT_KEY'),
+        'client_secret' => env('TIKTOK_CLIENT_SECRET'),
+        'redirect' => env('TIKTOK_REDIRECT_URI', '/social/tiktok/callback'),
+    ],
+
+    'facebook' => [
+        'client_id' => env('FACEBOOK_CLIENT_ID'),
+        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'redirect' => env('FACEBOOK_REDIRECT_URI', '/social/facebook/callback'),
+    ],
+
+    // The Google Cloud project of the login can be used, with the YouTube Data API on.
+    'youtube' => [
+        'client_id' => env('YOUTUBE_CLIENT_ID'),
+        'client_secret' => env('YOUTUBE_CLIENT_SECRET'),
+        'redirect' => env('YOUTUBE_REDIRECT_URI', '/social/youtube/callback'),
+    ],
+
 ];

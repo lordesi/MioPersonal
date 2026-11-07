@@ -16,6 +16,7 @@ use App\Support\SimilarTrainers;
 use App\Support\Stats;
 use App\Support\TrainerCard;
 use App\Support\TrainerSlots;
+use App\Support\TrainerSocials;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -41,7 +42,7 @@ class TrainerProfileController extends Controller
         TrainerSlots::refreshStale();
 
         $profile = TrainerProfile::where('slug', $slug)
-            ->with(['user', 'city', 'otherCities', 'disciplines', 'places.city', 'places.gymProfile.city', 'places.gymProfile.user', 'places.gymProfile.cover', 'services', 'photos', 'documents', 'workingHours'])
+            ->with(['user', 'city', 'otherCities', 'disciplines', 'places.city', 'places.gymProfile.city', 'places.gymProfile.user', 'places.gymProfile.cover', 'services', 'photos', 'documents', 'workingHours', 'socialAccounts'])
             ->first();
 
         abort_if($profile === null || ! $profile->isViewableBy($request->user()), 404);
@@ -107,7 +108,7 @@ class TrainerProfileController extends Controller
             'priceRange' => $prices->isEmpty() ? null : Seo::euros((int) $prices->min()).($prices->min() === $prices->max() ? '' : ' - '.Seo::euros((int) $prices->max())),
             'areaServed' => $cities === [] ? null : array_map(fn (string $city) => ['@type' => 'City', 'name' => $city], $cities),
             'knowsAbout' => $disciplines === [] ? null : $disciplines,
-            'sameAs' => $profile->instagram === null ? null : [$profile->instagramUrl()],
+            'sameAs' => array_column(TrainerSocials::publicLinks($profile), 'url') ?: null,
             // Only real reviews: no rating at all for a new profile.
             'aggregateRating' => $rating === null ? null : [
                 '@type' => 'AggregateRating',
@@ -151,8 +152,8 @@ class TrainerProfileController extends Controller
             // Paragraphs split at the empty lines.
             'bio' => array_values(array_filter(array_map(trim(...), preg_split('/\R\s*\R/', $profile->bio) ?: []))),
             'experienceLabel' => $profile->experience->profileLabel(),
-            // Public on purpose: the trainer chose to show it.
-            'instagram' => $profile->instagram === null ? null : ['handle' => $profile->instagram, 'url' => $profile->instagramUrl()],
+            // Public on purpose: the socials the trainer linked (and an Instagram typed by hand).
+            'socials' => TrainerSocials::publicLinks($profile),
             // TODO (step 5): computed from the answers to the bookings.
             'responseTimeLabel' => null,
             'cancellationLabel' => "Cancellazione gratuita fino a {$profile->free_cancellation_hours} ore prima",

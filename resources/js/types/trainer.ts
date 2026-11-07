@@ -1,5 +1,6 @@
 import type { TrainingGoal } from '@/lib/goals';
 import type { TrainerGym } from './gym';
+import type { SocialLink } from './social';
 
 /** Trainer data shown in search results and featured lists. */
 export type TrainerSummary = {
@@ -91,8 +92,8 @@ export type TrainerProfile = {
     verified: boolean;
     bio: string[];
     experienceLabel: string;
-    /** Shown to everyone; null when the trainer didn't add it. */
-    instagram: { handle: string; url: string } | null;
+    /** The socials linked by the trainer (and an Instagram typed by hand), as icons. */
+    socials: SocialLink[];
     /** Null until the trainer has answered some bookings. */
     responseTimeLabel: string | null;
     cancellationLabel: string;

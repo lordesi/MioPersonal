@@ -9,6 +9,8 @@ export type AccountSettings = {
     hasPassword: boolean;
     /** ISO UTC of the last change in "Cambia password"; null = never. */
     passwordChangedAt: string | null;
+    /** "Notifiche": the switches saved on the account (the push devices are read by the browser). */
+    notifications: { reminders: boolean };
     /** Sign-in with Google; `available` is false without the keys in the .env ("Collega" hidden). */
     providers: { name: string; connected: boolean; available: boolean }[];
 };

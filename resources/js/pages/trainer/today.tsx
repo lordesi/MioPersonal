@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { Bell, Clock } from 'lucide-react';
 import { useState } from 'react';
+import AppNotificationsCard from '@/components/pwa/app-notifications-card';
 import PageHeading from '@/components/trainer/area/page-heading';
 import ActivePackages from '@/components/trainer/dashboard/active-packages';
 import NextSessionCard from '@/components/trainer/dashboard/next-session-card';
@@ -105,6 +106,12 @@ export default function Today({
                         </Button>
                     </div>
                 }
+            />
+
+            <AppNotificationsCard
+                title="Ricevi subito le nuove richieste"
+                description="Una notifica sul telefono appena un cliente prenota: chi risponde prima conferma più sedute."
+                dismissKey="trainer-today"
             />
 
             <div className="flex flex-wrap gap-4">

@@ -40,6 +40,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $cancel_note the trainer's message to the client when cancelling
  * @property CarbonImmutable|null $proposed_starts_at "Sposta": the new start the trainer proposes
  * @property CarbonImmutable|null $proposal_expires_at after this the proposal lapses and the old time holds
+ * @property CarbonImmutable|null $reminded_day_before_at the day-before reminder was handled (SendSessionReminders)
+ * @property CarbonImmutable|null $reminded_soon_at the reminder 2 hours before was handled
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property-read User|null $client
@@ -78,7 +80,20 @@ class Booking extends Model
             'no_show_at' => 'datetime',
             'proposed_starts_at' => 'datetime',
             'proposal_expires_at' => 'datetime',
+            'reminded_day_before_at' => 'datetime',
+            'reminded_soon_at' => 'datetime',
         ];
+    }
+
+    /** A session moved to another time ("Sposta" accepted) gets its reminders again. */
+    protected static function booted(): void
+    {
+        static::updating(function (Booking $booking) {
+            if ($booking->isDirty('starts_at')) {
+                $booking->reminded_day_before_at = null;
+                $booking->reminded_soon_at = null;
+            }
+        });
     }
 
     /**

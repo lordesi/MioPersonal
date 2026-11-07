@@ -38,6 +38,7 @@ const sections: LegalSection[] = [
                         '«Su di te», se lo compili: anno di nascita, sesso, livello, da quanto ti alleni, quanto ti muovi, quante volte a settimana vorresti allenarti, sport praticati e una nota per il trainer.',
                         'Altezza e peso, solo se scegli di indicarli dando il consenso apposito.',
                         'Profilo trainer: foto e galleria, presentazione, anni di esperienza, discipline, obiettivi con cui lavori, zone, nome e indirizzo dei luoghi in cui alleni, indicazioni per arrivare, servizi, pacchetti e prezzi, orari di lavoro, certificazioni e relativi attestati.',
+                        'Social del trainer, se li colleghi (Instagram, TikTok, Facebook, YouTube): l’identificativo dell’account, il nome utente (su Facebook il nome) e il link al profilo. Non conserviamo le chiavi di accesso che il social ci dà, né leggiamo post, messaggi o follower. Se scrivi a mano il tuo nome Instagram, salviamo solo quello.',
                         'Prenotazioni: trainer scelto, servizio, data, orario, luogo, stato della prenotazione con la sua storia (richiesta, conferma, annullamento) e i pacchetti di sedute con le sedute usate.',
                         'Assenze: se non ti presenti a una seduta confermata, il trainer può segnarla come «saltata».',
                         'Recensioni e risposte pubblicate sulla piattaforma.',
@@ -87,7 +88,8 @@ const sections: LegalSection[] = [
                 <LegalList
                     items={[
                         'Il trainer a cui chiedi una seduta vede nome e cognome, servizio, data e orario, la tua percentuale di presenza e quello che hai scritto in «Su di te» (con altezza e peso solo se li hai indicati); email e telefono solo dopo che ha confermato una tua prenotazione.',
-                        'Sul profilo pubblico del trainer, visibile a tutti, compaiono nome e cognome, foto, presentazione, servizi e prezzi, certificazioni (titolo ed ente, non l’attestato), il nome e l’indirizzo degli studi in cui allena e le recensioni.',
+                        'Sul profilo pubblico del trainer, visibile a tutti, compaiono nome e cognome, foto, presentazione, servizi e prezzi, certificazioni (titolo ed ente, non l’attestato), il nome e l’indirizzo degli studi in cui allena, i social collegati (con il link al profilo) e le recensioni.',
+                        'Se colleghi un social, quella piattaforma (Meta per Instagram e Facebook, TikTok, Google per YouTube) sa che hai autorizzato MioPersonal: per quella parte è un titolare autonomo, con la sua informativa.',
                         'Nelle recensioni compaiono il tuo nome e l’iniziale del cognome, per esempio «Anna B.».',
                         'Il team di MioPersonal, solo per verificare i profili dei trainer, rispondere alle tue richieste e gestire le segnalazioni.',
                         'Se usi «Continua con Google», Google sa che hai fatto l’accesso a MioPersonal: per quella parte è un titolare autonomo, con la sua informativa.',
@@ -123,6 +125,7 @@ const sections: LegalSection[] = [
                     'Quando elimini l’account lo blocchiamo subito e annulliamo le prenotazioni future; dopo 30 giorni, il tempo per cambiare idea accedendo di nuovo, cancelliamo i dati dell’account, la foto, le preferenze e i preferiti. Dalle copie di sicurezza spariscono entro [X] giorni.',
                     'Dopo l’eliminazione restano, senza alcun collegamento a te, le prenotazioni passate nello storico del trainer e le recensioni che hai scritto, che compaiono come «Utente anonimo».',
                     'Se un trainer chiude il profilo, cancelliamo anche servizi, foto, attestati, recensioni ricevute e prenotazioni legate al profilo.',
+                    'Social collegati dal trainer: finché non li scolleghi da «Modifica profilo» (premendo «Scollega» li cancelliamo subito) o chiudi il profilo. Puoi anche revocare l’accesso dalle impostazioni del social: il collegamento resta finché non lo scolleghi qui.',
                     'Attestati caricati dai trainer: li cancelliamo appena il team approva o rifiuta il profilo. Restano titolo, ente e anno della certificazione.',
                     'Registri tecnici di accesso: [X] giorni.',
                     'Messaggi dalla pagina Contatti: non li salviamo sul sito. Arrivano nella casella email del team e li teniamo [X] mesi dalla risposta.',

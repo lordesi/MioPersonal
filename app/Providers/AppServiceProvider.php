@@ -2,7 +2,12 @@
 
 namespace App\Providers;
 
+use App\Enums\SocialProvider;
 use App\Models\User;
+use App\Support\Socialite\FacebookProfileProvider;
+use App\Support\Socialite\InstagramProvider;
+use App\Support\Socialite\TikTokProvider;
+use App\Support\Socialite\YouTubeProvider;
 use App\Support\Stats;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Registered;
@@ -18,6 +23,8 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Socialite\Contracts\Factory as Socialite;
+use Laravel\Socialite\SocialiteManager;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -38,6 +45,32 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
         $this->configureAuthEmails();
         $this->recordAcquisition();
+        $this->configureSocialDrivers();
+    }
+
+    /**
+     * The drivers of "Collega Instagram / TikTok / Facebook / YouTube"
+     * (App\Http\Controllers\TrainerSocialController), named as SocialProvider.
+     */
+    protected function configureSocialDrivers(): void
+    {
+        $drivers = [
+            SocialProvider::Instagram->value => InstagramProvider::class,
+            SocialProvider::TikTok->value => TikTokProvider::class,
+            SocialProvider::Facebook->value => FacebookProfileProvider::class,
+            SocialProvider::YouTube->value => YouTubeProvider::class,
+        ];
+
+        // Not on Socialite::fake() of the tests.
+        $this->app->afterResolving(Socialite::class, function (object $socialite) use ($drivers) {
+            if (! $socialite instanceof SocialiteManager) {
+                return;
+            }
+
+            foreach ($drivers as $name => $class) {
+                $socialite->extend($name, fn () => $socialite->buildProvider($class, (array) config("services.{$name}")));
+            }
+        });
     }
 
     /**

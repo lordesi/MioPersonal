@@ -5,22 +5,24 @@ namespace App\Notifications;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\User;
+use App\Notifications\Concerns\SendsPush;
 use App\Support\BookingMailData;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushMessage;
 
 /**
- * The email to the trainer when a client books: a request to answer, or a
- * booking already confirmed by "Conferma automatica".
+ * The email (and the push, with a device) to the trainer when a client books:
+ * a request to answer, or a booking already confirmed by "Conferma automatica".
  *
  * Queued, so the booking page doesn't wait for the mail server, and sent only
  * once the booking is saved (afterCommit).
  */
 class BookingRequested extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, SendsPush;
 
     /** Decided now: the trainer may answer before the queue sends the email. */
     public bool $alreadyConfirmed;
@@ -36,7 +38,22 @@ class BookingRequested extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $this->mailAndPush($notifiable);
+    }
+
+    /** The first one to get right: the sooner the trainer answers, the more sessions are confirmed. */
+    public function toWebPush(User $notifiable): WebPushMessage
+    {
+        $booking = $this->booking;
+        $client = $booking->client?->publicName() ?? 'Un cliente';
+        $when = BookingMailData::day($booking).' alle '.BookingMailData::hour($booking);
+
+        return $this->pushMessage(
+            $this->alreadyConfirmed ? 'Nuova prenotazione' : 'Nuova richiesta da confermare',
+            "{$client} · {$when}",
+            route($this->alreadyConfirmed ? 'trainer.today' : 'trainer.requests'),
+            "booking-{$booking->id}",
+        );
     }
 
     /** Sent to the trainer's account: resources/views/mail/booking/new-request. */

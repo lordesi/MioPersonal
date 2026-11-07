@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Support\CatalogOptions;
 use App\Support\Seo;
 use App\Support\TrainerDraft;
+use App\Support\TrainerSocials;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,6 +59,8 @@ class TrainerRegistrationController extends Controller
             'draft' => $profile === null ? null : TrainerDraft::fromProfile($profile),
             'changeRequest' => $profile === null ? null : $this->changeRequest($profile),
             'previewHref' => $profile === null ? null : route('trainers.show', $profile->slug, false),
+            // "Collega Instagram / TikTok / ...": optional, see TrainerSocialController.
+            'socials' => TrainerSocials::props($request),
             // The page that brings new trainers: indexed as guests see it.
             'seo' => Seo::page(
                 title: 'Diventa trainer',
@@ -84,7 +87,7 @@ class TrainerRegistrationController extends Controller
                 // Same rules as the client sign-up.
                 $user = $creator->create($request->only(['first_name', 'last_name', 'email', 'phone', 'password', 'terms']));
                 $this->makeTrainer($user);
-                $saver->handle($user, $data);
+                TrainerSocials::attachPending($request, $saver->handle($user, $data));
 
                 return $user;
             });
@@ -94,9 +97,9 @@ class TrainerRegistrationController extends Controller
             Auth::login($user);
             $request->session()->regenerate();
         } else {
-            DB::transaction(function () use ($user, $saver, $data) {
+            DB::transaction(function () use ($request, $user, $saver, $data) {
                 $this->makeTrainer($user);
-                $saver->handle($user, $data);
+                TrainerSocials::attachPending($request, $saver->handle($user, $data));
             });
         }
 

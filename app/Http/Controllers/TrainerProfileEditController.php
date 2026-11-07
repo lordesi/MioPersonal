@@ -10,6 +10,7 @@ use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\CatalogOptions;
 use App\Support\TrainerDraft;
+use App\Support\TrainerSocials;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -45,6 +46,8 @@ class TrainerProfileEditController extends Controller
                 ? $profile->galleryPhotos->map(fn (TrainerPhoto $photo) => ['id' => $photo->id, 'url' => $photo->url()])->values()->all()
                 : [],
             'maxGalleryPhotos' => TrainerProfile::MAX_GALLERY_PHOTOS,
+            // "Collega Instagram / TikTok / ...": saved right away by TrainerSocialController.
+            'socials' => TrainerSocials::props($request),
             // "Nuovo" or the stars in "Così ti vedono nella ricerca".
             'rating' => $profile
                 ? ['value' => $profile->rating(), 'count' => $profile->rating_count]

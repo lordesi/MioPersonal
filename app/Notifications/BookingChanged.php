@@ -4,11 +4,13 @@ namespace App\Notifications;
 
 use App\Models\Booking;
 use App\Models\User;
+use App\Notifications\Concerns\SendsPush;
 use App\Support\BookingMailData;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushMessage;
 
 /**
  * A confirmed session changes, and the other side gets an email:
@@ -21,7 +23,7 @@ use Illuminate\Notifications\Notification;
  */
 class BookingChanged extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, SendsPush;
 
     public function __construct(public Booking $booking, public string $kind)
     {
@@ -33,7 +35,20 @@ class BookingChanged extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $this->mailAndPush($notifiable);
+    }
+
+    /** The title of the email, and its time: "Luca Moretti ha annullato la seduta" · "mer 28 ott alle 18:00". */
+    public function toWebPush(User $notifiable): WebPushMessage
+    {
+        $text = $this->text();
+
+        return $this->pushMessage(
+            $text['title'],
+            BookingMailData::day($this->booking).' alle '.BookingMailData::hour($this->booking),
+            $text['url'],
+            "booking-{$this->booking->id}",
+        );
     }
 
     /** resources/views/mail/booking/changed. */

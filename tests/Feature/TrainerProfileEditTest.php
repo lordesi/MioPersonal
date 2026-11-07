@@ -256,8 +256,7 @@ class TrainerProfileEditTest extends TestCase
 
         $this->get(route('trainers.show', $profile->slug))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('trainer.instagram.handle', 'giulia.fit')
-                ->where('trainer.instagram.url', 'https://www.instagram.com/giulia.fit/'))
+                ->where('trainer.socials', [['provider' => 'instagram', 'handle' => 'giulia.fit', 'url' => 'https://www.instagram.com/giulia.fit/']]))
             // Google links the two profiles (JSON-LD sameAs).
             ->assertSee('"sameAs":["https:\/\/www.instagram.com\/giulia.fit\/"]', false);
     }
