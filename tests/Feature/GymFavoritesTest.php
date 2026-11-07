@@ -199,4 +199,15 @@ class GymFavoritesTest extends TestCase
             );
         $this->assertNotNull($noCover);
     }
+
+    public function test_the_home_carousel_shows_at_most_nine_gyms()
+    {
+        foreach (range(1, 10) as $number) {
+            $gym = $this->gym(['name' => "Palestra {$number}"]);
+            $gym->photos()->create(['path' => "gyms/{$gym->id}/cover.jpg", 'is_cover' => true]);
+        }
+
+        $this->get(route('home'))
+            ->assertInertia(fn (Assert $page) => $page->has('featuredGyms', 9));
+    }
 }

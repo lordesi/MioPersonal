@@ -20,8 +20,8 @@ class HomeController extends Controller
     /** "Trainer in evidenza": 3 per page of the carousel, 3 pages. */
     private const FEATURED = 9;
 
-    /** "Palestre in evidenza": one row. */
-    private const FEATURED_GYMS = 4;
+    /** "Palestre in evidenza": the same carousel, 3 per page, 3 pages. */
+    private const FEATURED_GYMS = 9;
 
     public function __invoke(Request $request): Response
     {

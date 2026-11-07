@@ -9,6 +9,47 @@ import type { GymSummary } from '@/types';
 
 const pill = 'h-5.5 rounded-full px-2 text-xs font-medium';
 
+/*
+ * Classes for each layout, written out in full so Tailwind can find them.
+ * results: search page and "Palestre". On phones a short row (small cover on
+ * the left, one line of services) so more gyms fit on screen; from sm up a tile.
+ * tile: home carousel, always the tile (cover on top), like TrainerCard.
+ */
+const layouts = {
+    results: {
+        root: 'rounded-2xl sm:rounded-[20px]',
+        link: 'flex-row rounded-2xl sm:flex-col sm:rounded-[20px]',
+        cover: 'min-h-28 w-28 sm:aspect-16/10 sm:min-h-0 sm:w-full',
+        promoBadge:
+            'bottom-2 left-2 h-6 px-2 sm:top-3 sm:bottom-auto sm:left-3 sm:h-7 sm:px-2.5',
+        promoLabel: 'hidden sm:inline',
+        body: 'gap-1.5 p-3 sm:gap-2.5 sm:p-4',
+        heading: 'gap-0.5 sm:gap-1',
+        name: 'text-base leading-5.5 sm:text-[17px] sm:leading-6',
+        amenities: 'max-h-5.5 overflow-hidden sm:max-h-none',
+        promotion: 'hidden sm:block',
+        priceRow: 'pt-2 sm:pt-3',
+        price: 'text-[15px] sm:text-lg',
+        favorite:
+            'top-2 left-2 size-8 sm:top-2.5 sm:right-2.5 sm:left-auto sm:size-10 md:size-10',
+    },
+    tile: {
+        root: 'rounded-[20px]',
+        link: 'flex-col rounded-[20px]',
+        cover: 'aspect-16/10 w-full',
+        promoBadge: 'top-3 left-3 h-7 px-2.5',
+        promoLabel: '',
+        body: 'gap-2.5 p-4',
+        heading: 'gap-1',
+        name: 'text-[17px] leading-6',
+        amenities: '',
+        promotion: '',
+        priceRow: 'pt-3',
+        price: 'text-lg',
+        favorite: 'top-2.5 right-2.5 size-10 md:size-10',
+    },
+};
+
 type GymCardProps = {
     gym: GymSummary;
     /** The heart: missing for trainers, gyms and admins, who have no favorites. */
@@ -16,22 +57,31 @@ type GymCardProps = {
         pressed: boolean;
         onPressedChange: (pressed: boolean) => void;
     };
+    /** See `layouts` above. */
+    layout?: keyof typeof layouts;
     className?: string;
 };
 
 /**
- * A gym in the search results and in "Palestre": the cover, name and city,
- * the first services, "da X €/mese", trainers and the promotion of today.
- * Same shape as TrainerCard (layout "results"), heart included.
+ * A gym in the search results, in "Palestre" and in the home: the cover, name
+ * and city, the first services, "da X €/mese", trainers and the promotion of
+ * today. Same shape as TrainerCard, heart included.
  */
-export default function GymCard({ gym, favorite, className }: GymCardProps) {
+export default function GymCard({
+    gym,
+    favorite,
+    layout = 'results',
+    className,
+}: GymCardProps) {
     const price = monthlyLabel(gym.monthlyFromCents);
     const more = gym.amenityCount - gym.amenities.length;
+    const styles = layouts[layout];
 
     return (
         <div
             className={cn(
-                'relative rounded-2xl transition-[box-shadow,translate] duration-200 hover:-translate-y-0.5 hover:shadow-xl sm:rounded-[20px]',
+                'relative transition-[box-shadow,translate] duration-200 hover:-translate-y-0.5 hover:shadow-xl',
+                styles.root,
                 className,
             )}
         >
@@ -45,9 +95,17 @@ export default function GymCard({ gym, favorite, className }: GymCardProps) {
                 ]
                     .filter(Boolean)
                     .join(', ')}
-                className="flex h-full flex-row overflow-hidden rounded-2xl border bg-card text-foreground sm:flex-col sm:rounded-[20px]"
+                className={cn(
+                    'flex h-full overflow-hidden border bg-card text-foreground',
+                    styles.link,
+                )}
             >
-                <span className="relative flex min-h-28 w-28 shrink-0 items-center justify-center overflow-hidden bg-primary text-primary-foreground sm:aspect-16/10 sm:min-h-0 sm:w-full">
+                <span
+                    className={cn(
+                        'relative flex shrink-0 items-center justify-center overflow-hidden bg-primary text-primary-foreground',
+                        styles.cover,
+                    )}
+                >
                     {gym.coverUrl ? (
                         <img
                             src={gym.coverUrl}
@@ -60,16 +118,30 @@ export default function GymCard({ gym, favorite, className }: GymCardProps) {
                         <Building2 aria-hidden="true" className="size-8" />
                     )}
                     {gym.promotion && (
-                        <Badge className="absolute bottom-2 left-2 h-6 gap-1 border-transparent bg-background px-2 font-semibold text-foreground sm:top-3 sm:bottom-auto sm:left-3 sm:h-7 sm:px-2.5 [&>svg]:size-3.25">
+                        <Badge
+                            className={cn(
+                                'absolute gap-1 border-transparent bg-background font-semibold text-foreground [&>svg]:size-3.25',
+                                styles.promoBadge,
+                            )}
+                        >
                             <Tag aria-hidden="true" />
-                            <span className="hidden sm:inline">Promo</span>
+                            <span className={styles.promoLabel}>Promo</span>
                         </Badge>
                     )}
                 </span>
 
-                <span className="flex min-w-0 flex-1 flex-col gap-1.5 p-3 sm:gap-2.5 sm:p-4">
-                    <span className="flex min-w-0 flex-col gap-0.5 sm:gap-1">
-                        <span className="truncate text-base leading-5.5 font-semibold sm:text-[17px] sm:leading-6">
+                <span
+                    className={cn('flex min-w-0 flex-1 flex-col', styles.body)}
+                >
+                    <span
+                        className={cn('flex min-w-0 flex-col', styles.heading)}
+                    >
+                        <span
+                            className={cn(
+                                'truncate font-semibold',
+                                styles.name,
+                            )}
+                        >
                             {gym.name}
                         </span>
                         <span className="flex items-center gap-1 truncate text-sm text-muted-foreground">
@@ -84,7 +156,12 @@ export default function GymCard({ gym, favorite, className }: GymCardProps) {
                     </span>
 
                     {gym.amenities.length > 0 && (
-                        <span className="flex max-h-5.5 flex-wrap gap-1.5 overflow-hidden sm:max-h-none">
+                        <span
+                            className={cn(
+                                'flex flex-wrap gap-1.5',
+                                styles.amenities,
+                            )}
+                        >
                             {gym.amenities.map((amenity) => (
                                 <Badge
                                     key={amenity}
@@ -106,13 +183,28 @@ export default function GymCard({ gym, favorite, className }: GymCardProps) {
                     )}
 
                     {gym.promotion && (
-                        <span className="hidden truncate text-sm font-medium sm:block">
+                        <span
+                            className={cn(
+                                'truncate text-sm font-medium',
+                                styles.promotion,
+                            )}
+                        >
                             {gym.promotion}
                         </span>
                     )}
 
-                    <span className="mt-auto flex items-center justify-between gap-2 border-t pt-2 sm:pt-3">
-                        <span className="text-[15px] leading-6 font-bold tracking-[-0.01em] sm:text-lg">
+                    <span
+                        className={cn(
+                            'mt-auto flex items-center justify-between gap-2 border-t',
+                            styles.priceRow,
+                        )}
+                    >
+                        <span
+                            className={cn(
+                                'leading-6 font-bold tracking-[-0.01em]',
+                                styles.price,
+                            )}
+                        >
                             {price ?? (
                                 <span className="text-sm font-medium text-muted-foreground">
                                     Prezzi in palestra
@@ -139,7 +231,10 @@ export default function GymCard({ gym, favorite, className }: GymCardProps) {
                     name={gym.name}
                     pressed={favorite.pressed}
                     onPressedChange={favorite.onPressedChange}
-                    className="absolute top-2 left-2 size-8 border-0 bg-background/90 hover:bg-background sm:top-2.5 sm:right-2.5 sm:left-auto sm:size-10 md:size-10"
+                    className={cn(
+                        'absolute border-0 bg-background/90 hover:bg-background',
+                        styles.favorite,
+                    )}
                 />
             )}
         </div>
@@ -149,6 +244,7 @@ export default function GymCard({ gym, favorite, className }: GymCardProps) {
 /** A GymCard with its own heart (home, "Palestre simili"): saved right away. */
 export function SaveableGymCard({
     gym,
+    layout,
     className,
 }: Omit<GymCardProps, 'favorite'>) {
     const favorite = useFavorite(gym.slug, gym.favorite ?? false, 'gym');
@@ -156,6 +252,7 @@ export function SaveableGymCard({
     return (
         <GymCard
             gym={gym}
+            layout={layout}
             className={className}
             favorite={
                 favorite.canSave
