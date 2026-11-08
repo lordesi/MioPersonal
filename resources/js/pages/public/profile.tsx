@@ -10,8 +10,10 @@ import ProfileMobileHeader from '@/components/profile/profile-mobile-header';
 import ProfileSection from '@/components/profile/profile-section';
 import ReviewsSection from '@/components/profile/reviews-section';
 import ServicePicker from '@/components/profile/service-picker';
+import UpcomingEvents from '@/components/events/upcoming-events';
 import SimilarTrainers from '@/components/profile/similar-trainers';
 import SlotPicker from '@/components/profile/slot-picker';
+import PeoplePicker from '@/components/profile/people-picker';
 import PlacePicker from '@/components/profile/place-picker';
 import TrainerGyms from '@/components/profile/trainer-gyms';
 import TrainingPlaces from '@/components/profile/training-places';
@@ -27,15 +29,18 @@ import { useFavorite } from '@/hooks/use-favorite';
 import { useShare } from '@/hooks/use-share';
 import {
     freeStarts,
+    maxPeople,
     serviceDurations,
     serviceOption,
     toWeeks,
+    totalPriceCents,
 } from '@/lib/booking';
 import { searchUrl } from '@/lib/search';
 import { home } from '@/routes';
 import { book } from '@/routes/trainers';
 import { start as startBooking } from '@/routes/trainers/book';
 import type {
+    GroupSessionSummary,
     SeoData,
     TrainerProfile,
     TrainerReview,
@@ -53,6 +58,8 @@ type ProfileProps = {
     invited: boolean;
     /** Every review, loaded by "Mostra tutte le recensioni". */
     allReviews?: TrainerReview[];
+    /** "Prossimi eventi" the trainer organizes. */
+    events: GroupSessionSummary[];
     seo: SeoData;
 };
 
@@ -61,6 +68,7 @@ export default function Profile({
     preview,
     invited,
     allReviews,
+    events,
     seo,
 }: ProfileProps) {
     const page = usePage();
@@ -127,6 +135,21 @@ export default function Profile({
         trainer.services.find((item) => item.id === serviceId) ??
         trainer.services[0];
 
+    // "Invita un amico": up to the most people of the chosen duration.
+    const [wantedPeople, setPeople] = useState(choice.people);
+    const peopleMax = maxPeople(service, minutes);
+    const people = Math.min(wantedPeople, peopleMax);
+    const peoplePicker = (variant: 'light' | 'dark') =>
+        peopleMax > 1 ? (
+            <PeoplePicker
+                max={peopleMax}
+                value={people}
+                onChange={setPeople}
+                totalCents={totalPriceCents(service, minutes, people)}
+                variant={variant}
+            />
+        ) : null;
+
     const changeMinutes = (newMinutes: number) => {
         setMinutes(newMinutes);
         setStart(null);
@@ -179,6 +202,7 @@ export default function Profile({
                         durata: minutes,
                         inizio: start,
                         luogo: placeId,
+                        persone: people > 1 ? people : null,
                     },
                 }),
             );
@@ -201,7 +225,13 @@ export default function Profile({
                       start,
                       place_id: placeId,
                   }
-                : { service_id: serviceId, start, minutes, place_id: placeId },
+                : {
+                      service_id: serviceId,
+                      start,
+                      minutes,
+                      place_id: placeId,
+                      people,
+                  },
             {
                 preserveScroll: true,
                 onStart: () => setBooking(true),
@@ -212,6 +242,7 @@ export default function Profile({
                             errors.place_id ??
                             errors.client_package_id ??
                             errors.minutes ??
+                            errors.people ??
                             errors.service_id ??
                             'Riprova tra poco.',
                     );
@@ -343,6 +374,7 @@ export default function Profile({
                                     value={service.id}
                                     onChange={changeService}
                                 />
+                                {peoplePicker('light')}
                                 {placePicker('light')}
                                 <p className="text-xs font-medium text-muted-foreground">
                                     Prezzi indicativi. Il pagamento si concorda
@@ -415,8 +447,12 @@ export default function Profile({
                             onBook={bookSlot}
                             booking={booking}
                             placePicker={placePicker('dark')}
+                            people={people}
+                            peoplePicker={peoplePicker('dark')}
                         />
                     </div>
+
+                    <UpcomingEvents events={events} />
 
                     <SimilarTrainers
                         trainers={trainer.similarTrainers}
@@ -431,6 +467,7 @@ export default function Profile({
                 selectedStart={start}
                 onBook={bookSlot}
                 booking={booking}
+                people={people}
             />
         </>
     );
@@ -452,6 +489,8 @@ function savedChoice(
     weekIndex: number;
     date: string | null;
     start: string | null;
+    /** "Invita un amico": the page keeps it under the most people of the duration. */
+    people: number;
 } {
     const query = new URLSearchParams(url.split('?')[1] ?? '');
     const service =
@@ -462,6 +501,7 @@ function savedChoice(
         ) ?? trainer.services[0];
     const minutes = Number(query.get('durata'));
     const start = query.get('inizio');
+    const people = Math.max(1, Number(query.get('persone')) || 1);
 
     if (!serviceDurations(service).includes(minutes)) {
         return {
@@ -470,6 +510,7 @@ function savedChoice(
             weekIndex: 0,
             date: null,
             start: null,
+            people,
         };
     }
 
@@ -478,14 +519,28 @@ function savedChoice(
     );
 
     if (weekIndex === -1) {
-        return { service, minutes, weekIndex: 0, date: null, start: null };
+        return {
+            service,
+            minutes,
+            weekIndex: 0,
+            date: null,
+            start: null,
+            people,
+        };
     }
 
     const day = weeks[weekIndex].find(
         (item) => start && freeStarts(item, minutes).includes(start),
     );
 
-    return { service, minutes, weekIndex, date: day?.date ?? null, start };
+    return {
+        service,
+        minutes,
+        weekIndex,
+        date: day?.date ?? null,
+        start,
+        people,
+    };
 }
 
 Profile.layout = { hideHeaderOnMobile: true };

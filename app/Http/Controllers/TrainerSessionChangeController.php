@@ -36,6 +36,8 @@ class TrainerSessionChangeController extends Controller
         TrainerSlots::refresh($booking->trainerProfile);
 
         $booking->client?->notify(new BookingChanged($booking, 'cancelled-by-trainer'));
+        // "Invita un amico": the friends who joined.
+        $booking->notifyGuests(new BookingChanged($booking, 'guest-cancelled'));
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Seduta annullata: abbiamo avvisato il cliente.']);
 
         return back();

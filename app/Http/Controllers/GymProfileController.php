@@ -4,13 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Enums\GymAmenity;
 use App\Enums\GymPlanPeriod;
+use App\Models\GroupSession;
+use App\Models\GymAmenityDetail;
 use App\Models\GymPhoto;
 use App\Models\GymPlan;
 use App\Models\GymProfile;
 use App\Models\GymPromotion;
 use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
+use App\Support\GroupSessionCard;
 use App\Support\GymCard;
+use App\Support\GymCourseWeek;
 use App\Support\GymDraft;
 use App\Support\Seo;
 use App\Support\Stats;
@@ -42,7 +46,7 @@ class GymProfileController extends Controller
     public function __invoke(Request $request, string $slug): Response
     {
         $gym = GymProfile::query()
-            ->with(['user', 'city', 'cover', 'galleryPhotos', 'openingHours', 'activePlans', 'activePromotions.plan'])
+            ->with(['user', 'city', 'cover', 'galleryPhotos', 'openingHours', 'activePlans', 'activePromotions.plan', 'amenityDetails'])
             ->where('slug', $slug)
             ->firstOrFail();
 
@@ -60,6 +64,8 @@ class GymProfileController extends Controller
             // The owner (or the team) looking at a profile not public yet.
             'preview' => ! $gym->isApproved(),
             'similar' => $gym->isApproved() ? GymCard::many($this->similar($gym), $gymFavoriteIds) : [],
+            // "Prossimi eventi" it organizes.
+            'events' => GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()->listed()->upcoming()->hostedBy($gym))->orderBy('starts_at')->limit(6)->get()),
             'seo' => $this->seo($gym),
         ]);
     }
@@ -90,6 +96,35 @@ class GymProfileController extends Controller
     }
 
     /**
+     * "Servizi": the ticked ones, with the description and photo of "Servizi"
+     * in the gym area when there are. Load `amenityDetails`.
+     *
+     * @return list<array{value: string, label: string, description: string|null, photoUrl: string|null}>
+     */
+    private static function amenities(GymProfile $gym): array
+    {
+        $details = $gym->amenityDetails->keyBy(fn (GymAmenityDetail $detail) => $detail->amenity->value);
+
+        return array_values(array_filter(array_map(function (string $value) use ($details) {
+            $amenity = GymAmenity::tryFrom($value);
+
+            if ($amenity === null) {
+                return null;
+            }
+
+            /** @var GymAmenityDetail|null $detail */
+            $detail = $details->get($value);
+
+            return [
+                'value' => $amenity->value,
+                'label' => $amenity->label(),
+                'description' => $detail?->description,
+                'photoUrl' => $detail?->photoUrl(),
+            ];
+        }, $gym->amenities)));
+    }
+
+    /**
      * @param  list<int>  $trainerFavoriteIds  The heart is full for the trainers the client saved.
      * @return array<string, mixed>
      */
@@ -107,10 +142,7 @@ class GymProfileController extends Controller
             'city' => ['name' => $gym->city->name, 'slug' => $gym->city->slug],
             'address' => $gym->fullAddress(),
             'mapsUrl' => $gym->googleMapsUrl(),
-            'amenities' => array_values(array_filter(array_map(
-                fn (string $value) => ($amenity = GymAmenity::tryFrom($value)) === null ? null : ['value' => $amenity->value, 'label' => $amenity->label()],
-                $gym->amenities,
-            ))),
+            'amenities' => self::amenities($gym),
             'hours' => array_map(fn (array $ranges, int $index) => [
                 'day' => self::DAYS[$index],
                 'ranges' => array_map(fn (array $range) => "{$range['opens']}–{$range['closes']}", $ranges),
@@ -122,6 +154,12 @@ class GymProfileController extends Controller
             'openingNotes' => $gym->opening_notes,
             'coverUrl' => $gym->cover?->url(),
             'photos' => $gym->galleryPhotos->map(fn (GymPhoto $photo) => $photo->url())->values()->all(),
+            // "Corsi": the plan of this week and the next one, and the courses.
+            'courses' => GymCourseWeek::courses($gym),
+            'courseWeeks' => [
+                GymCourseWeek::days($gym, GymCourseWeek::thisMonday(), viewer: request()->user()),
+                GymCourseWeek::days($gym, GymCourseWeek::thisMonday()->addWeek(), viewer: request()->user()),
+            ],
             'monthlyFromCents' => $gym->monthly_from_cents,
             'plans' => $gym->activePlans->map(fn (GymPlan $plan) => [
                 'id' => $plan->id,

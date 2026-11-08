@@ -2,6 +2,7 @@
 
 use App\Actions\Account\DeleteUser;
 use App\Actions\Bookings\SendSessionReminders;
+use App\Actions\GroupSessions\SendGroupSessionReminders;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
 use App\Models\Booking;
@@ -93,10 +94,11 @@ Artisan::command('bookings:expire', function () {
 
 Schedule::command('bookings:expire')->everyMinute();
 
-// The reminders the day before and 2 hours before a confirmed session.
-Artisan::command('bookings:remind', function (SendSessionReminders $reminders) {
+// The reminders the day before and 2 hours before a confirmed session, and an event.
+Artisan::command('bookings:remind', function (SendSessionReminders $reminders, SendGroupSessionReminders $eventReminders) {
     $this->info("{$reminders->handle()} reminders sent.");
-})->purpose('Remind clients and trainers of their next confirmed sessions');
+    $this->info("{$eventReminders->handle()} event reminders sent.");
+})->purpose('Remind clients and trainers of their next confirmed sessions and events');
 
 Schedule::command('bookings:remind')->everyFiveMinutes()->withoutOverlapping();
 

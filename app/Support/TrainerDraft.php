@@ -97,11 +97,14 @@ final class TrainerDraft
                 'note' => $first->note ?? '',
                 'online' => self::prices($onlineRows),
                 'onlineNote' => $onlineRows->first()->note ?? '',
+                // "Invita un amico": 1 = only the booker.
+                'maxPeople' => $rows->max(fn (Service $service) => $service->maxPeople()) ?? 1,
+                'group' => self::groupPrices($rows),
             ];
         })->all();
 
         return [
-            'sessions' => $sessions ?: [['name' => 'Seduta singola', 'prices' => [], 'note' => '', 'online' => [], 'onlineNote' => '']],
+            'sessions' => $sessions ?: [['name' => 'Seduta singola', 'prices' => [], 'note' => '', 'online' => [], 'onlineNote' => '', 'maxPeople' => 1, 'group' => []]],
             'onlineSamePrice' => $online->isEmpty(),
             'firstSession' => [
                 'enabled' => $first !== null,
@@ -129,6 +132,27 @@ final class TrainerDraft
         return array_values($rows
             ->map(fn (Service $service) => ['minutes' => self::minutes($service->minutes), 'priceCents' => $service->price_cents])
             ->unique('minutes')->sortBy('minutes')->all());
+    }
+
+    /**
+     * "Invita un amico": the total for each number of people (2…) and duration.
+     *
+     * @param  Collection<array-key, Service>  $rows
+     * @return list<array{people: int, minutes: int, priceCents: int}>
+     */
+    private static function groupPrices(Collection $rows): array
+    {
+        $prices = [];
+
+        foreach ($rows as $service) {
+            foreach ($service->pricesByPeople() as $people => $cents) {
+                if ($people > 1) {
+                    $prices[] = ['people' => $people, 'minutes' => self::minutes($service->minutes), 'priceCents' => $cents];
+                }
+            }
+        }
+
+        return $prices;
     }
 
     /** Older profiles may have durations that can't be chosen any more (e.g. 45 min). */

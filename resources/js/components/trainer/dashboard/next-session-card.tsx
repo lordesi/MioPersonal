@@ -68,6 +68,8 @@ export default function NextSessionCard({
                         <span className="flex min-w-0 flex-col">
                             <span className="text-base font-semibold">
                                 {session.clientName}
+                                {session.guestNames.length > 0 &&
+                                    ` + ${session.guestNames.join(', ')}`}
                             </span>
                             <span className="text-sm text-sidebar-muted-foreground">
                                 {session.serviceName}

@@ -28,7 +28,10 @@ export type TrainerSummary = {
 export type ServiceOption = {
     serviceId: number;
     minutes: number;
+    /** For one person. */
     priceCents: number;
+    /** "Invita un amico": the total for 2… people; empty = only the booker. */
+    groupPrices: { people: number; priceCents: number }[];
 };
 
 /**
@@ -150,6 +153,10 @@ export type TrainerSession = TrainerTodaySession &
         end: string;
         /** 'pending' = waiting for the trainer's answer. */
         kind: 'confirmed' | 'pending';
+        /** "Invita un amico": who comes, the client included. */
+        people: number;
+        /** The friends who joined the client. */
+        guestNames: string[];
     };
 
 /** "Sposta" and "Annulla seduta" of a confirmed session (TrainerSessions::change). */
@@ -289,9 +296,12 @@ export type CalendarEvent = SessionChange & {
     /** null once the client deleted the account: no link to the profile. */
     clientId: number | null;
     clientName: string;
+    /** "Seduta singola · 3 persone" for a session of more people. */
     serviceName: string;
     placeLabel: string;
     kind: 'confirmed' | 'pending';
+    /** "Invita un amico": the friends who joined the client. */
+    guestNames: string[];
 };
 
 /** A client with at least one confirmed session, shown once in "Clienti". */

@@ -1,6 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Check } from 'lucide-react';
 import AddToCalendar from '@/components/booking/add-to-calendar';
+import BookingGroup from '@/components/client/booking-group';
 import BookingSummary from '@/components/booking/booking-summary';
 import VerifyEmailNotice from '@/components/booking/verify-email-notice';
 import AccountMenu from '@/components/layout/account-menu';
@@ -78,6 +79,30 @@ export default function BookingSent({ booking }: BookingSentProps) {
                     )}
                 </section>
 
+                {/* "Invita un amico": the link right away, while the friends are in mind. */}
+                {booking.group && (
+                    <section
+                        aria-labelledby="invita-amici"
+                        className="flex flex-col gap-3 rounded-[18px] border bg-card p-4.5 md:p-6"
+                    >
+                        <h2
+                            id="invita-amici"
+                            className="text-lg leading-6 font-bold tracking-tight"
+                        >
+                            Invita i tuoi amici
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            Manda il link a chi viene con te: si registra, si
+                            unisce alla seduta e riceve conferme e promemoria.
+                        </p>
+                        <BookingGroup
+                            bookingId={booking.id}
+                            group={booking.group}
+                            trainerName={trainer.name}
+                        />
+                    </section>
+                )}
+
                 {/* Only on mobile, as in the design. */}
                 <AddToCalendar booking={booking} className="md:hidden" />
 
@@ -138,7 +163,9 @@ export default function BookingSent({ booking }: BookingSentProps) {
                             : []),
                         {
                             label: 'Prezzo',
-                            value: formatPrice(booking.priceCents),
+                            value: booking.group
+                                ? `${formatPrice(booking.priceCents)} in ${booking.group.people}`
+                                : formatPrice(booking.priceCents),
                             emphasis: true,
                         },
                     ]}

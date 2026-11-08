@@ -38,26 +38,59 @@ export function servicePriceLabel(service: TrainerService): string {
     return service.options.length > 1 ? `da ${price}` : price;
 }
 
-/** Indicative total in cents for the chosen duration: its own price. */
+/** "Invita un amico": how many people can come for that duration, the booker included. */
+export function maxPeople(service: TrainerService, minutes: number): number {
+    const option = serviceOption(service, minutes);
+
+    return Math.max(1, ...option.groupPrices.map((price) => price.people));
+}
+
+/** The most people of any duration: "fino a 3 persone" on the service. */
+export function serviceMaxPeople(service: TrainerService): number {
+    return Math.max(
+        1,
+        ...service.options.flatMap((option) =>
+            option.groupPrices.map((price) => price.people),
+        ),
+    );
+}
+
+/** Indicative total in cents for the chosen duration and people. */
 export function totalPriceCents(
     service: TrainerService,
     minutes: number,
+    people = 1,
 ): number {
-    return serviceOption(service, minutes).priceCents;
+    const option = serviceOption(service, minutes);
+
+    if (people <= 1) {
+        return option.priceCents;
+    }
+
+    return (
+        option.groupPrices.find((price) => price.people === people)
+            ?.priceCents ?? option.priceCents
+    );
 }
 
 /** The total as text: "67,50 €", or "Gratis" for a free first session. */
 export function totalPriceLabel(
     service: TrainerService,
     minutes: number,
+    people = 1,
 ): string {
     if (service.packageId !== null) {
         return 'Incluso';
     }
 
-    const cents = totalPriceCents(service, minutes);
+    const cents = totalPriceCents(service, minutes, people);
 
     return cents === 0 ? 'Gratis' : formatPrice(cents);
+}
+
+/** "35 € a testa", for more people. */
+export function perPersonLabel(cents: number, people: number): string {
+    return `${formatPrice(Math.round(cents / people))} a testa`;
 }
 
 /** Start times of a day that can host a session of `minutes`. */

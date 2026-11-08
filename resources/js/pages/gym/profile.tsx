@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import {
     GymContactsFields,
@@ -16,6 +16,7 @@ import StepErrors from '@/components/onboarding/trainer/step-errors';
 import PageHeading from '@/components/trainer/area/page-heading';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { amenities as amenitiesPage } from '@/routes/gym';
 import { update } from '@/routes/gym/profile';
 import type { CatalogOption } from '@/types';
 
@@ -95,6 +96,16 @@ export default function GymProfileEdit({
                     errors={errors}
                     amenities={amenities}
                 />
+                <p className="text-sm text-muted-foreground">
+                    Vuoi raccontare meglio un servizio, ad esempio il bagno
+                    turco?{' '}
+                    <Link
+                        href={amenitiesPage()}
+                        className="font-medium text-foreground underline underline-offset-4"
+                    >
+                        Aggiungi foto e descrizioni
+                    </Link>
+                </p>
                 <GymPhotosFields
                     draft={draft}
                     update={change}

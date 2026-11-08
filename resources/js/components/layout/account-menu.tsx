@@ -2,6 +2,7 @@ import { Link, router, usePage } from '@inertiajs/react';
 import {
     Building2,
     Calendar,
+    CalendarDays,
     ChevronDown,
     ChevronsUpDown,
     CircleHelp,
@@ -39,12 +40,15 @@ import { logout } from '@/routes';
 import { settings } from '@/routes/account';
 import { favorites, home as clientHome } from '@/routes/client';
 import { show as contactPage } from '@/routes/contact';
+import { search as eventsSearch } from '@/routes/events';
 import {
     dashboard as gymDashboard,
+    events as gymEvents,
     settings as gymSettings,
 } from '@/routes/gym';
 import { edit as editGymProfile } from '@/routes/gym/profile';
 import {
+    events as trainerEvents,
     gyms as trainerGyms,
     register as trainerRegister,
     settings as trainerSettings,
@@ -110,6 +114,11 @@ function menuGroups({
                       ]
                     : []),
                 {
+                    title: 'Eventi',
+                    href: gymEvents.url(),
+                    icon: CalendarDays,
+                },
+                {
                     title: 'Modifica profilo',
                     href: editGymProfile.url(),
                     icon: User,
@@ -152,6 +161,11 @@ function menuGroups({
                     icon: Building2,
                 },
                 {
+                    title: 'Eventi',
+                    href: trainerEvents.url(),
+                    icon: CalendarDays,
+                },
+                {
                     title: 'Modifica profilo',
                     href: editTrainerProfile.url(),
                     icon: User,
@@ -183,6 +197,11 @@ function menuGroups({
                 title: 'Cerca palestre',
                 href: gymSearchUrl(),
                 icon: Building2,
+            },
+            {
+                title: 'Eventi',
+                href: eventsSearch.url(),
+                icon: CalendarDays,
             },
             {
                 title: 'Impostazioni account',

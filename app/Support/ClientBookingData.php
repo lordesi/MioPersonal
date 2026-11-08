@@ -3,9 +3,11 @@
 namespace App\Support;
 
 use App\Enums\BookingActor;
+use App\Enums\BookingGuestStatus;
 use App\Enums\BookingStatus;
 use App\Enums\TrainerProfileStatus;
 use App\Models\Booking;
+use App\Models\BookingGuest;
 use App\Models\ClientPackage;
 use App\Models\Review;
 use App\Models\TrainerProfile;
@@ -21,7 +23,7 @@ use Illuminate\Support\Collection;
 final class ClientBookingData
 {
     /** The relations the methods below read: one query each instead of one per booking. */
-    public const RELATIONS = ['trainerProfile.user', 'trainerProfile.disciplines', 'clientPackage.bookings'];
+    public const RELATIONS = ['trainerProfile.user', 'trainerProfile.disciplines', 'clientPackage.bookings', 'client', 'service', 'guests.user'];
 
     /** "I tuoi trainer": a short list, the search has the others. */
     private const TRAINERS_LIMIT = 5;
@@ -103,6 +105,43 @@ final class ClientBookingData
             'expiresAt' => $booking->isPending() && $booking->expires_at !== null ? self::iso($booking->expires_at) : null,
             // The trainer's message when cancelling.
             'cancelNote' => $booking->status === BookingStatus::Cancelled ? $booking->cancel_note : null,
+        ];
+    }
+
+    /**
+     * "Invita un amico" (BookingGroup), for a session of more people, as
+     * `$viewer` sees it: the booker gets the link and manages the friends,
+     * a friend sees who else comes. Null for one person.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function group(Booking $booking, User $viewer): ?array
+    {
+        if ($booking->people <= 1) {
+            return null;
+        }
+
+        $isBooker = $booking->client_id === $viewer->id;
+        $canChange = $isBooker && $booking->client_package_id === null && $booking->canBeCancelledByClient();
+
+        return [
+            'people' => $booking->people,
+            'priceCents' => $booking->price_cents,
+            'role' => $isBooker ? 'booker' : 'guest',
+            'bookerName' => $booking->client?->publicName() ?? 'Account eliminato',
+            'inviteUrl' => $isBooker && $booking->acceptsGuests() && $booking->invite_token !== null
+                ? route('bookings.invite', $booking->invite_token)
+                : null,
+            'freeSeats' => $booking->freeSeats(),
+            'guests' => array_values($booking->guests
+                ->where('status', BookingGuestStatus::Joined)
+                ->map(fn (BookingGuest $guest) => [
+                    'id' => $guest->id,
+                    'name' => $guest->user?->publicName() ?? 'Account eliminato',
+                    'isYou' => $guest->user_id === $viewer->id,
+                ])->all()),
+            // "Quante persone": up to the most the service allows, while cancelling is free.
+            'maxPeople' => $canChange ? max($booking->people, $booking->service?->maxPeople() ?? 1) : null,
         ];
     }
 

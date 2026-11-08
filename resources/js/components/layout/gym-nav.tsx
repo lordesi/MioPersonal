@@ -1,9 +1,12 @@
 import { Link } from '@inertiajs/react';
 import {
+    CalendarDays,
+    CalendarHeart,
     Eye,
     House,
     Image,
     Settings,
+    Sparkles,
     Tag,
     Ticket,
     User,
@@ -15,7 +18,10 @@ import type { TabItem } from '@/components/layout/mobile-tab-bar';
 import MobileTabBar from '@/components/layout/mobile-tab-bar';
 import { cn } from '@/lib/utils';
 import {
+    amenities,
+    courses,
     dashboard,
+    events,
     photos,
     plans,
     promotions,
@@ -28,6 +34,9 @@ export type GymSection =
     | 'dashboard'
     | 'profile'
     | 'photos'
+    | 'amenities'
+    | 'courses'
+    | 'events'
     | 'plans'
     | 'promotions'
     | 'trainers'
@@ -60,6 +69,28 @@ const sections: {
         desktopOnly: true,
     },
     { section: 'photos', title: 'Foto', icon: Image, href: photos.url },
+    {
+        section: 'amenities',
+        title: 'Servizi',
+        icon: Sparkles,
+        href: amenities.url,
+        // The tab bar has its 5 links already.
+        desktopOnly: true,
+    },
+    {
+        section: 'courses',
+        title: 'Corsi',
+        icon: CalendarDays,
+        href: courses.url,
+        desktopOnly: true,
+    },
+    {
+        section: 'events',
+        title: 'Eventi',
+        icon: CalendarHeart,
+        href: events.url,
+        desktopOnly: true,
+    },
     {
         section: 'plans',
         title: 'Abbonamenti',

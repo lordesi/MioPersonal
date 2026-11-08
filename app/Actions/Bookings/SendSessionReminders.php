@@ -64,6 +64,8 @@ class SendSessionReminders
                     }
 
                     $booking->client?->notify(new SessionReminder($booking, $kind));
+                    // "Invita un amico": the friends who joined get it too.
+                    $booking->notifyGuests(new SessionReminder($booking, $kind));
 
                     if ($kind === SessionReminder::DAY_BEFORE) {
                         $booking->trainerProfile->user->notify(new SessionReminder($booking, $kind));

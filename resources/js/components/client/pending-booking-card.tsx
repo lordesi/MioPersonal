@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import BookingStatusBadge from '@/components/booking/booking-status-badge';
+import BookingGroup from '@/components/client/booking-group';
 import CancelBookingDialog from '@/components/client/cancel-booking-dialog';
 import TrainerRow from '@/components/client/trainer-row';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ export default function PendingBookingCard({
     booking,
 }: PendingBookingCardProps) {
     const { cancelled, cancelBooking } = useCancelBooking(booking.id);
+    const isGuest = booking.group?.role === 'guest';
 
     const detail = `${formatSlot(booking.start, booking.hours)} · ${booking.serviceName}`;
     const status =
@@ -87,29 +89,41 @@ export default function PendingBookingCard({
             {status === 'pending' && booking.expiresAt && (
                 <>
                     <p className="rounded-lg bg-muted px-3 py-2.5 text-[13px] leading-4.5">
-                        Lo slot è riservato per te. {booking.trainerFirstName}{' '}
-                        ha ancora{' '}
+                        {isGuest
+                            ? 'Lo slot è riservato.'
+                            : 'Lo slot è riservato per te.'}{' '}
+                        {booking.trainerFirstName} ha ancora{' '}
                         <strong className="tabular-nums">
                             {formatHoursLeft(hoursUntil(booking.expiresAt))}
                         </strong>{' '}
                         per confermare: se non risponde, lo liberiamo e ti
                         avvisiamo.
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                        <CancelBookingDialog
-                            trainerFirstName={booking.trainerFirstName}
-                            onConfirm={cancelBooking}
-                            trigger={
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="h-10 px-3.5 max-md:h-11 max-md:flex-[1_1_140px]"
-                                >
-                                    Annulla
-                                </Button>
-                            }
+                    {booking.group && (
+                        <BookingGroup
+                            bookingId={booking.id}
+                            group={booking.group}
+                            trainerName={booking.trainerName}
                         />
-                    </div>
+                    )}
+                    {/* A friend invited to the session doesn't cancel it: they can only leave. */}
+                    {!isGuest && (
+                        <div className="flex flex-wrap gap-2">
+                            <CancelBookingDialog
+                                trainerFirstName={booking.trainerFirstName}
+                                onConfirm={cancelBooking}
+                                trigger={
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="h-10 px-3.5 max-md:h-11 max-md:flex-[1_1_140px]"
+                                    >
+                                        Annulla
+                                    </Button>
+                                }
+                            />
+                        </div>
+                    )}
                 </>
             )}
 

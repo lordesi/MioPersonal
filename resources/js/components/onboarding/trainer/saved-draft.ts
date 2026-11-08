@@ -119,6 +119,13 @@ function savedPricing(pricing: OldPricing): Pricing {
         ];
     }
 
+    // Drafts saved before "Invita un amico": only the booker.
+    merged.sessions = merged.sessions.map((session) => ({
+        ...session,
+        maxPeople: session.maxPeople ?? 1,
+        group: session.group ?? [],
+    }));
+
     return merged;
 }
 

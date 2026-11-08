@@ -26,6 +26,8 @@ type GymUnderReview = {
     statusSince: string;
     description: string;
     amenities: string[];
+    /** "Bagno turco: …": the descriptions of "Servizi". */
+    amenityNotes: string[];
     hours: string[];
     coverUrl: string | null;
     photos: string[];
@@ -254,6 +256,13 @@ export default function GymVerification({ gyms }: { gyms: GymUnderReview[] }) {
                                 <p className="text-sm">
                                     {gym.amenities.join(', ')}
                                 </p>
+                                {gym.amenityNotes.length > 0 && (
+                                    <ul className="flex flex-col gap-1 text-sm">
+                                        {gym.amenityNotes.map((note) => (
+                                            <li key={note}>{note}</li>
+                                        ))}
+                                    </ul>
+                                )}
                                 <ul className="text-sm text-muted-foreground">
                                     {gym.hours.map((line) => (
                                         <li key={line}>{line}</li>

@@ -83,7 +83,15 @@ export default function PriceListSection({
     const addSession = () =>
         onChange([
             ...sessions,
-            { name: '', prices: [], note: '', online: [], onlineNote: '' },
+            {
+                name: '',
+                prices: [],
+                note: '',
+                online: [],
+                onlineNote: '',
+                maxPeople: 1,
+                group: [],
+            },
         ]);
 
     return (

@@ -1,4 +1,4 @@
-import { servicePriceLabel } from '@/lib/booking';
+import { serviceMaxPeople, servicePriceLabel } from '@/lib/booking';
 import { cn } from '@/lib/utils';
 import type { TrainerService } from '@/types';
 
@@ -121,9 +121,17 @@ export default function ServicePicker({
                                         : 'text-muted-foreground',
                                 )}
                             >
-                                {detailed && service.note
-                                    ? `${service.durationLabel} · ${service.note}`
-                                    : service.durationLabel}
+                                {[
+                                    service.durationLabel,
+                                    serviceMaxPeople(service) > 1
+                                        ? `fino a ${serviceMaxPeople(service)} persone`
+                                        : null,
+                                    detailed && service.note
+                                        ? service.note
+                                        : null,
+                                ]
+                                    .filter(Boolean)
+                                    .join(' · ')}
                             </span>
                         </span>
                         <span

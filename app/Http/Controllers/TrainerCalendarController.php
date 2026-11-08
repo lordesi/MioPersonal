@@ -77,7 +77,9 @@ class TrainerCalendarController extends Controller
                     'clientId' => $booking->client_id,
                     'clientName' => $booking->client->name ?? 'Account eliminato',
                     // "Pacchetto 10 sedute · seduta 2 di 10" for the sessions of a package.
-                    'serviceName' => BookingLabels::service($booking),
+                    'serviceName' => BookingLabels::serviceForTrainer($booking),
+                    // "Invita un amico": who comes with the client.
+                    'guestNames' => BookingLabels::guestNames($booking),
                     'placeLabel' => $booking->place_label,
                     'kind' => $booking->status === BookingStatus::Confirmed ? 'confirmed' : 'pending',
                     ...TrainerSessions::change($booking),

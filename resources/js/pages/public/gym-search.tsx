@@ -2,6 +2,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ChevronDown, Heart, Search as SearchIcon, Tag } from 'lucide-react';
 import { useState } from 'react';
 import GymCard from '@/components/gym/gym-card';
+import NewsStrip from '@/components/news/news-strip';
 import ActiveFilters from '@/components/search/active-filters';
 import type { ActiveChip } from '@/components/search/active-filters';
 import {
@@ -33,6 +34,7 @@ import type {
     CatalogOption,
     CityWithCoordinates,
     GymSummary,
+    NewsPreview,
     SeoData,
 } from '@/types';
 
@@ -54,6 +56,8 @@ type Suggestions = {
 
 type GymSearchProps = {
     city: { slug: string; name: string } | null;
+    /** "Novità" in the city, only on page 1. */
+    news: NewsPreview | null;
     gyms: GymSummary[];
     total: number;
     pagination: { currentPage: number; lastPage: number };
@@ -76,6 +80,7 @@ function labelOf<T>(
 /** "Palestre a Milano": /palestre/milano, or /palestre for all of Italy. */
 export default function GymSearch({
     city,
+    news,
     gyms,
     total,
     pagination,
@@ -467,6 +472,9 @@ export default function GymSearch({
                             )}
                         </>
                     )}
+
+                    {/* "Novità": the newest gyms here, under the results of page 1. */}
+                    {news && <NewsStrip news={news} className="pt-6" />}
                 </div>
             </div>
         </>

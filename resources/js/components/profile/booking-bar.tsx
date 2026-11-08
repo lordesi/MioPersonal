@@ -12,6 +12,8 @@ type BookingBarProps = {
     onBook: () => void;
     /** The request is being sent. */
     booking: boolean;
+    /** "Invita un amico": how many people come. */
+    people: number;
 };
 
 /** Price and booking button stuck to the bottom of the screen (below lg). */
@@ -21,17 +23,19 @@ export default function BookingBar({
     selectedStart,
     onBook,
     booking,
+    people,
 }: BookingBarProps) {
     return (
         <div className="sticky bottom-0 z-10 flex items-center gap-3 border-t bg-background px-4 py-3 shadow-[0_-1px_3px_0] shadow-foreground/5 lg:hidden">
             <span className="flex flex-col tabular-nums">
                 <span className="text-lg leading-6 font-bold tracking-tight">
-                    {totalPriceLabel(service, minutes)}
+                    {totalPriceLabel(service, minutes, people)}
                 </span>
                 <span className="text-xs text-muted-foreground">
                     {selectedStart
                         ? formatSlot(selectedStart, minutes / 60)
                         : 'Scegli uno slot'}
+                    {people > 1 && ` · ${people} persone`}
                 </span>
             </span>
             {selectedStart ? (

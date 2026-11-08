@@ -168,9 +168,13 @@ export function previewRows(
         }
 
         const name = session.name.trim() || NEW_SESSION_NAME;
-        const durations = session.prices
-            .map((price) => shortDuration(price.minutes))
-            .join(' · ');
+        const durations =
+            session.prices
+                .map((price) => shortDuration(price.minutes))
+                .join(' · ') +
+            (session.maxPeople > 1
+                ? ` · fino a ${session.maxPeople} persone`
+                : '');
         const meta = (note: string) =>
             note.trim() ? `${durations} · ${note.trim()}` : durations;
 

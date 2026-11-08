@@ -2,6 +2,7 @@
 
 namespace App\Actions\Gym;
 
+use App\Actions\GroupSessions\CancelGroupSession;
 use App\Models\GymPhoto;
 use App\Models\GymProfile;
 use App\Models\TrainerProfile;
@@ -20,6 +21,9 @@ class DeleteGymProfile
     {
         $trainerIds = $profile->links()->pluck('trainer_profile_id')->all();
         $paths = $profile->photos()->pluck('path')->all();
+
+        // Its events to come (and the lessons with places taken): cancelled, the clients told.
+        app(CancelGroupSession::class)->cancelOwnedBy($profile);
 
         DB::transaction(fn () => $profile->delete());
 

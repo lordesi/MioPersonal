@@ -2,6 +2,7 @@
 
 namespace App\Actions\Trainer;
 
+use App\Actions\GroupSessions\CancelGroupSession;
 use App\Models\TrainerDocument;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
@@ -21,6 +22,9 @@ class DeleteTrainerProfile
     public function handle(TrainerProfile $profile): void
     {
         DB::transaction(function () use ($profile) {
+            // Its events to come: cancelled, the clients told.
+            app(CancelGroupSession::class)->cancelOwnedBy($profile);
+
             $photos = $profile->photos()->pluck('path')->all();
             $documents = $profile->documents()->whereNotNull('path')->pluck('path')->all();
 

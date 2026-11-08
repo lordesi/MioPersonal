@@ -11,6 +11,7 @@ use App\Models\City;
 use App\Models\ClientPreference;
 use App\Models\TrainerProfile;
 use App\Support\CatalogOptions;
+use App\Support\NewsFeed;
 use App\Support\Seo;
 use App\Support\Stats;
 use App\Support\TrainerCard;
@@ -122,6 +123,8 @@ class TrainerSearchController extends Controller
 
         return Inertia::render('public/search', [
             'city' => $city === null ? null : ['slug' => $city->slug, 'name' => $city->name],
+            // "Novità": the newest trainers here, only above the first page.
+            'news' => $page->currentPage() === 1 ? NewsFeed::preview($city, $request->user(), gyms: false, events: false) : null,
             'trainers' => $this->cards($page->getCollection(), $favoriteIds),
             'total' => $page->total(),
             'pagination' => ['currentPage' => $page->currentPage(), 'lastPage' => $page->lastPage()],

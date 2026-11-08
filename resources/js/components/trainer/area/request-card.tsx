@@ -94,6 +94,11 @@ export default function RequestCard({
                     <span className="text-sm text-foreground/70">
                         {request.serviceName}
                     </span>
+                    {request.guestNames.length > 0 && (
+                        <span className="text-sm text-foreground/70">
+                            Con {request.guestNames.join(', ')}
+                        </span>
+                    )}
                     {request.note && (
                         <p className="rounded-lg bg-muted px-3 py-2.5 text-sm">
                             «{request.note}»

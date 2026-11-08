@@ -54,15 +54,39 @@ class SaveGymProfile
      */
     public function update(GymProfile $profile, array $data): GymProfile
     {
-        return $this->withFileCleanup(function (array &$newFiles) use ($profile, $data) {
+        $oldPhotos = [];
+
+        $profile = $this->withFileCleanup(function (array &$newFiles) use ($profile, $data, &$oldPhotos) {
             $this->fillDetails($profile, $data);
             $profile->save();
 
             $this->saveHours($profile, $data['hours'] ?? []);
             $newFiles = [...$newFiles, ...$this->saveCover($profile, $data['cover'] ?? null)];
+            $oldPhotos = $this->dropUntickedAmenityDetails($profile);
 
             return $profile;
         });
+
+        // Only once the change is saved.
+        Storage::disk(GymPhoto::DISK)->delete($oldPhotos);
+
+        return $profile;
+    }
+
+    /**
+     * A service taken off the profile takes its description and photo
+     * with it ("Servizi" of the gym area). The photos to delete are returned.
+     *
+     * @return list<string>
+     */
+    private function dropUntickedAmenityDetails(GymProfile $profile): array
+    {
+        $untickedDetails = $profile->amenityDetails()->whereNotIn('amenity', $profile->amenities);
+        $photos = (clone $untickedDetails)->whereNotNull('photo_path')->pluck('photo_path')->all();
+
+        $untickedDetails->delete();
+
+        return array_values(array_filter($photos, 'is_string'));
     }
 
     /**

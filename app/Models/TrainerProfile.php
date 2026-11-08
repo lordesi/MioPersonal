@@ -351,6 +351,18 @@ class TrainerProfile extends Model
                 ->whereHas('gymProfile', fn (Builder $gym) => $gym->approved())));
     }
 
+    /**
+     * Approved and the owner active, even when hidden from the search or
+     * paused: it can still organize events with others (as GymProfile::scopeApproved).
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeApproved(Builder $query): void
+    {
+        $query->where($query->qualifyColumn('status'), TrainerProfileStatus::Approved)
+            ->whereHas('user', fn (Builder $user) => $user->active());
+    }
+
     public function isApproved(): bool
     {
         return $this->status === TrainerProfileStatus::Approved;

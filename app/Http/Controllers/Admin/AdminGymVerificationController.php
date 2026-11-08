@@ -7,6 +7,7 @@ use App\Enums\TrainerProfileStatus;
 use App\Enums\TrainerReviewDecision;
 use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
 use App\Http\Controllers\Controller;
+use App\Models\GymAmenityDetail;
 use App\Models\GymPhoto;
 use App\Models\GymProfile;
 use App\Models\User;
@@ -34,7 +35,7 @@ class AdminGymVerificationController extends Controller
     public function __invoke(): Response
     {
         $profiles = GymProfile::query()
-            ->with(['user', 'city', 'cover', 'galleryPhotos', 'openingHours', 'decisions'])
+            ->with(['user', 'city', 'cover', 'galleryPhotos', 'openingHours', 'decisions', 'amenityDetails'])
             ->where(fn ($query) => $query
                 ->whereIn('status', [TrainerProfileStatus::Review, TrainerProfileStatus::Changes])
                 ->orWhere('status_changed_at', '>=', now()->subHours(self::DECIDED_HOURS)))
@@ -124,7 +125,16 @@ class AdminGymVerificationController extends Controller
             'amenities' => array_map(fn (string $value) => GymAmenity::tryFrom($value)?->label() ?? $value, $profile->amenities),
             'hours' => $hours,
             'coverUrl' => $profile->cover?->url(),
-            'photos' => $profile->galleryPhotos->map(fn (GymPhoto $photo) => $photo->url())->values()->all(),
+            // The photos of "Servizi" too: public like the gallery, to check the same way.
+            'photos' => [
+                ...$profile->galleryPhotos->map(fn (GymPhoto $photo) => $photo->url())->values()->all(),
+                ...$profile->amenityDetails->map(fn (GymAmenityDetail $detail) => $detail->photoUrl())->filter()->values()->all(),
+            ],
+            // "Bagno turco: …": the descriptions written in "Servizi".
+            'amenityNotes' => $profile->amenityDetails
+                ->filter(fn (GymAmenityDetail $detail) => filled($detail->description))
+                ->map(fn (GymAmenityDetail $detail) => $detail->amenity->label().': '.$detail->description)
+                ->values()->all(),
             'contacts' => array_values(array_filter([
                 $profile->phone, $profile->email, $profile->website,
                 $profile->instagram === null ? null : '@'.$profile->instagram,

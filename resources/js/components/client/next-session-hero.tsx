@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { Clock, MapPin } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
+import BookingGroup from '@/components/client/booking-group';
 import UserAvatar from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
 import { useCancelBooking } from '@/hooks/use-cancel-booking';
@@ -34,7 +35,10 @@ export default function NextSessionHero({
     const [confirming, setConfirming] = useState(false);
     const keepButton = useRef<HTMLButtonElement>(null);
     const date = dateBlockParts(booking.start);
-    const freeCancellation = new Date(booking.freeCancellationUntil) > now;
+    // A friend invited to the session doesn't cancel it: they can only leave.
+    const isGuest = booking.group?.role === 'guest';
+    const freeCancellation =
+        !isGuest && new Date(booking.freeCancellationUntil) > now;
     const day = formatDayRelative(booking.start, now);
 
     // The question replaces the buttons: move the focus there.
@@ -130,6 +134,15 @@ export default function NextSessionHero({
                         </div>
                     )}
                 </div>
+
+                {booking.group && !cancelled && (
+                    <BookingGroup
+                        bookingId={booking.id}
+                        group={booking.group}
+                        trainerName={booking.trainerName}
+                        variant="dark"
+                    />
+                )}
             </div>
 
             {cancelled ? (

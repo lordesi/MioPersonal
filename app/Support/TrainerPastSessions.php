@@ -90,7 +90,7 @@ final class TrainerPastSessions
             // UTC: the browser shows it in Europe/Rome.
             'start' => $booking->starts_at->utc()->format('Y-m-d\TH:i:s\Z'),
             'hours' => $booking->starts_at->diffInMinutes($booking->ends_at) / 60,
-            'serviceName' => BookingLabels::service($booking),
+            'serviceName' => BookingLabels::serviceForTrainer($booking),
             'package' => self::packageProgress($booking),
             'placeLabel' => $booking->place_label,
             'noShow' => $booking->no_show_at !== null,

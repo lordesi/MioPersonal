@@ -2,8 +2,10 @@
 
 namespace App\Support;
 
+use App\Enums\GroupSessionStatus;
 use App\Enums\TrainerProfileStatus;
 use App\Models\Booking;
+use App\Models\GroupSession;
 use App\Models\TrainerDayOverride;
 use App\Models\TrainerProfile;
 use Carbon\CarbonImmutable;
@@ -275,7 +277,8 @@ final class TrainerSlots
     /**
      * The bookings that take time in these days, in Rome time, by start. A
      * new time proposed by the trainer ("Sposta") takes its time too, until
-     * the client answers or the proposal expires.
+     * the client answers or the proposal expires. So do the events the
+     * trainer organizes.
      *
      * @return Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable}>
      */
@@ -288,6 +291,18 @@ final class TrainerSlots
                 ->where(fn ($booked) => $booked->where('blocked_until', '>', $from->startOfDay())->where('starts_at', '<', $until))
                 ->orWhere(fn ($proposed) => $proposed->whereNotNull('proposed_starts_at')->where('proposal_expires_at', '>', now())))
             ->get(['id', 'starts_at', 'ends_at', 'blocked_until', 'proposed_starts_at', 'proposal_expires_at']);
+
+        // "Eventi": the trainer's events take their time too.
+        $events = GroupSession::query()
+            ->hostedBy($profile)
+            ->where('status', GroupSessionStatus::Published)
+            ->where('ends_at', '>', $from->startOfDay())
+            ->where('starts_at', '<', $until)
+            ->get(['id', 'starts_at', 'ends_at'])
+            ->map(fn (GroupSession $event) => [
+                'start' => $event->starts_at->setTimezone(self::TIMEZONE),
+                'blockedUntil' => $event->ends_at->setTimezone(self::TIMEZONE),
+            ]);
 
         return $bookings
             ->flatMap(function (Booking $booking) {
@@ -307,6 +322,7 @@ final class TrainerSlots
 
                 return $times;
             })
+            ->concat($events)
             ->sortBy(fn (array $time) => $time['start']->getTimestamp())
             ->values();
     }

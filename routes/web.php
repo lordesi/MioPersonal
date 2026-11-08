@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminBookingsController;
 use App\Http\Controllers\Admin\AdminCatalogController;
 use App\Http\Controllers\Admin\AdminCityController;
 use App\Http\Controllers\Admin\AdminDisciplineController;
+use App\Http\Controllers\Admin\AdminEventsController;
 use App\Http\Controllers\Admin\AdminGymVerificationController;
 use App\Http\Controllers\Admin\AdminMessagesController;
 use App\Http\Controllers\Admin\AdminOverviewController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\AppStartController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\RegistrationCheckController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BookingInviteController;
 use App\Http\Controllers\BookingSentController;
 use App\Http\Controllers\ClientFavoritesController;
 use App\Http\Controllers\ClientHomeController;
@@ -26,7 +28,11 @@ use App\Http\Controllers\ClientReviewController;
 use App\Http\Controllers\CompleteProfileController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CookieConsentController;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventSearchController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\GymAmenitiesController;
+use App\Http\Controllers\GymCoursesController;
 use App\Http\Controllers\GymDashboardController;
 use App\Http\Controllers\GymFavoriteController;
 use App\Http\Controllers\GymPhotoController;
@@ -39,6 +45,8 @@ use App\Http\Controllers\GymSearchController;
 use App\Http\Controllers\GymSettingsController;
 use App\Http\Controllers\GymTrainersController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\NewsController;
+use App\Http\Controllers\OrganizerEventsController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TrainerAvailabilityController;
@@ -80,6 +88,17 @@ Route::get('palestre/{city:slug?}', GymSearchController::class)->name('gyms.sear
 Route::get('palestra/{slug}', GymProfileController::class)->name('gyms.show');
 // "Prenota questo slot" for guests: login or sign-up, then back to the profile.
 Route::get('trainer/{slug}/prenota', [BookingController::class, 'start'])->middleware('auth')->name('trainers.book.start');
+// "Novità": new trainers and gyms, in Italy or in a city (404 if unknown).
+Route::get('novita/{city:slug?}', NewsController::class)->name('news');
+// "Invita un amico": the link the booker shares; guests sign in, then come back.
+Route::get('invito/{token}', [BookingInviteController::class, 'show'])->where('token', '[A-Za-z0-9]{32}')->name('bookings.invite');
+Route::get('invito/{token}/accedi', [BookingInviteController::class, 'start'])->where('token', '[A-Za-z0-9]{32}')->middleware('auth')->name('bookings.invite.start');
+// "Eventi": the next events of trainers and gyms, and the page of each one.
+Route::get('eventi/{city:slug?}', EventSearchController::class)->name('events.search');
+Route::get('evento/{slug}', [EventController::class, 'show'])->name('events.show');
+Route::get('evento/{slug}/accedi', [EventController::class, 'start'])->middleware('auth')->name('events.start');
+// "Prenota il posto" of a lesson, for guests: login or sign-up, then back to the gym.
+Route::get('palestra/{slug}/lezioni/accedi', [EventController::class, 'startLesson'])->middleware('auth')->name('gyms.lessons.start');
 
 // Legal pages: drafts to be checked by a lawyer before the launch.
 Route::inertia('privacy', 'public/privacy', [
@@ -174,11 +193,29 @@ Route::middleware(['auth', 'role:client'])->group(function () {
     Route::patch('prenotazioni/{booking}/annulla', [BookingController::class, 'cancel'])
         ->whereNumber('booking')
         ->name('client.bookings.cancel');
+    // "Invita un amico": join with the link; the booker manages people, friends and link.
+    Route::post('invito/{token}', [BookingInviteController::class, 'join'])
+        ->where('token', '[A-Za-z0-9]{32}')
+        ->middleware('throttle:10,1')
+        ->name('bookings.invite.join');
+    Route::controller(BookingInviteController::class)->prefix('prenotazioni/{booking}')->whereNumber('booking')->group(function () {
+        Route::patch('persone', 'changePeople')->name('client.bookings.people');
+        Route::post('invito', 'regenerate')->middleware('throttle:10,1')->name('client.bookings.invite.regenerate');
+        Route::delete('ospiti/{guest}', 'removeGuest')->whereNumber('guest')->name('client.bookings.guests.destroy');
+    });
     // The answer to the trainer's "Sposta": accept the new time, or keep the old one.
     Route::controller(ClientRescheduleController::class)->prefix('prenotazioni/{booking}/nuovo-orario')->whereNumber('booking')->group(function () {
         Route::post('/', 'accept')->name('client.bookings.reschedule.accept');
         Route::delete('/', 'decline')->name('client.bookings.reschedule.decline');
     });
+
+    // "Eventi": a place confirmed at once while there are places left, given back until the start.
+    Route::post('evento/{slug}/iscrizione', [EventController::class, 'register'])->middleware('throttle:10,1')->name('events.register');
+    Route::delete('evento/{slug}/iscrizione', [EventController::class, 'cancel'])->name('events.cancel');
+    Route::post('palestra/{slug}/lezioni/{lesson}/prenota', [EventController::class, 'registerLesson'])
+        ->whereNumber('lesson')
+        ->middleware('throttle:10,1')
+        ->name('gyms.lessons.register');
 
     // The heart on search cards and profiles: the gyms', then the trainers'.
     Route::post('preferiti/palestre/{slug}', [GymFavoriteController::class, 'store'])->name('client.favorites.gyms.store');
@@ -286,6 +323,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('collegamenti/{link}/rifiuta', 'decline')->whereNumber('link')->name('.decline');
             Route::delete('collegamenti/{link}', 'destroy')->whereNumber('link')->name('.destroy');
         });
+        Route::controller(OrganizerEventsController::class)->prefix('eventi')->name('events')->group(base_path('routes/organizer-events.php'));
         // "Condividi profilo": link, QR code and image for the Instagram stories.
         Route::get('condividi', TrainerShareController::class)->name('share');
         Route::get('impostazioni', TrainerSettingsController::class)->name('settings');
@@ -310,6 +348,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('{photo}/copertina', 'cover')->whereNumber('photo')->name('.cover');
             Route::delete('{photo}', 'destroy')->whereNumber('photo')->name('.destroy');
         });
+        // "Servizi": description and photo of each ticked service.
+        Route::controller(GymAmenitiesController::class)->prefix('servizi')->name('amenities')->group(function () {
+            Route::get('/', 'show');
+            Route::post('{amenity}', 'update')->name('.update');
+            Route::delete('{amenity}/foto', 'destroyPhoto')->name('.photo.destroy');
+        });
+        // "Corsi": the courses and their weekly lessons; a lesson called off on one day.
+        Route::controller(GymCoursesController::class)->prefix('corsi')->name('courses')->group(function () {
+            Route::get('/', 'show');
+            Route::post('/', 'store')->name('.store');
+            Route::post('{course}', 'update')->whereNumber('course')->name('.update');
+            Route::delete('{course}', 'destroy')->whereNumber('course')->name('.destroy');
+            Route::post('lezioni/{lesson}/annulla', 'cancelLesson')->whereNumber('lesson')->name('.lessons.cancel');
+            Route::delete('lezioni/{lesson}/annulla', 'restoreLesson')->whereNumber('lesson')->name('.lessons.restore');
+            // "Iscritti" of a lesson with "Prenotazione posto": its page in "Eventi".
+            Route::get('lezioni/{lesson}/iscritti', 'lessonClients')->whereNumber('lesson')->name('.lessons.clients');
+        });
+        Route::controller(OrganizerEventsController::class)->prefix('eventi')->name('events')->group(base_path('routes/organizer-events.php'));
         Route::controller(GymPlansController::class)->group(function () {
             Route::get('abbonamenti', 'show')->name('plans');
             Route::put('abbonamenti', 'update')->name('plans.update');
@@ -362,6 +418,10 @@ Route::middleware(['auth', 'verified', 'admin', 'password.confirm'])->prefix('ad
     // "Nascondi" / "Mostra di nuovo": off the trainer's profile and average, or back.
     Route::post('recensioni/{review}/nascosta', [AdminReviewsController::class, 'hide'])->whereNumber('review')->name('reviews.hide');
     Route::delete('recensioni/{review}/nascosta', [AdminReviewsController::class, 'show'])->whereNumber('review')->name('reviews.show');
+    Route::get('eventi', AdminEventsController::class)->name('events');
+    // "Nascondi" / "Mostra di nuovo": off the lists and its page, or back.
+    Route::post('eventi/{event}/nascosto', [AdminEventsController::class, 'hide'])->whereNumber('event')->name('events.hide');
+    Route::delete('eventi/{event}/nascosto', [AdminEventsController::class, 'show'])->whereNumber('event')->name('events.unhide');
     Route::get('discipline-e-zone', AdminCatalogController::class)->name('catalog');
     // Disciplines and cities are hidden, never deleted (trainers may use them).
     Route::post('discipline', [AdminDisciplineController::class, 'store'])->name('disciplines.store');

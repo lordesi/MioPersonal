@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\BookingActor;
 use App\Models\Booking;
 use App\Models\User;
 use App\Notifications\Concerns\SendsPush;
@@ -17,7 +18,9 @@ use NotificationChannels\WebPush\WebPushMessage;
  * - 'cancelled-by-trainer' → the client (with the trainer's message);
  * - 'cancelled-by-client'  → the trainer;
  * - 'proposed'             → the client: the trainer proposes another time;
- * - 'accepted' / 'declined' → the trainer: the client's answer to the proposal.
+ * - 'accepted' / 'declined' → the trainer: the client's answer to the proposal;
+ * - 'guest-cancelled' → the friends invited ("Invita un amico"): the session won't take place;
+ * - 'guest-moved'     → the friends invited: the booker accepted another time.
  *
  * Queued, and sent only once the change is saved (afterCommit).
  */
@@ -61,7 +64,7 @@ class BookingChanged extends Notification implements ShouldQueue
             ->view(['mail.booking.changed', 'mail.booking.changed-text'], [
                 ...$text,
                 'card' => BookingMailData::card($this->booking, $text['who']),
-                'cancelled' => str_starts_with($this->kind, 'cancelled'),
+                'cancelled' => str_starts_with($this->kind, 'cancelled') || $this->kind === 'guest-cancelled',
                 'day' => BookingMailData::day($this->booking),
                 'toTrainer' => in_array($this->kind, ['cancelled-by-client', 'accepted', 'declined'], true),
             ]);
@@ -115,6 +118,30 @@ class BookingChanged extends Notification implements ShouldQueue
                 'details' => ['Nuovo orario' => $proposedWhen],
                 'note' => 'Se il nuovo orario non ti va bene puoi tenere quello di adesso, oppure annullare gratis.',
                 'button' => 'Rispondi',
+                'url' => route('client.home'),
+                'who' => "con {$trainer}",
+            ],
+            'guest-cancelled' => [
+                'subject' => "Seduta annullata: {$day}, {$hour}",
+                'label' => 'Annullata',
+                'title' => $booking->cancelled_by === BookingActor::Trainer
+                    ? "{$trainer} ha annullato la seduta"
+                    : "{$client} ha annullato la seduta",
+                'intro' => 'La seduta a cui partecipavi non si terrà.',
+                'details' => ['Messaggio' => $booking->cancelled_by === BookingActor::Trainer ? $booking->cancel_note : null],
+                'note' => 'Puoi prenotare una seduta tutta tua dal profilo del trainer.',
+                'button' => 'Vedi il trainer',
+                'url' => route('trainers.show', $booking->trainerProfile->slug),
+                'who' => "con {$trainer}",
+            ],
+            'guest-moved' => [
+                'subject' => "La seduta con {$trainer} si sposta: {$day}, {$hour}",
+                'label' => 'Spostata',
+                'title' => 'La seduta ha un nuovo orario',
+                'intro' => "{$client} ha accettato il nuovo orario proposto da {$trainer}: qui sotto trovi quello nuovo.",
+                'details' => [],
+                'note' => null,
+                'button' => 'Le mie prenotazioni',
                 'url' => route('client.home'),
                 'who' => "con {$trainer}",
             ],

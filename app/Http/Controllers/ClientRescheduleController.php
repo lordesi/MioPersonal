@@ -58,6 +58,8 @@ class ClientRescheduleController extends Controller
 
         TrainerSlots::refresh($booking->trainerProfile);
         $booking->trainerProfile->user->notify(new BookingChanged($booking, 'accepted'));
+        // "Invita un amico": the friends who joined come at the new time.
+        $booking->notifyGuests(new BookingChanged($booking, 'guest-moved'));
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Seduta spostata al nuovo orario.']);
 
         return back();

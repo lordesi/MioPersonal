@@ -7,6 +7,7 @@ use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use App\Support\CatalogOptions;
 use App\Support\GymCard;
+use App\Support\NewsFeed;
 use App\Support\Seo;
 use App\Support\TrainerCard;
 use App\Support\TrainerSlots;
@@ -30,6 +31,8 @@ class HomeController extends Controller
         return Inertia::render('public/home', [
             'featuredTrainers' => $this->featuredTrainers(TrainerCard::favoriteIds($request->user())),
             'featuredGyms' => GymCard::many($this->featuredGyms(), GymCard::favoriteIds($request->user())),
+            // "Novità": the newest trainers and gyms of all of Italy.
+            'news' => NewsFeed::preview(null, $request->user()),
             // Options of the search form.
             'disciplines' => CatalogOptions::disciplines(),
             // With the center of each city: "Usa la mia posizione" finds the closest one in the browser.

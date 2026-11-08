@@ -14,10 +14,10 @@ use App\Models\TrainerProfile;
 final class TrainerSessions
 {
     /** The relations row() reads. */
-    public const WITH = ['client', 'clientPackage.bookings'];
+    public const WITH = ['client', 'clientPackage.bookings', 'guests.user'];
 
     /**
-     * @return array{id: int, clientId: int|null, clientName: string, start: string, end: string, hours: float, serviceName: string, placeLabel: string, noShow: bool, kind: string, canChange: bool, proposedStart: string|null}
+     * @return array{id: int, clientId: int|null, clientName: string, start: string, end: string, hours: float, serviceName: string, placeLabel: string, noShow: bool, kind: string, people: int, guestNames: list<string>, canChange: bool, proposedStart: string|null}
      */
     public static function row(Booking $booking): array
     {
@@ -32,11 +32,14 @@ final class TrainerSessions
             'start' => ClientBookingData::iso($booking->starts_at),
             'end' => ClientBookingData::iso($booking->ends_at),
             'hours' => $booking->starts_at->diffInMinutes($booking->ends_at) / 60,
-            'serviceName' => BookingLabels::service($booking),
+            'serviceName' => BookingLabels::serviceForTrainer($booking),
             'placeLabel' => $booking->place_label,
             // Marked "Saltata" by the trainer; otherwise done once it ends.
             'noShow' => $booking->no_show_at !== null,
             'kind' => $booking->status === BookingStatus::Confirmed ? 'confirmed' : 'pending',
+            // "Invita un amico": who comes with the client.
+            'people' => $booking->people,
+            'guestNames' => BookingLabels::guestNames($booking),
         ];
     }
 

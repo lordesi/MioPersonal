@@ -76,6 +76,13 @@ export type SessionType = {
     /** The online prices by duration; only those of `prices` are sent. */
     online: DurationPrice[];
     onlineNote: string;
+    /**
+     * "Invita un amico": how many people can come, the booker included
+     * (1 = only the booker, at most MAX_PEOPLE).
+     */
+    maxPeople: number;
+    /** The total for 2…maxPeople people, for the durations of `prices`; only those are sent. */
+    group: GroupPrice[];
 };
 
 /** A duration of a kind of session (see SESSION_MINUTES) and its price. */
@@ -83,6 +90,9 @@ export type DurationPrice = {
     minutes: number;
     priceCents: number | null;
 };
+
+/** "Invita un amico": the total price of a duration for that many people. */
+export type GroupPrice = DurationPrice & { people: number };
 
 export type PricePackage = {
     sessions: number;
@@ -184,13 +194,42 @@ export const NOTE_MAX = 200;
 export const MAX_PRICE_CENTS = 1000000;
 export const PACKAGE_SESSIONS = { min: 2, max: 50 };
 
+/** "Invita un amico": at most this many people, the booker included (Service::MAX_PEOPLE). */
+export const MAX_PEOPLE = 5;
+
 export const firstSessionType: SessionType = {
     name: 'Seduta singola',
     prices: [{ minutes: 60, priceCents: null }],
     note: '',
     online: [],
     onlineNote: '',
+    maxPeople: 1,
+    group: [],
 };
+
+/**
+ * "Invita un amico": the prices for 2…maxPeople people, for each duration of
+ * the kind of session (null = not written yet). Empty for only the booker.
+ */
+export function groupPrices(session: SessionType): GroupPrice[] {
+    const prices: GroupPrice[] = [];
+
+    for (let people = 2; people <= session.maxPeople; people++) {
+        for (const { minutes } of session.prices) {
+            prices.push({
+                people,
+                minutes,
+                priceCents:
+                    session.group.find(
+                        (item) =>
+                            item.people === people && item.minutes === minutes,
+                    )?.priceCents ?? null,
+            });
+        }
+    }
+
+    return prices;
+}
 
 export const emptyPackage: PricePackage = {
     sessions: 10,
@@ -334,7 +373,8 @@ export function isPricingValid(pricing: Pricing, ownOnline: boolean): boolean {
                 sessionNameError(pricing.sessions, index) === null &&
                 session.prices.length > 0 &&
                 allPriced(session.prices) &&
-                (!ownOnline || allPriced(onlinePrices(session))),
+                (!ownOnline || allPriced(onlinePrices(session))) &&
+                allPriced(groupPrices(session)),
         ) &&
         (!pricing.firstSession.enabled ||
             inRange(pricing.firstSession.priceCents, 0, MAX_PRICE_CENTS)) &&
@@ -477,6 +517,11 @@ export function toServicesPayload(pricing: Pricing, ownOnline: boolean) {
                       online_note: session.onlineNote,
                   }
                 : {}),
+            group_prices: groupPrices(session).map((item) => ({
+                people: item.people,
+                minutes: item.minutes,
+                price_cents: item.priceCents ?? '',
+            })),
         })),
         ...(pricing.firstSession.enabled
             ? {

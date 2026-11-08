@@ -34,13 +34,15 @@ class CreateBooking
 
     /**
      * A session of a service. A package service also creates the package:
-     * this booking is its first session.
+     * this booking is its first session. "Invita un amico": `$people` with
+     * the booker, at the total price of the service for them.
      */
-    public function handle(User $client, TrainerProfile $profile, Service $service, CarbonImmutable $start, int $minutes, ?TrainerPlace $place = null): Booking
+    public function handle(User $client, TrainerProfile $profile, Service $service, CarbonImmutable $start, int $minutes, ?TrainerPlace $place = null, int $people = 1): Booking
     {
         $this->ensureDurationIsAllowed($service, $minutes);
+        $price = $this->priceFor($service, $people);
 
-        return $this->book($client, $profile, $start, $minutes, function () use ($client, $profile, $service, $place) {
+        return $this->book($client, $profile, $start, $minutes, function () use ($client, $profile, $service, $place, $people, $price) {
             // Inside the lock: two requests of the same client can't both be "the first".
             $this->ensureFirstSessionIsFirst($profile, $service, $client);
 
@@ -48,10 +50,26 @@ class CreateBooking
                 'service_id' => $service->id,
                 'client_package_id' => $service->kind === 'package' ? $this->newPackage($client, $profile, $service)->id : null,
                 'service_name' => $service->displayName(),
-                'price_cents' => $service->price_cents,
+                'price_cents' => $price,
+                'people' => $people,
+                'invite_token' => $people > 1 ? Booking::newInviteToken() : null,
                 'place_label' => $this->placeLabel($profile, $service->online_only, $place),
             ];
         });
+    }
+
+    /** The total for `$people`: only up to the people the trainer allows for this service. */
+    private function priceFor(Service $service, int $people): int
+    {
+        $price = $service->priceFor($people);
+
+        if ($price === null) {
+            throw ValidationException::withMessages(['people' => $service->maxPeople() > 1
+                ? "Questa seduta è per al massimo {$service->maxPeople()} persone."
+                : 'Questa seduta è per una persona sola.']);
+        }
+
+        return $price;
     }
 
     /**

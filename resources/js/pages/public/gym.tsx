@@ -1,6 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import { Building2, MapPin, Share, Tag, Users } from 'lucide-react';
+import UpcomingEvents from '@/components/events/upcoming-events';
 import { SaveableGymCard } from '@/components/gym/gym-card';
+import GymCoursePlanner from '@/components/gym/gym-course-planner';
 import {
     GymAmenities,
     GymContacts,
@@ -26,6 +28,7 @@ import { useShare } from '@/hooks/use-share';
 import { gymSearchUrl, monthlyLabel } from '@/lib/gym';
 import { home } from '@/routes';
 import type {
+    GroupSessionSummary,
     GymProfileData,
     GymSummary,
     SeoData,
@@ -38,6 +41,8 @@ type GymProps = {
     preview: boolean;
     /** "Palestre simili": same city, most services in common; empty in a preview. */
     similar: GymSummary[];
+    /** "Prossimi eventi" the gym organizes. */
+    events: GroupSessionSummary[];
     seo: SeoData;
 };
 
@@ -51,7 +56,7 @@ const darkButton =
  * plans, promotions, the trainers who work there, where it is and contacts,
  * then the similar gyms.
  */
-export default function Gym({ gym, preview, similar, seo }: GymProps) {
+export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
     const photos = [gym.coverUrl, ...gym.photos]
         .filter((url): url is string => url !== null)
         .map((url) => ({ caption: gym.name, url }));
@@ -233,6 +238,20 @@ export default function Gym({ gym, preview, similar, seo }: GymProps) {
                             </ProfileSection>
                         )}
 
+                        {gym.courses.length > 0 && (
+                            <ProfileSection
+                                id="corsi"
+                                titleId="courses-title"
+                                title="Corsi"
+                            >
+                                <GymCoursePlanner
+                                    weeks={gym.courseWeeks}
+                                    courses={gym.courses}
+                                    gymSlug={preview ? undefined : gym.slug}
+                                />
+                            </ProfileSection>
+                        )}
+
                         {gym.plans.length > 0 && (
                             <ProfileSection
                                 id="abbonamenti"
@@ -293,6 +312,8 @@ export default function Gym({ gym, preview, similar, seo }: GymProps) {
                             />
                         </ProfileSection>
                     </aside>
+
+                    <UpcomingEvents events={events} className="lg:col-span-2" />
 
                     {similar.length > 0 && (
                         <section

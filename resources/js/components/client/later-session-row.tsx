@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import BookingGroup from '@/components/client/booking-group';
 import CancelBookingDialog from '@/components/client/cancel-booking-dialog';
 import { useCancelBooking } from '@/hooks/use-cancel-booking';
 import {
@@ -24,7 +25,10 @@ export default function LaterSessionRow({
 }: LaterSessionRowProps) {
     const { cancelled, cancelBooking } = useCancelBooking(booking.id);
     const date = dateBlockParts(booking.start);
-    const freeCancellation = new Date(booking.freeCancellationUntil) > now;
+    // A friend invited to the session doesn't cancel it: they can only leave.
+    const freeCancellation =
+        booking.group?.role !== 'guest' &&
+        new Date(booking.freeCancellationUntil) > now;
 
     return (
         <li className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-border/60 bg-secondary/60 p-3.5">
@@ -90,6 +94,15 @@ export default function LaterSessionRow({
                             Annulla
                         </button>
                     }
+                />
+            )}
+
+            {booking.group && !cancelled && (
+                <BookingGroup
+                    bookingId={booking.id}
+                    group={booking.group}
+                    trainerName={booking.trainerName}
+                    className="w-full bg-background"
                 />
             )}
         </li>

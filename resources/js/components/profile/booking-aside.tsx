@@ -21,6 +21,10 @@ type BookingAsideProps = {
     booking: boolean;
     /** "Dove", under the services (PlacePicker). */
     placePicker?: ReactNode;
+    /** "Invita un amico": how many people come. */
+    people: number;
+    /** "Quante persone?", under the services (PeoplePicker). */
+    peoplePicker?: ReactNode;
 };
 
 /** The black booking box next to the profile content (from lg). */
@@ -34,6 +38,8 @@ export default function BookingAside({
     onBook,
     booking,
     placePicker,
+    people,
+    peoplePicker,
 }: BookingAsideProps) {
     return (
         <aside
@@ -45,7 +51,7 @@ export default function BookingAside({
                     Prenota
                 </h2>
                 <span className="text-[34px] leading-10 font-bold tracking-[-0.03em] tabular-nums">
-                    {totalPriceLabel(service, minutes)}
+                    {totalPriceLabel(service, minutes, people)}
                 </span>
                 {selectedStart && (
                     <span className="text-sm text-primary-foreground/60 tabular-nums">
@@ -61,6 +67,8 @@ export default function BookingAside({
                 value={service.id}
                 onChange={onServiceChange}
             />
+
+            {peoplePicker}
 
             {placePicker}
 

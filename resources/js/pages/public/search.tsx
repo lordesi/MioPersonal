@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Search as SearchIcon } from 'lucide-react';
 import { useState } from 'react';
+import NewsStrip from '@/components/news/news-strip';
 import FilterBar, { SearchControls } from '@/components/search/filter-bar';
 import type {
     ActiveFilters,
@@ -22,7 +23,7 @@ import { saveFavorite } from '@/hooks/use-favorite';
 import { searchUrl } from '@/lib/search';
 import type { SearchFilters } from '@/lib/search';
 import { home, login } from '@/routes';
-import type { SeoData, TrainerSummary } from '@/types';
+import type { NewsPreview, SeoData, TrainerSummary } from '@/types';
 
 /**
  * No trainer matches every filter: similar profiles, found leaving out
@@ -53,6 +54,8 @@ const joinNames = (names: string[]) =>
 type SearchProps = {
     /** The city in the URL; null = all of Italy. */
     city: { slug: string; name: string } | null;
+    /** "Novità" in the city, only on page 1. */
+    news: NewsPreview | null;
     /** Trainers of the current page. */
     trainers: TrainerSummary[];
     /** Trainers matching the filters, on every page. */
@@ -73,6 +76,7 @@ const crumbLink = 'text-primary-foreground/60 hover:text-primary-foreground';
 
 export default function Search({
     city,
+    news,
     trainers,
     total,
     pagination,
@@ -328,6 +332,9 @@ export default function Search({
                             )}
                         </>
                     )}
+
+                    {/* "Novità": the newest trainers here, under the results of page 1. */}
+                    {news && <NewsStrip news={news} className="pt-6" />}
                 </div>
             </div>
         </>

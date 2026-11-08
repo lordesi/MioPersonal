@@ -5,10 +5,12 @@ import FeaturedTrainers from '@/components/home/featured-trainers';
 import HeroSearch from '@/components/home/hero-search';
 import HowItWorks from '@/components/home/how-it-works';
 import PopularDisciplines from '@/components/home/popular-disciplines';
+import NewsStrip from '@/components/news/news-strip';
 import type {
     CatalogOption,
     CityWithCoordinates,
     GymSummary,
+    NewsPreview,
     SeoData,
     TrainerSummary,
 } from '@/types';
@@ -22,12 +24,15 @@ type HomeProps = {
     cities: CityWithCoordinates[];
     /** "Servizi" of the gyms' search. */
     amenities: CatalogOption[];
+    /** "Novità" of all of Italy: hidden when empty. */
+    news: NewsPreview;
     seo: SeoData;
 };
 
 export default function Home({
     featuredTrainers,
     featuredGyms,
+    news,
     disciplines,
     cities,
     amenities,
@@ -43,6 +48,7 @@ export default function Home({
             />
             <FeaturedTrainers trainers={featuredTrainers} />
             <FeaturedGyms gyms={featuredGyms} />
+            <NewsStrip news={news} variant="home" />
             <PopularDisciplines disciplines={disciplines} />
             <HowItWorks />
             <Faq />

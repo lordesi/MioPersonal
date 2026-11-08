@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\BookingActor;
+use App\Enums\BookingGuestStatus;
 use App\Enums\BookingStatus;
 use App\Notifications\BookingConfirmed;
 use Carbon\CarbonImmutable;
@@ -13,6 +14,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Notifications\Notification;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Notification as NotificationFacade;
+use Illuminate\Support\Str;
 
 /**
  * A session a client asked a trainer for (see docs/database/analisi.md §3.6).
@@ -28,7 +33,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable $ends_at
  * @property CarbonImmutable $blocked_until end + the trainer's break
  * @property string $service_name
- * @property int $price_cents
+ * @property int $price_cents the total, for all the `people`
+ * @property int $people "Invita un amico": who comes, the booker included
+ * @property string|null $invite_token the link for the friends, when people > 1
  * @property string $place_label
  * @property BookingStatus $status
  * @property CarbonImmutable|null $expires_at
@@ -47,11 +54,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read User|null $client
  * @property-read TrainerProfile $trainerProfile
  * @property-read ClientPackage|null $clientPackage
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, BookingGuest> $guests
  */
 #[Fillable([
     'client_id', 'trainer_profile_id', 'service_id', 'client_package_id',
     'starts_at', 'ends_at', 'blocked_until',
-    'service_name', 'price_cents', 'place_label',
+    'service_name', 'price_cents', 'people', 'invite_token', 'place_label',
     'status', 'expires_at', 'confirmed_at', 'client_note',
 ])]
 class Booking extends Model
@@ -72,6 +80,7 @@ class Booking extends Model
             'ends_at' => 'datetime',
             'blocked_until' => 'datetime',
             'price_cents' => 'integer',
+            'people' => 'integer',
             'status' => BookingStatus::class,
             'expires_at' => 'datetime',
             'confirmed_at' => 'datetime',
@@ -113,6 +122,16 @@ class Booking extends Model
     }
 
     /**
+     * The service booked (null once the trainer changed the services).
+     *
+     * @return BelongsTo<Service, $this>
+     */
+    public function service(): BelongsTo
+    {
+        return $this->belongsTo(Service::class);
+    }
+
+    /**
      * @return BelongsTo<ClientPackage, $this>
      */
     public function clientPackage(): BelongsTo
@@ -126,6 +145,77 @@ class Booking extends Model
     public function events(): HasMany
     {
         return $this->hasMany(BookingEvent::class);
+    }
+
+    /**
+     * "Invita un amico": the friends who joined, also who left.
+     *
+     * @return HasMany<BookingGuest, $this>
+     */
+    public function guests(): HasMany
+    {
+        return $this->hasMany(BookingGuest::class)->oldest('id');
+    }
+
+    /**
+     * The sessions a user takes part in as a guest, still coming.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeWithGuest(Builder $query, User $user): void
+    {
+        $query->whereHas('guests', fn (Builder $guests) => $guests->joined()->where('user_id', $user->id));
+    }
+
+    /** "Invita un amico": a new random link, for a session of more people. */
+    public static function newInviteToken(): string
+    {
+        return Str::random(32);
+    }
+
+    /** Places still free for friends: people − the booker − who joined. */
+    public function freeSeats(): int
+    {
+        $joined = $this->relationLoaded('guests')
+            ? $this->guests->where('status', BookingGuestStatus::Joined)->count()
+            : $this->guests()->joined()->count();
+
+        return max(0, $this->people - 1 - $joined);
+    }
+
+    /**
+     * The friends still coming, with an account.
+     *
+     * @return Collection<int, User>
+     */
+    public function joinedGuestUsers(): Collection
+    {
+        return $this->guests()->joined()->with('user')->get()
+            ->map(fn (BookingGuest $guest) => $guest->user)
+            ->filter()
+            ->values();
+    }
+
+    /** The friends can still join: a session of more people, not over and not cancelled. */
+    public function acceptsGuests(): bool
+    {
+        return $this->people > 1
+            && $this->invite_token !== null
+            && $this->starts_at->isFuture()
+            && ($this->status === BookingStatus::Confirmed || $this->isPending());
+    }
+
+    /**
+     * The friends still coming hear of it too: confirmed, cancelled, moved,
+     * reminders. The booker is told by the caller, as before.
+     */
+    public function notifyGuests(Notification $notification): void
+    {
+        $users = $this->joinedGuestUsers();
+
+        if ($users->isNotEmpty()) {
+            NotificationFacade::send($users, $notification);
+        }
     }
 
     /**
@@ -271,6 +361,7 @@ class Booking extends Model
         }
 
         $this->client?->notify(new BookingConfirmed($this));
+        $this->notifyGuests(new BookingConfirmed($this));
     }
 
     /**

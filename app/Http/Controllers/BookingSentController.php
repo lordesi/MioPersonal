@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\User;
+use App\Support\ClientBookingData;
 use App\Support\TrainerCard;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -21,7 +22,7 @@ class BookingSentController extends Controller
         // Someone else's booking: as if it didn't exist.
         abort_unless($booking->client_id === $client->id, 404);
 
-        $booking->load(['trainerProfile.user', 'trainerProfile.city', 'trainerProfile.disciplines']);
+        $booking->load(['trainerProfile.user', 'trainerProfile.city', 'trainerProfile.disciplines', 'client', 'service', 'guests.user']);
         $trainer = $booking->trainerProfile;
 
         return Inertia::render('client/booking-sent', [
@@ -34,6 +35,8 @@ class BookingSentController extends Controller
                 'serviceName' => $booking->service_name,
                 'placeLabel' => $booking->place_label,
                 'priceCents' => $booking->price_cents,
+                // "Invita un amico": the link to share, for a session of more people.
+                'group' => ClientBookingData::group($booking, $client),
                 'trainer' => [
                     'name' => $trainer->user->name,
                     'firstName' => $trainer->user->first_name,

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\PlaceType;
 use App\Models\ClientPackage;
+use App\Models\GroupSession;
 use App\Models\Review;
 use App\Models\Service;
 use App\Models\TrainerDocument;
@@ -11,6 +12,7 @@ use App\Models\TrainerPhoto;
 use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\GroupSessionCard;
 use App\Support\Seo;
 use App\Support\SimilarTrainers;
 use App\Support\Stats;
@@ -63,6 +65,8 @@ class TrainerProfileController extends Controller
             // "Mostra tutte le recensioni": sent only when the page asks for it
             // (router.reload with only: ['allReviews']), never on the first load.
             'allReviews' => Inertia::optional(fn () => $this->reviews($profile)),
+            // "Prossimi eventi" the trainer organizes.
+            'events' => GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()->listed()->upcoming()->hostedBy($profile))->orderBy('starts_at')->limit(6)->get()),
             'seo' => $this->seo($profile),
         ]);
     }
@@ -260,7 +264,7 @@ class TrainerProfileController extends Controller
      * A client with a package of this trainer finds it first, "Il tuo
      * pacchetto": its sessions are already paid.
      *
-     * @return list<array{id: int, packageId: int|null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int}>}>
+     * @return list<array{id: int, packageId: int|null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>}>
      */
     private function services(TrainerProfile $profile, ?User $viewer): array
     {
@@ -271,7 +275,7 @@ class TrainerProfileController extends Controller
      * The viewer's bought packages with sessions still to book. The id is
      * negative, so it never matches the id of a service.
      *
-     * @return list<array{id: int, packageId: int, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int}>}>
+     * @return list<array{id: int, packageId: int, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>}>
      */
     private function packages(TrainerProfile $profile, ?User $viewer): array
     {
@@ -296,13 +300,13 @@ class TrainerProfileController extends Controller
                     'durationLabel' => ($remaining === 1 ? '1 seduta rimasta' : "{$remaining} sedute rimaste").' · '.self::minutesLabel($package->minutes),
                     'note' => $package->name,
                     'priceCents' => 0,
-                    'options' => [['serviceId' => -$package->id, 'minutes' => $package->minutes, 'priceCents' => 0]],
+                    'options' => [['serviceId' => -$package->id, 'minutes' => $package->minutes, 'priceCents' => 0, 'groupPrices' => []]],
                 ];
             })->all());
     }
 
     /**
-     * @return list<array{id: int, packageId: null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int}>}>
+     * @return list<array{id: int, packageId: null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>}>
      */
     private function bookableServices(TrainerProfile $profile, ?User $viewer): array
     {
@@ -329,6 +333,8 @@ class TrainerProfileController extends Controller
                 'serviceId' => $service->id,
                 'minutes' => $service->minutes,
                 'priceCents' => $service->price_cents,
+                // "Invita un amico": the total for 2… people; empty = only the booker.
+                'groupPrices' => self::groupPrices($service),
             ], $rows);
 
             return [
@@ -342,6 +348,24 @@ class TrainerProfileController extends Controller
                 'options' => $options,
             ];
         }, $groups));
+    }
+
+    /**
+     * "Invita un amico": the total of a duration for 2… people.
+     *
+     * @return list<array{people: int, priceCents: int}>
+     */
+    private static function groupPrices(Service $service): array
+    {
+        $prices = [];
+
+        foreach ($service->pricesByPeople() as $people => $cents) {
+            if ($people > 1) {
+                $prices[] = ['people' => $people, 'priceCents' => $cents];
+            }
+        }
+
+        return $prices;
     }
 
     /**

@@ -215,26 +215,74 @@ export function GymPromotions({
     );
 }
 
-/** "Servizi": every amenity as a chip. */
+/**
+ * "Servizi": the ones the gym told with a photo or a description as cards
+ * (e.g. the Turkish bath), the others as chips.
+ */
 export function GymAmenities({
     amenities,
 }: {
     amenities: GymProfileData['amenities'];
 }) {
+    const detailed = amenities.filter(
+        (amenity) => amenity.description || amenity.photoUrl,
+    );
+    const others = amenities.filter(
+        (amenity) => !amenity.description && !amenity.photoUrl,
+    );
+
     return (
-        <ul className="flex flex-wrap gap-2">
-            {amenities.map((amenity) => (
-                <li key={amenity.value}>
-                    <Badge
-                        variant="secondary"
-                        className="h-8 gap-1.5 rounded-full border-transparent px-3 text-sm font-medium"
-                    >
-                        <Check aria-hidden="true" strokeWidth={2.5} />
-                        {amenity.label}
-                    </Badge>
-                </li>
-            ))}
-        </ul>
+        <div className="flex flex-col gap-4">
+            {detailed.length > 0 && (
+                <ul className="grid gap-3 md:grid-cols-2">
+                    {detailed.map((amenity) => (
+                        <li
+                            key={amenity.value}
+                            className="flex flex-col overflow-hidden rounded-2xl border bg-card"
+                        >
+                            {amenity.photoUrl && (
+                                <img
+                                    src={amenity.photoUrl}
+                                    alt={amenity.label}
+                                    loading="lazy"
+                                    className="aspect-16/9 w-full object-cover"
+                                />
+                            )}
+                            <div className="flex flex-col gap-1.5 p-4">
+                                <h3 className="flex items-center gap-1.5 text-base font-semibold">
+                                    <Check
+                                        aria-hidden="true"
+                                        strokeWidth={2.5}
+                                        className="size-4"
+                                    />
+                                    {amenity.label}
+                                </h3>
+                                {amenity.description && (
+                                    <p className="text-sm leading-5.5 break-words whitespace-pre-line text-foreground/80">
+                                        {amenity.description}
+                                    </p>
+                                )}
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            {others.length > 0 && (
+                <ul className="flex flex-wrap gap-2">
+                    {others.map((amenity) => (
+                        <li key={amenity.value}>
+                            <Badge
+                                variant="secondary"
+                                className="h-8 gap-1.5 rounded-full border-transparent px-3 text-sm font-medium"
+                            >
+                                <Check aria-hidden="true" strokeWidth={2.5} />
+                                {amenity.label}
+                            </Badge>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
     );
 }
 

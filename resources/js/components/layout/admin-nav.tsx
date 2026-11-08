@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
     Building2,
     Calendar,
+    CalendarDays,
     ChartColumn,
     House,
     List,
@@ -19,6 +20,7 @@ import { home } from '@/routes';
 import {
     bookings,
     catalog,
+    events,
     messages,
     overview,
     reviews,
@@ -39,6 +41,7 @@ export type AdminSection =
     | 'bookings'
     | 'users'
     | 'reviews'
+    | 'events'
     | 'catalog'
     | 'settings';
 
@@ -94,6 +97,12 @@ const sections: {
         icon: Star,
         href: reviews.url,
         badge: 'flaggedReviews',
+    },
+    {
+        section: 'events',
+        title: 'Eventi',
+        icon: CalendarDays,
+        href: events.url,
     },
     {
         section: 'catalog',

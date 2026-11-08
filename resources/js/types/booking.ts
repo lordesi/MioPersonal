@@ -24,6 +24,28 @@ export type ClientUpcomingBooking = {
     freeCancellationUntil: string;
     /** "Sposta": the time the trainer proposes, until the client answers. */
     proposal: { start: string; hours: number; expiresAt: string } | null;
+    group: BookingGroup | null;
+};
+
+/**
+ * "Invita un amico": a session for more people, as the viewer sees it. The
+ * booker shares the link and manages the friends; a friend can only leave.
+ */
+export type BookingGroup = {
+    /** Who comes, the booker included. */
+    people: number;
+    /** The total for all of them. */
+    priceCents: number;
+    role: 'booker' | 'guest';
+    /** "Marco R." */
+    bookerName: string;
+    /** Only for the booker, while friends can still join. */
+    inviteUrl: string | null;
+    freeSeats: number;
+    /** The friends who joined. */
+    guests: { id: number; name: string; isYou: boolean }[];
+    /** "Quante persone": up to this many, while the booker can still change it; else null. */
+    maxPeople: number | null;
 };
 
 /** The request just sent, on the "Prenotazione inviata" page. */
@@ -37,6 +59,8 @@ export type SentBooking = {
     serviceName: string;
     placeLabel: string;
     priceCents: number;
+    /** "Invita un amico": a session for more people. */
+    group: BookingGroup | null;
     trainer: {
         name: string;
         firstName: string;
@@ -64,6 +88,7 @@ export type ClientPendingBooking = {
     expiresAt: string | null;
     /** The trainer's message when cancelling. */
     cancelNote: string | null;
+    group: BookingGroup | null;
 };
 
 /** "Il tuo pacchetto": counted from its bookings, see docs/database/analisi.md §3.4. */

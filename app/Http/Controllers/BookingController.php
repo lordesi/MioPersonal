@@ -26,7 +26,7 @@ use Illuminate\Validation\ValidationException;
 class BookingController extends Controller
 {
     /** The choice of the profile page, kept in the URL across login and sign-up. */
-    private const CHOICE = ['servizio', 'durata', 'inizio', 'luogo'];
+    private const CHOICE = ['servizio', 'durata', 'inizio', 'luogo', 'persone'];
 
     /**
      * "Ti registri solo quando prenoti": guests land here, the `auth` middleware
@@ -90,10 +90,13 @@ class BookingController extends Controller
             ],
             'start' => ['required', 'date'],
             'minutes' => ['required', 'integer'],
+            // "Invita un amico": the booker included; the service says up to how many.
+            'people' => ['nullable', 'integer', 'between:1,'.Service::MAX_PEOPLE],
         ], [
             'service_id.*' => 'Scegli uno dei servizi del trainer.',
             'start.*' => 'Scegli giorno e orario.',
             'minutes.*' => 'Scegli la durata della seduta.',
+            'people.*' => 'Scegli quante persone vengono.',
         ]);
 
         $booking = $createBooking->handle(
@@ -103,6 +106,7 @@ class BookingController extends Controller
             CarbonImmutable::parse($request->string('start')->value()),
             $request->integer('minutes'),
             $place,
+            $request->integer('people', 1),
         );
 
         return to_route('client.bookings.sent', $booking);
@@ -130,6 +134,8 @@ class BookingController extends Controller
 
         // "Avvisiamo noi il trainer".
         $booking->trainerProfile->user->notify(new BookingChanged($booking, 'cancelled-by-client'));
+        // "Invita un amico": the friends who joined don't come either.
+        $booking->notifyGuests(new BookingChanged($booking, 'guest-cancelled'));
 
         return back();
     }

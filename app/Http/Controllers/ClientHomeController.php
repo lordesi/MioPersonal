@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\BookingStatus;
 use App\Enums\TrainingMode;
 use App\Http\Requests\ClientPreferencesRequest;
+use App\Models\Booking;
 use App\Models\ClientPreference;
+use App\Models\GroupSession;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\ClientBookingData;
+use App\Support\GroupSessionCard;
+use App\Support\NewsFeed;
 use App\Support\TrainerCard;
 use App\Support\TrainerSlots;
 use Illuminate\Database\Eloquent\Builder;
@@ -41,16 +46,34 @@ class ClientHomeController extends Controller
             ->orderBy('starts_at')
             ->get();
 
-        $upcoming = $bookings->filter(ClientBookingData::isUpcoming(...))->values();
+        // "Invita un amico": the sessions of others the client joined, still to come.
+        $asGuest = Booking::query()
+            ->withGuest($client)
+            ->where('starts_at', '>', now())
+            ->with(ClientBookingData::RELATIONS)
+            ->get()
+            ->filter(fn (Booking $booking) => $booking->status === BookingStatus::Confirmed || $booking->isPending());
+
+        $upcoming = $bookings->concat($asGuest)
+            ->filter(ClientBookingData::isUpcoming(...))
+            ->sortBy('starts_at')
+            ->values();
         $trainers = ClientBookingData::trainers($client, $bookings);
+        // A friend doesn't answer the trainer's "Sposta": the booker does.
+        $withGroup = fn (array $data, Booking $booking) => [
+            ...$data,
+            ...($booking->client_id === $client->id ? [] : ['proposal' => null]),
+            'group' => ClientBookingData::group($booking, $client),
+        ];
 
         return Inertia::render('client/home', [
             'firstName' => $client->first_name,
             // The first one is "La tua prossima seduta", the others "Più avanti".
-            'upcoming' => $upcoming->map(ClientBookingData::upcoming(...))->all(),
-            'pending' => $bookings
+            'upcoming' => $upcoming->map(fn (Booking $booking) => $withGroup(ClientBookingData::upcoming($booking), $booking))->all(),
+            'pending' => $bookings->concat($asGuest->filter(fn (Booking $booking) => $booking->isPending()))
                 ->filter(ClientBookingData::isPending(...))
-                ->map(ClientBookingData::pending(...))
+                ->sortBy('starts_at')
+                ->map(fn (Booking $booking) => $withGroup(ClientBookingData::pending($booking), $booking))
                 ->values()->all(),
             // All of them: the page shows the last three, "Vedi tutte" the others.
             'past' => ClientBookingData::past($client, $bookings
@@ -62,6 +85,14 @@ class ClientHomeController extends Controller
             // Only for a client without trainers yet: one query less for the others.
             'recommended' => $trainers === [] ? $this->recommended($client, $preference) : [],
             'hasPreferences' => $preference !== null,
+            // "I miei eventi": the places taken, still to come (cancelled ones marked).
+            'events' => GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()
+                ->whereHas('activeRegistrations', fn (Builder $registration) => $registration->where('user_id', $client->id))
+                ->where('ends_at', '>', now()))
+                ->orderBy('starts_at')
+                ->get()),
+            // "Novità" in the client's city (Italy without one).
+            'news' => NewsFeed::preview($preference?->city, $client),
         ]);
     }
 

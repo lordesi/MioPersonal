@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\City;
 use App\Models\Discipline;
+use App\Models\GroupSession;
 use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use Carbon\CarbonInterface;
@@ -45,7 +46,15 @@ class SitemapController extends Controller
             ->orderBy('id')
             ->get(['id', 'slug', 'city_id', 'updated_at']);
 
-        $urls = [['loc' => route('home'), 'lastmod' => null], ...$this->gymUrls()];
+        $gymUrls = $this->gymUrls();
+        $urls = [['loc' => route('home'), 'lastmod' => null]];
+
+        // "Novità" of all of Italy, once there is someone: the city pages are often empty, not listed.
+        if ($profiles->isNotEmpty() || $gymUrls !== []) {
+            $urls[] = ['loc' => route('news'), 'lastmod' => null];
+        }
+
+        $urls = [...$urls, ...$gymUrls, ...$this->eventUrls()];
 
         if ($profiles->isEmpty()) {
             return $urls;
@@ -83,6 +92,38 @@ class SitemapController extends Controller
 
         foreach ($profiles as $profile) {
             $urls[] = ['loc' => route('trainers.show', $profile->slug), 'lastmod' => $profile->updated_at];
+        }
+
+        return $urls;
+    }
+
+    /**
+     * "Eventi" (Italy and every city with an event) and the events to come.
+     *
+     * @return list<array{loc: string, lastmod: CarbonInterface|null}>
+     */
+    private function eventUrls(): array
+    {
+        $events = GroupSession::query()
+            ->listed()
+            ->upcoming()
+            ->with('city:id,slug,is_active')
+            ->orderBy('starts_at')
+            ->limit(1000)
+            ->get(['id', 'slug', 'city_id', 'updated_at']);
+
+        if ($events->isEmpty()) {
+            return [];
+        }
+
+        $urls = [['loc' => route('events.search'), 'lastmod' => null]];
+
+        foreach ($events->filter(fn (GroupSession $event) => $event->city !== null && $event->city->is_active)->pluck('city.slug')->unique()->sort() as $city) {
+            $urls[] = ['loc' => route('events.search', $city), 'lastmod' => null];
+        }
+
+        foreach ($events as $event) {
+            $urls[] = ['loc' => route('events.show', $event->slug), 'lastmod' => $event->updated_at];
         }
 
         return $urls;

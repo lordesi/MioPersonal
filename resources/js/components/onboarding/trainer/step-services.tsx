@@ -15,6 +15,7 @@ import {
 } from '@/components/onboarding/trainer/onboarding-shell';
 import { ServiceRows } from '@/components/trainer/services/client-preview';
 import FirstSessionSection from '@/components/trainer/services/first-session-section';
+import GroupPricesSection from '@/components/trainer/services/group-prices-section';
 import OnlinePricesSection from '@/components/trainer/services/online-prices-section';
 import PackagesSection from '@/components/trainer/services/packages-section';
 import PriceListSection from '@/components/trainer/services/price-list-section';
@@ -44,7 +45,8 @@ export default function StepServices({ draft, update }: StepProps) {
     const [columns, setColumns] = useState(() => initialColumns(pricing));
     const firstMode = firstSessionMode(pricing);
     const asksOnline = asksOnlinePrice(draft);
-    const firstStep = asksOnline ? 3 : 2;
+    const groupStep = asksOnline ? 3 : 2;
+    const firstStep = groupStep + 1;
 
     const change = (changes: Partial<Pricing>) =>
         update({ pricing: { ...pricing, ...changes } });
@@ -115,6 +117,13 @@ export default function StepServices({ draft, update }: StepProps) {
                     errors={[]}
                 />
             )}
+            <GroupPricesSection
+                step={groupStep}
+                sessions={pricing.sessions}
+                onChange={(sessions) => change({ sessions })}
+                columns={columns}
+                errors={[]}
+            />
             <FirstSessionSection
                 step={firstStep}
                 mode={firstMode}

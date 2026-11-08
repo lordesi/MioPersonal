@@ -9,6 +9,7 @@ import {
 import PageHeading from '@/components/trainer/area/page-heading';
 import ClientPreview from '@/components/trainer/services/client-preview';
 import FirstSessionSection from '@/components/trainer/services/first-session-section';
+import GroupPricesSection from '@/components/trainer/services/group-prices-section';
 import OnlinePricesSection from '@/components/trainer/services/online-prices-section';
 import PackagesSection from '@/components/trainer/services/packages-section';
 import PriceListSection from '@/components/trainer/services/price-list-section';
@@ -116,6 +117,8 @@ function ServicesForm({
             .map(([, message]) => message);
     const isOnlineField = (field: string) =>
         field.startsWith('sessions.') && field.includes('.online');
+    const isGroupField = (field: string) =>
+        field.startsWith('sessions.') && field.includes('.group_prices');
 
     const save = (event: React.FormEvent) => {
         event.preventDefault();
@@ -141,8 +144,10 @@ function ServicesForm({
         });
     };
 
-    // "Online" (only for who trains both ways) comes right after the price list.
-    const firstStep = asksOnlinePrice ? 3 : 2;
+    // "Online" (only for who trains both ways) comes right after the price list,
+    // then "Invita un amico".
+    const groupStep = asksOnlinePrice ? 3 : 2;
+    const firstStep = groupStep + 1;
 
     // Nothing to save: no status, only the button.
     let status: string | undefined;
@@ -170,7 +175,8 @@ function ServicesForm({
                     errors={errorsOf(
                         (field) =>
                             field.startsWith('sessions') &&
-                            !isOnlineField(field),
+                            !isOnlineField(field) &&
+                            !isGroupField(field),
                     )}
                 />
                 {asksOnlinePrice && (
@@ -186,6 +192,13 @@ function ServicesForm({
                         errors={errorsOf(isOnlineField)}
                     />
                 )}
+                <GroupPricesSection
+                    step={groupStep}
+                    sessions={pricing.sessions}
+                    onChange={(sessions) => update({ sessions })}
+                    columns={columns}
+                    errors={errorsOf(isGroupField)}
+                />
                 <FirstSessionSection
                     step={firstStep}
                     mode={firstMode}

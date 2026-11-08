@@ -1,3 +1,4 @@
+import type { GroupSessionSummary } from './event';
 import type { TrainerSummary } from './trainer';
 
 /** A gym on the search cards (App\Support\GymCard). */
@@ -60,7 +61,13 @@ export type GymProfileData = {
     city: { name: string; slug: string };
     address: string;
     mapsUrl: string;
-    amenities: { value: string; label: string }[];
+    /** With the description and photo of "Servizi" in the gym area, when written. */
+    amenities: {
+        value: string;
+        label: string;
+        description: string | null;
+        photoUrl: string | null;
+    }[];
     /** Monday first. */
     hours: { day: string; ranges: string[]; today: boolean }[];
     /** Open right now, in Rome time; null when the hours are not given. */
@@ -68,6 +75,10 @@ export type GymProfileData = {
     openingNotes: string | null;
     coverUrl: string | null;
     photos: string[];
+    /** "Corsi": the active courses with at least one lesson. */
+    courses: GymCourseInfo[];
+    /** This week and the next one, Monday first. */
+    courseWeeks: GymCourseDay[][];
     /** The cheapest active plan over one month; null without plans. */
     monthlyFromCents: number | null;
     plans: GymPlanSummary[];
@@ -82,6 +93,73 @@ export type GymProfileData = {
         instagram: string | null;
         instagramUrl: string | null;
     };
+};
+
+/**
+ * "Novità" (App\Support\NewsFeed::preview): the newest trainers and gyms,
+ * in a city or in Italy. A list is empty when that page doesn't show it.
+ */
+export type NewsPreview = {
+    city: { slug: string; name: string } | null;
+    trainers: TrainerSummary[];
+    gyms: GymSummary[];
+    /** The events published lately, still to come (empty in the searches). */
+    events: GroupSessionSummary[];
+};
+
+/** A lesson of a course on a day of the plan (App\Support\GymCourseWeek). */
+export type GymCourseLessonSlot = {
+    lessonId: number;
+    courseId: number;
+    name: string;
+    /** "18:30" */
+    start: string;
+    end: string;
+    room: string | null;
+    capacity: number | null;
+    /** "Per tutti", "Principianti"… */
+    level: string;
+    discipline: string | null;
+    instructor: string | null;
+    /** The trainer's public profile, when the instructor is on MioPersonal. */
+    instructorHref: string | null;
+    /** Called off that day by the gym. */
+    cancelled: boolean;
+    cancelNote: string | null;
+    /** "Prenotazione posto": a place is taken on MioPersonal. */
+    bookable: boolean;
+    /** Places left; null when not bookable. */
+    remaining: number | null;
+    /** The viewer has a place. */
+    booked: boolean;
+    /** Already started: no more places. */
+    started: boolean;
+    /** The event of the lesson that day, once someone took a place. */
+    eventSlug: string | null;
+    /** Clients with a place (gym area). */
+    registered: number;
+};
+
+/** A day of the plan of the courses. */
+export type GymCourseDay = {
+    /** "YYYY-MM-DD", Rome. */
+    date: string;
+    /** "Lunedì" */
+    label: string;
+    lessons: GymCourseLessonSlot[];
+};
+
+/** A course under the plan: photo, description and when. */
+export type GymCourseInfo = {
+    id: number;
+    name: string;
+    description: string | null;
+    photoUrl: string | null;
+    level: string;
+    discipline: string | null;
+    instructor: string | null;
+    /** "Lun, Gio 18:30 · Sab 10:00" */
+    when: string;
 };
 
 /** "Palestre dove allena" on a trainer's profile. */

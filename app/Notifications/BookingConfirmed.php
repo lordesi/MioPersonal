@@ -53,7 +53,8 @@ class BookingConfirmed extends Notification implements ShouldQueue
         $booking = $this->booking;
         $trainer = $booking->trainerProfile;
         $day = BookingMailData::day($booking);
-        $cancelUntil = $booking->freeCancellationEndsAt();
+        // A friend invited to the session doesn't cancel it: only the booker does.
+        $cancelUntil = $notifiable->id === $booking->client_id ? $booking->freeCancellationEndsAt() : now();
 
         return (new MailMessage)
             ->subject("Seduta confermata: {$day}, ".BookingMailData::hour($booking))

@@ -177,6 +177,11 @@ class TrainerProfileRequest extends FormRequest
             'sessions.*.online_prices.*.minutes' => ['required', 'integer', Rule::in(TrainerProfile::SESSION_MINUTES)],
             'sessions.*.online_prices.*.price_cents' => ['required', 'integer', 'min:100', 'max:'.self::MAX_PRICE_CENTS],
             'sessions.*.online_note' => ['nullable', 'string', 'max:'.self::NOTE_MAX],
+            // "Invita un amico": the total for 2…N people, for each duration of `prices`.
+            'sessions.*.group_prices' => ['nullable', 'array', 'max:'.((Service::MAX_PEOPLE - 1) * count(TrainerProfile::SESSION_MINUTES))],
+            'sessions.*.group_prices.*.people' => ['required', 'integer', 'between:2,'.Service::MAX_PEOPLE],
+            'sessions.*.group_prices.*.minutes' => ['required', 'integer', Rule::in(TrainerProfile::SESSION_MINUTES)],
+            'sessions.*.group_prices.*.price_cents' => ['required', 'integer', 'min:100', 'max:'.self::MAX_PRICE_CENTS],
             'first_session' => ['nullable', 'array'],
             'first_session.minutes' => ['required_with:first_session', 'integer', Rule::in(TrainerProfile::SESSION_MINUTES)],
             'first_session.price_cents' => ['required_with:first_session', 'integer', 'min:0', 'max:'.self::MAX_PRICE_CENTS],
@@ -214,6 +219,11 @@ class TrainerProfileRequest extends FormRequest
             'sessions.*.online_prices.array' => 'Scrivi un prezzo online per ogni durata del servizio.',
             'sessions.*.online_prices.*.minutes.*' => 'Scegli le durate tra quelle proposte.',
             'sessions.*.online_prices.*.price_cents.*' => 'Il prezzo online di ogni durata deve essere tra 1 e 10.000 €.',
+            'sessions.*.group_prices.array' => 'Scrivi un prezzo per ogni numero di persone e ogni durata.',
+            'sessions.*.group_prices.max' => 'Al massimo '.Service::MAX_PEOPLE.' persone per seduta.',
+            'sessions.*.group_prices.*.people.*' => 'Una seduta può essere da 2 a '.Service::MAX_PEOPLE.' persone.',
+            'sessions.*.group_prices.*.minutes.*' => 'Scegli le durate tra quelle proposte.',
+            'sessions.*.group_prices.*.price_cents.*' => 'Il prezzo per più persone deve essere tra 1 e 10.000 €.',
             'first_session.minutes.*' => 'Scegli la durata della prima seduta.',
             'first_session.price_cents.*' => 'Il prezzo della prima seduta deve essere tra 0 (gratis) e 10.000 €.',
             'packages.max' => 'Puoi aggiungere al massimo 3 pacchetti.',
@@ -257,7 +267,45 @@ class TrainerProfileRequest extends FormRequest
             if (filled($session['online_prices'] ?? null) && self::durations($session['online_prices']) !== $prices) {
                 $validator->errors()->add("sessions.{$index}.online_prices", 'Scrivi un prezzo online per ogni durata del servizio.');
             }
+
+            if (filled($session['group_prices'] ?? null) && ! self::isGroupGrid($session['group_prices'], $prices)) {
+                $validator->errors()->add("sessions.{$index}.group_prices", 'Scrivi un prezzo per ogni numero di persone e ogni durata.');
+            }
         }
+    }
+
+    /**
+     * "Invita un amico": a price for each number of people from 2 up to the
+     * highest, and for each duration of the kind of session, each once.
+     *
+     * @param  list<int>  $durations  the durations of the kind of session, sorted
+     */
+    private static function isGroupGrid(mixed $groupPrices, array $durations): bool
+    {
+        $cells = [];
+
+        foreach (array_values((array) $groupPrices) as $price) {
+            if (! is_array($price)) {
+                return false;
+            }
+
+            $cells[] = ((int) ($price['people'] ?? 0)).':'.((int) ($price['minutes'] ?? 0));
+        }
+
+        $people = array_map(fn (string $cell) => (int) explode(':', $cell)[0], $cells);
+        $max = $people === [] ? 1 : max($people);
+        $expected = [];
+
+        for ($count = 2; $count <= $max; $count++) {
+            foreach ($durations as $minutes) {
+                $expected[] = "{$count}:{$minutes}";
+            }
+        }
+
+        sort($cells);
+        sort($expected);
+
+        return $cells === $expected;
     }
 
     /**

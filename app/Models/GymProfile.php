@@ -9,6 +9,7 @@ use Carbon\CarbonImmutable;
 use Database\Factories\GymProfileFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -47,6 +48,7 @@ use Illuminate\Support\Str;
  * @property-read User $user
  * @property-read City $city
  * @property-read GymPhoto|null $cover
+ * @property-read Collection<int, GymAmenityDetail> $amenityDetails
  */
 #[Fillable([
     'name', 'description', 'city_id', 'address', 'postal_code', 'amenities',
@@ -64,6 +66,9 @@ class GymProfile extends Model
 
     /** Promotions that can be public at the same time. */
     public const MAX_ACTIVE_PROMOTIONS = 5;
+
+    /** "Corsi": at most this many courses. */
+    public const MAX_COURSES = 30;
 
     /**
      * @return array<string, string>
@@ -102,6 +107,26 @@ class GymProfile extends Model
     public function photos(): HasMany
     {
         return $this->hasMany(GymPhoto::class)->orderBy('sort')->orderBy('id');
+    }
+
+    /**
+     * "Corsi": the courses with their weekly lessons, in the gym's order.
+     *
+     * @return HasMany<GymCourse, $this>
+     */
+    public function courses(): HasMany
+    {
+        return $this->hasMany(GymCourse::class)->orderBy('sort')->orderBy('id');
+    }
+
+    /**
+     * "Servizi" told better: description and photo of the ticked services.
+     *
+     * @return HasMany<GymAmenityDetail, $this>
+     */
+    public function amenityDetails(): HasMany
+    {
+        return $this->hasMany(GymAmenityDetail::class);
     }
 
     /**

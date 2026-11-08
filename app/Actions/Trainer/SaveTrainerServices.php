@@ -104,8 +104,8 @@ class SaveTrainerServices
      * The kinds of session of the form, with their prices by duration.
      * Without separate online prices, `online` is empty.
      *
-     * @param  list<array{name: string, note?: string|null, prices: list<array{minutes: int|string, price_cents: int|string}>, online_prices?: list<array{minutes: int|string, price_cents: int|string}>|null, online_note?: string|null}>  $sessions
-     * @return list<array{name: string, note: string|null, prices: array<int, int>, online: array<int, int>, online_note: string|null}>
+     * @param  list<array{name: string, note?: string|null, prices: list<array{minutes: int|string, price_cents: int|string}>, online_prices?: list<array{minutes: int|string, price_cents: int|string}>|null, online_note?: string|null, group_prices?: list<array{people: int|string, minutes: int|string, price_cents: int|string}>|null}>  $sessions
+     * @return list<array{name: string, note: string|null, prices: array<int, int>, online: array<int, int>, online_note: string|null, groups: array<int, array<int, int>>}>
      */
     private static function sessionTypes(array $sessions, bool $ownOnlinePrices): array
     {
@@ -119,7 +119,30 @@ class SaveTrainerServices
                 ? self::pricesByMinutes($session['online_prices'])
                 : [],
             'online_note' => $note($session['online_note'] ?? null),
+            'groups' => self::groupPricesByMinutes($session['group_prices'] ?? []),
         ], $sessions);
+    }
+
+    /**
+     * "Invita un amico" from the form, by duration then by people:
+     * [{people: 2, minutes: 60, price_cents: 7000}] → [60 => [2 => 7000]].
+     *
+     * @param  list<array{people: int|string, minutes: int|string, price_cents: int|string}>|null  $prices
+     * @return array<int, array<int, int>>
+     */
+    private static function groupPricesByMinutes(?array $prices): array
+    {
+        $byMinutes = [];
+
+        foreach ($prices ?? [] as $price) {
+            $byMinutes[(int) $price['minutes']][(int) $price['people']] = (int) $price['price_cents'];
+        }
+
+        foreach ($byMinutes as &$byPeople) {
+            ksort($byPeople);
+        }
+
+        return $byMinutes;
     }
 
     /**
@@ -136,7 +159,9 @@ class SaveTrainerServices
      * row is booked for its own minutes and at its own price.
      *
      * @param  array<string, mixed>  $data
-     * @param  list<array{name: string, note: string|null, prices: array<int, int>, online: array<int, int>, online_note: string|null}>  $sessions
+     *                                      The rows of a kind of session in person also keep its prices for more
+     *                                      people ("Invita un amico"), as {"2": 7000, "3": 9000}.
+     * @param  list<array{name: string, note: string|null, prices: array<int, int>, online: array<int, int>, online_note: string|null, groups: array<int, array<int, int>>}>  $sessions
      */
     private function saveRows(TrainerProfile $profile, array $data, array $sessions): void
     {
@@ -162,7 +187,11 @@ class SaveTrainerServices
 
         foreach ($sessions as $session) {
             foreach ($session['prices'] as $minutes => $cents) {
-                $rows[] = ['kind' => 'session', 'name' => $session['name'], 'minutes' => $minutes, 'price_cents' => $cents, 'fixed_duration' => false, 'note' => $session['note']];
+                $rows[] = [
+                    'kind' => 'session', 'name' => $session['name'], 'minutes' => $minutes, 'price_cents' => $cents,
+                    'group_prices' => $session['groups'][$minutes] ?? null,
+                    'fixed_duration' => false, 'note' => $session['note'],
+                ];
             }
 
             foreach ($session['online'] as $minutes => $cents) {

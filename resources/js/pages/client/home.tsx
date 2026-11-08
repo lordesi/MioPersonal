@@ -10,6 +10,8 @@ import ReviewPrompt, {
 import NoUpcomingSessions from '@/components/client/no-upcoming-sessions';
 import PackageCarousel from '@/components/client/package-carousel';
 import PendingBookingCard from '@/components/client/pending-booking-card';
+import UpcomingEvents from '@/components/events/upcoming-events';
+import NewsStrip from '@/components/news/news-strip';
 import RecommendedTrainersPanel from '@/components/client/recommended-trainers-panel';
 import SessionHistory from '@/components/client/session-history';
 import YourTrainersPanel from '@/components/client/your-trainers-panel';
@@ -22,11 +24,13 @@ import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { profile } from '@/routes/client';
 import type {
+    GroupSessionSummary,
     ClientPackage,
     ClientPastSession,
     ClientPendingBooking,
     ClientTrainer,
     ClientUpcomingBooking,
+    NewsPreview,
     TrainerSummary,
 } from '@/types';
 
@@ -48,6 +52,10 @@ type HomeProps = {
     recommended: TrainerSummary[];
     /** False until the client fills in "Completa il tuo profilo". */
     hasPreferences: boolean;
+    /** "I miei eventi": the places taken, still to come. */
+    events: GroupSessionSummary[];
+    /** "Novità" in the client's city. */
+    news: NewsPreview;
 };
 
 /**
@@ -63,6 +71,8 @@ export default function Home({
     trainers,
     recommended,
     hasPreferences,
+    events,
+    news,
 }: HomeProps) {
     const [now] = useState(() => new Date());
     // All of Italy: the client's preferences only change the order.
@@ -236,6 +246,15 @@ export default function Home({
                     )}
                 </div>
             </div>
+
+            <UpcomingEvents
+                events={events}
+                title="I miei eventi"
+                id="my-events-title"
+                showAll={false}
+            />
+
+            <NewsStrip news={news} />
         </>
     );
 }

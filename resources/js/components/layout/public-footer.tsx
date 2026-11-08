@@ -5,8 +5,9 @@ import { openCookieSettings } from '@/lib/cookie-consent';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
-import { home } from '@/routes';
+import { home, news } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
+import { search as eventsSearch } from '@/routes/events';
 import { register as gymRegister } from '@/routes/gym';
 import { cookies, privacy, terms } from '@/routes/legal';
 import { register as trainerRegister } from '@/routes/trainer';
@@ -15,6 +16,8 @@ const platformLinks = [
     { title: 'Home', href: home.url() },
     { title: 'Cerca trainer', href: searchUrl() },
     { title: 'Cerca palestre', href: gymSearchUrl() },
+    { title: 'Eventi', href: eventsSearch.url() },
+    { title: 'Novità', href: news.url() },
     { title: 'Sei un trainer?', href: trainerRegister.url() },
     { title: 'Hai una palestra?', href: gymRegister.url() },
     { title: 'Contatti', href: contactPage.url() },
