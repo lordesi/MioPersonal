@@ -38,7 +38,7 @@ class AdminStatsTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('admin/stats')
-                ->has('stats.kpis', 13)
+                ->has('stats.kpis', 14)
                 ->has('stats.daily', AdminStats::DAYS)
                 ->has('stats.monthly', 12)
                 ->has('stats.cohorts', 6)

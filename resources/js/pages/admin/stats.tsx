@@ -38,6 +38,7 @@ type Stats = {
     }[];
     monthly: {
         month: string;
+        visitors: number;
         clients: number;
         trainers: number;
         activeClients: number;
@@ -188,6 +189,12 @@ export default function AdminStats({ stats }: { stats: Stats }) {
 
             <h2 className="mt-3 text-lg font-bold tracking-tight">Crescita</h2>
             <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+                <AdminPanel
+                    title="Visitatori unici al mese"
+                    aside="Ognuno contato una volta nel mese"
+                >
+                    <BarChart points={monthly('visitors')} unit="Visitatori" />
+                </AdminPanel>
                 <AdminPanel
                     title="Nuovi clienti al mese"
                     aside="Ultimi 12 mesi"

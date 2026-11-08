@@ -25,6 +25,11 @@ class TrackVisit
             Stats::recordPageView($request);
         }
 
+        // A new visitor: the anonymous code goes in its cookie (see Stats::visitorId).
+        if (is_string($id = $request->attributes->get(Stats::NEW_VISITOR_ATTRIBUTE))) {
+            $response->headers->setCookie(cookie(Stats::VISITOR_COOKIE, $id, Stats::VISITOR_COOKIE_MINUTES, httpOnly: true, sameSite: 'lax'));
+        }
+
         return $response;
     }
 

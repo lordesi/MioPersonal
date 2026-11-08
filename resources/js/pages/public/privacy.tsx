@@ -44,7 +44,7 @@ const sections: LegalSection[] = [
                         'Recensioni e risposte pubblicate sulla piattaforma.',
                         'Messaggi che ci invii dalla pagina Contatti.',
                         'Dati tecnici: indirizzo IP, tipo di browser, registri di accesso, data dell’ultima attività e giorni in cui hai usato il sito, cookie tecnici.',
-                        'Statistiche anonime, non collegate a te: le pagine viste e le visite di ogni giorno con il canale da cui arrivano (per esempio Google o Instagram), le ricerche fatte (città, discipline, filtri usati e numero di risultati) e quante volte ogni giorno viene aperto il profilo di un trainer. Per contare i visitatori unici usiamo un codice che cambia ogni giorno e non permette di risalire a te né al tuo indirizzo IP, che non salviamo; non usiamo cookie di statistica.',
+                        'Statistiche anonime, non collegate a te: le pagine viste e le visite di ogni giorno con il canale da cui arrivano (per esempio Google o Instagram), le ricerche fatte (città, discipline, filtri usati e numero di risultati) e quante volte ogni giorno viene aperto il profilo di un trainer. Per contare i visitatori unici usiamo un cookie nostro, «mp_vid», con un codice casuale: sui nostri server ne salviamo solo una versione cifrata, non collegata al tuo account né al tuo indirizzo IP, che non salviamo (vedi la cookie policy).',
                         'Da dove sei arrivato quando ti sei iscritto: il canale (per esempio Google, Instagram o il nome di una campagna) e la prima pagina vista.',
                         'Le tue scelte sui cookie, con data e versione della cookie policy, per poter dimostrare il consenso.',
                         'Solo nel tuo browser, mai sui nostri server: la bozza della registrazione trainer, finché la invii o ricominci.',
@@ -190,7 +190,7 @@ export default function Privacy() {
             pageName="Privacy policy"
             title="Informativa sulla privacy"
             intro="Come MioPersonal raccoglie e usa i tuoi dati quando cerchi un trainer, prenoti una seduta o ti iscrivi come personal trainer."
-            updatedOn="6 novembre 2026"
+            updatedOn="8 novembre 2026"
             summary={[
                 'Raccogliamo solo i dati che servono a farti trovare un trainer e a gestire le prenotazioni.',
                 'Email e telefono arrivano al trainer solo dopo che ha confermato una tua prenotazione.',

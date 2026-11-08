@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\AdminStats;
 use App\Support\Stats;
 use Database\Seeders\CatalogSeeder;
 use Database\Seeders\DemoTrainerSeeder;
@@ -79,9 +80,10 @@ class StatsTest extends TestCase
         $this->assertSame(9, (int) $log->results);
     }
 
-    public function test_page_views_visitors_and_visits_are_counted_without_cookies_of_their_own()
+    public function test_page_views_visitors_and_visits_are_counted()
     {
-        $this->withHeader('Referer', 'https://www.google.it/')->get(route('home'));
+        $this->withHeader('Referer', 'https://www.google.it/')->get(route('home'))
+            ->assertCookie(Stats::VISITOR_COOKIE);
         $this->get(route('trainers.search'));
         $this->withHeader('X-Inertia', 'true')->get(route('trainers.show', 'marco-bianchi'));
         // Not pages: the sitemap, a missing page, a bot.
@@ -95,6 +97,43 @@ class StatsTest extends TestCase
         $this->assertSame(['google' => 1], DB::table('visit_days')->pluck('visits', 'source')->map(fn ($visits) => (int) $visits)->all());
         // The code is not the IP nor the browser.
         $this->assertSame(64, strlen((string) DB::table('visitor_days')->value('visitor')));
+    }
+
+    public function test_the_same_browser_is_one_unique_visitor_across_days()
+    {
+        // Both days in the same month.
+        $this->travelTo(now('Europe/Rome')->setDate(2026, 11, 10)->setTime(12, 0));
+        $id = str_repeat('a', 40);
+
+        $this->withCookie(Stats::VISITOR_COOKIE, $id)->get(route('home'))
+            ->assertCookieMissing(Stats::VISITOR_COOKIE);
+        $this->travel(1)->days();
+        // Another network or a new session: the cookie decides.
+        $this->flushSession();
+        $this->withCookie(Stats::VISITOR_COOKIE, $id)->withServerVariables(['REMOTE_ADDR' => '10.0.0.9'])->get(route('home'));
+        // Someone else.
+        $this->flushSession();
+        $this->withCookie(Stats::VISITOR_COOKIE, str_repeat('b', 40))->get(route('home'));
+
+        // One row a day for each.
+        $this->assertSame(3, DB::table('visitor_days')->count());
+
+        $kpis = collect((new AdminStats)->all()['kpis'])->keyBy('key');
+        $this->assertSame(2, $kpis['visitors']['value']);
+        $this->assertSame(2, $kpis['allVisitors']['value']);
+        $this->assertSame(2, collect((new AdminStats)->all()['monthly'])->last()['visitors']);
+    }
+
+    public function test_stats_reset_empties_the_history()
+    {
+        $this->get(route('home'));
+        $this->assertSame(1, DB::table('visitor_days')->count());
+
+        $this->artisan('stats:reset')->expectsConfirmation('Delete all the visits, page views, searches, profile views and activity days collected so far?', 'yes')->assertSuccessful();
+
+        foreach (Stats::HISTORY_TABLES as $table) {
+            $this->assertSame(0, DB::table($table)->count(), $table);
+        }
     }
 
     public function test_campaign_links_and_other_sites_give_the_channel()

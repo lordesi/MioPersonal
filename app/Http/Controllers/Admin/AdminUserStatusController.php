@@ -3,15 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\Account\ScheduleUserDeletion;
+use App\Actions\Trainer\DeleteTrainerProfile;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\TrainerSlots;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 /**
- * "Sospendi" / "Riattiva" and "Cancella dati" / "Annulla" of Admin · Utenti.
+ * "Sospendi" / "Riattiva", "Cancella dati" / "Annulla" and a trainer's
+ * "Elimina profilo" of Admin · Utenti.
  * The user is logged out at the next page (EnsureAccountActive). Never on
  * the team's own accounts.
  */
@@ -52,6 +55,28 @@ class AdminUserStatusController extends Controller
         $this->refreshSlots($user);
 
         return $this->done("Cancellazione annullata: {$user->name}");
+    }
+
+    /**
+     * "Elimina profilo" of a trainer, as their "Chiudi il profilo": profile,
+     * services, hours, photos, certificates, bookings and reviews go now;
+     * the account stays and becomes a client one again.
+     */
+    public function deleteTrainerProfile(User $user, DeleteTrainerProfile $deleteProfile): RedirectResponse
+    {
+        $this->ensureNotAdmin($user);
+
+        $profile = $user->trainerProfile;
+        abort_if($profile === null, 404);
+
+        DB::transaction(function () use ($user, $profile, $deleteProfile) {
+            $deleteProfile->handle($profile);
+
+            $user->role = UserRole::Client;
+            $user->save();
+        });
+
+        return $this->done("Profilo trainer di {$user->name} eliminato: resta iscritto come cliente.");
     }
 
     private function ensureNotAdmin(User $user): void

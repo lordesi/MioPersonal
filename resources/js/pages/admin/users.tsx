@@ -10,7 +10,7 @@ import {
     formatRating,
 } from '@/lib/format';
 import { users } from '@/routes/admin';
-import { reactivate, suspend } from '@/routes/admin/users';
+import { reactivate, suspend, trainerProfile } from '@/routes/admin/users';
 import deletion from '@/routes/admin/users/deletion';
 import type { AdminClient, AdminGym, AdminTrainer } from '@/types';
 
@@ -33,6 +33,8 @@ type UserRow = {
     kind: string;
     joinedAt: string;
     activity: string;
+    /** A trainer: "Elimina profilo" too. */
+    trainer?: boolean;
     /** The public profile (gyms): the name opens it. */
     href?: string | null;
     suspended: boolean;
@@ -62,6 +64,7 @@ function trainerRow(trainer: AdminTrainer): UserRow {
     return {
         id: trainer.id,
         key: `trainer-${trainer.id}`,
+        trainer: true,
         name: trainer.name,
         email: trainer.email,
         kind:
@@ -124,6 +127,9 @@ const bodyCell = 'px-3 py-3 first:pl-4 last:pr-4';
 export default function Users({ clients, trainers, gyms, search }: UsersProps) {
     const [tab, setTab] = useState<Tab>('clients');
     const [toDelete, setToDelete] = useState<UserRow | null>(null);
+    const [profileToDelete, setProfileToDelete] = useState<UserRow | null>(
+        null,
+    );
     const [busy, setBusy] = useState<string | null>(null);
 
     const rows = {
@@ -195,6 +201,44 @@ export default function Users({ clients, trainers, gyms, search }: UsersProps) {
                         onClick={confirmDelete}
                     >
                         Cancella dati
+                    </Button>
+                </div>
+            )}
+
+            {profileToDelete && (
+                <div
+                    role="alertdialog"
+                    aria-label="Conferma eliminazione del profilo"
+                    className="flex flex-wrap items-center gap-3 rounded-xl border-[1.5px] border-foreground bg-card px-4 py-3.5 text-sm"
+                >
+                    <span className="flex-1">
+                        <strong>
+                            Eliminare il profilo trainer di{' '}
+                            {profileToDelete.name}?
+                        </strong>{' '}
+                        Profilo, servizi, orari, foto, attestati, prenotazioni e
+                        recensioni vengono cancellati subito e non si possono
+                        recuperare. L’account resta, come cliente.
+                    </span>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setProfileToDelete(null)}
+                    >
+                        Annulla
+                    </Button>
+                    <Button
+                        type="button"
+                        className="font-semibold"
+                        onClick={() => {
+                            send(
+                                profileToDelete,
+                                trainerProfile(profileToDelete.id),
+                            );
+                            setProfileToDelete(null);
+                        }}
+                    >
+                        Elimina profilo
                     </Button>
                 </div>
             )}
@@ -289,6 +333,18 @@ export default function Users({ clients, trainers, gyms, search }: UsersProps) {
                                                     : 'Sospendi'}
                                             </Button>
                                         )}
+                                        {row.trainer &&
+                                            row.deletionAt === null && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setProfileToDelete(row)
+                                                    }
+                                                    className="h-8 px-2.5 text-[13px] whitespace-nowrap underline"
+                                                >
+                                                    Elimina profilo
+                                                </button>
+                                            )}
                                         {row.deletionAt === null ? (
                                             <button
                                                 type="button"

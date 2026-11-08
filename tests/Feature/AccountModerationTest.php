@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\BookingStatus;
+use App\Enums\UserRole;
 use App\Models\Booking;
 use App\Models\TrainerProfile;
 use App\Models\User;
@@ -29,6 +30,48 @@ class AccountModerationTest extends TestCase
 
         $this->actingAs($admin)->delete(route('admin.users.reactivate', $client))->assertRedirect();
         $this->assertNull($client->fresh()->suspended_at);
+    }
+
+    public function test_the_admin_deletes_a_trainer_profile_and_the_account_stays_as_a_client(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $profile = TrainerProfile::factory()->approved()->bookable()->create();
+        $trainer = $profile->user;
+
+        $this->actingAs($admin)->delete(route('admin.users.trainer-profile', $trainer))->assertRedirect();
+
+        $this->assertModelMissing($profile);
+        $this->assertSame(UserRole::Client, $trainer->fresh()->role);
+        // Nothing left to delete.
+        $this->actingAs($admin)->delete(route('admin.users.trainer-profile', $trainer))->assertNotFound();
+    }
+
+    public function test_only_the_team_deletes_a_trainer_profile_and_never_an_admin_one(): void
+    {
+        $profile = TrainerProfile::factory()->approved()->create();
+        $otherAdmin = User::factory()->admin()->create();
+        $adminProfile = TrainerProfile::factory()->for($otherAdmin)->approved()->create();
+
+        $this->actingAs(User::factory()->create())->delete(route('admin.users.trainer-profile', $profile->user))->assertForbidden();
+        $this->actingAs(User::factory()->admin()->create())->delete(route('admin.users.trainer-profile', $otherAdmin))->assertForbidden();
+
+        $this->assertModelExists($profile);
+        $this->assertModelExists($adminProfile);
+    }
+
+    public function test_the_command_deletes_the_trainer_profile_of_an_admin(): void
+    {
+        $admin = User::factory()->admin()->create(['email' => 'team@example.com']);
+        $profile = TrainerProfile::factory()->for($admin)->approved()->create();
+
+        $this->artisan('trainer:delete-profile', ['email' => 'team@example.com'])
+            ->expectsConfirmation("Delete the trainer profile of {$admin->name} with its services, hours, photos, bookings and reviews? It can't be undone.", 'yes')
+            ->assertSuccessful();
+
+        $this->assertModelMissing($profile);
+        $this->assertTrue($admin->fresh()->isAdmin());
+
+        $this->artisan('trainer:delete-profile', ['email' => 'team@example.com'])->assertFailed();
     }
 
     public function test_a_suspended_user_cannot_log_in(): void

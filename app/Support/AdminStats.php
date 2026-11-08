@@ -90,7 +90,9 @@ final class AdminStats
         };
 
         return [
-            $tile('visitors', 'Visitatori unici', $both(fn ($from, $to) => $this->dayTable('visitor_days', $from, $to)->count())),
+            $tile('visitors', 'Visitatori unici (30 giorni)', $both(fn ($from, $to) => $this->uniqueVisitors($from, $to))),
+            // Since the stats began: no comparison.
+            $tile('allVisitors', 'Visitatori unici da sempre', [DB::table('visitor_days')->distinct()->count('visitor'), null]),
             $tile('visits', 'Visite', $both(fn ($from, $to) => $this->dayTable('visit_days', $from, $to)->sum('visits'))),
             $tile('clients', 'Nuovi clienti', $both(fn ($from, $to) => $this->newUsers(UserRole::Client, $from, $to))),
             $tile('trainers', 'Nuovi trainer', $both(fn ($from, $to) => $this->newUsers(UserRole::Trainer, $from, $to))),
@@ -148,7 +150,7 @@ final class AdminStats
     /**
      * Month by month, the last 12 (the current one is still going).
      *
-     * @return list<array{month: string, clients: int, trainers: int, activeClients: int, activeTrainers: int, requests: int, sessions: int, gmvCents: int}>
+     * @return list<array{month: string, visitors: int, clients: int, trainers: int, activeClients: int, activeTrainers: int, requests: int, sessions: int, gmvCents: int}>
      */
     private function monthly(): array
     {
@@ -171,6 +173,7 @@ final class AdminStats
             $end = $month->endOfMonth();
             $months[] = [
                 'month' => $key,
+                'visitors' => $this->uniqueVisitors($month, $end),
                 'clients' => $clients[$key] ?? 0,
                 'trainers' => $trainers[$key] ?? 0,
                 'activeClients' => $this->activeUsers(UserRole::Client, $month, $end),
@@ -217,7 +220,7 @@ final class AdminStats
         $between = [$this->from->utc(), $to->utc()];
 
         return [
-            ['label' => 'Visitatori unici', 'count' => $this->dayTable('visitor_days', $this->from, $to)->count()],
+            ['label' => 'Visitatori unici', 'count' => $this->uniqueVisitors($this->from, $to)],
             ['label' => 'Visite a profili trainer', 'count' => (int) $this->dayTable('trainer_profile_views', $this->from, $to)->sum('views')],
             ['label' => 'Nuovi clienti', 'count' => $this->newUsers(UserRole::Client, $this->from, $to)],
             ['label' => 'Clienti con una richiesta', 'count' => Booking::query()->whereBetween('created_at', $between)->distinct()->count('client_id')],
@@ -490,6 +493,12 @@ final class AdminStats
             ->when($among !== null, fn ($query) => $query->whereIn('user_id', $among))
             ->distinct()
             ->pluck('user_id');
+    }
+
+    /** The same browser counts once in the period, however many days it came back. */
+    private function uniqueVisitors(CarbonImmutable $from, CarbonImmutable $to): int
+    {
+        return $this->dayTable('visitor_days', $from, $to)->distinct()->count('visitor');
     }
 
     private function dayTable(string $table, CarbonImmutable $from, CarbonImmutable $to): Builder

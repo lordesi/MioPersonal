@@ -7,7 +7,6 @@ use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
@@ -49,7 +48,8 @@ final class Stats
     /**
      * Called by TrackVisit after each page: the page view of the area, the
      * unique visitor of the day and, on the first page of a session, the visit
-     * with its channel. No cookie of its own: the session cookie already exists.
+     * with its channel. The visitor is the anonymous VISITOR_COOKIE, put on the
+     * response by TrackVisit.
      */
     public static function recordPageView(Request $request): void
     {
@@ -66,7 +66,7 @@ final class Stats
                 ['views' => DB::raw('page_view_days.views + 1')],
             );
 
-            DB::table('visitor_days')->insertOrIgnore(['day' => $day, 'visitor' => self::visitor($request, $day)]);
+            DB::table('visitor_days')->insertOrIgnore(['day' => $day, 'visitor' => self::visitor($request)]);
 
             if ($request->hasSession() && ! $request->session()->has(self::ACQUISITION_KEY)) {
                 $acquisition = self::acquisition($request);
@@ -223,15 +223,57 @@ final class Stats
     }
 
     /**
-     * The same browser on the same day gives the same code; the next day the
-     * salt changes and the old one is forgotten, so nobody can be followed
-     * across days or traced back from the code. The IP is never saved.
+     * First-party and anonymous: a random code, only to count the same browser
+     * once across days and months. Never shared, never linked to the account.
      */
-    private static function visitor(Request $request, string $day): string
-    {
-        $salt = Cache::remember("stats.visitor-salt.{$day}", now()->addDays(2), fn () => Str::random(40));
+    public const VISITOR_COOKIE = 'mp_vid';
 
-        return hash('sha256', $salt.'|'.$request->ip().'|'.$request->userAgent());
+    /** Two years, in minutes. */
+    public const VISITOR_COOKIE_MINUTES = 60 * 24 * 730;
+
+    /** Request attribute with a new code that TrackVisit puts in the cookie. */
+    public const NEW_VISITOR_ATTRIBUTE = 'stats.new-visitor';
+
+    /** Every table of the history, emptied by `stats:reset`. */
+    public const HISTORY_TABLES = [
+        'visitor_days', 'visit_days', 'page_view_days', 'search_logs',
+        'trainer_profile_views', 'gym_profile_views', 'user_activity_days',
+    ];
+
+    /**
+     * The code of the browser: from the cookie, otherwise a new one, kept in
+     * the session too so the pages before the cookie comes back count once.
+     */
+    public static function visitorId(Request $request): string
+    {
+        $valid = fn (mixed $id) => is_string($id) && preg_match('/^[A-Za-z0-9]{40}$/', $id) === 1;
+
+        $id = $request->cookie(self::VISITOR_COOKIE);
+
+        if ($valid($id)) {
+            return $id;
+        }
+
+        $session = $request->hasSession() ? $request->session() : null;
+        $id = $session?->get(self::VISITOR_COOKIE);
+
+        if (! $valid($id)) {
+            $id = Str::random(40);
+            $session?->put(self::VISITOR_COOKIE, $id);
+        }
+
+        $request->attributes->set(self::NEW_VISITOR_ATTRIBUTE, $id);
+
+        return $id;
+    }
+
+    /**
+     * What is saved: a keyed hash of the code, so the table alone can't be
+     * matched with the cookie. The IP is never used nor saved.
+     */
+    private static function visitor(Request $request): string
+    {
+        return hash_hmac('sha256', self::visitorId($request), (string) config('app.key'));
     }
 
     private static function today(): string

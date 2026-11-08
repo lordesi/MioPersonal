@@ -3,6 +3,7 @@
 use App\Actions\Account\DeleteUser;
 use App\Actions\Bookings\SendSessionReminders;
 use App\Actions\GroupSessions\SendGroupSessionReminders;
+use App\Actions\Trainer\DeleteTrainerProfile;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
 use App\Models\Booking;
@@ -10,9 +11,11 @@ use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\SafeImage;
+use App\Support\Stats;
 use App\Support\TrainerSlots;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Storage;
 
@@ -45,6 +48,44 @@ Artisan::command('admin:grant {email}', function (string $email) {
 
     return 0;
 })->purpose('Give an existing user access to the admin panel');
+
+// admin:grant changes only the role: a trainer who becomes admin keeps the
+// profile, still in the search. This deletes it; the account and its role stay.
+Artisan::command('trainer:delete-profile {email}', function (string $email, DeleteTrainerProfile $deleteProfile) {
+    $user = User::where('email', $email)->first();
+
+    if ($user?->trainerProfile === null) {
+        $this->error("No trainer profile for {$email}.");
+
+        return 1;
+    }
+
+    if (! $this->confirm("Delete the trainer profile of {$user->name} with its services, hours, photos, bookings and reviews? It can't be undone.")) {
+        return 1;
+    }
+
+    $deleteProfile->handle($user->trainerProfile);
+
+    $this->info("Trainer profile of {$user->name} deleted; the account stays ({$user->role->value}).");
+
+    return 0;
+})->purpose('Delete the trainer profile of an account, keeping the account');
+
+// The history collected by App\Support\Stats starts again from zero. The numbers
+// read from users and bookings stay: delete the test accounts for those.
+Artisan::command('stats:reset', function () {
+    if (! $this->confirm('Delete all the visits, page views, searches, profile views and activity days collected so far?')) {
+        return 1;
+    }
+
+    foreach (Stats::HISTORY_TABLES as $table) {
+        DB::table($table)->delete();
+    }
+
+    $this->info('Statistics reset: they start again from today.');
+
+    return 0;
+})->purpose('Delete the history of the statistics to start counting again');
 
 // Time passes and "oggi alle 9" expires: the first free slot of the search is
 // computed again every hour. In production the scheduler needs a cron entry

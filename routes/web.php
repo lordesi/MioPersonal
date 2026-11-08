@@ -413,6 +413,8 @@ Route::middleware(['auth', 'verified', 'admin', 'password.confirm'])->prefix('ad
         // Deleted for good 30 days later (users:purge-deleted).
         Route::post('cancellazione', 'scheduleDeletion')->name('deletion.schedule');
         Route::delete('cancellazione', 'cancelDeletion')->name('deletion.cancel');
+        // "Chiudi il profilo" done by the team: the account stays, as a client.
+        Route::delete('profilo-trainer', 'deleteTrainerProfile')->name('trainer-profile');
     });
     Route::get('recensioni', AdminReviewsController::class)->name('reviews');
     // "Nascondi" / "Mostra di nuovo": off the trainer's profile and average, or back.
