@@ -1,9 +1,7 @@
 import { Head } from '@inertiajs/react';
-import Faq from '@/components/home/faq';
 import FeaturedGyms from '@/components/home/featured-gyms';
 import FeaturedTrainers from '@/components/home/featured-trainers';
 import HeroSearch from '@/components/home/hero-search';
-import HowItWorks from '@/components/home/how-it-works';
 import PopularDisciplines from '@/components/home/popular-disciplines';
 import NewsStrip from '@/components/news/news-strip';
 import type {
@@ -65,8 +63,6 @@ export default function Home({
             <FeaturedGyms gyms={featuredGyms} />
             <NewsStrip news={news} variant="home" />
             <PopularDisciplines disciplines={disciplines} />
-            <HowItWorks />
-            <Faq />
         </>
     );
 }
