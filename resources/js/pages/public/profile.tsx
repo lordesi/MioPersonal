@@ -39,6 +39,10 @@ import { searchUrl } from '@/lib/search';
 import { home } from '@/routes';
 import { book } from '@/routes/trainers';
 import { start as startBooking } from '@/routes/trainers/book';
+import {
+    join as joinWaitlist,
+    leave as leaveWaitlist,
+} from '@/routes/trainers/waitlist';
 import type {
     GroupSessionSummary,
     SeoData,
@@ -107,6 +111,31 @@ export default function Profile({
     );
     const [start, setStart] = useState<string | null>(choice.start);
     const [booking, setBooking] = useState(false);
+
+    /** "Avvisami se si libera": a guest goes through login and comes back here. */
+    const toggleWaitlist = (day: string, waiting: boolean) => {
+        if (!user) {
+            router.visit(startBooking.url(trainer.slug));
+
+            return;
+        }
+
+        const options = {
+            preserveScroll: true,
+            only: ['trainer'],
+            onError: (errors: Record<string, string>) =>
+                toast.error(errors.waitlist ?? 'Riprova tra poco.'),
+        };
+
+        if (waiting) {
+            router.delete(leaveWaitlist.url(trainer.slug), {
+                ...options,
+                data: { date: day },
+            });
+        } else {
+            router.post(joinWaitlist.url(trainer.slug), { date: day }, options);
+        }
+    };
     // "Dove": only with more than one place in person (a gym, a studio…).
     const inPersonPlaces = trainer.places.filter(
         (place) => place.type !== 'online',
@@ -397,6 +426,8 @@ export default function Profile({
                                         onDateChange={changeDate}
                                         selectedStart={start}
                                         onStartChange={setStart}
+                                        waitlistDays={trainer.waitlistDays}
+                                        onWaitlistToggle={toggleWaitlist}
                                     />
                                 </div>
                             )}

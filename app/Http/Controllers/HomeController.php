@@ -10,6 +10,7 @@ use App\Support\GymCard;
 use App\Support\NewsFeed;
 use App\Support\Seo;
 use App\Support\TrainerCard;
+use App\Support\TrainerShelves;
 use App\Support\TrainerSlots;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
@@ -30,6 +31,8 @@ class HomeController extends Controller
 
         return Inertia::render('public/home', [
             'featuredTrainers' => $this->featuredTrainers(TrainerCard::favoriteIds($request->user())),
+            // "In tendenza", "Liberi oggi", "Nuovi": each one only with enough trainers.
+            'trainerShelves' => TrainerShelves::all(TrainerCard::favoriteIds($request->user())),
             'featuredGyms' => GymCard::many($this->featuredGyms(), GymCard::favoriteIds($request->user())),
             // "Novità": the newest trainers and gyms of all of Italy.
             'news' => NewsFeed::preview(null, $request->user()),

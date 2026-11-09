@@ -7,9 +7,11 @@ use App\Enums\GroupSessionStatus;
 use App\Enums\GroupSessionType;
 use App\Enums\GymLinkStatus;
 use App\Enums\RegistrationStatus;
+use App\Observers\GroupSessionCalendarObserver;
 use Carbon\CarbonImmutable;
 use Database\Factories\GroupSessionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -64,6 +66,7 @@ use Illuminate\Support\Str;
  * @property-read Collection<int, GroupSessionHost> $hosts
  * @property-read Collection<int, GroupSessionRegistration> $registrations
  */
+#[ObservedBy(GroupSessionCalendarObserver::class)]
 #[Fillable([
     'series_id', 'type', 'title', 'description', 'cover_path', 'discipline_id', 'city_id', 'place',
     'gym_profile_id', 'address', 'starts_at', 'ends_at', 'capacity', 'offline_seats', 'price_cents',
@@ -297,6 +300,16 @@ class GroupSession extends Model
     public function hosts(): HasMany
     {
         return $this->hasMany(GroupSessionHost::class);
+    }
+
+    /**
+     * The people waiting for a place ("Avvisami se si libera").
+     *
+     * @return HasMany<WaitlistEntry, $this>
+     */
+    public function waitlist(): HasMany
+    {
+        return $this->hasMany(WaitlistEntry::class);
     }
 
     /**

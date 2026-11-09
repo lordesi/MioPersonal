@@ -70,6 +70,11 @@ class EventController extends Controller
                 ])->values()->all(),
             ],
             'otherDates' => GroupSessionCard::many($others),
+            // "Avvisami se si libera": only for a full event; whether the viewer is in line.
+            'waitlist' => [
+                'joined' => $viewer !== null && $session->waitlist()->where('user_id', $viewer->id)->exists(),
+                'count' => $session->waitlist()->count(),
+            ],
             // What the viewer can do: take a place, give it back, nothing.
             'state' => match (true) {
                 $hostOfViewer !== null => 'organizer',

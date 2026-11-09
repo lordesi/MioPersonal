@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { Bell, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import ProfileSection from '@/components/profile/profile-section';
 import { Button } from '@/components/ui/button';
 import { freeStarts } from '@/lib/booking';
@@ -30,6 +30,10 @@ type SlotPickerProps = {
     selectedStart: string | null;
     /** null = the time chosen before is tapped again: nothing chosen. */
     onStartChange: (start: string | null) => void;
+    /** Full days the viewer waits for ("Avvisami se si libera"), Y-m-d. */
+    waitlistDays: string[];
+    /** Wait for (or stop waiting for) a full day. */
+    onWaitlistToggle: (date: string, waiting: boolean) => void;
 };
 
 /** The black pills next to the title. */
@@ -67,9 +71,15 @@ export default function SlotPicker({
     onDateChange,
     selectedStart,
     onStartChange,
+    waitlistDays,
+    onWaitlistToggle,
 }: SlotPickerProps) {
     const selectedDay = week.find((day) => day.date === selectedDate) ?? null;
     const starts = selectedDay ? freeStarts(selectedDay, minutes) : [];
+    // Open days with no free start left: worth waiting for.
+    const fullDays = week.filter(
+        (day) => !day.closed && freeStarts(day, minutes).length === 0,
+    );
 
     return (
         <ProfileSection
@@ -211,6 +221,45 @@ export default function SlotPicker({
                     );
                 })}
             </div>
+
+            {fullDays.length > 0 && (
+                <div className="flex flex-col gap-2 rounded-2xl bg-muted/60 p-3.5">
+                    <span className="text-[13px] leading-4.5 font-semibold">
+                        Il giorno che volevi è pieno? Ti avvisiamo se si libera
+                        uno slot.
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                        {fullDays.map((day) => {
+                            const waiting = waitlistDays.includes(day.date);
+
+                            return (
+                                <button
+                                    key={day.date}
+                                    type="button"
+                                    aria-pressed={waiting}
+                                    onClick={() =>
+                                        onWaitlistToggle(day.date, waiting)
+                                    }
+                                    className={cn(
+                                        'inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold whitespace-nowrap',
+                                        waiting
+                                            ? 'border-primary bg-primary text-primary-foreground'
+                                            : 'bg-background hover:border-primary',
+                                    )}
+                                >
+                                    <Bell
+                                        aria-hidden="true"
+                                        className="size-3.5"
+                                    />
+                                    {formatWeekdayShort(day.date)}{' '}
+                                    {formatDayNumber(day.date)}
+                                    {waiting && ' · ti avvisiamo'}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {selectedDay && (
                 <div className="flex flex-col gap-3.5 border-t pt-4">

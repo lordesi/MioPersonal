@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Trainer\LinkClient;
 use App\Enums\PlaceType;
 use App\Models\ClientPackage;
 use App\Models\GroupSession;
@@ -12,6 +13,7 @@ use App\Models\TrainerPhoto;
 use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Models\WaitlistEntry;
 use App\Support\GroupSessionCard;
 use App\Support\Seo;
 use App\Support\SimilarTrainers;
@@ -19,6 +21,7 @@ use App\Support\Stats;
 use App\Support\TrainerCard;
 use App\Support\TrainerSlots;
 use App\Support\TrainerSocials;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -49,6 +52,8 @@ class TrainerProfileController extends Controller
 
         abort_if($profile === null || ! $profile->isViewableBy($request->user()), 404);
 
+        $this->rememberPersonalLink($request, $profile);
+
         // "Visite al profilo", for the team and later for the trainer.
         Stats::recordProfileView($request, $profile);
 
@@ -69,6 +74,25 @@ class TrainerProfileController extends Controller
             'events' => GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()->listed()->upcoming()->hostedBy($profile))->orderBy('starts_at')->limit(6)->get()),
             'seo' => $this->seo($profile),
         ]);
+    }
+
+    /**
+     * The personal link a trainer sent to a client they added ("?c=…"): kept in the
+     * session until the client signs up and books; a logged-in client is linked at once.
+     */
+    private function rememberPersonalLink(Request $request, TrainerProfile $profile): void
+    {
+        $token = $request->query('c');
+
+        if (! is_string($token) || strlen($token) > 40) {
+            return;
+        }
+
+        $request->session()->put(LinkClient::SESSION_KEY.'.'.$profile->id, $token);
+
+        if ($request->user() !== null && $request->user()->id !== $profile->user_id) {
+            app(LinkClient::class)->claimToken($profile, $request->user(), $token);
+        }
     }
 
     /**
@@ -185,6 +209,12 @@ class TrainerProfileController extends Controller
             // The preview: the latest ones. All of them are in `allReviews`.
             'reviews' => $this->reviews($profile, self::REVIEWS_PREVIEW),
             'availability' => TrainerSlots::days($profile, self::AVAILABILITY_DAYS),
+            // "Avvisami se si libera": the full days the viewer is waiting for.
+            'waitlistDays' => $viewer === null ? [] : WaitlistEntry::query()
+                ->where('user_id', $viewer->id)->where('trainer_profile_id', $profile->id)
+                ->where('day', '>=', CarbonImmutable::now(TrainerSlots::TIMEZONE)->toDateString())
+                ->orderBy('day')->get()
+                ->map(fn (WaitlistEntry $entry) => $entry->day->toDateString())->all(),
             'similarTrainers' => $this->similar($profile),
         ];
     }

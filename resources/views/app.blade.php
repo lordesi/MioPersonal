@@ -32,5 +32,9 @@
     </head>
     <body class="font-sans antialiased">
         <x-inertia::app />
+        @if (\App\Support\Staging::active())
+            {{-- The test copy: never mistaken for the real site. --}}
+            <div style="position:fixed;bottom:8px;left:8px;z-index:2147483647;padding:4px 10px;border-radius:999px;background:#b45309;color:#fff;font:600 12px/1.4 system-ui,sans-serif;pointer-events:none">STAGING · dati finti</div>
+        @endif
     </body>
 </html>

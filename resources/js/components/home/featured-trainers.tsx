@@ -8,18 +8,28 @@ import type { TrainerSummary } from '@/types';
 
 type FeaturedTrainersProps = {
     trainers: TrainerSummary[];
+    title?: string;
+    /** Unique in the page: one per shelf. */
+    id?: string;
 };
 
-/** "Trainer in evidenza" (HomeController): the best rated, in a carousel. */
-export default function FeaturedTrainers({ trainers }: FeaturedTrainersProps) {
+/**
+ * "Trainer in evidenza" (HomeController): the best rated, in a carousel.
+ * Also the shelves "In tendenza", "Liberi oggi" and "Nuovi" (TrainerShelves).
+ */
+export default function FeaturedTrainers({
+    trainers,
+    title = 'Trainer in evidenza',
+    id = 'featured',
+}: FeaturedTrainersProps) {
     if (trainers.length === 0) {
         return null;
     }
 
     return (
         <CardCarousel
-            title="Trainer in evidenza"
-            titleId="featured-title"
+            title={title}
+            titleId={`${id}-title`}
             href={searchUrl()}
             linkLabel="Vedi tutti"
             prevLabel="Trainer precedenti"

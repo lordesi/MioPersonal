@@ -5,9 +5,11 @@ namespace App\Providers;
 use App\Enums\SocialProvider;
 use App\Models\User;
 use App\Support\Socialite\FacebookProfileProvider;
+use App\Support\Socialite\GoogleCalendarProvider;
 use App\Support\Socialite\InstagramProvider;
 use App\Support\Socialite\TikTokProvider;
 use App\Support\Socialite\YouTubeProvider;
+use App\Support\Staging;
 use App\Support\Stats;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Registered;
@@ -46,6 +48,8 @@ class AppServiceProvider extends ServiceProvider
         $this->configureAuthEmails();
         $this->recordAcquisition();
         $this->configureSocialDrivers();
+        // The staging site never sends a real email.
+        Staging::trapMail();
     }
 
     /**
@@ -59,6 +63,8 @@ class AppServiceProvider extends ServiceProvider
             SocialProvider::TikTok->value => TikTokProvider::class,
             SocialProvider::Facebook->value => FacebookProfileProvider::class,
             SocialProvider::YouTube->value => YouTubeProvider::class,
+            // Not a social: "Collega Google Calendar" of the trainer settings.
+            'google-calendar' => GoogleCalendarProvider::class,
         ];
 
         // Not on Socialite::fake() of the tests.

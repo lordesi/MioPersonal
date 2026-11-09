@@ -2,6 +2,7 @@
 
 namespace App\Actions\GroupSessions;
 
+use App\Actions\Waitlist\Waitlist;
 use App\Enums\RegistrationStatus;
 use App\Enums\UserRole;
 use App\Models\GroupSession;
@@ -56,6 +57,9 @@ class GroupSessionPlaces
             return $session->registrations()->create(['user_id' => $client->id, 'status' => RegistrationStatus::Registered]);
         });
 
+        // Got a place: no longer waiting for one.
+        app(Waitlist::class)->leaveEvent($client, $session);
+
         $client->notify(new GroupSessionJoined($registration->groupSession));
 
         return $registration;
@@ -73,6 +77,9 @@ class GroupSessionPlaces
         if ($updated === 0) {
             throw ValidationException::withMessages(['place' => 'Non sei iscritto a questo evento.']);
         }
+
+        // The place is free again: the first in line is told.
+        app(Waitlist::class)->notifyEvent($session);
     }
 
     /** An organizer takes a place back: the client is told. */
@@ -84,6 +91,7 @@ class GroupSessionPlaces
 
         $registration->update(['status' => RegistrationStatus::Removed]);
         $registration->user->notify(new GroupSessionChanged($registration->groupSession, GroupSessionChanged::REMOVED));
+        app(Waitlist::class)->notifyEvent($registration->groupSession);
     }
 
     /**
@@ -104,5 +112,7 @@ class GroupSessionPlaces
 
             $session->update(['offline_seats' => $free - $remaining]);
         });
+
+        app(Waitlist::class)->notifyEvent($session);
     }
 }

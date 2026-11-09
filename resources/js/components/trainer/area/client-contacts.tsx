@@ -26,7 +26,14 @@ export default function ClientContacts({
                 Contatti
             </h3>
 
-            <ul className="flex flex-col overflow-hidden rounded-[14px] border">
+            {!phone && !contacts.email && (
+                <p className="text-sm text-muted-foreground">
+                    Nessun contatto: aggiungilo in «Scheda del cliente» o
+                    mandagli il link personale.
+                </p>
+            )}
+
+            <ul className="flex flex-col overflow-hidden rounded-[14px] border empty:hidden">
                 {phone && (
                     <ContactRow
                         icon={Phone}
@@ -37,14 +44,16 @@ export default function ClientContacts({
                         actionLabel={`Chiama ${name}`}
                     />
                 )}
-                <ContactRow
-                    icon={Mail}
-                    label="Email"
-                    value={contacts.email}
-                    href={`mailto:${contacts.email}`}
-                    action="Scrivi"
-                    actionLabel={`Scrivi una email a ${name}`}
-                />
+                {contacts.email && (
+                    <ContactRow
+                        icon={Mail}
+                        label="Email"
+                        value={contacts.email}
+                        href={`mailto:${contacts.email}`}
+                        action="Scrivi"
+                        actionLabel={`Scrivi una email a ${name}`}
+                    />
+                )}
             </ul>
 
             {phone && (

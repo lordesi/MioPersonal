@@ -248,6 +248,26 @@ class TrainerProfile extends Model
     }
 
     /**
+     * The trainer's own list of clients ("Clienti").
+     *
+     * @return HasMany<TrainerClient, $this>
+     */
+    public function clientRecords(): HasMany
+    {
+        return $this->hasMany(TrainerClient::class);
+    }
+
+    /**
+     * The Google account linked to write the sessions on its calendar.
+     *
+     * @return HasOne<TrainerCalendarConnection, $this>
+     */
+    public function calendarConnection(): HasOne
+    {
+        return $this->hasOne(TrainerCalendarConnection::class);
+    }
+
+    /**
      * The team's decisions, newest first.
      *
      * @return HasMany<TrainerProfileReview, $this>

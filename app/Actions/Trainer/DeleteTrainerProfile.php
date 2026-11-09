@@ -6,6 +6,7 @@ use App\Actions\GroupSessions\CancelGroupSession;
 use App\Models\TrainerDocument;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
+use App\Support\Calendar\GoogleCalendar;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -27,6 +28,11 @@ class DeleteTrainerProfile
 
             $photos = $profile->photos()->pluck('path')->all();
             $documents = $profile->documents()->whereNotNull('path')->pluck('path')->all();
+
+            // The "MioPersonal" calendar made on their Google account goes too.
+            if ($profile->calendarConnection !== null) {
+                (new GoogleCalendar($profile->calendarConnection))->disconnect();
+            }
 
             $profile->delete();
 

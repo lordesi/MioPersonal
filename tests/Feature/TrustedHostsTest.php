@@ -12,6 +12,14 @@ use Tests\TestCase;
 /** A forged Host header must not end up in the links of our emails. */
 class TrustedHostsTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        // The trusted hosts are kept for the whole process: they must not reach the next tests.
+        Request::setTrustedHosts([]);
+
+        parent::tearDown();
+    }
+
     public function test_in_production_links_use_app_url_whatever_the_host_header()
     {
         config(['app.url' => 'https://miopersonal.it']);

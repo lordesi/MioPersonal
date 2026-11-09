@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Enums\GymLinkStatus;
+use App\Observers\GroupSessionCalendarObserver;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -26,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read TrainerProfile|null $trainerProfile
  * @property-read GymProfile|null $gymProfile
  */
+#[ObservedBy(GroupSessionCalendarObserver::class)]
 #[Fillable(['trainer_profile_id', 'gym_profile_id', 'is_owner', 'status', 'responded_at'])]
 class GroupSessionHost extends Model
 {

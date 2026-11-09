@@ -124,6 +124,8 @@ export type TrainerProfile = {
     ratingDistribution: { stars: number; count: number }[];
     reviews: TrainerReview[];
     availability: AvailabilityDay[];
+    /** Full days the viewer waits for ("Avvisami se si libera"), Y-m-d. */
+    waitlistDays: string[];
     /** In the format of the search cards. */
     similarTrainers: TrainerSummary[];
 };
@@ -304,14 +306,52 @@ export type CalendarEvent = SessionChange & {
     guestNames: string[];
 };
 
-/** A client with at least one confirmed session, shown once in "Clienti". */
-export type TrainerClient = {
+/** A payment the trainer wrote down by hand. */
+export type ClientPayment = {
     id: number;
+    amountCents: number;
+    /** Y-m-d. */
+    paidOn: string;
+    note: string | null;
+};
+
+/** A "sedute fisse" rule going on: «Ogni martedì alle 18:00». */
+export type ClientSeriesRule = {
+    id: number;
+    label: string;
+    name: string;
+    minutes: number;
+    /** Y-m-d; null = until the trainer ends it. */
+    endsOn: string | null;
+    /** Confirmed sessions of the rule still to come. */
+    upcomingCount: number;
+    usesPackage: boolean;
+};
+
+/** A kind of session the trainer can repeat every week. */
+export type SeriesService = {
+    id: number;
+    name: string;
+    minutes: number;
+    priceCents: number;
+};
+
+/**
+ * A client in the list of the trainer ("Clienti"): who booked, shown once,
+ * and who the trainer added by hand.
+ */
+export type TrainerClient = {
+    /** The account (links of Panoramica and Calendario); null until the person signs up. */
+    id: number | null;
+    /** The row of the trainer's list: what the page selects and edits. */
+    recordId: number;
+    /** Has an account: the contacts and the name are theirs. */
+    registered: boolean;
     name: string;
     /** Confirmed sessions, past and future. */
     sessions: number;
     /** ISO UTC strings; null when there is none. */
-    firstSession: string;
+    firstSession: string | null;
     lastSession: string | null;
     nextSession: string | null;
     /** The service of the most recent session, under the name. */
@@ -323,11 +363,22 @@ export type TrainerClient = {
     missed: number;
     /** The package in progress, null when there is none. */
     package: { name: string; done: number; total: number } | null;
-    attendance: ClientAttendance;
+    attendance: ClientAttendance | null;
     /** What the client wrote in "Su di te"; null when nothing. */
     about: ClientAbout | null;
-    /** Always sent: everyone in "Clienti" has a confirmed session. */
+    /** The account's contacts; for who has none, the ones the trainer wrote (may be empty). */
     contacts: { email: string; phone: string | null };
+    /** The trainer's own goal and private notes: never shown to the client. */
+    goal: string | null;
+    notes: string | null;
+    payments: ClientPayment[];
+    paidCents: number;
+    /** The personal link to send; null once signed up, or while the profile is not public. */
+    inviteLink: string | null;
+    /** "Sedute fisse" going on. */
+    series: ClientSeriesRule[];
+    /** The open package of the client that a series can use up; null when none. */
+    seriesPackage: { id: number; name: string; remaining: number } | null;
     /** Every confirmed slot still to come, in order. */
     upcoming: TrainerSession[];
 };

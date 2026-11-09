@@ -42,6 +42,14 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
     ],
 
+    // "Collega Google Calendar" (App\Http\Controllers\TrainerCalendarController::connect): the
+    // same Google client as the login, with the Calendar API on and this redirect added to it.
+    'google-calendar' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_CALENDAR_REDIRECT_URI', '/area-trainer/calendario-google/callback'),
+    ],
+
     // "Collega" the socials of the trainer profile (App\Http\Controllers\TrainerSocialController):
     // each one is off until its client_id is set. See "Collegamento social" in the README.
     'instagram' => [

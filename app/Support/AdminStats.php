@@ -7,8 +7,10 @@ use App\Enums\GymLinkStatus;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
 use App\Models\Booking;
+use App\Models\BookingSeries;
 use App\Models\City;
 use App\Models\GymProfile;
+use App\Models\Review;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -36,6 +38,14 @@ final class AdminStats
     private const CHURN_MONTHS = 6;
 
     private const TOP = 8;
+
+    /** "Sedute a settimana": how many weeks of history, and how many for the cities. */
+    private const WEEKS = 12;
+
+    private const CITY_WEEKS = 4;
+
+    /** A client "comes back" if the second session is booked within this many days of the first one. */
+    private const REBOOK_DAYS = 30;
 
     /** "Palestre più visitate". */
     private const TOP_GYMS = 5;
@@ -67,6 +77,7 @@ final class AdminStats
             'monthly' => $this->monthly(),
             'channels' => $this->channels(),
             'funnel' => $this->funnel(),
+            'journey' => $this->journey(),
             'cohorts' => $this->cohorts(),
             'churn' => $this->churn(),
             'marketplace' => $this->marketplace(),
@@ -225,6 +236,165 @@ final class AdminStats
             ['label' => 'Nuovi clienti', 'count' => $this->newUsers(UserRole::Client, $this->from, $to)],
             ['label' => 'Clienti con una richiesta', 'count' => Booking::query()->whereBetween('created_at', $between)->distinct()->count('client_id')],
             ['label' => 'Clienti con una seduta confermata', 'count' => Booking::query()->whereBetween('confirmed_at', $between)->distinct()->count('client_id')],
+        ];
+    }
+
+    /**
+     * The path of a booking, from the search to the second session: the two
+     * numbers the team steers by (sessions done each week, by city, and the
+     * clients who book again within 30 days) and the steps in between.
+     * The sessions made by a "sedute fisse" rule are counted apart: they are
+     * planned in advance, they would make the numbers look better than they are.
+     *
+     * @return array<string, mixed>
+     */
+    private function journey(): array
+    {
+        [$weeks, $cities] = $this->weeklySessions();
+        $between = [$this->from->utc(), $this->now->endOfDay()->utc()];
+        $done30 = $this->doneSessions($this->from, $this->now->endOfDay());
+        $done30Count = (clone $done30)->count();
+
+        // The requests made by clients: the sessions of a rule are confirmed at once, with no request.
+        $requested = Booking::query()->whereNull('booking_series_id')->whereBetween('created_at', $between);
+        $confirmed = (clone $requested)->whereNotNull('confirmed_at');
+        $done = (clone $confirmed)->where('status', BookingStatus::Confirmed)->whereNull('no_show_at')->where('ends_at', '<', now());
+
+        $ended30 = Booking::query()->where('status', BookingStatus::Confirmed)
+            ->whereBetween('ends_at', [$this->from->utc(), now()]);
+        $ended30Count = (clone $ended30)->count();
+
+        return [
+            'weeks' => $weeks,
+            'cities' => $cities,
+            'steps' => [
+                ['label' => 'Ricerche di trainer', 'count' => DB::table('search_logs')->where('kind', 'trainer')->where('created_at', '>=', $this->from->utc())->count()],
+                ['label' => 'Visite a profili trainer', 'count' => (int) $this->dayTable('trainer_profile_views', $this->from, $this->now->endOfDay())->sum('views')],
+                ['label' => 'Richieste di prenotazione', 'count' => (clone $requested)->count()],
+                ['label' => 'Confermate', 'count' => (clone $confirmed)->count()],
+                ['label' => 'Sedute svolte', 'count' => (clone $done)->count()],
+                ['label' => 'Con una recensione', 'count' => Review::query()->whereIn('booking_id', (clone $done)->select('id'))->distinct()->count('booking_id')],
+            ],
+            'rebooking' => $this->rebooking(),
+            'noShowRate' => $ended30Count === 0 ? null : round((clone $ended30)->whereNotNull('no_show_at')->count() / $ended30Count, 3),
+            'seriesShare' => $done30Count === 0 ? null : round((clone $done30)->whereNotNull('booking_series_id')->count() / $done30Count, 3),
+            'seriesActive' => BookingSeries::query()->active()->count(),
+        ];
+    }
+
+    /**
+     * Sessions done each week (Rome weeks, from Monday), with how many came
+     * from a rule, and the same by the trainer's city for the last weeks.
+     *
+     * @return array{0: list<array{week: string, total: int, fromSeries: int}>, 1: list<array{city: string, weeks: list<int>, total: int}>}
+     */
+    private function weeklySessions(): array
+    {
+        $first = $this->now->startOfWeek()->subWeeks(self::WEEKS - 1);
+
+        $rows = DB::table('bookings')
+            ->join('trainer_profiles', 'trainer_profiles.id', '=', 'bookings.trainer_profile_id')
+            ->leftJoin('cities', 'cities.id', '=', 'trainer_profiles.city_id')
+            ->where('bookings.status', BookingStatus::Confirmed->value)
+            ->whereNull('bookings.no_show_at')
+            ->whereBetween('bookings.ends_at', [$first->utc(), now()])
+            ->get(['bookings.ends_at', 'bookings.booking_series_id', 'cities.name as city'])
+            ->map(fn (object $row) => [
+                'week' => CarbonImmutable::parse($row->ends_at)->setTimezone(TrainerSlots::TIMEZONE)->startOfWeek()->toDateString(),
+                'series' => $row->booking_series_id !== null,
+                'city' => $row->city ?? 'Solo online',
+            ]);
+
+        $weeks = [];
+
+        for ($week = $first; $week <= $this->now; $week = $week->addWeek()) {
+            $key = $week->toDateString();
+            $inWeek = $rows->where('week', $key);
+            $weeks[] = ['week' => $key, 'total' => $inWeek->count(), 'fromSeries' => $inWeek->where('series', true)->count()];
+        }
+
+        $recent = array_slice($weeks, -self::CITY_WEEKS);
+        $cities = $rows
+            ->whereIn('week', array_column($recent, 'week'))
+            ->groupBy('city')
+            ->map(fn (Collection $items, string $city) => [
+                'city' => $city,
+                'weeks' => array_map(fn (array $week) => $items->where('week', $week['week'])->count(), $recent),
+                'total' => $items->count(),
+            ])
+            ->sortByDesc('total')
+            ->take(self::TOP)
+            ->values()
+            ->all();
+
+        return [$weeks, $cities];
+    }
+
+    /**
+     * Of the clients whose first session was done between 120 and 30 days ago
+     * (so that 30 days have passed for all of them), how many had a second
+     * session booked within 30 days. Who has sessions from a "sedute fisse"
+     * rule is left out and counted apart: coming back is not their choice
+     * every time.
+     *
+     * @return array{eligible: int, rebooked: int, rate: float|null, withSeries: int}
+     */
+    private function rebooking(): array
+    {
+        $from = now()->subDays(120);
+        $to = now()->subDays(self::REBOOK_DAYS);
+
+        $firsts = Booking::query()
+            ->where('status', BookingStatus::Confirmed)
+            ->whereNull('no_show_at')
+            ->whereNotNull('client_id')
+            ->where('ends_at', '<', now())
+            ->selectRaw('client_id, min(ends_at) as first_end')
+            ->groupBy('client_id')
+            ->toBase()
+            ->get()
+            ->map(fn (object $row) => ['client' => (int) $row->client_id, 'end' => CarbonImmutable::parse($row->first_end)])
+            ->filter(fn (array $row) => $row['end']->between($from, $to))
+            ->keyBy('client');
+
+        if ($firsts->isEmpty()) {
+            return ['eligible' => 0, 'rebooked' => 0, 'rate' => null, 'withSeries' => 0];
+        }
+
+        $bookings = Booking::query()
+            ->where('status', BookingStatus::Confirmed)
+            ->whereIn('client_id', $firsts->keys())
+            ->get(['id', 'client_id', 'created_at', 'ends_at', 'booking_series_id', 'no_show_at'])
+            ->groupBy('client_id');
+
+        $eligible = 0;
+        $rebooked = 0;
+        $withSeries = 0;
+
+        foreach ($firsts as $clientId => $first) {
+            /** @var Collection<int, Booking> $mine */
+            $mine = $bookings->get($clientId, collect());
+
+            if ($mine->contains(fn (Booking $booking) => $booking->booking_series_id !== null)) {
+                $withSeries++;
+
+                continue;
+            }
+
+            $eligible++;
+            $firstBooking = $mine->first(fn (Booking $booking) => $booking->no_show_at === null && $booking->ends_at->equalTo($first['end']));
+            $limit = $first['end']->addDays(self::REBOOK_DAYS);
+
+            if ($mine->contains(fn (Booking $booking) => $booking->id !== $firstBooking?->id && $booking->created_at <= $limit)) {
+                $rebooked++;
+            }
+        }
+
+        return [
+            'eligible' => $eligible,
+            'rebooked' => $rebooked,
+            'rate' => $eligible === 0 ? null : round($rebooked / $eligible, 3),
+            'withSeries' => $withSeries,
         ];
     }
 

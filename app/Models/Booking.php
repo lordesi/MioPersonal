@@ -6,9 +6,12 @@ use App\Enums\BookingActor;
 use App\Enums\BookingGuestStatus;
 use App\Enums\BookingStatus;
 use App\Notifications\BookingConfirmed;
+use App\Observers\BookingCalendarObserver;
+use App\Observers\BookingWaitlistObserver;
 use Carbon\CarbonImmutable;
 use Database\Factories\BookingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +32,7 @@ use Illuminate\Support\Str;
  * @property int $trainer_profile_id
  * @property int|null $service_id
  * @property int|null $client_package_id the package this session buys or uses
+ * @property int|null $booking_series_id the "sedute fisse" rule that made it
  * @property CarbonImmutable $starts_at
  * @property CarbonImmutable $ends_at
  * @property CarbonImmutable $blocked_until end + the trainer's break
@@ -56,8 +60,9 @@ use Illuminate\Support\Str;
  * @property-read ClientPackage|null $clientPackage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, BookingGuest> $guests
  */
+#[ObservedBy([BookingCalendarObserver::class, BookingWaitlistObserver::class])]
 #[Fillable([
-    'client_id', 'trainer_profile_id', 'service_id', 'client_package_id',
+    'client_id', 'trainer_profile_id', 'service_id', 'client_package_id', 'booking_series_id',
     'starts_at', 'ends_at', 'blocked_until',
     'service_name', 'price_cents', 'people', 'invite_token', 'place_label',
     'status', 'expires_at', 'confirmed_at', 'client_note',
@@ -129,6 +134,14 @@ class Booking extends Model
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
+    }
+
+    /**
+     * @return BelongsTo<BookingSeries, $this>
+     */
+    public function series(): BelongsTo
+    {
+        return $this->belongsTo(BookingSeries::class, 'booking_series_id');
     }
 
     /**

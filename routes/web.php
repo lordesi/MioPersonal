@@ -48,12 +48,15 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\OrganizerEventsController;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\RobotsController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TrainerAvailabilityController;
 use App\Http\Controllers\TrainerBookingRequestController;
 use App\Http\Controllers\TrainerCalendarController;
+use App\Http\Controllers\TrainerClientRecordsController;
 use App\Http\Controllers\TrainerClientsController;
 use App\Http\Controllers\TrainerDashboardController;
+use App\Http\Controllers\TrainerGoogleCalendarController;
 use App\Http\Controllers\TrainerGymsController;
 use App\Http\Controllers\TrainerNoShowController;
 use App\Http\Controllers\TrainerPastSessionsController;
@@ -65,11 +68,13 @@ use App\Http\Controllers\TrainerRegistrationController;
 use App\Http\Controllers\TrainerRequestsController;
 use App\Http\Controllers\TrainerReviewsController;
 use App\Http\Controllers\TrainerSearchController;
+use App\Http\Controllers\TrainerSeriesController;
 use App\Http\Controllers\TrainerServicesController;
 use App\Http\Controllers\TrainerSessionChangeController;
 use App\Http\Controllers\TrainerSettingsController;
 use App\Http\Controllers\TrainerShareController;
 use App\Http\Controllers\TrainerSocialController;
+use App\Http\Controllers\WaitlistController;
 use App\Models\User;
 use App\Support\Seo;
 use Illuminate\Http\Request;
@@ -80,6 +85,7 @@ Route::get('/', HomeController::class)->name('home');
 Route::get('app', AppStartController::class)->name('pwa.start');
 // For search engines, together with public/robots.txt.
 Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
+Route::get('robots.txt', RobotsController::class)->name('robots');
 // /personal-trainer = all of Italy, /personal-trainer/roma = one city (404 if unknown).
 Route::get('personal-trainer/{city:slug?}', TrainerSearchController::class)->name('trainers.search');
 Route::get('trainer/{slug}', TrainerProfileController::class)->name('trainers.show');
@@ -212,6 +218,13 @@ Route::middleware(['auth', 'role:client'])->group(function () {
     // "Eventi": a place confirmed at once while there are places left, given back until the start.
     Route::post('evento/{slug}/iscrizione', [EventController::class, 'register'])->middleware('throttle:10,1')->name('events.register');
     Route::delete('evento/{slug}/iscrizione', [EventController::class, 'cancel'])->name('events.cancel');
+    // "Avvisami se si libera": a full event, or a day a trainer is full.
+    Route::controller(WaitlistController::class)->middleware('throttle:20,1')->group(function () {
+        Route::post('evento/{slug}/lista-attesa', 'joinEvent')->name('events.waitlist.join');
+        Route::delete('evento/{slug}/lista-attesa', 'leaveEvent')->name('events.waitlist.leave');
+        Route::post('trainer/{slug}/lista-attesa', 'joinDay')->name('trainers.waitlist.join');
+        Route::delete('trainer/{slug}/lista-attesa', 'leaveDay')->name('trainers.waitlist.leave');
+    });
     Route::post('palestra/{slug}/lezioni/{lesson}/prenota', [EventController::class, 'registerLesson'])
         ->whereNumber('lesson')
         ->middleware('throttle:10,1')
@@ -288,6 +301,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
         Route::get('calendario', TrainerCalendarController::class)->name('calendar');
         Route::get('clienti', TrainerClientsController::class)->name('clients');
+        // What the trainer writes on their clients: new ones, private notes, payments.
+        Route::controller(TrainerClientRecordsController::class)->prefix('clienti')->name('clients.')->group(function () {
+            Route::post('/', 'store')->middleware('throttle:30,1')->name('store');
+            Route::patch('{client}', 'update')->whereNumber('client')->name('update');
+            Route::delete('{client}', 'destroy')->whereNumber('client')->name('destroy');
+            Route::post('{client}/incassi', 'storePayment')->whereNumber('client')->name('payments.store');
+            Route::delete('{client}/incassi/{payment}', 'destroyPayment')->whereNumber(['client', 'payment'])->name('payments.destroy');
+        });
+        // "Sedute fisse" (ogni martedì alle 18): made from the card of a client, ended from it.
+        Route::controller(TrainerSeriesController::class)->prefix('clienti')->name('clients.series.')->group(function () {
+            Route::post('{client}/sedute-fisse', 'store')->whereNumber('client')->middleware('throttle:20,1')->name('store');
+            Route::post('sedute-fisse/{series}/termina', 'end')->whereNumber('series')->name('end');
+        });
         Route::controller(TrainerAvailabilityController::class)->group(function () {
             Route::get('disponibilita', 'show')->name('availability');
             Route::put('disponibilita', 'update')->name('availability.update');
@@ -327,6 +353,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // "Condividi profilo": link, QR code and image for the Instagram stories.
         Route::get('condividi', TrainerShareController::class)->name('share');
         Route::get('impostazioni', TrainerSettingsController::class)->name('settings');
+        // "Collega Google Calendar": the sessions are written on a calendar made for the app.
+        Route::controller(TrainerGoogleCalendarController::class)->prefix('calendario-google')->name('google-calendar.')->group(function () {
+            Route::get('collega', 'connect')->name('connect');
+            Route::get('callback', 'callback')->name('callback');
+            Route::delete('/', 'disconnect')->name('disconnect');
+        });
         Route::controller(TrainerProfileSettingsController::class)->group(function () {
             Route::patch('impostazioni/visibilita', 'updateVisibility')->name('visibility.update');
             Route::patch('impostazioni/contatti', 'updateContacts')->name('contacts.update');

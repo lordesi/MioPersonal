@@ -17,6 +17,12 @@ import type {
 
 type HomeProps = {
     featuredTrainers: TrainerSummary[];
+    /** "In tendenza", "Liberi oggi", "Nuovi": only the ones with enough trainers. */
+    trainerShelves: {
+        key: string;
+        title: string;
+        trainers: TrainerSummary[];
+    }[];
     /** "Palestre in evidenza": hidden when empty. */
     featuredGyms: GymSummary[];
     disciplines: CatalogOption[];
@@ -31,6 +37,7 @@ type HomeProps = {
 
 export default function Home({
     featuredTrainers,
+    trainerShelves,
     featuredGyms,
     news,
     disciplines,
@@ -47,6 +54,14 @@ export default function Home({
                 amenities={amenities}
             />
             <FeaturedTrainers trainers={featuredTrainers} />
+            {trainerShelves.map((shelf) => (
+                <FeaturedTrainers
+                    key={shelf.key}
+                    id={shelf.key}
+                    title={shelf.title}
+                    trainers={shelf.trainers}
+                />
+            ))}
             <FeaturedGyms gyms={featuredGyms} />
             <NewsStrip news={news} variant="home" />
             <PopularDisciplines disciplines={disciplines} />

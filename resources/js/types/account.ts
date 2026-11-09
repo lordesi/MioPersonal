@@ -34,3 +34,11 @@ export type TrainerVisibility = {
     /** The old "Metti in pausa" without an end: ended by "Riprendi ora". */
     paused: boolean;
 };
+
+/** "Google Calendar" of the trainer settings; the section is hidden when null. */
+export type TrainerGoogleCalendar = {
+    connected: boolean;
+    email: string | null;
+    /** Why Google refused the last time: the trainer has to link again. */
+    error: string | null;
+};

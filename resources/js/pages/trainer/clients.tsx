@@ -2,6 +2,7 @@ import { Head, usePage } from '@inertiajs/react';
 import { Search, Users } from 'lucide-react';
 import { useState } from 'react';
 import EmptyState from '@/components/states/empty-state';
+import AddClients from '@/components/trainer/area/add-clients';
 import ClientCard from '@/components/trainer/area/client-card';
 import type { ClientFilter } from '@/components/trainer/area/client-filters';
 import ClientFilters, {
@@ -13,7 +14,7 @@ import InviteClients from '@/components/trainer/area/invite-clients';
 import PageHeading from '@/components/trainer/area/page-heading';
 import { Button } from '@/components/ui/button';
 import { sessionsLabel } from '@/lib/calendar';
-import type { TrainerClient } from '@/types';
+import type { SeriesService, TrainerClient } from '@/types';
 
 type ClientsProps = {
     clients: TrainerClient[];
@@ -21,6 +22,8 @@ type ClientsProps = {
     selectedId: number | null;
     /** "Invita i tuoi clienti": null until the profile is in the search. */
     invite: ClientInvite | null;
+    /** The sessions that can be repeated every week ("Sedute fisse"). */
+    seriesServices: SeriesService[];
 };
 
 /** "Clienti" (docs/design/trainer-clienti.html): list on the left, card on the right. */
@@ -28,13 +31,19 @@ export default function Clients({
     clients,
     selectedId: initialId,
     invite,
+    seriesServices,
 }: ClientsProps) {
     // "Marco ti ha invitato": the first word of the name, as on the profile.
+    // Without a public profile there is no personal link to send yet.
+    const profileReady = invite !== null;
     const firstName = usePage().props.auth.user?.name.split(' ')[0] ?? '';
     const [query, setQuery] = useState('');
     const [filter, setFilter] = useState<ClientFilter>('all');
+    // "?cliente=" is the account; the page selects the row of the list.
     const [selectedId, setSelectedId] = useState(
-        initialId ?? clients[0]?.id ?? null,
+        clients.find((client) => client.id === initialId)?.recordId ??
+            clients[0]?.recordId ??
+            null,
     );
 
     const current =
@@ -46,7 +55,7 @@ export default function Clients({
         );
     // The card follows the list: the first visible client when the selected one is hidden.
     const selected =
-        visible.find((client) => client.id === selectedId) ?? visible[0];
+        visible.find((client) => client.recordId === selectedId) ?? visible[0];
 
     const active = clients.filter((client) => client.upcomingCount > 0).length;
     const upcoming = clients.reduce(
@@ -92,14 +101,23 @@ export default function Clients({
 
             {invite && <InviteClients invite={invite} firstName={firstName} />}
 
+            {clients.length > 0 && profileReady && (
+                <div className="flex">
+                    <AddClients />
+                </div>
+            )}
+
             {clients.length === 0 ? (
-                <EmptyState
-                    icon={Users}
-                    title="Ancora nessun cliente"
-                    description="I nuovi clienti compaiono qui dopo la prima prenotazione confermata."
-                    bordered
-                    className="rounded-[20px] bg-card"
-                />
+                <>
+                    <EmptyState
+                        icon={Users}
+                        title="Ancora nessun cliente"
+                        description="Chi prenota da te compare qui da solo. Aggiungi subito i clienti che hai già: gli mandi un link personale e ritrovi tutto in un posto."
+                        bordered
+                        className="rounded-[20px] bg-card"
+                    />
+                    {profileReady && <AddClients defaultOpen />}
+                </>
             ) : (
                 <>
                     <ClientFilters
@@ -110,7 +128,7 @@ export default function Clients({
                     <div className="flex flex-wrap items-start gap-5">
                         <ClientList
                             clients={visible}
-                            selectedId={selected?.id ?? null}
+                            selectedId={selected?.recordId ?? null}
                             onSelect={setSelectedId}
                             empty={
                                 <div className="flex flex-col items-center gap-1.5 px-4 py-10 text-center">
@@ -133,7 +151,11 @@ export default function Clients({
                             }
                         />
                         {selected && (
-                            <ClientCard key={selected.id} client={selected} />
+                            <ClientCard
+                                key={selected.recordId}
+                                client={selected}
+                                seriesServices={seriesServices}
+                            />
                         )}
                     </div>
                 </>

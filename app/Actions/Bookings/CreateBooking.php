@@ -2,6 +2,8 @@
 
 namespace App\Actions\Bookings;
 
+use App\Actions\Trainer\LinkClient;
+use App\Actions\Waitlist\Waitlist;
 use App\Enums\BookingStatus;
 use App\Enums\PlaceType;
 use App\Models\Booking;
@@ -152,6 +154,11 @@ class CreateBooking
             throw $exception;
         }
 
+        // The client joins the trainer's own list (or is recognized in it).
+        app(LinkClient::class)->forBooking($profile, $client);
+        // Booked that day: no longer waiting for a slot on it.
+        app(Waitlist::class)->forgetDay($client, $profile, $start);
+
         // The search shows the first free slot: it may have just been taken.
         TrainerSlots::refresh($profile);
 
@@ -217,7 +224,7 @@ class CreateBooking
      * client chose ("Dove", e.g. a gym), else the place when the trainer has
      * only one, otherwise empty (the pages hide it).
      */
-    private function placeLabel(TrainerProfile $profile, bool $online, ?TrainerPlace $chosen = null): string
+    public function placeLabel(TrainerProfile $profile, bool $online, ?TrainerPlace $chosen = null): string
     {
         if ($online) {
             return PlaceType::Online->label();

@@ -4,19 +4,27 @@ import { useId } from 'react';
 import UserAvatar from '@/components/shared/user-avatar';
 import ClientAbout from '@/components/trainer/area/client-about';
 import ClientContacts from '@/components/trainer/area/client-contacts';
+import ClientRecord from '@/components/trainer/area/client-record';
+import ClientSeries from '@/components/trainer/area/client-series';
 import PackageProgress from '@/components/trainer/package-progress';
 import { Button } from '@/components/ui/button';
 import { romeParts } from '@/lib/calendar';
 import { dateBlockParts, formatDayLong, formatTime } from '@/lib/format';
 import { calendar } from '@/routes/trainer';
-import type { TrainerClient } from '@/types';
+import type { SeriesService, TrainerClient } from '@/types';
 
 /**
  * Details of the client selected in "Clienti": the numbers, the package in
  * progress, the contacts, every session still to come and the link to the
  * calendar.
  */
-export default function ClientCard({ client }: { client: TrainerClient }) {
+export default function ClientCard({
+    client,
+    seriesServices,
+}: {
+    client: TrainerClient;
+    seriesServices: SeriesService[];
+}) {
     const titleId = useId();
     const upcomingTitleId = useId();
     const places = new Set(
@@ -51,10 +59,11 @@ export default function ClientCard({ client }: { client: TrainerClient }) {
                             {client.name}
                         </h2>
                         <span className="text-sm text-sidebar-muted-foreground">
-                            Prima seduta:{' '}
-                            {formatDayLong(
-                                romeParts(client.firstSession).date,
-                            ).toLowerCase()}
+                            {client.firstSession
+                                ? `Prima seduta: ${formatDayLong(romeParts(client.firstSession).date).toLowerCase()}`
+                                : client.registered
+                                  ? 'Ancora nessuna seduta'
+                                  : 'Non ancora iscritto'}
                         </span>
                     </span>
                 </div>
@@ -99,12 +108,18 @@ export default function ClientCard({ client }: { client: TrainerClient }) {
                 <ClientContacts name={client.name} contacts={client.contacts} />
                 <div aria-hidden="true" className="h-px bg-border" />
 
+                <ClientRecord client={client} />
+                <div aria-hidden="true" className="h-px bg-border" />
+
                 {client.about && (
                     <>
                         <ClientAbout about={client.about} />
                         <div aria-hidden="true" className="h-px bg-border" />
                     </>
                 )}
+
+                <ClientSeries client={client} services={seriesServices} />
+                <div aria-hidden="true" className="h-px bg-border" />
 
                 <h3
                     id={upcomingTitleId}
@@ -156,28 +171,30 @@ export default function ClientCard({ client }: { client: TrainerClient }) {
                 )}
 
                 <div className="mt-1 flex flex-wrap gap-2">
-                    <Button
-                        asChild
-                        variant="outline"
-                        className="h-11 rounded-[10px] px-4"
-                    >
-                        <Link
-                            href={calendar(
-                                client.nextSession
-                                    ? {
-                                          query: {
-                                              giorno: romeParts(
-                                                  client.nextSession,
-                                              ).date,
-                                          },
-                                      }
-                                    : undefined,
-                            )}
+                    {client.nextSession !== null && (
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="h-11 rounded-[10px] px-4"
                         >
-                            <Calendar aria-hidden="true" />
-                            Vedi nel calendario
-                        </Link>
-                    </Button>
+                            <Link
+                                href={calendar(
+                                    client.nextSession
+                                        ? {
+                                              query: {
+                                                  giorno: romeParts(
+                                                      client.nextSession,
+                                                  ).date,
+                                              },
+                                          }
+                                        : undefined,
+                                )}
+                            >
+                                <Calendar aria-hidden="true" />
+                                Vedi nel calendario
+                            </Link>
+                        </Button>
+                    )}
                 </div>
             </div>
         </section>

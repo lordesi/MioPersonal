@@ -49,6 +49,22 @@ type Stats = {
     }[];
     channels: { visits: Count[]; signups: Count[] };
     funnel: Step[];
+    /** The path of a booking and the two numbers the team steers by. */
+    journey: {
+        /** Rome weeks from Monday (Y-m-d), the oldest first. */
+        weeks: { week: string; total: number; fromSeries: number }[];
+        cities: { city: string; weeks: number[]; total: number }[];
+        steps: Step[];
+        rebooking: {
+            eligible: number;
+            rebooked: number;
+            rate: number | null;
+            withSeries: number;
+        };
+        noShowRate: number | null;
+        seriesShare: number | null;
+        seriesActive: number;
+    };
     cohorts: { month: string; size: number; retention: (number | null)[] }[];
     churn: {
         month: string;
@@ -125,6 +141,9 @@ export default function AdminStats({ stats }: { stats: Stats }) {
             value: month[key],
         }));
     const hours = stats.marketplace.responseHoursMedian;
+    const journey = stats.journey;
+    const thisWeek = journey.weeks.at(-1);
+    const lastWeeks = journey.weeks.slice(-4);
 
     return (
         <>
@@ -239,6 +258,92 @@ export default function AdminStats({ stats }: { stats: Stats }) {
                         points={monthly('gmvCents')}
                         unit="Valore"
                         format={euros}
+                    />
+                </AdminPanel>
+            </div>
+
+            <h2 className="mt-3 text-lg font-bold tracking-tight">
+                Il percorso di una seduta
+            </h2>
+            <section
+                aria-label="Indicatori del percorso"
+                className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+            >
+                <KpiTile
+                    label="Clienti che riprenotano entro 30 giorni"
+                    value={formatPercent(journey.rebooking.rate)}
+                    detail={
+                        <span className="text-xs text-muted-foreground">
+                            {journey.rebooking.eligible === 0
+                                ? 'Servono clienti con la prima seduta fatta 30–120 giorni fa'
+                                : `${formatNumber(journey.rebooking.rebooked)} su ${formatNumber(journey.rebooking.eligible)}, prima seduta tra 30 e 120 giorni fa`}
+                            {journey.rebooking.withSeries > 0 &&
+                                ` · ${formatNumber(journey.rebooking.withSeries)} con sedute fisse, esclusi`}
+                        </span>
+                    }
+                />
+                <KpiTile
+                    label="Sedute svolte questa settimana"
+                    value={formatNumber(thisWeek?.total ?? 0)}
+                    detail={
+                        <span className="text-xs text-muted-foreground">
+                            Da lunedì
+                            {thisWeek && thisWeek.fromSeries > 0
+                                ? `, di cui ${formatNumber(thisWeek.fromSeries)} da sedute fisse`
+                                : ''}
+                        </span>
+                    }
+                />
+                <KpiTile
+                    label="Sedute saltate dal cliente"
+                    value={formatPercent(journey.noShowRate)}
+                    detail={
+                        <span className="text-xs text-muted-foreground">
+                            Sulle sedute finite negli ultimi 30 giorni
+                        </span>
+                    }
+                />
+                <KpiTile
+                    label="Sedute da «sedute fisse»"
+                    value={formatPercent(journey.seriesShare)}
+                    detail={
+                        <span className="text-xs text-muted-foreground">
+                            Sulle svolte in 30 giorni ·{' '}
+                            {formatNumber(journey.seriesActive)}{' '}
+                            {journey.seriesActive === 1
+                                ? 'regola attiva'
+                                : 'regole attive'}
+                        </span>
+                    }
+                />
+            </section>
+            <div className="grid gap-3 lg:grid-cols-2">
+                <AdminPanel
+                    title="Sedute svolte a settimana"
+                    aside="Ultime 12 settimane, da lunedì"
+                >
+                    <BarChart
+                        points={journey.weeks.map((week) => ({
+                            label: formatDay(week.week),
+                            value: week.total,
+                        }))}
+                        unit="Sedute"
+                    />
+                </AdminPanel>
+                <AdminPanel
+                    title="Dalla ricerca alla recensione"
+                    aside="Ultimi 30 giorni"
+                >
+                    <Funnel steps={journey.steps} />
+                </AdminPanel>
+                <AdminPanel
+                    title="Sedute svolte per città"
+                    aside="Città del trainer, ultime 4 settimane"
+                    className="lg:col-span-2"
+                >
+                    <CityWeeks
+                        rows={journey.cities}
+                        weeks={lastWeeks.map((week) => week.week)}
                     />
                 </AdminPanel>
             </div>
@@ -467,3 +572,63 @@ function ChurnTable({ rows }: { rows: Stats['churn'] }) {
 }
 
 AdminStats.layout = { section: 'stats' };
+
+/** Sessions done each week in the cities with the most: one row each. */
+function CityWeeks({
+    rows,
+    weeks,
+}: {
+    rows: Stats['journey']['cities'];
+    weeks: string[];
+}) {
+    if (rows.length === 0) {
+        return (
+            <p className="text-sm text-muted-foreground">
+                Ancora nessuna seduta svolta in queste settimane.
+            </p>
+        );
+    }
+
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+                <thead>
+                    <tr className="text-left text-xs text-muted-foreground">
+                        <th className="py-1.5 pr-3 font-medium">Città</th>
+                        {weeks.map((week) => (
+                            <th
+                                key={week}
+                                className="px-2 py-1.5 text-right font-medium"
+                            >
+                                {formatDay(week)}
+                            </th>
+                        ))}
+                        <th className="py-1.5 pl-2 text-right font-medium">
+                            Totale
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows.map((row) => (
+                        <tr key={row.city} className="border-t">
+                            <th className="py-1.5 pr-3 text-left font-medium">
+                                {row.city}
+                            </th>
+                            {row.weeks.map((count, index) => (
+                                <td
+                                    key={weeks[index]}
+                                    className="px-2 py-1.5 text-right tabular-nums"
+                                >
+                                    {formatNumber(count)}
+                                </td>
+                            ))}
+                            <td className="py-1.5 pl-2 text-right font-semibold tabular-nums">
+                                {formatNumber(row.total)}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}

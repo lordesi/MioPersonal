@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import {
     Bell,
+    CalendarDays,
     Eye,
     LockKeyhole,
     Mail,
@@ -14,12 +15,14 @@ import NotificationsSection from '@/components/account/notifications-section';
 import PersonalDataSection from '@/components/account/personal-data-section';
 import SettingsNav from '@/components/account/settings-nav';
 import type { SettingsNavSection } from '@/components/account/settings-nav';
+import GoogleCalendarSection from '@/components/account/trainer/google-calendar-section';
 import ClientContactsSection from '@/components/account/trainer/client-contacts-section';
 import CloseTrainerProfileSection from '@/components/account/trainer/close-trainer-profile-section';
 import ProfileVisibilitySection from '@/components/account/trainer/profile-visibility-section';
 import PageHeading from '@/components/trainer/area/page-heading';
 import type {
     AccountSettings,
+    TrainerGoogleCalendar,
     TrainerContacts,
     TrainerVisibility,
 } from '@/types';
@@ -28,6 +31,8 @@ type TrainerSettingsProps = {
     account: AccountSettings;
     /** Null until the registration is sent: the section is hidden. */
     contacts: TrainerContacts | null;
+    /** Null until the registration is sent, or while Google is not set up. */
+    googleCalendar: TrainerGoogleCalendar | null;
     visibility: TrainerVisibility | null;
 };
 
@@ -36,6 +41,7 @@ const allSections: SettingsNavSection[] = [
     { id: 'dati', title: 'Dati personali', icon: UserRound },
     { id: 'contatti', title: 'Contatti per i clienti', icon: Mail },
     { id: 'accesso', title: 'Accesso e sicurezza', icon: LockKeyhole },
+    { id: 'calendario', title: 'Google Calendar', icon: CalendarDays },
     { id: 'notifiche', title: 'Notifiche', icon: Bell },
     { id: 'visibilita', title: 'Visibilità del profilo', icon: Eye },
     { id: 'chiudi', title: 'Chiudi il profilo', icon: Power },
@@ -50,8 +56,15 @@ const sectionsWithoutProfile = allSections.filter(
 export default function TrainerSettings({
     account,
     contacts,
+    googleCalendar,
     visibility,
 }: TrainerSettingsProps) {
+    const base = visibility ? allSections : sectionsWithoutProfile;
+    // No Google client set up: no section, no entry in the menu.
+    const sections = googleCalendar
+        ? base
+        : base.filter((section) => section.id !== 'calendario');
+
     return (
         <>
             <Head title="Impostazioni account" />
@@ -59,10 +72,7 @@ export default function TrainerSettings({
             <PageHeading title="Impostazioni account" />
 
             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-5">
-                <SettingsNav
-                    sections={visibility ? allSections : sectionsWithoutProfile}
-                    columnFrom="xl"
-                />
+                <SettingsNav sections={sections} columnFrom="xl" />
                 <div className="flex min-w-0 flex-1 flex-col gap-4">
                     <PersonalDataSection
                         firstName={account.firstName}
@@ -76,6 +86,9 @@ export default function TrainerSettings({
                         passwordChangedAt={account.passwordChangedAt}
                         providers={account.providers}
                     />
+                    {googleCalendar && (
+                        <GoogleCalendarSection {...googleCalendar} />
+                    )}
                     <NotificationsSection
                         reminders={account.notifications.reminders}
                         forTrainer

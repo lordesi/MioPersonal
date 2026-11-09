@@ -53,14 +53,14 @@ export default function ClientList({
             {clients.length === 0 && empty}
 
             {clients.map((client) => {
-                const selected = client.id === selectedId;
+                const selected = client.recordId === selectedId;
 
                 return (
                     <button
-                        key={client.id}
+                        key={client.recordId}
                         type="button"
                         aria-pressed={selected}
-                        onClick={() => onSelect(client.id)}
+                        onClick={() => onSelect(client.recordId)}
                         className={cn(
                             'flex w-full items-center gap-3 rounded-[14px] border px-4 py-3 text-left',
                             columns,
@@ -85,7 +85,10 @@ export default function ClientList({
                                     {client.name}
                                 </span>
                                 <span className="hidden text-[13px] leading-4.5 text-muted-foreground md:inline">
-                                    {client.lastService}
+                                    {client.lastService ||
+                                        (client.registered
+                                            ? 'Nessuna seduta'
+                                            : 'Non ancora iscritto')}
                                 </span>
                                 <span className="text-[13px] leading-4.5 text-muted-foreground tabular-nums md:hidden">
                                     Prossima: {nextSessionLabel(client)}
@@ -125,8 +128,8 @@ export default function ClientList({
             })}
 
             <p className="mx-2 mt-2 mb-1 rounded-xl bg-secondary/60 p-3 text-[13px] leading-4.5 text-muted-foreground">
-                I nuovi clienti compaiono qui dopo la prima prenotazione
-                confermata.
+                Chi prenota da te compare qui da solo. Gli altri li aggiungi tu
+                e gli mandi il loro link personale.
             </p>
         </section>
     );

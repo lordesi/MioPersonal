@@ -40,6 +40,13 @@ class TrainerSettingsController extends Controller
                 // The old "Metti in pausa" without an end: ended by "Riprendi ora".
                 'paused' => $profile->paused_at !== null,
             ],
+            // Null until the registration is sent, or while the Google client is not set.
+            'googleCalendar' => $profile === null || ! TrainerGoogleCalendarController::enabled() ? null : [
+                'connected' => $profile->calendarConnection !== null,
+                'email' => $profile->calendarConnection?->google_email,
+                // Google refused: "Ricollega".
+                'error' => $profile->calendarConnection?->last_error,
+            ],
             'contacts' => $profile === null ? null : [
                 'phone' => $user->phone,
                 'email' => $user->email,

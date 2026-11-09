@@ -19,6 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cancel, register, start } from '@/routes/events';
+import { join, leave } from '@/routes/events/waitlist';
 import type { GroupSessionSummary, SeoData } from '@/types';
 
 type EventHost = {
@@ -46,6 +47,8 @@ type EventProps = {
     event: EventDetail;
     otherDates: GroupSessionSummary[];
     state: EventState;
+    /** "Avvisami se si libera": whether the viewer is in line, and how many are. */
+    waitlist: { joined: boolean; count: number };
     /** The page of the organizer area, for its organizers. */
     organizerHref: string | null;
 };
@@ -60,6 +63,7 @@ export default function Event({
     event,
     otherDates,
     state,
+    waitlist,
     organizerHref,
 }: EventProps) {
     const { auth } = usePage().props;
@@ -76,6 +80,17 @@ export default function Event({
     };
 
     const book = () => router.post(register.url(event.slug), {}, options);
+    const waitForPlace = () =>
+        router.post(
+            join.url(event.slug),
+            {},
+            {
+                ...options,
+                onError: (errors: Record<string, string>) =>
+                    toast.error(errors.waitlist ?? 'Riprova tra poco.'),
+            },
+        );
+    const stopWaiting = () => router.delete(leave.url(event.slug), options);
     const giveBack = () =>
         router.delete(cancel.url(event.slug), {
             ...options,
@@ -211,6 +226,9 @@ export default function Event({
                             closed={closed}
                             started={event.started}
                             soldOut={event.remaining === 0}
+                            waitlist={waitlist}
+                            onWait={waitForPlace}
+                            onStopWaiting={stopWaiting}
                             busy={busy}
                             slug={event.slug}
                             organizerHref={organizerHref}
@@ -328,6 +346,9 @@ function Action({
     closed,
     started,
     soldOut,
+    waitlist,
+    onWait,
+    onStopWaiting,
     busy,
     slug,
     organizerHref,
@@ -339,6 +360,9 @@ function Action({
     closed: boolean;
     started: boolean;
     soldOut: boolean;
+    waitlist: { joined: boolean; count: number };
+    onWait: () => void;
+    onStopWaiting: () => void;
     busy: boolean;
     slug: string;
     organizerHref: string | null;
@@ -387,19 +411,64 @@ function Action({
         );
     }
 
-    if (soldOut) {
-        return (
-            <p className="rounded-xl bg-muted px-3 py-2.5 text-sm font-medium">
-                I posti sono finiti.
-            </p>
-        );
-    }
-
     if (state === 'not-client') {
         return (
             <p className="text-sm text-muted-foreground">
                 Solo i clienti possono prenotare un posto.
             </p>
+        );
+    }
+
+    if (soldOut) {
+        return (
+            <div className="flex flex-col gap-2">
+                <p className="rounded-xl bg-muted px-3 py-2.5 text-sm font-medium">
+                    I posti sono finiti.
+                </p>
+                {guest ? (
+                    <Button asChild variant="outline" className="h-11">
+                        <Link href={start.url(slug)}>
+                            Accedi per essere avvisato
+                        </Link>
+                    </Button>
+                ) : waitlist.joined ? (
+                    <>
+                        <p
+                            role="status"
+                            className="rounded-xl border px-3 py-2.5 text-sm"
+                        >
+                            Ti avvisiamo se si libera un posto.
+                        </p>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-11"
+                            disabled={busy}
+                            onClick={onStopWaiting}
+                        >
+                            Non avvisarmi più
+                        </Button>
+                    </>
+                ) : (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="h-11 font-semibold"
+                        disabled={busy}
+                        onClick={onWait}
+                    >
+                        Avvisami se si libera un posto
+                    </Button>
+                )}
+                {waitlist.count > 0 && (
+                    <p className="text-center text-xs text-muted-foreground">
+                        {waitlist.count === 1
+                            ? '1 persona è in lista.'
+                            : `${waitlist.count} persone sono in lista.`}{' '}
+                        Non prenotiamo noi: chi arriva prima, prende il posto.
+                    </p>
+                )}
+            </div>
         );
     }
 

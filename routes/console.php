@@ -1,16 +1,22 @@
 <?php
 
 use App\Actions\Account\DeleteUser;
+use App\Actions\Bookings\GenerateSeries;
 use App\Actions\Bookings\SendSessionReminders;
 use App\Actions\GroupSessions\SendGroupSessionReminders;
 use App\Actions\Trainer\DeleteTrainerProfile;
+use App\Actions\Waitlist\Waitlist;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
+use App\Jobs\SyncCalendarJob;
 use App\Models\Booking;
+use App\Models\BookingSeries;
+use App\Models\TrainerCalendarConnection;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\SafeImage;
+use App\Support\Staging;
 use App\Support\Stats;
 use App\Support\TrainerSlots;
 use Illuminate\Foundation\Inspiring;
@@ -142,6 +148,61 @@ Artisan::command('bookings:remind', function (SendSessionReminders $reminders, S
 })->purpose('Remind clients and trainers of their next confirmed sessions and events');
 
 Schedule::command('bookings:remind')->everyFiveMinutes()->withoutOverlapping();
+
+// "Avvisami se si libera": the first ones in line for a free place or slot are told. Most
+// of the time it happens at once (a place given back, a booking cancelled); this catches the rest.
+Artisan::command('waitlist:notify', function (Waitlist $waitlist) {
+    $waitlist->sweep();
+    $this->info('Waiting lists checked.');
+})->purpose('Tell the people waiting for a place or a slot that it is free');
+
+Schedule::command('waitlist:notify')->everyFiveMinutes()->withoutOverlapping();
+
+// "Sedute fisse": the sessions of every rule are made some weeks ahead, and a date
+// that was taken (or closed) is tried again. A cancelled session is never made again.
+Artisan::command('bookings:extend-series', function (GenerateSeries $generate) {
+    $created = 0;
+    $skipped = 0;
+
+    BookingSeries::query()->active()->with(['trainerProfile.user', 'client'])->each(function (BookingSeries $series) use ($generate, &$created, &$skipped) {
+        $result = $generate->handle($series);
+        $created += $result['created'];
+        $skipped += count($result['skipped']);
+    });
+
+    $this->info("{$created} sessions made, {$skipped} dates still taken or closed.");
+})->purpose('Make the next weeks of the sessions of the "sedute fisse"');
+
+Schedule::command('bookings:extend-series')->dailyAt('03:30')->withoutOverlapping();
+
+// Staging only: the database starts again from the seeders (demo trainers and gyms,
+// the accounts of docs/staging.md). Refuses to run anywhere else.
+Artisan::command('staging:reset', function () {
+    if (! Staging::active()) {
+        $this->error('Only on the staging site (APP_ENV=staging): nothing was touched.');
+
+        return 1;
+    }
+
+    $this->call('migrate:fresh', ['--seed' => true, '--force' => true]);
+
+    return 0;
+})->purpose('Staging only: empty the database and fill it again with the fake data');
+
+// Safety net of "Collega Google Calendar": what the live sync may have missed
+// (Google down for longer than the retries, an event deleted by hand) is put right.
+Artisan::command('calendar:resync', function () {
+    $count = 0;
+
+    TrainerCalendarConnection::query()->whereNull('last_error')->each(function (TrainerCalendarConnection $connection) use (&$count) {
+        SyncCalendarJob::dispatch('connection', $connection->id);
+        $count++;
+    });
+
+    $this->info("{$count} Google calendars queued to be checked.");
+})->purpose('Check again the sessions written on the Google calendars of the trainers');
+
+Schedule::command('calendar:resync')->dailyAt('04:30');
 
 // "Elimina account" and "Cancella dati" of the team: the account is deleted for
 // good User::DELETION_GRACE_DAYS later (until then it can be taken back).
