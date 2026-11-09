@@ -51,25 +51,22 @@ export default function CookieConsent({
         });
     }
 
+    // Only necessary cookies exist for now: every button saves "nothing optional".
+    const saveNecessaryOnly = () => save({ analytics: false, marketing: false });
+
     return (
         <>
             {consent === null && !dialogOpen && (
                 <CookieBanner
-                    onAcceptAll={() =>
-                        save({ analytics: true, marketing: true })
-                    }
-                    onRejectAll={() =>
-                        save({ analytics: false, marketing: false })
-                    }
-                    onCustomize={() => setDialogOpen(true)}
+                    onAccept={saveNecessaryOnly}
+                    onManage={() => setDialogOpen(true)}
                     disabled={saving}
                 />
             )}
             <CookiePreferencesDialog
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
-                consent={consent}
-                onSave={save}
+                onSave={saveNecessaryOnly}
                 disabled={saving}
             />
         </>

@@ -57,6 +57,20 @@ const cookies = [
         duration: 'Finché invii il profilo o ricominci',
         type: 'Tecnico, memoria del browser',
     },
+    {
+        name: 'review-prompt-dismissed-…',
+        purpose:
+            'Ricorda nel tuo browser che hai chiuso l’invito a lasciare una recensione',
+        duration: 'Finché non svuoti i dati del browser',
+        type: 'Tecnico, memoria del browser',
+    },
+    {
+        name: 'pwa-card:…',
+        purpose:
+            'Ricorda nel tuo browser se hai già visto il suggerimento per installare l’app e attivare le notifiche',
+        duration: 'Finché non svuoti i dati del browser',
+        type: 'Tecnico, memoria del browser',
+    },
 ];
 
 const cellClassName = 'border-b px-3 py-2.5 align-top';
@@ -154,10 +168,9 @@ const sections: LegalSection[] = [
                     un cookie di statistica nostro, anonimo e non incrociato con
                     altri dati è equiparato ai tecnici. Oggi non usiamo nessun
                     cookie facoltativo, di profilazione o di marketing. Alla
-                    prima visita il banner ti chiede comunque cosa preferisci
-                    per il futuro: puoi accettare, rifiutare con un solo clic o
-                    scegliere categoria per categoria. Chiudere il banner con la
-                    X equivale a rifiutare.
+                    prima visita il banner ti informa e ti permette di
+                    consultare le preferenze: oggi esistono solo i cookie
+                    necessari, che non si possono disattivare.
                 </LegalParagraph>
                 <LegalParagraph>
                     Se aggiungeremo cookie facoltativi, in questa pagina
