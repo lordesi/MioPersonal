@@ -31,9 +31,14 @@ class GroupSessionCalendarObserver implements ShouldHandleEventsAfterCommit
         $this->dispatch($model->id, null);
     }
 
-    public function deleted(GroupSessionHost $host): void
+    public function deleted(GroupSession|GroupSessionHost $model): void
     {
-        $this->dispatch($host->group_session_id, $host->trainer_profile_id);
+        // An event that is deleted takes its calendar rows with it: nothing to sync.
+        if ($model instanceof GroupSession) {
+            return;
+        }
+
+        $this->dispatch($model->group_session_id, $model->trainer_profile_id);
     }
 
     /** $trainerId: only that trainer's calendar matters (a host came or went). */

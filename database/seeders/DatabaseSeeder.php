@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         if (app()->isLocal() || Staging::active()) {
             $this->call(DemoTrainerSeeder::class);
             $this->call(DemoGymSeeder::class);
+            $this->call(DemoFeaturesSeeder::class);
         }
 
         // The accounts to try the staging site with (docs/staging.md).

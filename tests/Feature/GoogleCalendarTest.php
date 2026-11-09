@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\BookingActor;
 use App\Models\Booking;
+use App\Models\GroupSession;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\Socialite\GoogleCalendarProvider;
@@ -122,6 +123,17 @@ class GoogleCalendarTest extends TestCase
         $this->confirmedBooking($profile);
 
         Http::assertNothingSent();
+    }
+
+    public function test_deleting_an_event_of_a_linked_trainer_does_not_fail()
+    {
+        $this->fakeGoogle();
+        $profile = $this->linkedTrainer();
+        $session = GroupSession::factory()->by($profile)->create();
+
+        $session->delete();
+
+        $this->assertDatabaseMissing('group_sessions', ['id' => $session->id]);
     }
 
     public function test_an_event_deleted_by_hand_on_google_is_made_again()
