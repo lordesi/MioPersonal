@@ -1,5 +1,6 @@
 import AccountMenu from '@/components/layout/account-menu';
 import BrandLogo from '@/components/layout/brand-logo';
+import NotificationBell from '@/components/layout/notification-bell';
 
 type ClientHeaderProps = {
     userName: string;
@@ -14,7 +15,8 @@ export default function ClientHeader({ userName }: ClientHeaderProps) {
         <header className="border-b bg-background">
             <div className="flex h-15 items-center gap-2 pr-2 pl-4">
                 <BrandLogo />
-                <div className="ml-auto flex items-center">
+                <div className="ml-auto flex items-center gap-1">
+                    <NotificationBell />
                     <AccountMenu variant="client" userName={userName} />
                 </div>
             </div>

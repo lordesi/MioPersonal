@@ -38,7 +38,17 @@ class BookingChanged extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return $this->mailAndPush($notifiable);
+        return $this->sendsMail() ? $this->mailAndPush($notifiable) : $this->inAppAndPush($notifiable);
+    }
+
+    /**
+     * Email only for what the client has to know even without opening the site
+     * (the session won't take place, or another time is proposed). The answers
+     * to the trainer are in the bell and the push (daily limit of the mail provider).
+     */
+    private function sendsMail(): bool
+    {
+        return in_array($this->kind, ['cancelled-by-trainer', 'proposed', 'guest-cancelled', 'guest-moved'], true);
     }
 
     /** The title of the email, and its time: "Luca Moretti ha annullato la seduta" · "mer 28 ott alle 18:00". */

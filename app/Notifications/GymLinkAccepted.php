@@ -4,14 +4,16 @@ namespace App\Notifications;
 
 use App\Enums\GymLinkSide;
 use App\Models\GymTrainerLink;
+use App\Models\User;
+use App\Notifications\Concerns\SendsPush;
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushMessage;
 
-/** To the side that asked: the other one said yes. */
+/** To the side that asked: the other one said yes. The bell inside the site and the push, no email. */
 class GymLinkAccepted extends Notification
 {
-    use Queueable;
+    use Queueable, SendsPush;
 
     public function __construct(public GymTrainerLink $link) {}
 
@@ -20,25 +22,29 @@ class GymLinkAccepted extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $this->inAppAndPush($notifiable);
     }
 
-    public function toMail(object $notifiable): MailMessage
+    public function toWebPush(User $notifiable): WebPushMessage
     {
         $gym = $this->link->gymProfile;
-        $trainer = $this->link->trainerProfile;
-        $mail = (new MailMessage)->greeting('Ciao!');
+        $trainer = $this->link->trainerProfile->user->name;
+        $tag = "gym-link-{$this->link->id}";
 
         if ($this->link->initiated_by === GymLinkSide::Trainer) {
-            $mail->subject("{$gym->name} ha accettato la tua richiesta")
-                ->line("Ora {$gym->name} compare nel tuo profilo e i clienti possono prenotarti lì.")
-                ->action('Vedi il profilo della palestra', route('gyms.show', $gym->slug));
-        } else {
-            $mail->subject("{$trainer->user->name} ha accettato il tuo invito")
-                ->line("Ora {$trainer->user->name} compare tra i trainer di {$gym->name}.")
-                ->action('Vedi i trainer della palestra', route('gym.trainers'));
+            return $this->pushMessage(
+                "{$gym->name} ha accettato la tua richiesta",
+                "Ora {$gym->name} compare nel tuo profilo e i clienti possono prenotarti lì.",
+                route('gyms.show', $gym->slug),
+                $tag,
+            );
         }
 
-        return $mail->salutation('Il team di MioPersonal');
+        return $this->pushMessage(
+            "{$trainer} ha accettato il tuo invito",
+            "Ora {$trainer} compare tra i trainer di {$gym->name}.",
+            route('gym.trainers'),
+            $tag,
+        );
     }
 }

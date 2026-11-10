@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/** "Contatti": the form sends an email to the team and a confirmation to the sender. */
+/** "Contatti": the form sends an email to the team (the sender sees "Messaggio inviato" on the page). */
 class ContactController extends Controller
 {
     public function show(Request $request): Response
@@ -58,8 +58,6 @@ class ContactController extends Controller
         ];
 
         Mail::to(config('mail.contact_address'))->send(new ContactMessage($contact));
-        // The confirmation has fixed text only (see the view), and no name in the address.
-        Mail::to($contact['email'])->send(new ContactMessage($contact, isCopy: true));
 
         return to_route('contact.show')->with('status', 'contact-sent');
     }

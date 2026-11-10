@@ -110,7 +110,7 @@ class SessionRemindersTest extends TestCase
         $this->assertNull($booking->fresh()->reminded_day_before_at);
     }
 
-    public function test_push_only_for_who_has_a_device_email_for_the_others()
+    public function test_the_bell_for_everyone_and_the_push_with_a_device_never_an_email()
     {
         $booking = $this->confirmedSession(20 * 60);
         /** @var User $client */
@@ -121,10 +121,10 @@ class SessionRemindersTest extends TestCase
         $dayBefore = new SessionReminder($booking, SessionReminder::DAY_BEFORE);
         $soon = new SessionReminder($booking, SessionReminder::SOON);
 
-        // The free plan of the mail provider has a daily limit: no email to who gets the push.
-        $this->assertSame([WebPushChannel::class], $dayBefore->via($client->fresh()));
-        $this->assertSame(['mail'], $dayBefore->via($trainer));
-        // Two hours before: push or nothing.
+        // The free plan of the mail provider has a daily limit: never an email, the bell for everyone.
+        $this->assertSame(['database', WebPushChannel::class], $dayBefore->via($client->fresh()));
+        $this->assertSame(['database'], $dayBefore->via($trainer));
+        // Two hours before: push or nothing (in the bell it would be read too late).
         $this->assertSame([WebPushChannel::class], $soon->via($client->fresh()));
         $this->assertSame([], $soon->via($trainer));
     }
@@ -147,10 +147,11 @@ class SessionRemindersTest extends TestCase
         $trainer = $booking->trainerProfile->user;
         $reminder = new SessionReminder($booking, SessionReminder::DAY_BEFORE);
 
-        $mail = $reminder->toMail($client);
-        $html = (string) $mail->render();
-        $this->assertSame('Promemoria: mar 20 ott alle 09:00', $mail->subject);
-        $this->assertStringContainsString(e("Domani ti alleni con {$trainer->name}"), $html);
+        $this->assertSame([
+            'title' => "Domani ti alleni con {$trainer->name}",
+            'body' => 'Alle 09:00 · Studio · Milano',
+            'url' => parse_url(route('client.home'), PHP_URL_PATH),
+        ], $reminder->toArray($client));
 
         $push = $reminder->toWebPush($trainer)->toArray();
         $this->assertSame("Domani: seduta con {$client->publicName()}", $push['title']);

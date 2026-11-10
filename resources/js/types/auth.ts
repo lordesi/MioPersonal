@@ -12,6 +12,8 @@ export type User = {
 
 export type Auth = {
     user: User;
+    /** Unread notifications, the number on the bell (components/layout/notification-bell.tsx). */
+    unreadNotifications: number;
     /** Trainers and gyms saved by a client, for the menu (null for the other roles). */
     favoritesCount: number | null;
     /** The same, apart: the "Preferiti" filter of each search. */

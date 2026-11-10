@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import AccountMenu from '@/components/layout/account-menu';
 import BrandLogo from '@/components/layout/brand-logo';
+import NotificationBell from '@/components/layout/notification-bell';
 import { cn } from '@/lib/utils';
 import { login } from '@/routes';
 import { register as gymRegister } from '@/routes/gym';
@@ -29,15 +30,22 @@ export default function PublicHeader({ className }: { className?: string }) {
 
                 <div className="ml-auto flex flex-wrap items-center gap-3">
                     {user ? (
-                        <AccountMenu
-                            variant={
-                                user.role === 'trainer' || user.role === 'gym'
-                                    ? user.role
-                                    : 'client'
-                            }
-                            userName={user.name}
-                            headerHeight={16}
-                        />
+                        <>
+                            <NotificationBell
+                                tone="dark"
+                                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                            />
+                            <AccountMenu
+                                variant={
+                                    user.role === 'trainer' ||
+                                    user.role === 'gym'
+                                        ? user.role
+                                        : 'client'
+                                }
+                                userName={user.name}
+                                headerHeight={16}
+                            />
+                        </>
                     ) : (
                         <>
                             {/* No room on phones: there it is in the footer. */}

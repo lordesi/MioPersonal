@@ -431,7 +431,19 @@ Le redirect URI da registrare su ogni console sono `https://<dominio>/social/{in
 
 ### Email in produzione con Brevo
 
-In locale le email restano nel log. Online servono davvero (conferma email, password dimenticata, esito della verifica trainer, form contatti): le consegna [Brevo](https://www.brevo.com), collegato via **SMTP**. Non serve nessuna libreria: basta il `.env`.
+In locale le email restano nel log. Online servono davvero: le consegna [Brevo](https://www.brevo.com), collegato via **SMTP**. Non serve nessuna libreria: basta il `.env`.
+
+Il piano gratuito di Brevo permette circa 300 email al giorno, quindi **le email sono poche e solo quelle che la persona deve leggere anche senza aprire il sito**. Tutto il resto è una notifica: la **campanella** dentro il sito (tabella `notifications`, `GET /notifiche`) e, con un dispositivo attivo, la push. Le email ancora inviate, tutte con il layout `resources/views/mail/layouts/base.blade.php`:
+
+| Email | A chi |
+|---|---|
+| Conferma la tua email, Reimposta la password | chi si registra / chi la chiede |
+| Esito della verifica del profilo (online, da sistemare, non approvato) | trainer e palestre |
+| Seduta annullata dal trainer, nuovo orario proposto | cliente (e amici invitati) |
+| Evento annullato, spostato, iscrizione tolta | iscritti all'evento |
+| Messaggio dalla pagina Contatti | team (nessuna copia a chi scrive) |
+
+Solo campanella + push (nessuna email): nuova richiesta o prenotazione, seduta confermata, risposte del cliente a un nuovo orario, promemoria (il giorno prima; 2 ore prima solo push), amico che partecipa, sedute fisse, iscrizione e promemoria degli eventi, evento che si farà, invito a organizzare, lista d'attesa, collegamenti trainer-palestra. I canali di ogni notifica sono nel suo `via()` (`app/Notifications`, helper in `Concerns/SendsPush`): per aggiungere una mail a una notifica basta usare `mailAndPush()` invece di `inAppAndPush()` e scrivere `toMail()`. Le notifiche più vecchie di 90 giorni le cancella `notifications:prune` (scheduler).
 
 1. Crea un account Brevo (il piano gratuito permette circa 300 email al giorno: controlla sul sito).
 2. In **Impostazioni → Mittenti, domini e IP → Domini** aggiungi `miopersonal.it` e copia nel DNS del dominio i record che Brevo ti mostra (DKIM, DMARC e il codice di verifica). Senza, le email finiscono nello spam.
@@ -451,11 +463,23 @@ In locale le email restano nel log. Online servono davvero (conferma email, pass
 
 > Le chiavi vanno **solo** nel `.env` del server, mai su GitHub.
 
+#### Immagine del mittente (avatar accanto al nome)
+
+Il cerchietto con il logo accanto a «MioPersonal» in Gmail e Apple Mail non dipende dal codice delle email: lo mostrano i client, in base all'indirizzo del mittente (`noreply@miopersonal.it`). Le vie gratuite:
+
+1. **L'indirizzo deve ricevere posta.** La posta in arrivo di `miopersonal.it` passa da Cloudflare Email Routing: in Cloudflare → dominio → **Email → Email Routing → Routing rules** crea l'indirizzo `noreply@miopersonal.it` con inoltro a una tua casella e provalo scrivendogli da Gmail.
+2. **Gmail**: vai su accounts.google.com/signup, scegli **«Usa il tuo indirizzo email attuale»** e inserisci `noreply@miopersonal.it`; conferma col codice che ti arriva per inoltro. Poi su myaccount.google.com → **Informazioni personali → Foto** carica `public/icons/icon-512.png` (logo quadrato su fondo nero). Compare a chi legge da Gmail dopo qualche ora o giorno.
+3. **Apple Mail**: su businessconnect.apple.com registra l'attività, apri **Branded Mail**, aggiungi il dominio `miopersonal.it`, verificalo con il record TXT che Apple indica (in Cloudflare → DNS) e carica il logo. Gratuito, con revisione di Apple di alcuni giorni.
+4. **Outlook e gli altri client**: non c'è una via gratuita affidabile. Il logo ovunque si chiama **BIMI** e richiede un certificato a pagamento (VMC/CMC, indicativamente 500-1500 € l'anno) e un record DNS `default._bimi`. Il DMARC del dominio è già `p=quarantine`, che è il requisito di partenza: la strada resta aperta.
+
+Prerequisiti per la consegna (già a posto o da controllare su Brevo): SPF, DKIM e DMARC del dominio. Il record SPF di `miopersonal.it` oggi include solo Cloudflare: Brevo firma con la sua chiave DKIM, ma se vuoi che anche SPF lo autorizzi aggiungi `include:spf.brevo.com` al record TXT esistente (un solo record SPF per dominio).
+
 ### Email delle prenotazioni e coda
 
-**Nuova richiesta di prenotazione** (al trainer) e **Prenotazione confermata** (al cliente) partono
-**in coda**: la pagina non aspetta il server di posta, e le email vengono spedite subito dopo da un
-processo a parte, il _worker_ (`php artisan queue:work`).
+Le notifiche delle prenotazioni (**Nuova richiesta**, **Seduta confermata**, cambi di orario…) partono
+**in coda**: la pagina non aspetta, e le notifiche vengono consegnate subito dopo da un
+processo a parte, il _worker_ (`php artisan queue:work`). Senza worker non partono né le email né
+le notifiche della campanella.
 
 - **In locale**: metti `QUEUE_CONNECTION=sync` nel tuo `.env`. Le email vengono spedite subito, senza worker, e
   le trovi in `storage/logs/laravel.log`. Con `QUEUE_CONNECTION=database` restano in attesa finché
@@ -482,8 +506,8 @@ Il sito si installa sulla schermata Home (`public/manifest.webmanifest`) e manda
     ```
     Sul server Linux non serve.
 3. **Promemoria**: `bookings:remind` gira ogni 5 minuti con lo scheduler. Il giorno prima avvisa
-   cliente e trainer (push a chi ha un dispositivo attivo, email solo agli altri, per stare nel
-   limite gratuito di Brevo); 2 ore prima avvisa il cliente, solo con la push. Sul server servono
+   cliente e trainer (campanella del sito e push a chi ha un dispositivo attivo, mai email, per stare
+   nel limite gratuito di Brevo); 2 ore prima avvisa il cliente, solo con la push. Sul server servono
    il **cron** di `php artisan schedule:run` ogni minuto e il **worker** della coda.
 4. **Provarle**: le push richiedono HTTPS. In locale `herd secure miopersonal` attiva HTTPS sul sito.
    Su iPhone funzionano solo dall'app aggiunta alla Home (Condividi → «Aggiungi alla schermata

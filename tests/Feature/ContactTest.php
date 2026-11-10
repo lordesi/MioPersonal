@@ -40,7 +40,8 @@ class ContactTest extends TestCase
             );
     }
 
-    public function test_a_message_is_sent_to_the_team_with_a_copy_to_the_sender()
+    /** Only to the team: no copy to the sender (it would use the daily limit of the mail provider and could be abused to mail anyone). */
+    public function test_a_message_is_sent_to_the_team_only()
     {
         Mail::fake();
         config(['mail.contact_address' => 'team@example.com']);
@@ -50,37 +51,29 @@ class ContactTest extends TestCase
             ->assertSessionHas('status', 'contact-sent');
 
         Mail::assertSent(ContactMessage::class, fn (ContactMessage $mail) => $mail->hasTo('team@example.com')
-            && ! $mail->isCopy
             && $mail->hasReplyTo('sofia@example.com')
             && $mail->contact['topicLabel'] === 'Verifica e approvazione');
 
-        Mail::assertSent(ContactMessage::class, fn (ContactMessage $mail) => $mail->hasTo('sofia@example.com')
-            && $mail->isCopy);
-
-        Mail::assertSentCount(2);
+        Mail::assertSentCount(1);
     }
 
-    /** The confirmation must not carry text typed in the form: it would be a way to spam anyone. */
-    public function test_the_confirmation_to_the_sender_has_no_free_text()
+    public function test_the_message_to_the_team_uses_the_email_layout_and_escapes_the_text()
     {
-        Mail::fake();
+        $mail = new ContactMessage([
+            'roleLabel' => 'Un cliente',
+            'topicLabel' => 'Prenotazioni',
+            'name' => 'Luca Moretti',
+            'email' => 'luca@example.com',
+            'message' => "Ciao <b>team</b>\nsecondo rigo",
+        ]);
 
-        $this->post(route('contact.store'), $this->validForm([
-            'name' => 'Vinci un iPhone su spam.example',
-            'message' => 'Clicca qui: https://spam.example/premio',
-        ]));
+        $html = $mail->render();
 
-        Mail::assertSent(ContactMessage::class, function (ContactMessage $mail) {
-            if (! $mail->isCopy) {
-                return false;
-            }
-
-            $html = $mail->render();
-            $this->assertStringNotContainsString('spam.example', $html);
-            $this->assertStringContainsString('Verifica e approvazione', $html);
-
-            return $mail->to[0]['name'] === null;
-        });
+        $this->assertStringContainsString('Nuovo messaggio dalla pagina Contatti', $html);
+        $this->assertStringContainsString('mp-card', $html);
+        $this->assertStringContainsString('Luca Moretti', $html);
+        $this->assertStringContainsString('Ciao &lt;b&gt;team&lt;/b&gt;', $html);
+        $this->assertStringNotContainsString('<b>team</b>', $html);
     }
 
     public function test_a_filled_honeypot_sends_nothing_but_looks_sent()

@@ -8,7 +8,6 @@ use App\Notifications\Concerns\SendsPush;
 use App\Support\BookingMailData;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushMessage;
 
@@ -28,7 +27,7 @@ class GroupSessionHostInvited extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return $this->mailAndPush($notifiable);
+        return $this->inAppAndPush($notifiable);
     }
 
     public function toWebPush(User $notifiable): WebPushMessage
@@ -39,18 +38,5 @@ class GroupSessionHostInvited extends Notification implements ShouldQueue
             route($this->route),
             "event-{$this->session->id}-host",
         );
-    }
-
-    public function toMail(User $notifiable): MailMessage
-    {
-        $session = $this->session;
-
-        return (new MailMessage)
-            ->subject("{$this->from} ti invita a organizzare {$session->title}")
-            ->greeting('Ciao!')
-            ->line("{$this->from} ti ha invitato tra gli organizzatori di {$session->title}, ".BookingMailData::when($session->starts_at).'.')
-            ->line('Se accetti, l’evento compare anche nel tuo profilo e puoi vedere gli iscritti.')
-            ->action('Rispondi', route($this->route))
-            ->salutation('Il team di MioPersonal');
     }
 }

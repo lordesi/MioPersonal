@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import AccountMenu from '@/components/layout/account-menu';
 import { BrandMark } from '@/components/layout/brand-logo';
+import NotificationBell from '@/components/layout/notification-bell';
 import type { TabItem } from '@/components/layout/mobile-tab-bar';
 import MobileTabBar from '@/components/layout/mobile-tab-bar';
 import { cn } from '@/lib/utils';
@@ -142,20 +143,23 @@ export function TrainerSidebar({
 }: TrainerSidebarProps) {
     return (
         <aside className="sticky top-0 hidden h-screen w-62 shrink-0 flex-col gap-7 overflow-y-auto bg-sidebar px-4 py-6 text-sidebar-foreground md:flex">
-            <div className="flex flex-col gap-2.5 px-2">
-                <Link
-                    href={today()}
-                    aria-label="MioPersonal, area trainer"
-                    className="flex items-center gap-2.5 text-sidebar-primary"
-                >
-                    <BrandMark />
-                    <span className="text-lg leading-7 font-semibold tracking-tight">
-                        MioPersonal
+            <div className="flex items-start justify-between gap-2 px-2">
+                <div className="flex flex-col gap-2.5">
+                    <Link
+                        href={today()}
+                        aria-label="MioPersonal, area trainer"
+                        className="flex items-center gap-2.5 text-sidebar-primary"
+                    >
+                        <BrandMark />
+                        <span className="text-lg leading-7 font-semibold tracking-tight">
+                            MioPersonal
+                        </span>
+                    </Link>
+                    <span className="text-xs font-semibold tracking-[0.08em] text-sidebar-muted-foreground">
+                        AREA TRAINER
                     </span>
-                </Link>
-                <span className="text-xs font-semibold tracking-[0.08em] text-sidebar-muted-foreground">
-                    AREA TRAINER
-                </span>
+                </div>
+                <NotificationBell tone="dark" className="-mt-2 -mr-2" />
             </div>
 
             <nav aria-label="Area trainer" className="flex flex-col gap-0.5">

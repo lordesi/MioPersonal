@@ -17,11 +17,12 @@ type NotificationsSectionProps = {
 
 const pushTexts: Record<PushState, string> = {
     on: 'Attive su questo dispositivo.',
-    off: 'Spente su questo dispositivo: ti scriviamo solo per email.',
+    off: 'Spente su questo dispositivo: gli avvisi li trovi nella campanella del sito.',
     denied: 'Bloccate dal browser: per riattivarle apri le impostazioni del sito nel browser e consenti le notifiche.',
     'needs-install':
         'Su iPhone arrivano solo dall’app: in Safari tocca Condividi → “Aggiungi alla schermata Home”, poi aprila e attivale da qui.',
-    unsupported: 'Questo browser non le supporta: ti scriviamo per email.',
+    unsupported:
+        'Questo browser non le supporta: gli avvisi li trovi nella campanella del sito.',
 };
 
 /**
@@ -57,8 +58,8 @@ export default function NotificationsSection({
             icon={Bell}
             description={
                 forTrainer
-                    ? 'Le nuove richieste e i promemoria delle sedute, anche sul telefono.'
-                    : 'Conferme, cambi di orario e promemoria delle sedute, anche sul telefono.'
+                    ? 'Nuove richieste e promemoria nella campanella del sito, e sul telefono se attivi le notifiche.'
+                    : 'Conferme, cambi di orario e promemoria nella campanella del sito, e sul telefono se attivi le notifiche.'
             }
         >
             <SettingSwitch

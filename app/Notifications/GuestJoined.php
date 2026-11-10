@@ -8,7 +8,6 @@ use App\Notifications\Concerns\SendsPush;
 use App\Support\BookingMailData;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushMessage;
 
@@ -30,7 +29,7 @@ class GuestJoined extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return $this->mailAndPush($notifiable);
+        return $this->inAppAndPush($notifiable);
     }
 
     public function toWebPush(User $notifiable): WebPushMessage
@@ -41,22 +40,5 @@ class GuestJoined extends Notification implements ShouldQueue
             route('client.home'),
             "booking-{$this->booking->id}-guests",
         );
-    }
-
-    public function toMail(User $notifiable): MailMessage
-    {
-        $booking = $this->booking;
-        $day = BookingMailData::day($booking);
-        $hour = BookingMailData::hour($booking);
-        $free = $booking->freeSeats();
-
-        return (new MailMessage)
-            ->subject("{$this->guest->first_name} partecipa alla seduta di {$day}, {$hour}")
-            ->greeting("Ciao {$notifiable->first_name},")
-            ->line("{$this->guest->name} ha accettato il tuo invito: vi allenate insieme {$day} alle {$hour} con {$booking->trainerProfile->user->name}.")
-            ->line($free > 0
-                ? ($free === 1 ? 'Resta 1 posto libero per un altro amico.' : "Restano {$free} posti liberi per altri amici.")
-                : 'Tutti i posti della seduta sono presi.')
-            ->action('Vedi la seduta', route('client.home'));
     }
 }

@@ -8,6 +8,7 @@ use App\Models\CookieConsent;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Sentry\State\Scope;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -52,6 +53,23 @@ class HandleInertiaRequests extends Middleware
     ];
 
     /**
+     * Tells Sentry who hit the error: only the id and the role, never name or email.
+     */
+    public function handle(Request $request, \Closure $next)
+    {
+        $user = $request->user();
+
+        if ($user !== null && class_exists(Scope::class)) {
+            \Sentry\configureScope(function (Scope $scope) use ($user): void {
+                $scope->setUser(['id' => (string) $user->getKey()]);
+                $scope->setTag('role', $user->role->value);
+            });
+        }
+
+        return parent::handle($request, $next);
+    }
+
+    /**
      * Determines the current asset version.
      *
      * @see https://inertiajs.com/asset-versioning
@@ -77,6 +95,8 @@ class HandleInertiaRequests extends Middleware
                 // Only what the pages use (types/auth.ts): not the whole model, which
                 // also holds the phone, acquisition data and the activity times.
                 'user' => $request->user()?->only(['id', 'name', 'email', 'avatar', 'email_verified_at', 'role']),
+                // The number on the bell (components/layout/notification-bell.tsx).
+                'unreadNotifications' => fn () => $request->user()?->unreadNotifications()->count() ?? 0,
                 // The number on "Preferiti" in the account menu (the same trainers and gyms as the page).
                 'favoritesCount' => fn () => ($counts = $this->favoriteCounts($request)) === null ? null : $counts['trainers'] + $counts['gyms'],
                 // The numbers on the "Preferiti" filter of the two searches.

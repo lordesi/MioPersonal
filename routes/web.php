@@ -46,6 +46,7 @@ use App\Http\Controllers\GymSettingsController;
 use App\Http\Controllers\GymTrainersController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NewsController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrganizerEventsController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\RobotsController;
@@ -178,6 +179,16 @@ Route::middleware(['auth', 'throttle:20,1'])
     ->group(function () {
         Route::post('/', 'store')->name('store');
         Route::delete('/', 'destroy')->name('destroy');
+    });
+
+// The bell of the site: the latest notifications, and "segna tutte come lette".
+Route::middleware(['auth', 'throttle:60,1'])
+    ->prefix('notifiche')
+    ->name('notifications.')
+    ->controller(NotificationController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('lette', 'markAllRead')->name('read');
     });
 
 // Clients right after sign-up, before the email is verified.

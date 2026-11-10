@@ -9,17 +9,15 @@ use App\Support\BookingMailData;
 use App\Support\TrainerSlots;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushMessage;
 
 /**
  * The reminders of a confirmed session (App\Actions\Bookings\SendSessionReminders):
- * - DAY_BEFORE, to the client and to the trainer: the push on their devices,
- *   the email only to who has no device (the free plan of the mail provider
- *   has a daily limit: every app installed saves emails);
- * - SOON, to the client only and only as a push: an email 2 hours before is
- *   read too late.
+ * - DAY_BEFORE, to the client and to the trainer: the bell inside the site and
+ *   the push on their devices, never an email (the free plan of the mail
+ *   provider has a daily limit);
+ * - SOON, to the client only and only as a push: in the bell it is read too late.
  * Nothing to who turned off "Promemoria prima delle sedute".
  */
 class SessionReminder extends Notification implements ShouldQueue
@@ -47,13 +45,10 @@ class SessionReminder extends Notification implements ShouldQueue
             return [];
         }
 
-        $push = $this->withPush($notifiable, []);
-
-        if ($this->kind === self::SOON || $push !== []) {
-            return $push;
-        }
-
-        return ['mail'];
+        // The last reminder is only a push: in the bell it would be read too late.
+        return $this->kind === self::SOON
+            ? $this->withPush($notifiable, [])
+            : $this->inAppAndPush($notifiable);
     }
 
     public function toWebPush(User $notifiable): WebPushMessage
@@ -79,37 +74,6 @@ class SessionReminder extends Notification implements ShouldQueue
         return $this->kind === self::SOON
             ? $this->pushMessage("Tra poco ti alleni con {$trainer}", "Alle {$hour}{$place}", route('client.home'), $tag)
             : $this->pushMessage(ucfirst($this->dayWord())." ti alleni con {$trainer}", "Alle {$hour}{$place}", route('client.home'), $tag);
-    }
-
-    /** resources/views/mail/booking/reminder: the day-before reminder to who has no device. */
-    public function toMail(User $notifiable): MailMessage
-    {
-        $booking = $this->booking;
-        $day = BookingMailData::day($booking);
-        $hour = BookingMailData::hour($booking);
-        $toTrainer = $this->isTrainer($notifiable);
-        $trainerName = $booking->trainerProfile->user->name;
-        $clientName = $booking->client->name ?? 'un cliente';
-        $cancelUntil = $booking->freeCancellationEndsAt();
-        $title = $toTrainer
-            ? ucfirst($this->dayWord())." hai una seduta con {$clientName}"
-            : ucfirst($this->dayWord())." ti alleni con {$trainerName}";
-
-        return (new MailMessage)
-            ->subject("Promemoria: {$day} alle {$hour}")
-            ->view(['mail.booking.reminder', 'mail.booking.reminder-text'], [
-                'title' => $title,
-                'intro' => 'Ti ricordiamo la seduta qui sotto.',
-                'card' => BookingMailData::card($booking, $toTrainer ? $clientName : "con {$trainerName}"),
-                'day' => $day,
-                'details' => $toTrainer ? [] : ['Indicazioni' => $booking->trainerProfile->arrival_notes],
-                'button' => $toTrainer ? 'Apri la panoramica' : 'Vedi la prenotazione',
-                'url' => route($toTrainer ? 'trainer.today' : 'client.home'),
-                'note' => $toTrainer ? null : ($cancelUntil->isFuture()
-                    ? 'Se non puoi più venire, annulla gratis entro '.BookingMailData::when($cancelUntil).': lo slot torna libero per altri.'
-                    : 'Se non puoi più venire, avvisa il trainer il prima possibile.'),
-                'toTrainer' => $toTrainer,
-            ]);
     }
 
     private function isTrainer(User $notifiable): bool

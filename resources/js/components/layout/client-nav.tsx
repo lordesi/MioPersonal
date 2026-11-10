@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import { Building2, Calendar, Heart, Search, User } from 'lucide-react';
 import AccountMenu from '@/components/layout/account-menu';
 import { BrandMark } from '@/components/layout/brand-logo';
+import NotificationBell from '@/components/layout/notification-bell';
 import type { TabItem } from '@/components/layout/mobile-tab-bar';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
@@ -76,7 +77,7 @@ type ClientSidebarProps = {
 export function ClientSidebar({ items, userName }: ClientSidebarProps) {
     return (
         <aside className="sticky top-0 hidden h-screen w-62 shrink-0 flex-col gap-7 overflow-y-auto bg-sidebar px-4 py-6 text-sidebar-foreground md:flex">
-            <div className="px-2">
+            <div className="flex items-center justify-between gap-2 px-2">
                 <Link
                     href={publicHome()}
                     aria-label="MioPersonal, vai alla home"
@@ -87,6 +88,7 @@ export function ClientSidebar({ items, userName }: ClientSidebarProps) {
                         MioPersonal
                     </span>
                 </Link>
+                <NotificationBell tone="dark" className="-my-2 -mr-2" />
             </div>
 
             <nav aria-label="Principale" className="flex flex-col gap-0.5">

@@ -15,13 +15,48 @@ use NotificationChannels\WebPush\WebPushMessage;
 trait SendsPush
 {
     /**
-     * The email always, the push too when the user has a device.
+     * The email and the bell inside the site always, the push too when the user
+     * has a device. The email is kept for what the person must read even without
+     * opening the site (the free plan of the mail provider has a daily limit:
+     * use it sparingly, the others go through inAppAndPush()).
      *
      * @return list<string>
      */
     protected function mailAndPush(object $notifiable): array
     {
-        return $this->withPush($notifiable, ['mail']);
+        return $this->withPush($notifiable, ['mail', 'database']);
+    }
+
+    /**
+     * No email: the bell inside the site (always) and the push (with a device).
+     *
+     * @return list<string>
+     */
+    protected function inAppAndPush(object $notifiable): array
+    {
+        return $this->withPush($notifiable, ['database']);
+    }
+
+    /**
+     * The bell inside the site: the same title, text and link of the push.
+     *
+     * @return array{title: string, body: string, url: string}
+     */
+    public function toArray(User $notifiable): array
+    {
+        /** @var array{title?: string, body?: string, data?: array{url?: string}} $push */
+        $push = $this->toWebPush($notifiable)->toArray();
+
+        // Saved as a path ("/area-trainer/richieste"): it keeps working if the domain changes.
+        $link = parse_url($push['data']['url'] ?? '/');
+
+        return [
+            'title' => $push['title'] ?? '',
+            'body' => $push['body'] ?? '',
+            'url' => ($link['path'] ?? '/')
+                .(isset($link['query']) ? "?{$link['query']}" : '')
+                .(isset($link['fragment']) ? "#{$link['fragment']}" : ''),
+        ];
     }
 
     /**

@@ -15,6 +15,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Sentry\Laravel\Integration;
 use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -52,6 +53,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $wantsJson = fn (Request $request) => $request->is('api/*') || $request->expectsJson();
 
         $exceptions->shouldRenderJsonWhen($wantsJson);
+
+        // Error tracking (Sentry). Without a DSN it does nothing.
+        Integration::handles($exceptions);
 
         // Our own pages instead of Laravel's English ones: "Questa pagina non esiste (più)."
         // for 404, public/error for the others. With APP_DEBUG a 500 keeps Laravel's

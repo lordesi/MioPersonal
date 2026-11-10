@@ -42,6 +42,9 @@ class DeleteUser
             $this->deleteGym->handle($user->gymProfile);
         }
 
+        // The bell of the site (the notifications are not tied to the user by a foreign key).
+        $user->notifications()->delete();
+
         $user->delete();
 
         // The photo of "Completa il tuo profilo" goes with the account.

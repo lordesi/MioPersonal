@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import AccountMenu from '@/components/layout/account-menu';
 import BrandLogo from '@/components/layout/brand-logo';
+import NotificationBell from '@/components/layout/notification-bell';
 import type { GymSection } from '@/components/layout/gym-nav';
 import {
     GymSidebar,
@@ -106,7 +107,8 @@ export default function GymLayout({ children, section }: GymLayoutProps) {
                         >
                             Area palestra
                         </Badge>
-                        <div className="ml-auto">
+                        <div className="ml-auto flex items-center gap-1">
+                            <NotificationBell />
                             <AccountMenu
                                 variant="gym"
                                 userName={name}

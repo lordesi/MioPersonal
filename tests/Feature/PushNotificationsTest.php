@@ -83,11 +83,12 @@ class PushNotificationsTest extends TestCase
         /** @var User $client */
         $client = $booking->client;
 
-        $this->assertSame(['mail'], (new BookingConfirmed($booking))->via($client));
+        // The bell inside the site always, no email.
+        $this->assertSame(['database'], (new BookingConfirmed($booking))->via($client));
 
         $client->updatePushSubscription(self::ENDPOINT, 'key', 'token', 'aes128gcm');
 
-        $this->assertSame(['mail', WebPushChannel::class], (new BookingConfirmed($booking))->via($client->fresh()));
+        $this->assertSame(['database', WebPushChannel::class], (new BookingConfirmed($booking))->via($client->fresh()));
     }
 
     public function test_the_push_of_a_new_request_has_no_full_name_nor_note()

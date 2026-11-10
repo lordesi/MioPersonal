@@ -234,7 +234,6 @@ export default function DevComponents() {
                     >
                         <TrainerHeader
                             userName="Giulia Rossi"
-                            notificationCount={3}
                             publicProfileHref="#"
                         />
                     </Showcase>

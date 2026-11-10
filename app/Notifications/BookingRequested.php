@@ -9,16 +9,16 @@ use App\Notifications\Concerns\SendsPush;
 use App\Support\BookingMailData;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushMessage;
 
 /**
- * The email (and the push, with a device) to the trainer when a client books:
- * a request to answer, or a booking already confirmed by "Conferma automatica".
+ * The notification (bell inside the site, and the push with a device) to the
+ * trainer when a client books: a request to answer, or a booking already
+ * confirmed by "Conferma automatica". No email: it would use the daily limit
+ * of the mail provider for every single booking.
  *
- * Queued, so the booking page doesn't wait for the mail server, and sent only
- * once the booking is saved (afterCommit).
+ * Queued, and sent only once the booking is saved (afterCommit).
  */
 class BookingRequested extends Notification implements ShouldQueue
 {
@@ -38,7 +38,7 @@ class BookingRequested extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return $this->mailAndPush($notifiable);
+        return $this->inAppAndPush($notifiable);
     }
 
     /** The first one to get right: the sooner the trainer answers, the more sessions are confirmed. */
@@ -54,38 +54,5 @@ class BookingRequested extends Notification implements ShouldQueue
             route($this->alreadyConfirmed ? 'trainer.today' : 'trainer.requests'),
             "booking-{$booking->id}",
         );
-    }
-
-    /** Sent to the trainer's account: resources/views/mail/booking/new-request. */
-    public function toMail(User $notifiable): MailMessage
-    {
-        $booking = $this->booking;
-        $client = $booking->client->name ?? 'Un cliente';
-        $day = BookingMailData::day($booking);
-        $hour = BookingMailData::hour($booking);
-
-        return (new MailMessage)
-            ->subject(($this->alreadyConfirmed ? 'Nuova prenotazione' : 'Nuova richiesta').": {$client}, {$day} alle {$hour}")
-            ->view(['mail.booking.new-request', 'mail.booking.new-request-text'], [
-                'card' => BookingMailData::card($booking, $client),
-                'day' => $day,
-                'clientName' => $client,
-                'isNewClient' => $this->isNewClient(),
-                'clientNote' => $booking->client_note,
-                'alreadyConfirmed' => $this->alreadyConfirmed,
-                'expiresAt' => $booking->expires_at === null ? null : BookingMailData::when($booking->expires_at),
-                'url' => route($this->alreadyConfirmed ? 'trainer.today' : 'trainer.requests'),
-            ]);
-    }
-
-    /** "· nuovo cliente": never had a confirmed session with this trainer. */
-    private function isNewClient(): bool
-    {
-        return $this->booking->client_id !== null && Booking::query()
-            ->where('client_id', $this->booking->client_id)
-            ->where('trainer_profile_id', $this->booking->trainer_profile_id)
-            ->where('status', BookingStatus::Confirmed)
-            ->whereKeyNot($this->booking->id)
-            ->doesntExist();
     }
 }

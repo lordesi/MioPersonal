@@ -10,8 +10,9 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * A message from the Contatti page. The same email goes to the team
- * and, as a copy, to the person who wrote it.
+ * A message from the Contatti page, sent to the team (resources/views/mail/notice).
+ * The person who wrote doesn't get a copy: it would use the daily limit of the
+ * mail provider, and the page already says that the message was sent.
  */
 class ContactMessage extends Mailable
 {
@@ -19,19 +20,11 @@ class ContactMessage extends Mailable
 
     /**
      * @param  array{roleLabel: string, topicLabel: string, name: string, email: string, message: string}  $contact
-     * @param  bool  $isCopy  true for the copy sent to the person who wrote
      */
-    public function __construct(
-        public array $contact,
-        public bool $isCopy = false,
-    ) {}
+    public function __construct(public array $contact) {}
 
     public function envelope(): Envelope
     {
-        if ($this->isCopy) {
-            return new Envelope(subject: 'Abbiamo ricevuto il tuo messaggio');
-        }
-
         return new Envelope(
             // "Rispondi" in the team's inbox writes straight to the sender.
             replyTo: [new Address($this->contact['email'], $this->contact['name'])],
@@ -41,6 +34,24 @@ class ContactMessage extends Mailable
 
     public function content(): Content
     {
-        return new Content(markdown: 'mail.contact-message');
+        return new Content(
+            view: 'mail.notice',
+            text: 'mail.notice-text',
+            with: [
+                'title' => 'Nuovo messaggio dalla pagina Contatti',
+                'label' => 'Contatti',
+                'paragraphs' => ["Rispondi a questa email per scrivere direttamente a {$this->contact['name']}."],
+                'items' => [],
+                'details' => [
+                    'Sei' => $this->contact['roleLabel'],
+                    'Argomento' => $this->contact['topicLabel'],
+                    'Nome' => $this->contact['name'],
+                    'Email' => $this->contact['email'],
+                ],
+                // Escaped by the view; the line breaks the person typed are kept.
+                'body' => $this->contact['message'],
+                'footer' => 'Messaggio inviato dal modulo della pagina Contatti di MioPersonal.',
+            ],
+        );
     }
 }

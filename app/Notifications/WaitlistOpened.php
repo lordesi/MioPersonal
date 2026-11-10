@@ -12,7 +12,6 @@ use App\Support\TrainerSlots;
 use Carbon\CarbonImmutable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushMessage;
 
@@ -38,22 +37,12 @@ class WaitlistOpened extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return $this->mailAndPush($notifiable);
+        return $this->inAppAndPush($notifiable);
     }
 
     public function toWebPush(User $notifiable): WebPushMessage
     {
         return $this->pushMessage($this->title(), $this->body(), $this->url(), $this->tag());
-    }
-
-    public function toMail(User $notifiable): MailMessage
-    {
-        return (new MailMessage)
-            ->subject($this->title())
-            ->greeting("Ciao {$notifiable->first_name},")
-            ->line($this->body())
-            ->line('Non ti prenotiamo noi: chi arriva prima, prende il posto. Hai qualche ora di precedenza sugli altri in lista.')
-            ->action($this->subject instanceof GroupSession ? 'Prenota il posto' : 'Scegli lo slot', $this->url());
     }
 
     private function title(): string

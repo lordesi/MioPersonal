@@ -54,7 +54,6 @@ export default function TrainerLayout({
                 <div className="md:hidden">
                     <TrainerHeader
                         userName={name}
-                        notificationCount={pending}
                         publicProfileHref={profileHref}
                     />
                 </div>

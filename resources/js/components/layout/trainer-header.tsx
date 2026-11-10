@@ -1,22 +1,18 @@
 import { Link } from '@inertiajs/react';
-import { Bell } from 'lucide-react';
 import AccountMenu from '@/components/layout/account-menu';
 import BrandLogo from '@/components/layout/brand-logo';
+import NotificationBell from '@/components/layout/notification-bell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { requests } from '@/routes/trainer';
 
 type TrainerHeaderProps = {
     userName: string;
-    /** Requests waiting for an answer: the bell opens "Richieste". */
-    notificationCount?: number;
     /** Link to the trainer's public profile; hidden on mobile. */
     publicProfileHref?: string;
 };
 
 export default function TrainerHeader({
     userName,
-    notificationCount = 0,
     publicProfileHref,
 }: TrainerHeaderProps) {
     return (
@@ -42,24 +38,8 @@ export default function TrainerHeader({
                             </Link>
                         </Button>
                     )}
-                    <Button
-                        asChild
-                        variant="ghost"
-                        size="icon"
-                        className="relative size-11 rounded-full"
-                    >
-                        <Link
-                            href={requests()}
-                            aria-label={`Richieste da confermare: ${notificationCount}`}
-                        >
-                            <Bell className="size-5" />
-                            {notificationCount > 0 && (
-                                <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] leading-3 font-bold text-primary-foreground tabular-nums">
-                                    {notificationCount}
-                                </span>
-                            )}
-                        </Link>
-                    </Button>
+                    {/* The requests to answer are on "Richieste": the bell is for everything else too. */}
+                    <NotificationBell />
                     <AccountMenu
                         variant="trainer"
                         userName={userName}

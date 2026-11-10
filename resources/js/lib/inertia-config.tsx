@@ -3,6 +3,7 @@ import type { ComponentType, ReactElement, ReactNode } from 'react';
 import CookieConsent from '@/components/cookies/cookie-consent';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Sentry } from '@/lib/sentry';
 import AdminLayout from '@/layouts/admin-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import ClientLayout from '@/layouts/client-layout';
@@ -60,7 +61,16 @@ export function withApp(
 ): ReactElement {
     return (
         <TooltipProvider delayDuration={0}>
-            {app}
+            {/* A crash while drawing a page is sent to Sentry (when it is on). */}
+            <Sentry.ErrorBoundary
+                fallback={
+                    <p className="p-6 text-center text-sm">
+                        Qualcosa è andato storto. Ricarica la pagina.
+                    </p>
+                }
+            >
+                {app}
+            </Sentry.ErrorBoundary>
             <Toaster />
             <CookieConsent initialPage={page} />
         </TooltipProvider>

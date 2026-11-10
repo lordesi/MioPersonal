@@ -220,6 +220,15 @@ Artisan::command('users:purge-deleted', function (DeleteUser $deleteUser) {
 
 Schedule::command('users:purge-deleted')->daily();
 
+// The bell of the site shows the latest 30: what is older than 90 days is deleted.
+Artisan::command('notifications:prune', function () {
+    $count = DB::table('notifications')->where('created_at', '<', now()->subDays(90))->delete();
+
+    $this->info("{$count} old notifications deleted.");
+})->purpose('Delete the notifications of the bell older than 90 days');
+
+Schedule::command('notifications:prune')->dailyAt('05:00');
+
 // Once, for the photos uploaded before SafeImage: each one is drawn again in
 // place, without metadata (GPS position…), upright and at most 2000 px.
 Artisan::command('photos:strip-metadata', function () {

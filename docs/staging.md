@@ -9,14 +9,14 @@ ogni modifica **prima** di pubblicarla. Il flusso con il socio diventa:
 
 Il codice protegge già da solo la copia di prova (basta `APP_ENV=staging`):
 
-| Cosa                | Come                                                                                      |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| Chiuso da password  | Utente e password (`STAGING_USER`, `STAGING_PASSWORD`). Se mancano, il sito resta chiuso. |
-| Non indicizzato     | Header `X-Robots-Tag: noindex` e `robots.txt` con `Disallow: /`.                          |
-| Email intrappolate  | Qualunque `MAIL_MAILER` ci sia nel `.env`, le email vanno solo in `storage/logs`.         |
-| Non confondibile    | In basso a sinistra c'è la scritta **STAGING · dati finti**.                              |
-| Dati finti          | `php artisan staging:reset` rifà il database con trainer, palestre e account di prova.    |
-| Reset sicuro        | `staging:reset` si rifiuta di girare se non è staging: non può cancellare la produzione.  |
+| Cosa               | Come                                                                                      |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| Chiuso da password | Utente e password (`STAGING_USER`, `STAGING_PASSWORD`). Se mancano, il sito resta chiuso. |
+| Non indicizzato    | Header `X-Robots-Tag: noindex` e `robots.txt` con `Disallow: /`.                          |
+| Email intrappolate | Qualunque `MAIL_MAILER` ci sia nel `.env`, le email vanno solo in `storage/logs`.         |
+| Non confondibile   | In basso a sinistra c'è la scritta **STAGING · dati finti**.                              |
+| Dati finti         | `php artisan staging:reset` rifà il database con trainer, palestre e account di prova.    |
+| Reset sicuro       | `staging:reset` si rifiuta di girare se non è staging: non può cancellare la produzione.  |
 
 ## Una volta sola, su Ploi
 
@@ -47,12 +47,12 @@ Il codice protegge già da solo la copia di prova (basta `APP_ENV=staging`):
 
 Tutti con password `password`.
 
-| Chi         | Email                              |
-| ----------- | ---------------------------------- |
-| Admin       | `admin@staging.miopersonal.test`   |
-| Cliente     | `cliente@staging.miopersonal.test` |
-| Trainer     | `giulia-rossi@demo.miopersonal.test` (con sedute e pacchetto) |
-| Altri trainer e palestre | `…@demo.miopersonal.test` |
+| Chi                      | Email                                                         |
+| ------------------------ | ------------------------------------------------------------- |
+| Admin                    | `admin@staging.miopersonal.test`                              |
+| Cliente                  | `cliente@staging.miopersonal.test`                            |
+| Trainer                  | `giulia-rossi@demo.miopersonal.test` (con sedute e pacchetto) |
+| Altri trainer e palestre | `…@demo.miopersonal.test`                                     |
 
 L'admin deve confermare di nuovo la password per aprire `/admin` (come in produzione).
 
@@ -65,6 +65,19 @@ L'admin deve confermare di nuovo la password per aprire `/admin` (come in produz
 - **Instagram, TikTok, Facebook, YouTube, VAPID (push)**: lascia le chiavi **vuote** su staging. Senza chiavi i
   pulsanti non compaiono e non parte nulla.
 - **Pagamenti** (quando ci saranno): solo chiavi di test.
+
+## Sentry (errori)
+
+Piano gratuito Developer (1 utente). Due progetti Sentry, uno **Laravel** e uno **React**, e due ambienti
+(`staging`, `production`) con DSN separati nell'ambiente di Ploi:
+
+- `SENTRY_LARAVEL_DSN` (progetto Laravel), `VITE_SENTRY_DSN` (progetto React, pubblico: finisce nel JS).
+  `VITE_SENTRY_DSN` serve **prima** di `npm run build`, quindi va impostato prima del deploy.
+- `SENTRY_ENVIRONMENT` / `VITE_SENTRY_ENVIRONMENT`: `staging` o `production`. `SENTRY_TRACES_SAMPLE_RATE=0`.
+- DSN vuoto = Sentry spento (locale e test non mandano niente).
+- Nella dashboard Sentry imposta il tetto di spesa a 0 $ ("Spend allocation" / on-demand budget) e controlla la
+  quota reale. Dopo il deploy: `php artisan queue:restart`, e prova con `php artisan sentry:test`.
+- Non vengono mandati nome o email, solo id e ruolo. Non ci sono cookie, quindi il banner non cambia.
 
 ## Dati veri su staging
 
