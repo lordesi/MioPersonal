@@ -128,8 +128,9 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Limits per IP on the public forms that send emails (a bot with many
-     * addresses could otherwise use them to mail anyone from our domain).
+     * The ceiling on every page, and limits per IP on the public forms that send
+     * emails (a bot with many addresses could otherwise use them to mail anyone
+     * from our domain).
      */
     protected function configureRateLimiting(): void
     {
@@ -137,6 +138,13 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(5)->by('minute|'.$request->ip()),
             Limit::perDay(20)->by('day|'.$request->ip()),
         ]);
+
+        // Every page of the web group: a ceiling far above what a person does,
+        // so one address can't flood the server. Signed-in people by account
+        // (many share a gym's wifi), the others by IP.
+        RateLimiter::for('global', fn (Request $request) => $request->user()
+            ? Limit::perMinute(300)->by('user|'.$request->user()->getAuthIdentifier())
+            : Limit::perMinute(120)->by('ip|'.$request->ip()));
 
         // App\Http\Middleware\ThrottleSignups: new accounts (each gets "Conferma la tua email")…
         RateLimiter::for('signups', fn (Request $request) => Limit::perHour(10)->by($request->ip()));

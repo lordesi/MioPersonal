@@ -9,6 +9,7 @@ use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\ThrottleSignups;
 use App\Http\Middleware\TrackLastActivity;
 use App\Http\Middleware\TrackVisit;
+use App\Support\Cloudflare;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -30,12 +31,20 @@ return Application::configure(basePath: dirname(__DIR__))
         // Only requests for APP_URL (and its subdomains); off in local and in tests.
         $middleware->trustHosts();
 
+        // The real visitor IP behind Cloudflare's proxy (see App\Support\Cloudflare).
+        $middleware->trustProxies(
+            at: Cloudflare::IP_RANGES,
+            headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO,
+        );
+
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
             'role' => EnsureUserHasRole::class,
         ]);
 
         $middleware->web(append: [
+            // First of ours: a flood is turned away before any page work (see AppServiceProvider).
+            'throttle:global',
             HandleInertiaRequests::class,
             // After Inertia: its redirects become 303 for PUT/PATCH/DELETE.
             EnsureAccountActive::class,
