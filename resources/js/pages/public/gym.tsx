@@ -1,5 +1,14 @@
 import { Head, Link } from '@inertiajs/react';
-import { Building2, MapPin, Share, Tag, Users } from 'lucide-react';
+import {
+    Building2,
+    MapPin,
+    Navigation,
+    Phone,
+    Share,
+    Tag,
+    Ticket,
+    Users,
+} from 'lucide-react';
 import UpcomingEvents from '@/components/events/upcoming-events';
 import { SaveableGymCard } from '@/components/gym/gym-card';
 import GymCoursePlanner from '@/components/gym/gym-course-planner';
@@ -11,8 +20,10 @@ import {
     GymPromotions,
 } from '@/components/gym/gym-sections';
 import PhotoGallery from '@/components/profile/photo-gallery';
+import ProfileMobileHeader from '@/components/profile/profile-mobile-header';
 import ProfileSection from '@/components/profile/profile-section';
 import FavoriteButton from '@/components/shared/favorite-button';
+import SectionAnchors from '@/components/shared/section-anchors';
 import TrainerCard from '@/components/trainer/trainer-card';
 import {
     Breadcrumb,
@@ -27,6 +38,7 @@ import { useFavorite } from '@/hooks/use-favorite';
 import { useShare } from '@/hooks/use-share';
 import { gymSearchUrl, monthlyLabel } from '@/lib/gym';
 import { home } from '@/routes';
+import { search as eventsSearch } from '@/routes/events';
 import type {
     GroupSessionSummary,
     GymProfileData,
@@ -51,10 +63,15 @@ const crumbLink = 'text-primary-foreground/60 hover:text-primary-foreground';
 const darkButton =
     'h-11 rounded-xl border-primary-foreground/20 bg-transparent px-4 text-primary-foreground shadow-none hover:bg-primary-foreground/10 hover:text-primary-foreground dark:bg-transparent';
 
+/** Below the sticky bar of the sections. */
+const anchored = 'scroll-mt-16';
+
 /**
- * The public page of a gym (GymProfileController): photos, services, hours,
- * plans, promotions, the trainers who work there, where it is and contacts,
- * then the similar gyms.
+ * The public page of a gym (GymProfileController): photos, then what happens
+ * there (promotions, courses, events), what it offers (services, plans,
+ * trainers), where it is and when it is open, then the similar gyms. On
+ * phones address and hours come first, and a bar at the bottom calls,
+ * opens the map or the plans.
  */
 export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
     const photos = [gym.coverUrl, ...gym.photos]
@@ -63,13 +80,34 @@ export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
     const fromLabel = monthlyLabel(gym.monthlyFromCents);
     const favorite = useFavorite(gym.slug, gym.favorite, 'gym');
     const share = useShare(gym.name);
+    const citySearchHref = gymSearchUrl({}, gym.city.slug);
+
+    const anchors = [
+        gym.promotions.length > 0 && { id: 'promozioni', label: 'Promozioni' },
+        gym.courses.length > 0 && { id: 'corsi', label: 'Corsi' },
+        events.length > 0 && { id: 'eventi', label: 'Eventi' },
+        gym.amenities.length > 0 && { id: 'servizi', label: 'Servizi' },
+        gym.plans.length > 0 && { id: 'abbonamenti', label: 'Abbonamenti' },
+        { id: 'trainer', label: 'Trainer' },
+        { id: 'dove', label: 'Orari e contatti' },
+    ].filter((item): item is { id: string; label: string } => Boolean(item));
+
+    const phoneHref = gym.contacts.phone
+        ? `tel:${gym.contacts.phone.replace(/[^+\d]/g, '')}`
+        : null;
 
     return (
         <>
             <Head title={seo.title} />
+            <ProfileMobileHeader
+                backHref={citySearchHref}
+                backLabel="Torna alle palestre"
+                onShare={preview ? undefined : share}
+                shareLabel="Condividi la palestra"
+            />
 
             <div className="bg-primary text-primary-foreground">
-                <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 pt-6 pb-8 md:px-8">
+                <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 pt-4 pb-8 md:px-8 md:pt-6">
                     {preview && (
                         <p
                             role="status"
@@ -80,7 +118,10 @@ export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
                             non viene approvato.
                         </p>
                     )}
-                    <Breadcrumb aria-label="Percorso">
+                    <Breadcrumb
+                        aria-label="Percorso"
+                        className="hidden md:block"
+                    >
                         <BreadcrumbList className="gap-2 text-[13px] leading-[18px] text-primary-foreground/60 sm:gap-2">
                             <BreadcrumbItem>
                                 <BreadcrumbLink asChild className={crumbLink}>
@@ -90,9 +131,7 @@ export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
                             <BreadcrumbSeparator>/</BreadcrumbSeparator>
                             <BreadcrumbItem>
                                 <BreadcrumbLink asChild className={crumbLink}>
-                                    <Link
-                                        href={gymSearchUrl({}, gym.city.slug)}
-                                    >
+                                    <Link href={citySearchHref}>
                                         Palestre a {gym.city.name}
                                     </Link>
                                 </BreadcrumbLink>
@@ -176,7 +215,7 @@ export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
                                     type="button"
                                     variant="outline"
                                     onClick={share}
-                                    className={darkButton}
+                                    className={`${darkButton} hidden md:inline-flex`}
                                 >
                                     <Share />
                                     Condividi
@@ -190,7 +229,7 @@ export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
                             {gym.plans.length > 0 && (
                                 <Button
                                     asChild
-                                    className="h-11 rounded-xl bg-primary-foreground px-5 font-semibold text-primary hover:bg-primary-foreground/90"
+                                    className="hidden h-11 rounded-xl bg-primary-foreground px-5 font-semibold text-primary hover:bg-primary-foreground/90 md:inline-flex"
                                 >
                                     <a href="#abbonamenti">Vedi abbonamenti</a>
                                 </Button>
@@ -200,14 +239,43 @@ export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
                 </div>
             </div>
 
+            <SectionAnchors sections={anchors} />
+
             <div className="flex-1 bg-muted">
-                <div className="mx-auto grid w-full max-w-7xl items-start gap-6 px-4 pt-7 pb-14 md:px-8 lg:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
-                    <div className="flex min-w-0 flex-col gap-4.5">
+                <div className="mx-auto grid w-full max-w-7xl items-start gap-6 px-4 pt-7 pb-28 md:px-8 md:pb-14 lg:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
+                    {/* On phones address and hours first: it's what people look for. */}
+                    <aside className="flex min-w-0 flex-col gap-4.5 lg:sticky lg:top-18 lg:order-2">
+                        <ProfileSection
+                            id="dove"
+                            titleId="where-title"
+                            title="Dove si trova"
+                            className={anchored}
+                        >
+                            <GymContacts
+                                address={gym.address}
+                                mapsUrl={gym.mapsUrl}
+                                contacts={gym.contacts}
+                            />
+                        </ProfileSection>
+                        <ProfileSection
+                            titleId="hours-title"
+                            title="Orari di apertura"
+                        >
+                            <GymHours
+                                hours={gym.hours}
+                                openNow={gym.openNow}
+                                notes={gym.openingNotes}
+                            />
+                        </ProfileSection>
+                    </aside>
+
+                    <div className="flex min-w-0 flex-col gap-4.5 lg:order-1">
                         {gym.promotions.length > 0 && (
                             <ProfileSection
                                 id="promozioni"
                                 titleId="promotions-title"
                                 title="Promozioni"
+                                className={anchored}
                             >
                                 <GymPromotions promotions={gym.promotions} />
                             </ProfileSection>
@@ -229,20 +297,12 @@ export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
                             </ProfileSection>
                         )}
 
-                        {gym.amenities.length > 0 && (
-                            <ProfileSection
-                                titleId="amenities-title"
-                                title="Servizi"
-                            >
-                                <GymAmenities amenities={gym.amenities} />
-                            </ProfileSection>
-                        )}
-
                         {gym.courses.length > 0 && (
                             <ProfileSection
                                 id="corsi"
                                 titleId="courses-title"
                                 title="Corsi"
+                                className={anchored}
                             >
                                 <GymCoursePlanner
                                     weeks={gym.courseWeeks}
@@ -252,12 +312,35 @@ export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
                             </ProfileSection>
                         )}
 
+                        {events.length > 0 && (
+                            <div id="eventi" className={anchored}>
+                                <UpcomingEvents
+                                    events={events}
+                                    allHref={eventsSearch.url({
+                                        city: gym.city.slug,
+                                    })}
+                                />
+                            </div>
+                        )}
+
+                        {gym.amenities.length > 0 && (
+                            <ProfileSection
+                                id="servizi"
+                                titleId="amenities-title"
+                                title="Servizi"
+                                className={anchored}
+                            >
+                                <GymAmenities amenities={gym.amenities} />
+                            </ProfileSection>
+                        )}
+
                         {gym.plans.length > 0 && (
                             <ProfileSection
                                 id="abbonamenti"
                                 titleId="plans-title"
                                 title="Abbonamenti"
                                 description="Si acquistano direttamente in palestra."
+                                className={anchored}
                             >
                                 <GymPlans plans={gym.plans} />
                             </ProfileSection>
@@ -267,6 +350,7 @@ export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
                             id="trainer"
                             titleId="trainers-title"
                             title="Personal trainer"
+                            className={anchored}
                             description={
                                 gym.trainers.length > 0
                                     ? `Allenano da ${gym.name}: prenoti dal loro profilo.`
@@ -290,35 +374,10 @@ export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
                         </ProfileSection>
                     </div>
 
-                    <aside className="flex min-w-0 flex-col gap-4.5 lg:sticky lg:top-6">
-                        <ProfileSection
-                            titleId="where-title"
-                            title="Dove si trova"
-                        >
-                            <GymContacts
-                                address={gym.address}
-                                mapsUrl={gym.mapsUrl}
-                                contacts={gym.contacts}
-                            />
-                        </ProfileSection>
-                        <ProfileSection
-                            titleId="hours-title"
-                            title="Orari di apertura"
-                        >
-                            <GymHours
-                                hours={gym.hours}
-                                openNow={gym.openNow}
-                                notes={gym.openingNotes}
-                            />
-                        </ProfileSection>
-                    </aside>
-
-                    <UpcomingEvents events={events} className="lg:col-span-2" />
-
                     {similar.length > 0 && (
                         <section
                             aria-labelledby="similar-title"
-                            className="flex flex-col gap-3.5 lg:col-span-2"
+                            className="flex flex-col gap-3.5 lg:order-3 lg:col-span-2"
                         >
                             <div className="flex flex-wrap items-end justify-between gap-3">
                                 <h2
@@ -328,7 +387,7 @@ export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
                                     Palestre simili a {gym.city.name}
                                 </h2>
                                 <Link
-                                    href={gymSearchUrl({}, gym.city.slug)}
+                                    href={citySearchHref}
                                     className="inline-flex min-h-11 items-center text-sm font-medium underline md:min-h-0"
                                 >
                                     Tutte le palestre a {gym.city.name}
@@ -347,6 +406,36 @@ export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
                         </section>
                     )}
                 </div>
+            </div>
+
+            {/* Phones: the three things people do from a gym's page. */}
+            <div className="fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t bg-background px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
+                {phoneHref && (
+                    <Button asChild variant="outline" className="h-12 flex-1">
+                        <a href={phoneHref}>
+                            <Phone aria-hidden="true" />
+                            Chiama
+                        </a>
+                    </Button>
+                )}
+                <Button asChild variant="outline" className="h-12 flex-1">
+                    <a
+                        href={gym.mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <Navigation aria-hidden="true" />
+                        Indicazioni
+                    </a>
+                </Button>
+                {gym.plans.length > 0 && (
+                    <Button asChild className="h-12 flex-[1.3] font-semibold">
+                        <a href="#abbonamenti">
+                            <Ticket aria-hidden="true" />
+                            Abbonamenti
+                        </a>
+                    </Button>
+                )}
             </div>
         </>
     );
@@ -372,3 +461,5 @@ function GymTrainerCard({ trainer }: { trainer: TrainerSummary }) {
         />
     );
 }
+
+Gym.layout = { hideHeaderOnMobile: true };

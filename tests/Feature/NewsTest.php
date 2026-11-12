@@ -84,7 +84,7 @@ class NewsTest extends TestCase
         $this->get('/novita/atlantide')->assertNotFound();
     }
 
-    public function test_the_previews_in_the_home_and_the_searches()
+    public function test_the_preview_is_in_the_home_not_in_the_searches()
     {
         $this->trainer($this->milano, 1);
         $this->gym($this->milano, 1);
@@ -92,13 +92,11 @@ class NewsTest extends TestCase
         $this->get(route('home'))
             ->assertInertia(fn (Assert $page) => $page->has('news.trainers', 1)->has('news.gyms', 1)->where('news.city', null));
 
-        // Each search shows only its own kind, in its city.
+        // The searches keep the results in sight: "Novità" is in the home and in /novita.
         $this->get(route('trainers.search', $this->milano))
-            ->assertInertia(fn (Assert $page) => $page->has('news.trainers', 1)->has('news.gyms', 0)->where('news.city.slug', 'milano'));
-        $this->get(route('gyms.search', $this->roma))
-            ->assertInertia(fn (Assert $page) => $page->has('news.gyms', 0)->has('news.trainers', 0));
+            ->assertInertia(fn (Assert $page) => $page->missing('news'));
         $this->get(route('gyms.search', $this->milano))
-            ->assertInertia(fn (Assert $page) => $page->has('news.gyms', 1));
+            ->assertInertia(fn (Assert $page) => $page->missing('news'));
     }
 
     public function test_the_client_home_shows_the_news_of_the_client_city()

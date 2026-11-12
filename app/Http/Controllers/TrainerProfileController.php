@@ -6,6 +6,7 @@ use App\Actions\Trainer\LinkClient;
 use App\Enums\PlaceType;
 use App\Models\ClientPackage;
 use App\Models\GroupSession;
+use App\Models\GymCourse;
 use App\Models\Review;
 use App\Models\Service;
 use App\Models\TrainerDocument;
@@ -14,6 +15,7 @@ use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Models\WaitlistEntry;
+use App\Support\CourseCard;
 use App\Support\GroupSessionCard;
 use App\Support\Seo;
 use App\Support\SimilarTrainers;
@@ -72,6 +74,15 @@ class TrainerProfileController extends Controller
             'allReviews' => Inertia::optional(fn () => $this->reviews($profile)),
             // "Prossimi eventi" the trainer organizes.
             'events' => GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()->listed()->upcoming()->hostedBy($profile))->orderBy('starts_at')->limit(6)->get()),
+            // "Corsi che tiene": the gyms' courses where the trainer is the instructor.
+            'courses' => CourseCard::many(GymCourse::query()
+                ->where('instructor_trainer_id', $profile->id)
+                ->where('is_active', true)
+                ->whereHas('lessons')
+                ->whereHas('gymProfile', fn ($gym) => $gym->published())
+                ->with(CourseCard::RELATIONS)
+                ->orderBy('name')
+                ->get()),
             'seo' => $this->seo($profile),
         ]);
     }

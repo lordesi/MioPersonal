@@ -7,6 +7,7 @@ import Certifications from '@/components/profile/certifications';
 import PhotoGallery from '@/components/profile/photo-gallery';
 import ProfileIntro from '@/components/profile/profile-intro';
 import ProfileMobileHeader from '@/components/profile/profile-mobile-header';
+import SectionAnchors from '@/components/shared/section-anchors';
 import ProfileSection from '@/components/profile/profile-section';
 import ReviewsSection from '@/components/profile/reviews-section';
 import ServicePicker from '@/components/profile/service-picker';
@@ -15,6 +16,7 @@ import SimilarTrainers from '@/components/profile/similar-trainers';
 import SlotPicker from '@/components/profile/slot-picker';
 import PeoplePicker from '@/components/profile/people-picker';
 import PlacePicker from '@/components/profile/place-picker';
+import TrainerCourses from '@/components/profile/trainer-courses';
 import TrainerGyms from '@/components/profile/trainer-gyms';
 import TrainingPlaces from '@/components/profile/training-places';
 import {
@@ -37,6 +39,7 @@ import {
 } from '@/lib/booking';
 import { searchUrl } from '@/lib/search';
 import { home } from '@/routes';
+import { search as eventsSearch } from '@/routes/events';
 import { book } from '@/routes/trainers';
 import { start as startBooking } from '@/routes/trainers/book';
 import {
@@ -44,6 +47,7 @@ import {
     leave as leaveWaitlist,
 } from '@/routes/trainers/waitlist';
 import type {
+    CourseSummary,
     GroupSessionSummary,
     SeoData,
     TrainerProfile,
@@ -62,6 +66,8 @@ type ProfileProps = {
     invited: boolean;
     /** Every review, loaded by "Mostra tutte le recensioni". */
     allReviews?: TrainerReview[];
+    /** "Corsi che tiene" in the gyms. */
+    courses: CourseSummary[];
     /** "Prossimi eventi" the trainer organizes. */
     events: GroupSessionSummary[];
     seo: SeoData;
@@ -73,6 +79,7 @@ export default function Profile({
     invited,
     allReviews,
     events,
+    courses,
     seo,
 }: ProfileProps) {
     const page = usePage();
@@ -291,10 +298,25 @@ export default function Profile({
     // Back to the trainers of the same city.
     const citySearchHref = searchUrl({}, trainer.city?.slug);
 
+    // The bar under the dark block: only the sections on the page, in page order.
+    const anchors = [
+        trainer.bio.length > 0 && { id: 'chi-sono', label: 'Chi sono' },
+        weeks[weekIndex] && { id: 'prenota', label: 'Orari liberi' },
+        trainer.places.length > 0 && { id: 'dove', label: 'Dove allena' },
+        trainer.gyms.length > 0 && { id: 'palestre', label: 'Palestre' },
+        courses.length > 0 && { id: 'corsi', label: 'Corsi' },
+        trainer.rating !== null && { id: 'recensioni', label: 'Recensioni' },
+    ].filter((section): section is { id: string; label: string } => !!section);
+
     return (
         <>
             <Head title={seo.title} />
-            <ProfileMobileHeader backHref={citySearchHref} onShare={share} />
+            <ProfileMobileHeader
+                backHref={citySearchHref}
+                backLabel="Torna ai risultati"
+                onShare={share}
+                shareLabel="Condividi il profilo"
+            />
 
             {/* The dark block, like the header: breadcrumb, photos and name. */}
             <div className="bg-primary text-primary-foreground">
@@ -368,12 +390,15 @@ export default function Profile({
                 </div>
             </div>
 
+            <SectionAnchors sections={anchors} />
+
             <div className="flex-1 bg-muted">
                 <div className="mx-auto flex w-full max-w-7xl flex-col gap-7 px-4 pt-7 pb-10 md:px-8 md:pb-14">
                     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(340px,2fr)]">
                         <div className="flex min-w-0 flex-col gap-4.5">
                             {trainer.bio.length > 0 && (
                                 <ProfileSection
+                                    id="chi-sono"
                                     titleId="bio-title"
                                     title="Chi sono"
                                     className="order-1"
@@ -434,7 +459,10 @@ export default function Profile({
 
                             {/* Sections without content are left out, title included. */}
                             {trainer.places.length > 0 && (
-                                <div className="order-3 lg:order-4">
+                                <div
+                                    id="dove"
+                                    className="order-3 scroll-mt-16 lg:order-4"
+                                >
                                     <TrainingPlaces
                                         places={trainer.places}
                                         online={trainer.online}
@@ -443,9 +471,23 @@ export default function Profile({
                                 </div>
                             )}
                             {trainer.gyms.length > 0 && (
-                                <div className="order-3 lg:order-4">
+                                <div
+                                    id="palestre"
+                                    className="order-3 scroll-mt-16 lg:order-4"
+                                >
                                     <TrainerGyms
                                         gyms={trainer.gyms}
+                                        trainerFirstName={firstName}
+                                    />
+                                </div>
+                            )}
+                            {courses.length > 0 && (
+                                <div
+                                    id="corsi"
+                                    className="order-3 scroll-mt-16 lg:order-4"
+                                >
+                                    <TrainerCourses
+                                        courses={courses}
                                         trainerFirstName={firstName}
                                     />
                                 </div>
@@ -483,7 +525,14 @@ export default function Profile({
                         />
                     </div>
 
-                    <UpcomingEvents events={events} />
+                    <UpcomingEvents
+                        events={events}
+                        allHref={eventsSearch.url(
+                            trainer.city
+                                ? { city: trainer.city.slug }
+                                : undefined,
+                        )}
+                    />
 
                     <SimilarTrainers
                         trainers={trainer.similarTrainers}

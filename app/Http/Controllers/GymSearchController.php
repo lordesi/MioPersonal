@@ -7,7 +7,6 @@ use App\Models\City;
 use App\Models\GymProfile;
 use App\Support\CatalogOptions;
 use App\Support\GymCard;
-use App\Support\NewsFeed;
 use App\Support\Seo;
 use App\Support\Stats;
 use Illuminate\Database\Eloquent\Builder;
@@ -77,8 +76,6 @@ class GymSearchController extends Controller
 
         return Inertia::render('public/gym-search', [
             'city' => $city === null ? null : ['slug' => $city->slug, 'name' => $city->name],
-            // "Novità": the newest gyms here, only above the first page.
-            'news' => $page->currentPage() === 1 ? NewsFeed::preview($city, $request->user(), trainers: false, events: false) : null,
             'gyms' => GymCard::many($page->getCollection(), $favoriteIds),
             'total' => $page->total(),
             'pagination' => ['currentPage' => $page->currentPage(), 'lastPage' => $page->lastPage()],

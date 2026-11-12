@@ -12,6 +12,7 @@ use App\Models\GroupSessionHost;
 use App\Models\GymCourseLesson;
 use App\Models\GymProfile;
 use App\Models\User;
+use App\Support\CourseCard;
 use App\Support\GroupSessionCard;
 use App\Support\Seo;
 use App\Support\TrainerSlots;
@@ -70,6 +71,21 @@ class EventController extends Controller
                 ])->values()->all(),
             ],
             'otherDates' => GroupSessionCard::many($others),
+            // The breadcrumb: "Eventi a Milano", or the gym and the course of a lesson.
+            'city' => $session->city === null ? null : ['slug' => $session->city->slug, 'name' => $session->city->name],
+            'course' => $this->course($session),
+            // "Altri eventi a {città}": the next ones, not of the same series.
+            'nearby' => $session->city_id === null ? [] : GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()
+                ->listed()
+                ->upcoming()
+                ->where('city_id', $session->city_id)
+                ->whereKeyNot($session->id)
+                ->when($session->series_id !== null, fn ($query) => $query->where(fn ($other) => $other
+                    ->whereNull('series_id')
+                    ->orWhere('series_id', '!=', $session->series_id))))
+                ->orderBy('starts_at')
+                ->limit(4)
+                ->get()),
             // "Avvisami se si libera": only for a full event; whether the viewer is in line.
             'waitlist' => [
                 'joined' => $viewer !== null && $session->waitlist()->where('user_id', $viewer->id)->exists(),
@@ -96,6 +112,28 @@ class EventController extends Controller
                 jsonLd: $listed ? [$this->jsonLd($session)] : [],
             ),
         ]);
+    }
+
+    /**
+     * A lesson of a course: the course and the gym's plan, for the way back.
+     *
+     * @return array{name: string, href: string, gymName: string, gymHref: string}|null
+     */
+    private function course(GroupSession $session): ?array
+    {
+        $course = $session->lesson?->course;
+        $gym = $course?->gymProfile;
+
+        if ($course === null || $gym === null || ! $gym->isApproved()) {
+            return null;
+        }
+
+        return [
+            'name' => $course->name,
+            'href' => CourseCard::href($course),
+            'gymName' => $gym->name,
+            'gymHref' => route('gyms.show', $gym->slug, false),
+        ];
     }
 
     /** "Accedi per iscriverti": guests go through login or sign-up, then back here. */

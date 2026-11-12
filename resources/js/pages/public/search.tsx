@@ -1,31 +1,22 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Search as SearchIcon } from 'lucide-react';
 import { useState } from 'react';
-import NewsStrip from '@/components/news/news-strip';
 import FilterBar, { SearchControls } from '@/components/search/filter-bar';
 import type {
     ActiveFilters,
     SearchOption,
 } from '@/components/search/filter-bar';
-import { SearchKindLinks } from '@/components/search/search-kind-toggle';
+import SearchPageHeader from '@/components/search/search-page-header';
 import SearchPagination from '@/components/search/search-pagination';
 import FaqList from '@/components/seo/faq-list';
 import type { FaqItem } from '@/components/seo/faq-list';
 import TrainerCard from '@/components/trainer/trainer-card';
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { saveFavorite } from '@/hooks/use-favorite';
 import { searchUrl } from '@/lib/search';
 import type { SearchFilters } from '@/lib/search';
-import { home, login } from '@/routes';
-import type { NewsPreview, SeoData, TrainerSummary } from '@/types';
+import { login } from '@/routes';
+import type { SeoData, TrainerSummary } from '@/types';
 
 /**
  * No trainer matches every filter: similar profiles, found leaving out
@@ -56,8 +47,6 @@ const joinNames = (names: string[]) =>
 type SearchProps = {
     /** The city in the URL; null = all of Italy. */
     city: { slug: string; name: string } | null;
-    /** "Novità" in the city, only on page 1. */
-    news: NewsPreview | null;
     /** Trainers of the current page. */
     trainers: TrainerSummary[];
     /** Trainers matching the filters, on every page. */
@@ -75,12 +64,8 @@ type SearchProps = {
     faq: FaqItem[];
 };
 
-/** Light links on the dark block. */
-const crumbLink = 'text-primary-foreground/60 hover:text-primary-foreground';
-
 export default function Search({
     city,
-    news,
     trainers,
     total,
     pagination,
@@ -177,84 +162,25 @@ export default function Search({
         <>
             <Head title={seo.title} />
 
-            <section
-                aria-labelledby="search-title"
-                className="bg-primary text-primary-foreground"
+            <SearchPageHeader
+                kind="trainer"
+                city={city}
+                title={`Personal trainer ${place}`}
+                count={
+                    total === 1
+                        ? '1 trainer disponibile'
+                        : `${total} trainer disponibili`
+                }
+                intro={intro}
             >
-                <div className="mx-auto flex w-full max-w-7xl flex-col gap-5.5 px-4 pt-6 pb-10 md:px-8">
-                    <Breadcrumb aria-label="Percorso">
-                        <BreadcrumbList className="gap-2 text-[13px] leading-[18px] text-primary-foreground/60 sm:gap-2">
-                            <BreadcrumbItem>
-                                <BreadcrumbLink asChild className={crumbLink}>
-                                    <Link href={home()}>Home</Link>
-                                </BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                            {city ? (
-                                <>
-                                    <BreadcrumbItem>
-                                        <BreadcrumbLink
-                                            asChild
-                                            className={crumbLink}
-                                        >
-                                            <Link href={searchUrl()}>
-                                                Personal trainer
-                                            </Link>
-                                        </BreadcrumbLink>
-                                    </BreadcrumbItem>
-                                    <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                                    <BreadcrumbItem>
-                                        <BreadcrumbPage className="text-primary-foreground">
-                                            {city.name}
-                                        </BreadcrumbPage>
-                                    </BreadcrumbItem>
-                                </>
-                            ) : (
-                                <BreadcrumbItem>
-                                    <BreadcrumbPage className="text-primary-foreground">
-                                        Personal trainer
-                                    </BreadcrumbPage>
-                                </BreadcrumbItem>
-                            )}
-                        </BreadcrumbList>
-                    </Breadcrumb>
-
-                    <SearchKindLinks
-                        current="trainer"
-                        city={city?.slug ?? null}
-                    />
-
-                    <div className="flex flex-col gap-1.5">
-                        <h1
-                            id="search-title"
-                            className="text-[34px] leading-10 font-bold tracking-[-0.03em] md:text-[44px] md:leading-12"
-                        >
-                            Personal trainer {place}
-                        </h1>
-                        <p
-                            aria-live="polite"
-                            className="text-base text-primary-foreground/60 tabular-nums"
-                        >
-                            {total === 1
-                                ? '1 trainer disponibile'
-                                : `${total} trainer disponibili`}
-                        </p>
-                        {intro && (
-                            <p className="mt-1 max-w-3xl text-[15px] leading-6 text-primary-foreground/75">
-                                {intro}
-                            </p>
-                        )}
-                    </div>
-
-                    <SearchControls
-                        filters={filters}
-                        disciplines={disciplines}
-                        cities={cities}
-                        city={city?.slug ?? null}
-                        onChange={changeFilters}
-                    />
-                </div>
-            </section>
+                <SearchControls
+                    filters={filters}
+                    disciplines={disciplines}
+                    cities={cities}
+                    city={city?.slug ?? null}
+                    onChange={changeFilters}
+                />
+            </SearchPageHeader>
 
             <div className="flex-1 bg-muted">
                 <div className="mx-auto flex w-full max-w-7xl flex-col gap-4.5 px-4 pt-6 pb-16 md:px-8">
@@ -337,9 +263,6 @@ export default function Search({
                             )}
                         </>
                     )}
-
-                    {/* "Novità": the newest trainers here, under the results of page 1. */}
-                    {news && <NewsStrip news={news} className="pt-6" />}
 
                     <FaqList items={faq} className="pt-6" />
                 </div>

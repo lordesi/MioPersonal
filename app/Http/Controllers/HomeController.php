@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\GroupSessionType;
 use App\Enums\GymAmenity;
+use App\Models\GroupSession;
+use App\Models\GymCourse;
 use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use App\Support\CatalogOptions;
+use App\Support\CourseCard;
+use App\Support\GroupSessionCard;
 use App\Support\GymCard;
 use App\Support\HowItWorks;
 use App\Support\NewsFeed;
@@ -26,15 +31,28 @@ class HomeController extends Controller
     /** "Palestre in evidenza": the same carousel, 3 per page, 3 pages. */
     private const FEATURED_GYMS = 9;
 
+    /** "Corsi in palestra": the same carousel. */
+    private const FEATURED_COURSES = 9;
+
+    /** "Prossimi eventi". */
+    private const EVENTS = 6;
+
+    /** At most two shelves under "Trainer in evidenza", in this order. */
+    private const SHELVES = ['available-today', 'trending', 'new'];
+
     public function __invoke(Request $request): Response
     {
         TrainerSlots::refreshStale();
 
         return Inertia::render('public/home', [
             'featuredTrainers' => $this->featuredTrainers(TrainerCard::favoriteIds($request->user())),
-            // "In tendenza", "Liberi oggi", "Nuovi": each one only with enough trainers.
-            'trainerShelves' => TrainerShelves::all(TrainerCard::favoriteIds($request->user())),
+            // Two of "Liberi oggi", "In tendenza", "Nuovi": each one only with enough trainers.
+            'trainerShelves' => $this->shelves(TrainerCard::favoriteIds($request->user())),
             'featuredGyms' => GymCard::many($this->featuredGyms(), GymCard::favoriteIds($request->user())),
+            // "Corsi in palestra": the bookable ones first.
+            'featuredCourses' => $this->featuredCourses(),
+            // "Prossimi eventi" of all of Italy.
+            'events' => GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()->listed()->upcoming())->orderBy('starts_at')->limit(self::EVENTS)->get()),
             // "Novità": the newest trainers and gyms of all of Italy.
             'news' => NewsFeed::preview(null, $request->user()),
             // Options of the search form.
@@ -43,6 +61,8 @@ class HomeController extends Controller
             'cities' => CatalogOptions::citiesWithCoordinates(),
             // "Servizi" of the gyms' search ("Trainer | Palestre").
             'amenities' => GymAmenity::options(),
+            // "Tipo" of the events' search.
+            'eventTypes' => GroupSessionType::options(),
             'seo' => $this->seo(),
         ]);
     }
@@ -93,6 +113,40 @@ class HomeController extends Controller
                 ],
             ],
         );
+    }
+
+    /**
+     * Two shelves at most: the home stays short, with gyms, courses and
+     * events in sight.
+     *
+     * @param  list<int>  $favoriteIds
+     * @return list<array<string, mixed>>
+     */
+    private function shelves(array $favoriteIds): array
+    {
+        $shelves = TrainerShelves::all($favoriteIds);
+        usort($shelves, fn (array $a, array $b) => array_search($a['key'], self::SHELVES, true) <=> array_search($b['key'], self::SHELVES, true));
+
+        return array_slice($shelves, 0, 2);
+    }
+
+    /**
+     * "Corsi in palestra": active courses with lessons of the published gyms,
+     * the ones booked on MioPersonal first, then the newest.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function featuredCourses(): array
+    {
+        return CourseCard::many(GymCourse::query()
+            ->where('is_active', true)
+            ->whereHas('lessons')
+            ->whereHas('gymProfile', fn ($gym) => $gym->published())
+            ->with(CourseCard::RELATIONS)
+            ->orderByDesc('bookable')
+            ->latest('id')
+            ->limit(self::FEATURED_COURSES)
+            ->get());
     }
 
     /**

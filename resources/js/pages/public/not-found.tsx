@@ -1,38 +1,58 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ArrowRight, Search } from 'lucide-react';
 import type { FormEvent } from 'react';
 import SectionLabel from '@/components/shared/section-label';
 import { Button } from '@/components/ui/button';
 import { searchUrl } from '@/lib/search';
-import { home } from '@/routes';
-import { home as clientHome } from '@/routes/client';
+import { courseSearchUrl } from '@/lib/course';
+import { gymSearchUrl } from '@/lib/gym';
+import { dashboard } from '@/routes';
+import { search as eventsSearch } from '@/routes/events';
 import { show as contactPage } from '@/routes/contact';
 
-const usefulLinks = [
+/** The four searches, then "La mia area" for whoever is logged in. */
+const exploreLinks = [
     {
-        title: 'Torna alla home',
-        hint: 'Trova trainer e come funziona',
-        href: home.url(),
-    },
-    {
-        title: 'Cerca un trainer',
+        title: 'Cerca un personal trainer',
         hint: 'Per disciplina, città e disponibilità',
         href: searchUrl(),
     },
     {
-        title: 'Le mie prenotazioni',
-        hint: 'Se avevi un link a una prenotazione',
-        href: clientHome.url(),
+        title: 'Cerca una palestra',
+        hint: 'Servizi, abbonamenti e promozioni',
+        href: gymSearchUrl(),
     },
     {
-        title: 'Centro assistenza',
-        hint: 'Scrivici se pensi che sia un errore',
-        href: contactPage.url(),
+        title: 'Corsi in palestra',
+        hint: 'Gli orari della settimana',
+        href: courseSearchUrl(),
+    },
+    {
+        title: 'Eventi',
+        hint: 'Workshop, open day, allenamenti di gruppo',
+        href: eventsSearch.url(),
     },
 ];
 
 /** Shown by bootstrap/app.php for every 404 (unknown address, missing trainer…). */
 export default function NotFound() {
+    // Missing on Laravel's own error responses.
+    const user = usePage().props.auth?.user;
+    const usefulLinks = [
+        ...exploreLinks,
+        user
+            ? {
+                  title: 'La mia area',
+                  hint: 'Prenotazioni, profilo e impostazioni',
+                  href: dashboard.url(),
+              }
+            : {
+                  title: 'Centro assistenza',
+                  hint: 'Scrivici se pensi che sia un errore',
+                  href: contactPage.url(),
+              },
+    ];
+
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         // The search turns "pilates roma" into its filters (TrainerSearchController::freeTextUrl).

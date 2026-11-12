@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import TrainerAvailabilityController from '@/actions/App/Http/Controllers/TrainerAvailabilityController';
 import NumberedSection from '@/components/trainer/area/numbered-section';
 import PageHeading from '@/components/trainer/area/page-heading';
+import SeeAlso from '@/components/trainer/area/see-also';
 import AvailabilitySummary from '@/components/trainer/hours/availability-summary';
 import BookingRulesFields from '@/components/trainer/hours/booking-rules-fields';
 import DayOverrideDialog from '@/components/trainer/hours/day-override-dialog';
@@ -31,6 +32,7 @@ export default function Availability({
             <Head title="Le tue disponibilità" />
 
             <PageHeading title="Le tue disponibilità" />
+            <SeeAlso current="availability" />
 
             {availability === null ? (
                 <p className="text-sm text-muted-foreground">

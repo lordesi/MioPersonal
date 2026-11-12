@@ -142,7 +142,7 @@ final class Stats
      * @param  list<string>  $disciplines
      * @param  list<string>  $goals
      * @param  list<string>  $filters  names of the other filters in use
-     * @param  'trainer'|'gym'  $kind  the trainers' or the gyms' search
+     * @param  'trainer'|'gym'|'course'  $kind  the trainers', the gyms' or the courses' search
      */
     public static function recordSearch(Request $request, ?City $city, array $disciplines, array $goals, array $filters, int $results, string $kind = 'trainer'): void
     {

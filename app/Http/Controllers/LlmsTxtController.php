@@ -49,6 +49,7 @@ class LlmsTxtController extends Controller
             '- [Cerca personal trainer in Italia]('.route('trainers.search').'): tutti i trainer verificati, con filtri per città, disciplina, obiettivo, prezzo e allenamento online o a domicilio',
             '- [Come funziona]('.route('how-it-works').'): cos’è MioPersonal, prenotazione, costi, verifica dei trainer e recensioni',
             '- [Palestre]('.route('gyms.search').'): palestre con servizi, orari e abbonamenti',
+            '- [Corsi]('.route('courses.search').'): i corsi delle palestre (pilates, yoga, spinning…) con gli orari della settimana',
             '- [Eventi]('.route('events.search').'): allenamenti di gruppo ed eventi sportivi',
             '- [Diventa trainer su MioPersonal]('.route('trainer.register').'): iscrizione gratuita per personal trainer',
             '- [Contatti]('.route('contact.show').')',

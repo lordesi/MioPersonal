@@ -34,7 +34,8 @@ export default function ProfileSection({
             id={id}
             aria-labelledby={titleId}
             className={cn(
-                'flex scroll-mt-6 flex-col gap-4 rounded-3xl border bg-card p-4 md:gap-4.5 md:p-6',
+                // Clear of the bar of the sections, stuck to the top.
+                'flex scroll-mt-16 flex-col gap-4 rounded-3xl border bg-card p-4 md:gap-4.5 md:p-6',
                 className,
             )}
         >

@@ -1,8 +1,7 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { ChevronDown, Heart, Search as SearchIcon, Tag } from 'lucide-react';
 import { useState } from 'react';
 import GymCard from '@/components/gym/gym-card';
-import NewsStrip from '@/components/news/news-strip';
 import ActiveFilters from '@/components/search/active-filters';
 import type { ActiveChip } from '@/components/search/active-filters';
 import {
@@ -10,31 +9,24 @@ import {
     pillOff,
     pillOn,
 } from '@/components/search/filter-options';
+import { FilterPill } from '@/components/search/filter-pill';
+import FilterSheet from '@/components/search/filter-sheet';
 import GymSearchBar from '@/components/search/gym-search-bar';
 import NameSearch from '@/components/search/name-search';
 import OptionsMenu from '@/components/search/options-menu';
-import { SearchKindLinks } from '@/components/search/search-kind-toggle';
+import SearchPageHeader from '@/components/search/search-page-header';
 import SearchPagination from '@/components/search/search-pagination';
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import { saveFavorite } from '@/hooks/use-favorite';
 import type { GymPriceRange, GymSearchFilters } from '@/lib/gym';
 import { gymPriceOptions, gymSearchUrl, gymSortOptions } from '@/lib/gym';
 import { cn } from '@/lib/utils';
-import { home, login } from '@/routes';
+import { login } from '@/routes';
 import type {
     CatalogOption,
     CityWithCoordinates,
     GymSummary,
-    NewsPreview,
     SeoData,
 } from '@/types';
 
@@ -56,8 +48,6 @@ type Suggestions = {
 
 type GymSearchProps = {
     city: { slug: string; name: string } | null;
-    /** "Novità" in the city, only on page 1. */
-    news: NewsPreview | null;
     gyms: GymSummary[];
     total: number;
     pagination: { currentPage: number; lastPage: number };
@@ -68,7 +58,8 @@ type GymSearchProps = {
     seo: SeoData;
 };
 
-const crumbLink = 'text-primary-foreground/60 hover:text-primary-foreground';
+/** The pills that the "Filtri" panel replaces on phones. */
+const desktopOnly = 'hidden md:inline-flex';
 
 function labelOf<T>(
     options: readonly { value: T; label: string }[],
@@ -80,7 +71,6 @@ function labelOf<T>(
 /** "Palestre a Milano": /palestre/milano, or /palestre for all of Italy. */
 export default function GymSearch({
     city,
-    news,
     gyms,
     total,
     pagination,
@@ -196,87 +186,34 @@ export default function GymSearch({
         <>
             <Head title={seo.title} />
 
-            <section
-                aria-labelledby="search-title"
-                className="bg-primary text-primary-foreground"
+            <SearchPageHeader
+                kind="gym"
+                city={city}
+                title={`Palestre ${place}`}
+                count={total === 1 ? '1 palestra' : `${total} palestre`}
             >
-                <div className="mx-auto flex w-full max-w-7xl flex-col gap-5.5 px-4 pt-6 pb-10 md:px-8">
-                    <Breadcrumb aria-label="Percorso">
-                        <BreadcrumbList className="gap-2 text-[13px] leading-[18px] text-primary-foreground/60 sm:gap-2">
-                            <BreadcrumbItem>
-                                <BreadcrumbLink asChild className={crumbLink}>
-                                    <Link href={home()}>Home</Link>
-                                </BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                            {city ? (
-                                <>
-                                    <BreadcrumbItem>
-                                        <BreadcrumbLink
-                                            asChild
-                                            className={crumbLink}
-                                        >
-                                            <Link href={gymSearchUrl()}>
-                                                Palestre
-                                            </Link>
-                                        </BreadcrumbLink>
-                                    </BreadcrumbItem>
-                                    <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                                    <BreadcrumbItem>
-                                        <BreadcrumbPage className="text-primary-foreground">
-                                            {city.name}
-                                        </BreadcrumbPage>
-                                    </BreadcrumbItem>
-                                </>
-                            ) : (
-                                <BreadcrumbItem>
-                                    <BreadcrumbPage className="text-primary-foreground">
-                                        Palestre
-                                    </BreadcrumbPage>
-                                </BreadcrumbItem>
-                            )}
-                        </BreadcrumbList>
-                    </Breadcrumb>
-
-                    <SearchKindLinks current="gym" city={city?.slug ?? null} />
-
-                    <div className="flex flex-col gap-1.5">
-                        <h1
-                            id="search-title"
-                            className="text-[34px] leading-10 font-bold tracking-[-0.03em] md:text-[44px] md:leading-12"
-                        >
-                            Palestre {place}
-                        </h1>
-                        <p
-                            aria-live="polite"
-                            className="text-base text-primary-foreground/60 tabular-nums"
-                        >
-                            {total === 1 ? '1 palestra' : `${total} palestre`}
-                        </p>
-                    </div>
-
-                    <div
-                        role="search"
-                        aria-label="Cerca una palestra"
-                        className="max-w-245"
-                    >
-                        <GymSearchBar
-                            variant="hero"
-                            key={`${filters.servizi.join(',')}|${city?.slug}|${filters.prezzo}`}
-                            amenities={amenities}
-                            cities={cities}
-                            applied={{
-                                servizi: filters.servizi,
-                                city: city?.slug ?? null,
-                                prezzo: filters.prezzo,
-                            }}
-                            onSearch={({ servizi, prezzo, city: nextCity }) =>
-                                change({ servizi, prezzo }, nextCity)
-                            }
-                        />
-                    </div>
+                {/* Phones: city and "Filtri" above the results instead. */}
+                <div
+                    role="search"
+                    aria-label="Cerca una palestra"
+                    className="hidden max-w-245 md:block"
+                >
+                    <GymSearchBar
+                        variant="hero"
+                        key={`${filters.servizi.join(',')}|${city?.slug}|${filters.prezzo}`}
+                        amenities={amenities}
+                        cities={cities}
+                        applied={{
+                            servizi: filters.servizi,
+                            city: city?.slug ?? null,
+                            prezzo: filters.prezzo,
+                        }}
+                        onSearch={({ servizi, prezzo, city: nextCity }) =>
+                            change({ servizi, prezzo }, nextCity)
+                        }
+                    />
                 </div>
-            </section>
+            </SearchPageHeader>
 
             <div className="flex-1 bg-muted">
                 <div className="mx-auto flex w-full max-w-7xl flex-col gap-4.5 px-4 pt-6 pb-16 md:px-8">
@@ -290,6 +227,80 @@ export default function GymSearch({
                                 applied={filters.nome}
                                 onSearch={(nome) => change({ nome })}
                                 className="w-full sm:w-60"
+                            />
+                            <FilterPill
+                                label="Città"
+                                noneLabel="Tutta Italia"
+                                options={cities}
+                                value={city?.slug ?? null}
+                                onChange={(next) => change({}, next)}
+                                searchPlaceholder="Cerca una città"
+                                className="md:hidden"
+                            />
+                            <FilterSheet
+                                total={total}
+                                noun={{ one: 'palestra', many: 'palestre' }}
+                                onClear={() =>
+                                    change({
+                                        servizi: [],
+                                        prezzo: null,
+                                        promo: null,
+                                        preferiti: null,
+                                    })
+                                }
+                                fields={[
+                                    {
+                                        kind: 'multi',
+                                        id: 'sheet-amenities',
+                                        title: 'Servizi',
+                                        options: amenities,
+                                        value: filters.servizi,
+                                        onChange: (servizi) =>
+                                            change({ servizi }),
+                                    },
+                                    {
+                                        kind: 'choice',
+                                        id: 'sheet-price',
+                                        title: 'Budget mensile',
+                                        noneLabel: 'Qualsiasi',
+                                        options: gymPriceOptions,
+                                        value: filters.prezzo,
+                                        onChange: (prezzo) =>
+                                            change({
+                                                prezzo: prezzo as GymPriceRange | null,
+                                            }),
+                                    },
+                                    {
+                                        kind: 'toggle',
+                                        id: 'sheet-promo',
+                                        title: 'Con promozioni',
+                                        checked: filters.promo !== null,
+                                        onChange: (on) =>
+                                            change({ promo: on ? '1' : null }),
+                                    },
+                                    ...(canSave
+                                        ? [
+                                              {
+                                                  kind: 'toggle' as const,
+                                                  id: 'sheet-favorites',
+                                                  title: `Solo preferiti (${auth?.favoriteCounts?.gyms ?? 0})`,
+                                                  checked:
+                                                      filters.preferiti !==
+                                                      null,
+                                                  onChange: (on: boolean) =>
+                                                      auth?.user
+                                                          ? change({
+                                                                preferiti: on
+                                                                    ? '1'
+                                                                    : null,
+                                                            })
+                                                          : router.visit(
+                                                                login(),
+                                                            ),
+                                              },
+                                          ]
+                                        : []),
+                                ]}
                             />
                             <OptionsMenu
                                 label="Servizi"
@@ -306,6 +317,7 @@ export default function GymSearch({
                                         className={cn(
                                             pillClassName,
                                             amenityLabel ? pillOn : pillOff,
+                                            desktopOnly,
                                         )}
                                     >
                                         {amenityLabel ?? 'Servizi'}
@@ -329,6 +341,7 @@ export default function GymSearch({
                                         className={cn(
                                             pillClassName,
                                             priceLabel ? pillOn : pillOff,
+                                            desktopOnly,
                                         )}
                                     >
                                         {priceLabel ?? 'Budget'}
@@ -347,6 +360,7 @@ export default function GymSearch({
                                 className={cn(
                                     pillClassName,
                                     filters.promo ? pillOn : pillOff,
+                                    desktopOnly,
                                 )}
                             >
                                 <Tag aria-hidden="true" className="size-4" />
@@ -365,6 +379,7 @@ export default function GymSearch({
                                     className={cn(
                                         pillClassName,
                                         pillOff,
+                                        desktopOnly,
                                         'group data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary/90',
                                     )}
                                 >
@@ -472,9 +487,6 @@ export default function GymSearch({
                             )}
                         </>
                     )}
-
-                    {/* "Novità": the newest gyms here, under the results of page 1. */}
-                    {news && <NewsStrip news={news} className="pt-6" />}
                 </div>
             </div>
         </>

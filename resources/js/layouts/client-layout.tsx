@@ -1,9 +1,11 @@
 import { usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
+import { AreaSidebar } from '@/components/layout/area-nav';
 import ClientHeader from '@/components/layout/client-header';
+import ClientTabBar from '@/components/layout/client-tab-bar';
 import type { ClientSection } from '@/components/layout/client-nav';
-import { ClientSidebar, clientNavItems } from '@/components/layout/client-nav';
-import MobileTabBar from '@/components/layout/mobile-tab-bar';
+import { clientNavGroups } from '@/components/layout/client-nav';
+import { home } from '@/routes/client';
 
 type ClientLayoutProps = {
     children: ReactNode;
@@ -16,7 +18,7 @@ type ClientLayoutProps = {
 /**
  * Client area (docs/design/cliente-dashboard.html). From md up: black side
  * menu and the page on the right (at most 1120 px). On mobile: header on top,
- * tabs at the bottom.
+ * tabs at the bottom (the same tabs as on the public pages).
  */
 export default function ClientLayout({
     children,
@@ -24,23 +26,25 @@ export default function ClientLayout({
     userName,
 }: ClientLayoutProps) {
     const { auth } = usePage().props;
-    const items = clientNavItems(section);
     const name = userName ?? auth?.user?.name ?? '';
 
     return (
         <div className="flex min-h-screen bg-secondary">
-            <ClientSidebar items={items} userName={name} />
+            <AreaSidebar
+                groups={clientNavGroups(section)}
+                label="Principale"
+                homeHref={home.url()}
+                variant="client"
+                userName={name}
+            />
             <div className="flex min-w-0 flex-1 flex-col">
                 <div className="md:hidden">
-                    <ClientHeader userName={name} />
+                    <ClientHeader />
                 </div>
                 <main className="mx-auto flex w-full max-w-280 flex-1 flex-col gap-6 px-4 pt-5 pb-8 md:gap-7 md:px-10 md:pt-8 md:pb-12">
                     {children}
                 </main>
-                <MobileTabBar
-                    items={items.filter((item) => !item.desktopOnly)}
-                    label="Navigazione principale"
-                />
+                <ClientTabBar section={section} />
             </div>
         </div>
     );

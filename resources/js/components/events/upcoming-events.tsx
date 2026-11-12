@@ -14,6 +14,7 @@ export default function UpcomingEvents({
     title = 'Prossimi eventi',
     id = 'events-title',
     showAll = true,
+    allHref = search.url(),
     className,
 }: {
     events: GroupSessionSummary[];
@@ -21,6 +22,8 @@ export default function UpcomingEvents({
     id?: string;
     /** The link to /eventi. */
     showAll?: boolean;
+    /** Where "Tutti gli eventi" goes, e.g. the events of the city. */
+    allHref?: string;
     className?: string;
 }) {
     if (events.length === 0) {
@@ -42,7 +45,7 @@ export default function UpcomingEvents({
                 </h2>
                 {showAll && (
                     <Link
-                        href={search.url()}
+                        href={allHref}
                         className="inline-flex min-h-11 items-center gap-1 text-sm font-medium md:min-h-0"
                     >
                         Tutti gli eventi

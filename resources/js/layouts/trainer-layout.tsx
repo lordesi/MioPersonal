@@ -1,13 +1,15 @@
 import { usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
+import { AreaSidebar, AreaTabBar } from '@/components/layout/area-nav';
 import ProfileStatusNotice from '@/components/layout/profile-status-notice';
 import TrainerHeader from '@/components/layout/trainer-header';
 import type { TrainerSection } from '@/components/layout/trainer-nav';
 import {
-    TrainerSidebar,
-    TrainerTabBar,
-    trainerNavItems,
+    TRAINER_TABS,
+    trainerNavGroups,
+    trainerSheetLinks,
 } from '@/components/layout/trainer-nav';
+import { today } from '@/routes/trainer';
 import type { TrainerAreaData } from '@/types';
 
 type TrainerLayoutProps = {
@@ -26,7 +28,8 @@ type TrainerLayoutProps = {
 
 /**
  * Trainer area. From md up: black side menu and the page on the right
- * (at most 1120 px). On mobile: header on top, tabs at the bottom.
+ * (at most 1120 px). On mobile: header on top, tabs at the bottom with
+ * "Altro" for the rest.
  */
 export default function TrainerLayout({
     children,
@@ -38,15 +41,19 @@ export default function TrainerLayout({
     const { auth, trainerArea } = usePage<{ trainerArea?: TrainerAreaData }>()
         .props;
     const pending = pendingCount ?? trainerArea?.pendingCount ?? 0;
-    const items = trainerNavItems(section, pending);
+    const groups = trainerNavGroups(section, pending);
     const name = userName ?? auth?.user?.name ?? '';
     const profileHref =
         publicProfileHref ?? trainerArea?.publicProfileHref ?? undefined;
 
     return (
         <div className="flex min-h-screen bg-secondary">
-            <TrainerSidebar
-                items={items}
+            <AreaSidebar
+                groups={groups}
+                label="Area trainer"
+                areaLabel="AREA TRAINER"
+                homeHref={today.url()}
+                variant="trainer"
                 userName={name}
                 publicProfileHref={profileHref}
             />
@@ -66,7 +73,17 @@ export default function TrainerLayout({
                     )}
                     {children}
                 </main>
-                <TrainerTabBar items={items} pendingCount={pending} />
+                <AreaTabBar
+                    groups={groups}
+                    tabs={TRAINER_TABS}
+                    label="Area trainer"
+                    current={section}
+                    more={{
+                        title: 'Altro',
+                        links: trainerSheetLinks(profileHref),
+                        sections: ['settings'],
+                    }}
+                />
             </div>
         </div>
     );

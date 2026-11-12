@@ -1,127 +1,127 @@
-import { Link } from '@inertiajs/react';
-import { Building2, Calendar, Heart, Search, User } from 'lucide-react';
-import AccountMenu from '@/components/layout/account-menu';
-import { BrandMark } from '@/components/layout/brand-logo';
-import NotificationBell from '@/components/layout/notification-bell';
-import type { TabItem } from '@/components/layout/mobile-tab-bar';
+import {
+    Building2,
+    Calendar,
+    CalendarDays,
+    CalendarHeart,
+    CircleHelp,
+    Compass,
+    Dumbbell,
+    Heart,
+    Search,
+    Settings,
+    User,
+} from 'lucide-react';
+import type {
+    AreaNavGroup,
+    AreaNavItem,
+    SheetLink,
+} from '@/components/layout/area-nav';
+import { withActive } from '@/components/layout/area-nav';
+import { courseSearchUrl } from '@/lib/course';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
-import { cn } from '@/lib/utils';
 import { home as publicHome } from '@/routes';
+import { settings } from '@/routes/account';
 import { favorites, home, profile } from '@/routes/client';
+import { show as contactPage } from '@/routes/contact';
+import { search as eventsSearch } from '@/routes/events';
+import { register as trainerRegister } from '@/routes/trainer';
 
-export type ClientSection = 'bookings' | 'search' | 'profile' | 'favorites';
+/** 'explore': the public pages (home and searches) seen by a client. */
+export type ClientSection =
+    | 'explore'
+    | 'bookings'
+    | 'favorites'
+    | 'profile'
+    | 'settings';
 
-/** A link of the client area; desktopOnly ones stay out of the mobile tab bar. */
-export type ClientNavItem = TabItem & {
-    section?: ClientSection;
-    desktopOnly?: boolean;
-};
+/** The sections with a tab of their own on mobile; "Profilo" opens the sheet. */
+export const CLIENT_TABS: ClientSection[] = [
+    'explore',
+    'bookings',
+    'favorites',
+];
 
-/**
- * The links of the client area, the same in the side menu and in the mobile
- * tab bar. "Impostazioni account" is in the account menu instead.
- */
-export function clientNavItems(current?: ClientSection): ClientNavItem[] {
-    const items: Omit<ClientNavItem, 'isActive'>[] = [
-        {
-            section: 'bookings',
-            title: 'Le mie prenotazioni',
-            shortTitle: 'Prenotazioni',
-            icon: Calendar,
-            href: home.url(),
-        },
-        {
-            section: 'search',
-            title: 'Cerca trainer',
-            shortTitle: 'Cerca',
-            icon: Search,
-            href: searchUrl(),
-        },
-        {
-            title: 'Cerca palestre',
-            shortTitle: 'Palestre',
-            icon: Building2,
-            href: gymSearchUrl(),
-            // The tab bar has room for four.
-            desktopOnly: true,
-        },
-        {
-            section: 'profile',
-            title: 'Modifica profilo',
-            shortTitle: 'Profilo',
-            icon: User,
-            href: profile.url(),
-        },
-        {
-            section: 'favorites',
-            title: 'Preferiti',
-            shortTitle: 'Preferiti',
-            icon: Heart,
-            href: favorites.url(),
-        },
-    ];
+const item = (
+    // The searches have a section of their own, never the current one here.
+    section: string,
+    title: string,
+    icon: AreaNavItem['icon'],
+    href: string,
+    extra: Partial<AreaNavItem> = {},
+): AreaNavItem => ({ section, title, icon, href, ...extra });
 
-    return items.map((item) => ({
-        ...item,
-        isActive: item.section !== undefined && item.section === current,
-    }));
+const mySpace = () => [
+    item('bookings', 'Le mie prenotazioni', Calendar, home.url(), {
+        shortTitle: 'Prenotazioni',
+    }),
+    item('favorites', 'Preferiti', Heart, favorites.url()),
+    item('profile', 'Il mio profilo', User, profile.url()),
+];
+
+/** The side menu: the client's own pages, then the four searches. */
+export function clientNavGroups(current?: ClientSection): AreaNavGroup[] {
+    return withActive(
+        [
+            { label: 'IL MIO SPAZIO', items: mySpace() },
+            {
+                label: 'ESPLORA',
+                items: [
+                    item(
+                        'search-trainers',
+                        'Personal trainer',
+                        Search,
+                        searchUrl(),
+                    ),
+                    item('search-gyms', 'Palestre', Building2, gymSearchUrl()),
+                    item(
+                        'search-courses',
+                        'Corsi',
+                        CalendarDays,
+                        courseSearchUrl(),
+                    ),
+                    item(
+                        'search-events',
+                        'Eventi',
+                        CalendarHeart,
+                        eventsSearch.url(),
+                    ),
+                ],
+            },
+        ],
+        current,
+    );
 }
 
-type ClientSidebarProps = {
-    items: ClientNavItem[];
-    userName: string;
-};
-
-/** Black side menu of the client area, visible from md up. */
-export function ClientSidebar({ items, userName }: ClientSidebarProps) {
-    return (
-        <aside className="sticky top-0 hidden h-screen w-62 shrink-0 flex-col gap-7 overflow-y-auto bg-sidebar px-4 py-6 text-sidebar-foreground md:flex">
-            <div className="flex items-center justify-between gap-2 px-2">
-                <Link
-                    href={publicHome()}
-                    aria-label="MioPersonal, vai alla home"
-                    className="flex items-center gap-2.5 text-sidebar-primary"
-                >
-                    <BrandMark />
-                    <span className="text-lg leading-7 font-semibold tracking-tight">
-                        MioPersonal
-                    </span>
-                </Link>
-                <NotificationBell tone="dark" className="-my-2 -mr-2" />
-            </div>
-
-            <nav aria-label="Principale" className="flex flex-col gap-0.5">
-                {items.map((item) => (
-                    <Link
-                        key={item.title}
-                        href={item.href}
-                        aria-current={item.isActive ? 'page' : undefined}
-                        className={cn(
-                            'flex min-h-11 items-center gap-3 rounded-[10px] px-3 text-sm',
-                            item.isActive
-                                ? 'bg-sidebar-primary font-semibold text-sidebar-primary-foreground'
-                                : 'font-medium text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                        )}
-                    >
-                        {item.icon && (
-                            <item.icon
-                                aria-hidden="true"
-                                className="size-4.5"
-                            />
-                        )}
-                        <span className="flex-1">{item.title}</span>
-                    </Link>
-                ))}
-            </nav>
-
-            <div className="mt-auto">
-                <AccountMenu
-                    variant="client"
-                    placement="sidebar"
-                    userName={userName}
-                />
-            </div>
-        </aside>
+/** The mobile tabs: "Esplora" (the home) first, then the client's pages. */
+export function clientTabGroups(current?: ClientSection): AreaNavGroup[] {
+    return withActive(
+        [
+            {
+                items: [
+                    item('explore', 'Esplora', Compass, publicHome.url()),
+                    ...mySpace(),
+                ],
+            },
+        ],
+        current,
     );
+}
+
+/** After "Il mio profilo" in the "Profilo" sheet. */
+export function clientSheetLinks(): SheetLink[] {
+    return [
+        { title: 'Impostazioni account', href: settings.url(), icon: Settings },
+        {
+            title: 'Centro assistenza',
+            href: contactPage.url(),
+            icon: CircleHelp,
+        },
+        {
+            title: 'Diventa un trainer',
+            href: trainerRegister.url(),
+            icon: Dumbbell,
+            hint: 'Crea il tuo profilo, è gratis',
+        },
+    ];
 }

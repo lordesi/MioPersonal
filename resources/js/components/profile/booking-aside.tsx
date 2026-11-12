@@ -44,7 +44,7 @@ export default function BookingAside({
     return (
         <aside
             aria-labelledby="booking-title"
-            className="hidden flex-col gap-4 rounded-3xl bg-primary p-5.5 text-primary-foreground shadow-2xl lg:sticky lg:top-6 lg:flex"
+            className="hidden flex-col gap-4 rounded-3xl bg-primary p-5.5 text-primary-foreground shadow-2xl lg:sticky lg:top-18 lg:flex"
         >
             <div className="flex flex-col gap-0.5">
                 <h2 id="booking-title" className="sr-only">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\City;
 use App\Models\Discipline;
 use App\Models\GroupSession;
+use App\Models\GymCourse;
 use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use Carbon\CarbonInterface;
@@ -59,7 +60,7 @@ class SitemapController extends Controller
             $urls[] = ['loc' => route('news'), 'lastmod' => null];
         }
 
-        $urls = [...$urls, ...$gymUrls, ...$this->eventUrls()];
+        $urls = [...$urls, ...$gymUrls, ...$this->courseUrls(), ...$this->eventUrls()];
 
         if ($profiles->isEmpty()) {
             return $urls;
@@ -129,6 +130,37 @@ class SitemapController extends Controller
 
         foreach ($events as $event) {
             $urls[] = ['loc' => route('events.show', $event->slug), 'lastmod' => $event->updated_at];
+        }
+
+        return $urls;
+    }
+
+    /**
+     * The courses' search: Italy and every city with a course (a course has
+     * no page of its own, it is on its gym's page).
+     *
+     * @return list<array{loc: string, lastmod: CarbonInterface|null}>
+     */
+    private function courseUrls(): array
+    {
+        $cities = GymCourse::query()
+            ->where('is_active', true)
+            ->whereHas('lessons')
+            ->whereHas('gymProfile', fn ($gym) => $gym->published()->whereHas('city', fn ($city) => $city->active()))
+            ->with('gymProfile.city:id,slug')
+            ->get()
+            ->map(fn (GymCourse $course) => $course->gymProfile->city->slug)
+            ->unique()
+            ->sort();
+
+        if ($cities->isEmpty()) {
+            return [];
+        }
+
+        $urls = [['loc' => route('courses.search'), 'lastmod' => null]];
+
+        foreach ($cities as $city) {
+            $urls[] = ['loc' => route('courses.search', $city), 'lastmod' => null];
         }
 
         return $urls;

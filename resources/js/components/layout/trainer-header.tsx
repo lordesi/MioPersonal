@@ -40,11 +40,7 @@ export default function TrainerHeader({
                     )}
                     {/* The requests to answer are on "Richieste": the bell is for everything else too. */}
                     <NotificationBell />
-                    <AccountMenu
-                        variant="trainer"
-                        userName={userName}
-                        publicProfileHref={publicProfileHref}
-                    />
+                    <AccountMenu variant="trainer" userName={userName} />
                 </div>
             </div>
         </header>

@@ -4,7 +4,17 @@ import Panel from '@/components/trainer/area/panel';
 import PageHeading from '@/components/trainer/area/page-heading';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { photos, plans, promotions, trainers } from '@/routes/gym';
+import EventCard from '@/components/events/event-card';
+import {
+    amenities,
+    courses,
+    events,
+    photos,
+    plans,
+    promotions,
+    trainers,
+} from '@/routes/gym';
+import type { GroupSessionSummary, GymCourseDay } from '@/types';
 import { edit as editProfile } from '@/routes/gym/profile';
 
 type GymDashboardProps = {
@@ -17,11 +27,19 @@ type GymDashboardProps = {
         plans: number;
         promotions: number;
         trainers: number;
+        /** Ticked services. */
+        amenities: number;
+        /** Active courses with weekly lessons. */
+        courses: number;
     };
     /** Visits to the public profile in the last 30 days. */
     views: number;
     /** Trainers' requests waiting for an answer. */
     pendingCount: number;
+    /** The next event the gym organizes, opening its page in "Eventi". */
+    nextEvent: (GroupSessionSummary & { href: string }) | null;
+    /** The courses' plan of today, the called off lessons too. */
+    todayLessons: GymCourseDay['lessons'];
 };
 
 /** "Panoramica": how complete the profile is, numbers and requests. */
@@ -31,6 +49,8 @@ export default function GymDashboard({
     checklist,
     views,
     pendingCount,
+    nextEvent,
+    todayLessons,
 }: GymDashboardProps) {
     const items = [
         {
@@ -44,6 +64,24 @@ export default function GymDashboard({
             title: 'Orari di apertura',
             hint: checklist.hours ? 'Indicati' : 'Da indicare',
             href: editProfile.url(),
+        },
+        {
+            done: checklist.amenities > 0,
+            title: 'Servizi',
+            hint:
+                checklist.amenities > 0
+                    ? `${checklist.amenities} servizi indicati`
+                    : 'Sala pesi, piscina, sauna…: si cercano anche così',
+            href: amenities.url(),
+        },
+        {
+            done: checklist.courses > 0,
+            title: 'Corsi della settimana',
+            hint:
+                checklist.courses > 0
+                    ? `${checklist.courses} ${checklist.courses === 1 ? 'corso' : 'corsi'} nel planner`
+                    : 'Compaiono nella ricerca dei corsi',
+            href: courses.url(),
         },
         {
             done: checklist.plans > 0,
@@ -110,6 +148,90 @@ export default function GymDashboard({
                     <span className="text-sm text-muted-foreground">
                         Compaiono nel profilo della palestra
                     </span>
+                </Panel>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+                <Panel
+                    title="Lezioni di oggi"
+                    action={
+                        <Link
+                            href={courses()}
+                            className="text-sm font-medium underline underline-offset-4"
+                        >
+                            {checklist.courses > 0
+                                ? 'Planner'
+                                : 'Crea un corso'}
+                        </Link>
+                    }
+                >
+                    {todayLessons.length === 0 ? (
+                        <span className="text-sm text-muted-foreground">
+                            {checklist.courses > 0
+                                ? 'Nessuna lezione oggi.'
+                                : 'I corsi della settimana compaiono nel profilo e nella ricerca dei corsi.'}
+                        </span>
+                    ) : (
+                        <ul className="flex flex-col gap-1.5">
+                            {todayLessons.map((lesson) => (
+                                <li
+                                    key={lesson.lessonId}
+                                    className="flex items-center justify-between gap-2 rounded-xl bg-muted/60 px-3 py-2 text-sm"
+                                >
+                                    <span
+                                        className={cn(
+                                            'min-w-0 truncate',
+                                            lesson.cancelled &&
+                                                'text-muted-foreground line-through',
+                                        )}
+                                    >
+                                        <span className="font-semibold tabular-nums">
+                                            {lesson.start}–{lesson.end}
+                                        </span>{' '}
+                                        {lesson.name}
+                                        {lesson.room && ` · ${lesson.room}`}
+                                    </span>
+                                    {lesson.cancelled ? (
+                                        <span className="shrink-0 text-muted-foreground">
+                                            Annullata
+                                        </span>
+                                    ) : (
+                                        lesson.bookable && (
+                                            <span className="shrink-0 text-muted-foreground tabular-nums">
+                                                {lesson.registered}/
+                                                {lesson.capacity} iscritti
+                                            </span>
+                                        )
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </Panel>
+
+                <Panel
+                    title="Prossimo evento"
+                    action={
+                        <Link
+                            href={events()}
+                            className="text-sm font-medium underline underline-offset-4"
+                        >
+                            {nextEvent ? 'Tutti gli eventi' : 'Crea un evento'}
+                        </Link>
+                    }
+                >
+                    {nextEvent ? (
+                        <EventCard
+                            event={nextEvent}
+                            href={nextEvent.href}
+                            className="max-w-md"
+                        />
+                    ) : (
+                        <span className="text-sm text-muted-foreground">
+                            Open day, workshop, allenamenti di gruppo: compaiono
+                            nel profilo e nella ricerca degli eventi.
+                        </span>
+                    )}
                 </Panel>
             </div>
 

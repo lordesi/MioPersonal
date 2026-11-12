@@ -1,5 +1,12 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { CalendarDays, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import {
+    CalendarDays,
+    ExternalLink,
+    Pencil,
+    Plus,
+    Trash2,
+    X,
+} from 'lucide-react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
 import ChoiceChips from '@/components/shared/choice-chips';
@@ -7,6 +14,7 @@ import ConfirmDialog from '@/components/shared/confirm-dialog';
 import SwitchRow from '@/components/shared/switch-row';
 import PageHeading from '@/components/trainer/area/page-heading';
 import Panel from '@/components/trainer/area/panel';
+import SegmentedTabs from '@/components/trainer/area/segmented-tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,9 +37,12 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { romeParts } from '@/lib/calendar';
+import { cn } from '@/lib/utils';
 import { destroy, store, update } from '@/routes/gym/courses';
 import lessons from '@/routes/gym/courses/lessons';
-import type { CatalogOption, GymCourseDay } from '@/types';
+import type { CatalogOption, GymAreaData, GymCourseDay } from '@/types';
+
+type CoursesView = 'planner' | 'list';
 
 type Lesson = {
     id: number | null;
@@ -104,6 +115,15 @@ export default function GymCourses({
     max,
     maxLessons,
 }: GymCoursesProps) {
+    const publicProfileHref = usePage<{ gymArea?: GymAreaData }>().props.gymArea
+        ?.publicProfileHref;
+    // "Planner" for the week's work, "Elenco corsi" to create and edit: the
+    // list first while there is nothing to plan, or when the link asks for it.
+    const [view, setView] = useState<CoursesView>(() => {
+        const asked = new URLSearchParams(window.location.search).get('vista');
+
+        return asked === 'elenco' || courses.length === 0 ? 'list' : 'planner';
+    });
     const [editing, setEditing] = useState<Course | 'new' | null>(null);
     const [deleting, setDeleting] = useState<Course | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
@@ -160,6 +180,8 @@ export default function GymCourses({
         const options = {
             forceFormData: true,
             preserveScroll: true,
+            // Stay on the tab in use.
+            preserveState: true,
             onSuccess: () => setEditing(null),
         };
 
@@ -207,68 +229,119 @@ export default function GymCourses({
                 }
             />
 
-            {courses.length === 0 ? (
-                <Panel>
-                    <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <CalendarDays aria-hidden="true" className="size-4" />
-                        Nessun corso. Es. “Pilates” il lunedì e il giovedì alle
-                        18:30, “Spinning” il sabato alle 10.
-                    </p>
-                </Panel>
-            ) : (
-                <ul className="grid gap-3 lg:grid-cols-2">
-                    {courses.map((course) => (
-                        <li key={course.id}>
-                            <Panel
-                                title={course.name}
-                                action={
-                                    <div className="flex items-center gap-1">
-                                        {course.bookable && (
-                                            <Badge variant="secondary">
-                                                Prenotabile
-                                            </Badge>
-                                        )}
-                                        {!course.isActive && (
-                                            <Badge variant="outline">
-                                                Nascosto
-                                            </Badge>
-                                        )}
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            aria-label={`Modifica ${course.name}`}
-                                            onClick={() => open(course)}
-                                        >
-                                            <Pencil aria-hidden="true" />
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            aria-label={`Elimina ${course.name}`}
-                                            onClick={() => setDeleting(course)}
-                                        >
-                                            <Trash2 aria-hidden="true" />
-                                        </Button>
-                                    </div>
-                                }
-                            >
-                                <p className="text-sm text-muted-foreground">
-                                    {course.lessons
-                                        .map(
-                                            (lesson) =>
-                                                `${WEEKDAYS[lesson.weekday - 1].slice(0, 3)} ${lesson.start}–${lesson.end}`,
-                                        )
-                                        .join(' · ')}
-                                </p>
-                            </Panel>
-                        </li>
-                    ))}
-                </ul>
+            {courses.length > 0 && (
+                <SegmentedTabs
+                    label="Vista dei corsi"
+                    controls="courses-view"
+                    tabs={[
+                        {
+                            value: 'planner',
+                            label: 'Planner',
+                            count: (weeks[0] ?? []).reduce(
+                                (total, day) =>
+                                    total +
+                                    day.lessons.filter(
+                                        (lesson) => !lesson.cancelled,
+                                    ).length,
+                                0,
+                            ),
+                        },
+                        {
+                            value: 'list',
+                            label: 'Elenco corsi',
+                            count: courses.length,
+                        },
+                    ]}
+                    value={view}
+                    onChange={setView}
+                />
             )}
 
-            {courses.length > 0 && <WeekPlans weeks={weeks} />}
+            <div
+                id="courses-view"
+                role="tabpanel"
+                className="flex flex-col gap-4"
+            >
+                {view === 'planner' && courses.length > 0 ? (
+                    <WeekPlans weeks={weeks} />
+                ) : courses.length === 0 ? (
+                    <Panel>
+                        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <CalendarDays
+                                aria-hidden="true"
+                                className="size-4"
+                            />
+                            Nessun corso. Es. “Pilates” il lunedì e il giovedì
+                            alle 18:30, “Spinning” il sabato alle 10.
+                        </p>
+                    </Panel>
+                ) : (
+                    <ul className="grid gap-3 lg:grid-cols-2">
+                        {courses.map((course) => (
+                            <li key={course.id}>
+                                <Panel
+                                    title={course.name}
+                                    action={
+                                        <div className="flex items-center gap-1">
+                                            {course.bookable && (
+                                                <Badge variant="secondary">
+                                                    Prenotabile
+                                                </Badge>
+                                            )}
+                                            {!course.isActive && (
+                                                <Badge variant="outline">
+                                                    Nascosto
+                                                </Badge>
+                                            )}
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                aria-label={`Modifica ${course.name}`}
+                                                onClick={() => open(course)}
+                                            >
+                                                <Pencil aria-hidden="true" />
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                aria-label={`Elimina ${course.name}`}
+                                                onClick={() =>
+                                                    setDeleting(course)
+                                                }
+                                            >
+                                                <Trash2 aria-hidden="true" />
+                                            </Button>
+                                        </div>
+                                    }
+                                >
+                                    <p className="text-sm text-muted-foreground">
+                                        {course.lessons
+                                            .map(
+                                                (lesson) =>
+                                                    `${WEEKDAYS[lesson.weekday - 1].slice(0, 3)} ${lesson.start}–${lesson.end}`,
+                                            )
+                                            .join(' · ')}
+                                    </p>
+                                    {publicProfileHref && course.isActive && (
+                                        <Link
+                                            href={`${publicProfileHref}?corso=${course.id}#corsi`}
+                                            className="inline-flex items-center gap-1 self-start text-sm font-medium underline underline-offset-4"
+                                        >
+                                            <ExternalLink
+                                                aria-hidden="true"
+                                                className="size-3.5"
+                                            />
+                                            Vedi sul profilo pubblico
+                                        </Link>
+                                    )}
+                                </Panel>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
 
             <Dialog
                 open={editing !== null}
@@ -283,7 +356,7 @@ export default function GymCourses({
                         </DialogTitle>
                         <DialogDescription>
                             Le lezioni si ripetono ogni settimana. Per saltarne
-                            una, annullala dal planner qui sotto.
+                            una, annullala dalla scheda Planner.
                         </DialogDescription>
                     </DialogHeader>
                     <form
@@ -692,6 +765,7 @@ export default function GymCourses({
                     if (deleting) {
                         router.delete(destroy.url(deleting.id), {
                             preserveScroll: true,
+                            preserveState: true,
                             onFinish: () => setDeleting(null),
                         });
                     }
@@ -707,9 +781,14 @@ function WeekPlans({ weeks }: { weeks: GymCourseDay[][] }) {
     // Rome day: past lessons can't be called off any more.
     const [today] = useState(() => romeParts(new Date()).date);
     const week = weeks[weekIndex] ?? [];
+    // Phones: the day shown; today, or the Monday of another week.
+    const [phoneDay, setPhoneDay] = useState<string | null>(null);
+    const shownDay = week.some((day) => day.date === phoneDay)
+        ? phoneDay
+        : (week.find((day) => day.date === today) ?? week[0])?.date;
 
     const toggle = (lessonId: number, date: string, cancelled: boolean) => {
-        const options = { preserveScroll: true };
+        const options = { preserveScroll: true, preserveState: true };
 
         if (cancelled) {
             router.delete(lessons.restore.url(lessonId), {
@@ -736,9 +815,59 @@ function WeekPlans({ weeks }: { weeks: GymCourseDay[][] }) {
                 />
             }
         >
+            {/* Phones: one day at a time, the days in a row that scrolls. */}
+            <div
+                role="group"
+                aria-label="Giorno"
+                className="-mx-1 flex [scrollbar-width:none] gap-1.5 overflow-x-auto px-1 pb-1 md:hidden"
+            >
+                {week.map((day) => {
+                    const active = day.date === shownDay;
+                    const count = day.lessons.filter(
+                        (lesson) => !lesson.cancelled,
+                    ).length;
+
+                    return (
+                        <button
+                            key={day.date}
+                            type="button"
+                            aria-pressed={active}
+                            onClick={() => setPhoneDay(day.date)}
+                            className={cn(
+                                'flex min-w-13 shrink-0 flex-col items-center rounded-xl border px-2 py-1.5 text-xs',
+                                active
+                                    ? 'border-primary bg-primary text-primary-foreground'
+                                    : 'bg-background',
+                            )}
+                        >
+                            <span className="font-medium">
+                                {day.label.slice(0, 3)}
+                            </span>
+                            <span className="text-base font-bold tabular-nums">
+                                {Number(day.date.slice(8, 10))}
+                            </span>
+                            <span
+                                className={
+                                    active
+                                        ? 'text-primary-foreground/75'
+                                        : 'text-muted-foreground'
+                                }
+                            >
+                                {count === 1 ? '1 lez.' : `${count} lez.`}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
             <div className="flex flex-col gap-4">
                 {week.map((day) => (
-                    <div key={day.date} className="flex flex-col gap-1.5">
+                    <div
+                        key={day.date}
+                        className={cn(
+                            'flex-col gap-1.5 md:flex',
+                            day.date === shownDay ? 'flex' : 'hidden',
+                        )}
+                    >
                         <h3 className="text-sm font-semibold">
                             {day.label} {Number(day.date.slice(8, 10))}
                         </h3>

@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Search, Send } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import LinkRow from '@/components/gym/link-row';
@@ -159,7 +159,32 @@ export default function TrainerGyms({
                                         Lascia
                                     </Button>
                                 }
-                            />
+                            >
+                                {row.courses.length > 0 && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-xs font-semibold text-muted-foreground">
+                                            Corsi che tieni qui
+                                        </span>
+                                        <ul className="flex flex-wrap gap-1.5">
+                                            {row.courses.map((course) => (
+                                                <li key={course.id}>
+                                                    <Link
+                                                        href={course.href}
+                                                        className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-sm hover:bg-accent"
+                                                    >
+                                                        <span className="font-medium">
+                                                            {course.name}
+                                                        </span>
+                                                        <span className="text-muted-foreground">
+                                                            {course.when}
+                                                        </span>
+                                                    </Link>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </LinkRow>
                         ))}
                     </ul>
                 )}

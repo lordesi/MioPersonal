@@ -1,26 +1,75 @@
 import { Link } from '@inertiajs/react';
-import { Building2, Dumbbell } from 'lucide-react';
+import { Building2, CalendarDays, CalendarHeart, Dumbbell } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import {
     modeItemClassName,
     modeTrackClassName,
 } from '@/components/search/filter-bar';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { courseSearchUrl } from '@/lib/course';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
+import { search as eventsSearch } from '@/routes/events';
 
-export type SearchKind = 'trainer' | 'gym';
+/** The four things to explore, always in this order. */
+export type SearchKind = 'trainer' | 'gym' | 'course' | 'event';
 
-const kinds: { value: SearchKind; label: string; icon: LucideIcon }[] = [
-    { value: 'trainer', label: 'Personal trainer', icon: Dumbbell },
-    { value: 'gym', label: 'Palestre', icon: Building2 },
+export const searchKinds: {
+    value: SearchKind;
+    label: string;
+    /** In the header menu and the tabs: one word. */
+    shortLabel: string;
+    icon: LucideIcon;
+}[] = [
+    {
+        value: 'trainer',
+        label: 'Personal trainer',
+        shortLabel: 'Trainer',
+        icon: Dumbbell,
+    },
+    {
+        value: 'gym',
+        label: 'Palestre',
+        shortLabel: 'Palestre',
+        icon: Building2,
+    },
+    {
+        value: 'course',
+        label: 'Corsi',
+        shortLabel: 'Corsi',
+        icon: CalendarDays,
+    },
+    {
+        value: 'event',
+        label: 'Eventi',
+        shortLabel: 'Eventi',
+        icon: CalendarHeart,
+    },
 ];
 
-const trackClassName = cn(modeTrackClassName, 'w-auto max-w-full self-start');
+/** The search of a kind, in a city or in all of Italy. */
+export function searchKindUrl(kind: SearchKind, city?: string | null): string {
+    switch (kind) {
+        case 'trainer':
+            return searchUrl({}, city);
+        case 'gym':
+            return gymSearchUrl({}, city);
+        case 'course':
+            return courseSearchUrl({}, city);
+        case 'event':
+            return eventsSearch.url(city ? { city } : undefined);
+    }
+}
+
+// Scrolls sideways on narrow phones instead of wrapping.
+const trackClassName = cn(
+    modeTrackClassName,
+    'w-auto max-w-full [scrollbar-width:none] self-start overflow-x-auto',
+);
 const itemClassName = cn(
     modeItemClassName,
-    'inline-flex h-10 items-center justify-center gap-2 px-4 text-sm [&_svg]:size-4',
+    'inline-flex h-10 shrink-0 items-center justify-center gap-2 px-3.5 text-sm sm:px-4 [&_svg]:size-4',
 );
 
 type ToggleProps = {
@@ -29,8 +78,8 @@ type ToggleProps = {
 };
 
 /**
- * "Personal trainer | Palestre" on top of the home hero: changes the title
- * and the search bar below.
+ * "Trainer | Palestre | Corsi | Eventi" on top of the home hero: changes the
+ * title and the search bar below.
  */
 export function SearchKindToggle({ value, onChange }: ToggleProps) {
     return (
@@ -42,7 +91,7 @@ export function SearchKindToggle({ value, onChange }: ToggleProps) {
             onValueChange={(next) => next && onChange(next as SearchKind)}
             className={trackClassName}
         >
-            {kinds.map((kind) => (
+            {searchKinds.map((kind) => (
                 <ToggleGroupItem
                     key={kind.value}
                     value={kind.value}
@@ -58,7 +107,7 @@ export function SearchKindToggle({ value, onChange }: ToggleProps) {
 
 /**
  * The same on the search pages, as links (search engines follow them): the
- * other search in the same city.
+ * other searches in the same city.
  */
 export function SearchKindLinks({
     current,
@@ -67,18 +116,15 @@ export function SearchKindLinks({
     current: SearchKind;
     city: string | null;
 }) {
-    const href = (kind: SearchKind) =>
-        kind === 'trainer' ? searchUrl({}, city) : gymSearchUrl({}, city);
-
     return (
         <nav aria-label="Cosa cerchi" className={cn(trackClassName, 'flex')}>
-            {kinds.map((kind) => {
+            {searchKinds.map((kind) => {
                 const active = kind.value === current;
 
                 return (
                     <Link
                         key={kind.value}
-                        href={href(kind.value)}
+                        href={searchKindUrl(kind.value, city)}
                         aria-current={active ? 'page' : undefined}
                         data-state={active ? 'on' : 'off'}
                         className={cn(

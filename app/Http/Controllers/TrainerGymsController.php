@@ -6,11 +6,14 @@ use App\Actions\Gym\GymLinks;
 use App\Enums\GymLinkSide;
 use App\Enums\GymLinkStatus;
 use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Models\GymCourse;
 use App\Models\GymProfile;
 use App\Models\GymTrainerLink;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\CourseCard;
 use App\Support\GymCard;
+use App\Support\GymCourseWeek;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -38,7 +41,7 @@ class TrainerGymsController extends Controller
 
         return Inertia::render('trainer/gyms', [
             'trainerArea' => $this->trainerArea(),
-            'gyms' => $this->rows($links->where('status', GymLinkStatus::Accepted)),
+            'gyms' => $this->rows($links->where('status', GymLinkStatus::Accepted), $this->taughtCourses($trainer)),
             'invites' => $this->rows($links->filter(fn (GymTrainerLink $link) => $link->awaits(GymLinkSide::Trainer))),
             'requests' => $this->rows($links->filter(fn (GymTrainerLink $link) => $link->awaits(GymLinkSide::Gym))),
             'query' => $query,
@@ -108,15 +111,49 @@ class TrainerGymsController extends Controller
 
     /**
      * @param  Collection<int, GymTrainerLink>  $links
+     * @param  array<int, list<array<string, mixed>>>  $courses  "Corsi che tieni qui", by gym id
      * @return list<array<string, mixed>>
      */
-    private function rows(Collection $links): array
+    private function rows(Collection $links, array $courses = []): array
     {
         return array_values($links->map(fn (GymTrainerLink $link) => [
             'id' => $link->id,
             'message' => $link->message,
             'gym' => GymCard::from($link->gymProfile),
+            'courses' => $courses[$link->gym_profile_id] ?? [],
         ])->all());
+    }
+
+    /**
+     * The courses the gyms say the trainer teaches, by gym id.
+     *
+     * @return array<int, list<array<string, mixed>>>
+     */
+    private function taughtCourses(?TrainerProfile $trainer): array
+    {
+        if ($trainer === null) {
+            return [];
+        }
+
+        $courses = GymCourse::query()
+            ->where('instructor_trainer_id', $trainer->id)
+            ->where('is_active', true)
+            ->whereHas('lessons')
+            ->with(['lessons', 'gymProfile:id,slug'])
+            ->orderBy('name')
+            ->get();
+        $byGym = [];
+
+        foreach ($courses as $course) {
+            $byGym[$course->gym_profile_id][] = [
+                'id' => $course->id,
+                'name' => $course->name,
+                'when' => GymCourseWeek::when($course),
+                'href' => CourseCard::href($course),
+            ];
+        }
+
+        return $byGym;
     }
 
     /**

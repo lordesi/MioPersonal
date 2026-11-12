@@ -28,6 +28,7 @@ use App\Http\Controllers\ClientReviewController;
 use App\Http\Controllers\CompleteProfileController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CookieConsentController;
+use App\Http\Controllers\CourseSearchController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventSearchController;
 use App\Http\Controllers\FavoriteController;
@@ -102,6 +103,8 @@ Route::get('trainer/{slug}', TrainerProfileController::class)->name('trainers.sh
 // /palestre = all of Italy, /palestre/milano = one city (404 if unknown).
 Route::get('palestre/{city:slug?}', GymSearchController::class)->name('gyms.search');
 Route::get('palestra/{slug}', GymProfileController::class)->name('gyms.show');
+// /corsi = the courses of the gyms in all of Italy, /corsi/torino = one city (404 if unknown).
+Route::get('corsi/{city:slug?}', CourseSearchController::class)->name('courses.search');
 // "Prenota questo slot" for guests: login or sign-up, then back to the profile.
 Route::get('trainer/{slug}/prenota', [BookingController::class, 'start'])->middleware('auth')->name('trainers.book.start');
 // "Novità": new trainers and gyms, in Italy or in a city (404 if unknown).

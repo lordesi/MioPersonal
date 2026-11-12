@@ -7,6 +7,7 @@ import {
     toServicesPayload,
 } from '@/components/onboarding/trainer/draft';
 import PageHeading from '@/components/trainer/area/page-heading';
+import SeeAlso from '@/components/trainer/area/see-also';
 import ClientPreview from '@/components/trainer/services/client-preview';
 import FirstSessionSection from '@/components/trainer/services/first-session-section';
 import GroupPricesSection from '@/components/trainer/services/group-prices-section';
@@ -34,6 +35,7 @@ export default function Services({ pricing, asksOnlinePrice }: ServicesProps) {
             <Head title="Servizi e prezzi" />
 
             <PageHeading title="Servizi e prezzi" />
+            <SeeAlso current="services" />
 
             {pricing === null ? (
                 <p className="text-sm text-muted-foreground">

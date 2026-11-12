@@ -13,6 +13,7 @@ import {
 import { usePhotoPreview } from '@/components/onboarding/trainer/step-profile';
 import ConfirmDialog from '@/components/shared/confirm-dialog';
 import PageHeading from '@/components/trainer/area/page-heading';
+import SeeAlso from '@/components/trainer/area/see-also';
 import CertificationsSection from '@/components/trainer/profile/certifications-section';
 import GalleryPhotos from '@/components/trainer/profile/gallery-photos';
 import type { GalleryPhoto } from '@/components/trainer/profile/gallery-photos';
@@ -57,6 +58,7 @@ export default function Profile({
             <Head title="Modifica profilo" />
 
             <PageHeading title="Modifica profilo" />
+            <SeeAlso current="profile" />
 
             {draft === null || rating === null ? (
                 <p className="text-sm text-muted-foreground">
@@ -252,3 +254,5 @@ function ProfileForm({
         </>
     );
 }
+
+Profile.layout = { section: 'profile' };

@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Clock, MapPin, User, Users } from 'lucide-react';
+import { Clock, MapPin, User, Users, X } from 'lucide-react';
 import { useState } from 'react';
 import ChoiceChips from '@/components/shared/choice-chips';
 import { toast } from 'sonner';
@@ -33,14 +33,43 @@ export default function GymCoursePlanner({
     gymSlug,
 }: GymCoursePlannerProps) {
     const [today] = useState(() => romeParts(new Date()).date);
-    const [weekIndex, setWeekIndex] = useState(0);
+    const { url } = usePage();
+    // "?corso=12": opened from a course card (search, home, trainer's profile).
+    const [courseId, setCourseId] = useState<number | null>(() => {
+        const wanted = Number(
+            new URLSearchParams(url.split('?')[1] ?? '').get('corso'),
+        );
+
+        return courses.some((course) => course.id === wanted) ? wanted : null;
+    });
+    const focused = courses.find((course) => course.id === courseId) ?? null;
+    const ofCourse = (lesson: GymCourseLessonSlot) =>
+        courseId === null || lesson.courseId === courseId;
+    // The first day (from today) with a lesson of the course, else today.
+    const [start] = useState(() => {
+        for (const [index, days] of weeks.entries()) {
+            const day = days.find(
+                (item) =>
+                    item.date >= today &&
+                    item.lessons.some((lesson) => ofCourse(lesson)),
+            );
+
+            if (courseId !== null && day) {
+                return { weekIndex: index, date: day.date };
+            }
+        }
+
+        return {
+            weekIndex: 0,
+            date:
+                weeks[0]?.find((day) => day.date === today)?.date ??
+                weeks[0]?.[0]?.date ??
+                '',
+        };
+    });
+    const [weekIndex, setWeekIndex] = useState(start.weekIndex);
     const week = weeks[weekIndex] ?? [];
-    const [date, setDate] = useState(
-        () =>
-            weeks[0]?.find((day) => day.date === today)?.date ??
-            weeks[0]?.[0]?.date ??
-            '',
-    );
+    const [date, setDate] = useState(start.date);
     const [discipline, setDiscipline] = useState(ALL);
     const disciplines = [
         ...new Set(
@@ -52,7 +81,9 @@ export default function GymCoursePlanner({
 
     const day = week.find((item) => item.date === date) ?? week[0];
     const lessons = (day?.lessons ?? []).filter(
-        (lesson) => discipline === ALL || lesson.discipline === discipline,
+        (lesson) =>
+            ofCourse(lesson) &&
+            (discipline === ALL || lesson.discipline === discipline),
     );
 
     const changeWeek = (index: number) => {
@@ -64,6 +95,26 @@ export default function GymCoursePlanner({
 
     return (
         <div className="flex flex-col gap-5">
+            {focused && (
+                <p
+                    role="status"
+                    className="flex flex-wrap items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground"
+                >
+                    <span className="flex-1">
+                        Stai vedendo solo <strong>{focused.name}</strong>
+                        {' · '}
+                        {focused.when}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => setCourseId(null)}
+                        className="inline-flex h-8 items-center gap-1 rounded-full bg-primary-foreground/15 px-3 font-semibold hover:bg-primary-foreground/25"
+                    >
+                        <X aria-hidden="true" className="size-3.5" />
+                        Tutti i corsi
+                    </button>
+                </p>
+            )}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <ChoiceChips
                     aria-label="Settimana"
@@ -102,6 +153,7 @@ export default function GymCoursePlanner({
                     const count = item.lessons.filter(
                         (lesson) =>
                             !lesson.cancelled &&
+                            ofCourse(lesson) &&
                             (discipline === ALL ||
                                 lesson.discipline === discipline),
                     ).length;
@@ -249,7 +301,11 @@ export default function GymCoursePlanner({
                     {courses.map((course) => (
                         <li
                             key={course.id}
-                            className="flex flex-col overflow-hidden rounded-2xl border bg-card"
+                            className={cn(
+                                'flex flex-col overflow-hidden rounded-2xl border bg-card',
+                                course.id === courseId &&
+                                    'border-foreground ring-1 ring-foreground',
+                            )}
                         >
                             {course.photoUrl && (
                                 <img

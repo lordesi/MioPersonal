@@ -106,3 +106,5 @@ export default function TrainerSettings({
         </>
     );
 }
+
+TrainerSettings.layout = { section: 'settings' };

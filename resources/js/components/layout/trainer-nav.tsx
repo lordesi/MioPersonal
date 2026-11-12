@@ -1,23 +1,28 @@
-import { Link } from '@inertiajs/react';
 import {
     Building2,
     Calendar,
     CalendarDays,
+    CircleHelp,
     Clock,
+    Compass,
     Eye,
     House,
     Inbox,
+    Settings,
     Share2,
     Star,
     Tag,
+    User,
     Users,
 } from 'lucide-react';
-import AccountMenu from '@/components/layout/account-menu';
-import { BrandMark } from '@/components/layout/brand-logo';
-import NotificationBell from '@/components/layout/notification-bell';
-import type { TabItem } from '@/components/layout/mobile-tab-bar';
-import MobileTabBar from '@/components/layout/mobile-tab-bar';
-import { cn } from '@/lib/utils';
+import type {
+    AreaNavGroup,
+    AreaNavItem,
+    SheetLink,
+} from '@/components/layout/area-nav';
+import { withActive } from '@/components/layout/area-nav';
+import { home } from '@/routes';
+import { show as contactPage } from '@/routes/contact';
 import {
     availability,
     calendar,
@@ -27,9 +32,11 @@ import {
     requests,
     reviews,
     services,
+    settings,
     share,
     today,
 } from '@/routes/trainer';
+import { edit as editProfile } from '@/routes/trainer/profile';
 
 export type TrainerSection =
     | 'today'
@@ -38,207 +45,106 @@ export type TrainerSection =
     | 'clients'
     | 'availability'
     | 'services'
-    | 'reviews'
-    | 'gyms'
     | 'events'
-    | 'share';
+    | 'gyms'
+    | 'profile'
+    | 'reviews'
+    | 'share'
+    | 'settings';
 
-/** A link of the trainer area; desktopOnly ones stay out of the mobile tab bar. */
-export type TrainerNavItem = TabItem & {
-    section: TrainerSection;
-    desktopOnly?: boolean;
-};
-
-const sections: {
-    section: TrainerSection;
-    title: string;
-    icon: TabItem['icon'];
-    href: () => string;
-    /** The tab bar has room for 5 links: this one is only in the side menu. */
-    desktopOnly?: boolean;
-}[] = [
-    { section: 'today', title: 'Panoramica', icon: House, href: today.url },
-    // On mobile the requests are in "Panoramica", with the badge on its tab.
-    {
-        section: 'requests',
-        title: 'Richieste',
-        icon: Inbox,
-        href: requests.url,
-        desktopOnly: true,
-    },
-    {
-        section: 'calendar',
-        title: 'Calendario',
-        icon: Calendar,
-        href: calendar.url,
-    },
-    { section: 'clients', title: 'Clienti', icon: Users, href: clients.url },
-    {
-        section: 'availability',
-        title: 'Disponibilità',
-        icon: Clock,
-        href: availability.url,
-    },
-    {
-        section: 'services',
-        title: 'Servizi',
-        icon: Tag,
-        href: services.url,
-        desktopOnly: true,
-    },
-    { section: 'reviews', title: 'Recensioni', icon: Star, href: reviews.url },
-    // The gyms where the trainer works. On mobile: in the account menu.
-    {
-        section: 'gyms',
-        title: 'Palestre',
-        icon: Building2,
-        href: gyms.url,
-        desktopOnly: true,
-    },
-    // Workshops, open days, group trainings. On mobile: in the account menu.
-    {
-        section: 'events',
-        title: 'Eventi',
-        icon: CalendarDays,
-        href: events.url,
-        desktopOnly: true,
-    },
-    // Link, QR code and image for Instagram. On mobile: in the account menu.
-    {
-        section: 'share',
-        title: 'Condividi profilo',
-        icon: Share2,
-        href: share.url,
-        desktopOnly: true,
-    },
+/** The sections with a tab of their own on mobile; the rest is in "Altro". */
+export const TRAINER_TABS: TrainerSection[] = [
+    'today',
+    'calendar',
+    'requests',
+    'clients',
 ];
 
-export function trainerNavItems(
+/**
+ * The trainer area: the daily work first, then what the clients book
+ * ("Offerta"), then what they see ("Profilo").
+ */
+export function trainerNavGroups(
     current?: TrainerSection,
     pendingCount = 0,
-): TrainerNavItem[] {
-    return sections.map((item) => ({
-        section: item.section,
-        title: item.title,
-        href: item.href(),
-        icon: item.icon,
-        isActive: item.section === current,
-        badge: item.section === 'requests' ? pendingCount : undefined,
-        desktopOnly: item.desktopOnly,
-    }));
-}
+): AreaNavGroup[] {
+    const item = (
+        section: TrainerSection,
+        title: string,
+        icon: AreaNavItem['icon'],
+        href: string,
+        extra: Partial<AreaNavItem> = {},
+    ): AreaNavItem => ({ section, title, icon, href, ...extra });
 
-type TrainerSidebarProps = {
-    items: TrainerNavItem[];
-    userName: string;
-    /** "Vedi profilo pubblico", hidden until the registration is sent. */
-    publicProfileHref?: string;
-};
-
-/** Black side menu of the trainer area, visible from md up. */
-export function TrainerSidebar({
-    items,
-    userName,
-    publicProfileHref,
-}: TrainerSidebarProps) {
-    return (
-        <aside className="sticky top-0 hidden h-screen w-62 shrink-0 flex-col gap-7 overflow-y-auto bg-sidebar px-4 py-6 text-sidebar-foreground md:flex">
-            <div className="flex items-start justify-between gap-2 px-2">
-                <div className="flex flex-col gap-2.5">
-                    <Link
-                        href={today()}
-                        aria-label="MioPersonal, area trainer"
-                        className="flex items-center gap-2.5 text-sidebar-primary"
-                    >
-                        <BrandMark />
-                        <span className="text-lg leading-7 font-semibold tracking-tight">
-                            MioPersonal
-                        </span>
-                    </Link>
-                    <span className="text-xs font-semibold tracking-[0.08em] text-sidebar-muted-foreground">
-                        AREA TRAINER
-                    </span>
-                </div>
-                <NotificationBell tone="dark" className="-mt-2 -mr-2" />
-            </div>
-
-            <nav aria-label="Area trainer" className="flex flex-col gap-0.5">
-                {items.map((item) => (
-                    <Link
-                        key={item.section}
-                        href={item.href}
-                        aria-current={item.isActive ? 'page' : undefined}
-                        className={cn(
-                            'flex min-h-11 items-center gap-3 rounded-[10px] px-3 text-sm',
-                            item.isActive
-                                ? 'bg-sidebar-primary font-semibold text-sidebar-primary-foreground'
-                                : 'font-medium text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                        )}
-                    >
-                        {item.icon && (
-                            <item.icon
-                                aria-hidden="true"
-                                className="size-4.5"
-                            />
-                        )}
-                        <span className="flex-1">{item.title}</span>
-                        {item.badge ? (
-                            <span
-                                className={cn(
-                                    'flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums',
-                                    item.isActive
-                                        ? 'bg-sidebar-primary-foreground text-sidebar-primary'
-                                        : 'bg-sidebar-primary text-sidebar-primary-foreground',
-                                )}
-                            >
-                                <span className="sr-only">da confermare: </span>
-                                {item.badge}
-                            </span>
-                        ) : null}
-                    </Link>
-                ))}
-            </nav>
-
-            <div className="mt-auto flex flex-col gap-3">
-                {publicProfileHref && (
-                    <Link
-                        href={publicProfileHref}
-                        className="flex min-h-11 items-center gap-2.5 rounded-[10px] border border-sidebar-border px-3 text-sm font-medium text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                    >
-                        <Eye aria-hidden="true" className="size-4.5" />
-                        Vedi profilo pubblico
-                    </Link>
-                )}
-                <AccountMenu
-                    variant="trainer"
-                    placement="sidebar"
-                    userName={userName}
-                    publicProfileHref={publicProfileHref}
-                />
-            </div>
-        </aside>
+    return withActive(
+        [
+            {
+                items: [
+                    item('today', 'Panoramica', House, today.url()),
+                    item('requests', 'Richieste', Inbox, requests.url(), {
+                        badge: pendingCount,
+                    }),
+                    item('calendar', 'Calendario', Calendar, calendar.url()),
+                    item('clients', 'Clienti', Users, clients.url()),
+                ],
+            },
+            {
+                label: 'OFFERTA',
+                items: [
+                    item(
+                        'availability',
+                        'Disponibilità',
+                        Clock,
+                        availability.url(),
+                    ),
+                    item('services', 'Servizi e prezzi', Tag, services.url(), {
+                        shortTitle: 'Servizi',
+                    }),
+                    item('events', 'Eventi', CalendarDays, events.url()),
+                    item('gyms', 'Palestre', Building2, gyms.url()),
+                ],
+            },
+            {
+                label: 'PROFILO',
+                items: [
+                    item(
+                        'profile',
+                        'Modifica profilo',
+                        User,
+                        editProfile.url(),
+                    ),
+                    item('reviews', 'Recensioni', Star, reviews.url()),
+                    item('share', 'Condividi profilo', Share2, share.url()),
+                ],
+            },
+        ],
+        current,
     );
 }
 
-/** Bottom tab bar of the trainer area, visible below md. */
-export function TrainerTabBar({
-    items,
-    pendingCount = 0,
-}: {
-    items: TrainerNavItem[];
-    /** Shown on "Panoramica": "Richieste" has no tab on mobile. */
-    pendingCount?: number;
-}) {
-    return (
-        <MobileTabBar
-            items={items
-                .filter((item) => !item.desktopOnly)
-                .map((item) =>
-                    item.section === 'today'
-                        ? { ...item, badge: pendingCount }
-                        : item,
-                )}
-            label="Area trainer"
-        />
-    );
+/** The links after the groups in the "Altro" sheet. */
+export function trainerSheetLinks(publicProfileHref?: string): SheetLink[] {
+    return [
+        ...(publicProfileHref
+            ? [
+                  {
+                      title: 'Vedi profilo pubblico',
+                      href: publicProfileHref,
+                      icon: Eye,
+                  },
+              ]
+            : []),
+        { title: 'Impostazioni account', href: settings.url(), icon: Settings },
+        {
+            title: 'Esplora il sito',
+            href: home.url(),
+            icon: Compass,
+            hint: 'Trainer, palestre, corsi ed eventi',
+        },
+        {
+            title: 'Centro assistenza',
+            href: contactPage.url(),
+            icon: CircleHelp,
+        },
+    ];
 }

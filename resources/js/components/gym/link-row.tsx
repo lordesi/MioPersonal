@@ -14,6 +14,8 @@ type LinkRowProps = {
     kind: 'trainer' | 'gym';
     message?: string | null;
     actions?: ReactNode;
+    /** Under the row, full width (e.g. "Corsi che tieni qui"). */
+    children?: ReactNode;
 };
 
 /** A trainer or a gym in the lists of "Trainer" and "Palestre", with its buttons. */
@@ -25,6 +27,7 @@ export default function LinkRow({
     kind,
     message,
     actions,
+    children,
 }: LinkRowProps) {
     return (
         <li className="flex flex-wrap items-center gap-3 py-3">
@@ -65,6 +68,7 @@ export default function LinkRow({
                 </span>
             </Link>
             {actions && <div className="flex gap-2">{actions}</div>}
+            {children && <div className="w-full pl-14">{children}</div>}
         </li>
     );
 }

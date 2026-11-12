@@ -61,3 +61,5 @@ export default function Settings({
         </>
     );
 }
+
+Settings.layout = { section: 'settings' };

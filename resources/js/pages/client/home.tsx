@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { Plus, Sparkles } from 'lucide-react';
+import { ArrowRight, Plus, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import LaterSessionRow from '@/components/client/later-session-row';
 import NextSessionHero from '@/components/client/next-session-hero';
@@ -20,9 +20,11 @@ import Panel from '@/components/trainer/area/panel';
 import { Button } from '@/components/ui/button';
 import { romeParts } from '@/lib/calendar';
 import { formatDayLong } from '@/lib/format';
+import { courseSearchUrl } from '@/lib/course';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { profile } from '@/routes/client';
+import { search as eventsSearch } from '@/routes/events';
 import type {
     GroupSessionSummary,
     ClientPackage,
@@ -107,15 +109,6 @@ export default function Home({
                     <div className="flex flex-wrap gap-2">
                         <Button
                             asChild
-                            variant="outline"
-                            className="h-11.5 rounded-xl px-4 text-[15px] font-semibold"
-                        >
-                            <Link href={gymSearchUrl()}>
-                                Cerca una palestra
-                            </Link>
-                        </Button>
-                        <Button
-                            asChild
                             className="h-11.5 rounded-xl px-5 text-[15px] font-semibold"
                         >
                             <Link href={bookUrl}>
@@ -126,6 +119,27 @@ export default function Home({
                     </div>
                 }
             />
+
+            {/* The other searches, one tap away. */}
+            <nav
+                aria-label="Esplora"
+                className="-mt-2 flex [scrollbar-width:none] gap-2 overflow-x-auto"
+            >
+                {[
+                    { label: 'Palestre', href: gymSearchUrl() },
+                    { label: 'Corsi', href: courseSearchUrl() },
+                    { label: 'Eventi', href: eventsSearch.url() },
+                ].map((link) => (
+                    <Link
+                        key={link.label}
+                        href={link.href}
+                        className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full border bg-card px-3.5 text-sm font-medium hover:bg-accent"
+                    >
+                        {link.label}
+                        <ArrowRight aria-hidden="true" className="size-3.5" />
+                    </Link>
+                ))}
+            </nav>
 
             <div className="flex flex-wrap items-start gap-5">
                 <div className="flex min-w-0 flex-[3_1_540px] flex-col gap-5">
@@ -190,6 +204,14 @@ export default function Home({
                         </Panel>
                     )}
 
+                    {/* Places taken in the events and in the gyms' courses. */}
+                    <UpcomingEvents
+                        events={events}
+                        title="Corsi ed eventi prenotati"
+                        id="my-events-title"
+                        showAll={false}
+                    />
+
                     <SessionHistory sessions={past} />
                 </div>
 
@@ -246,13 +268,6 @@ export default function Home({
                     )}
                 </div>
             </div>
-
-            <UpcomingEvents
-                events={events}
-                title="I miei eventi"
-                id="my-events-title"
-                showAll={false}
-            />
 
             <NewsStrip news={news} />
         </>

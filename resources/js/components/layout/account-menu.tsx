@@ -1,18 +1,14 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import {
-    Building2,
     Calendar,
-    CalendarDays,
     ChevronDown,
     ChevronsUpDown,
     CircleHelp,
+    Compass,
     Dumbbell,
-    Eye,
-    Heart,
     LayoutDashboard,
     LogOut,
     Settings,
-    Share2,
     User,
 } from 'lucide-react';
 import { Fragment, useState } from 'react';
@@ -34,25 +30,19 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
-import { gymSearchUrl } from '@/lib/gym';
 import { cn } from '@/lib/utils';
-import { logout } from '@/routes';
+import { home, logout } from '@/routes';
 import { settings } from '@/routes/account';
-import { favorites, home as clientHome } from '@/routes/client';
+import { home as clientHome, profile as clientProfile } from '@/routes/client';
 import { show as contactPage } from '@/routes/contact';
-import { search as eventsSearch } from '@/routes/events';
 import {
     dashboard as gymDashboard,
-    events as gymEvents,
     settings as gymSettings,
 } from '@/routes/gym';
 import { edit as editGymProfile } from '@/routes/gym/profile';
 import {
-    events as trainerEvents,
-    gyms as trainerGyms,
     register as trainerRegister,
     settings as trainerSettings,
-    share as trainerShare,
     today,
 } from '@/routes/trainer';
 import { edit as editTrainerProfile } from '@/routes/trainer/profile';
@@ -65,35 +55,35 @@ type MenuItem = {
     icon: ComponentType<{ className?: string }>;
     /** Second line under the title, e.g. "Crea il tuo profilo, è gratis". */
     hint?: string;
-    badge?: number;
 };
 
 type AccountMenuProps = {
     variant: AccountMenuVariant;
     userName: string;
-    /** Number on "Preferiti" (client), hidden when 0. By default the one shared by the server. */
-    favoritesCount?: number;
-    /** "Vedi profilo pubblico" (trainer), hidden when missing. */
-    publicProfileHref?: string;
     /** The mobile menu opens right under the header: pass its height. */
     headerHeight?: 15 | 16;
     /**
-     * 'sidebar': the button at the bottom of the black side menu (trainer and client areas)
-     * (desktop only), with the name; the menu opens above it.
+     * 'sidebar': the button at the bottom of the black side menu of the
+     * reserved areas (desktop only), with the name; the menu opens above it.
      */
     placement?: 'header' | 'sidebar';
 };
 
-/** Groups of links, split by separators; «Esci» is added after the last one. */
-function menuGroups({
-    variant,
-    favoritesCount,
-    publicProfileHref,
-}: AccountMenuProps): MenuItem[][] {
+/**
+ * Groups of links, split by separators; «Esci» is added after the last one.
+ * Only the account, the same everywhere: the pages of each area are in its
+ * side menu and tabs (components/layout/area-nav.tsx).
+ */
+function menuGroups(variant: AccountMenuVariant): MenuItem[][] {
     const help: MenuItem = {
         title: 'Centro assistenza',
         href: contactPage.url(),
         icon: CircleHelp,
+    };
+    const explore: MenuItem = {
+        title: 'Esplora il sito',
+        href: home.url(),
+        icon: Compass,
     };
 
     if (variant === 'gym') {
@@ -103,20 +93,6 @@ function menuGroups({
                     title: 'La mia area',
                     href: gymDashboard.url(),
                     icon: LayoutDashboard,
-                },
-                ...(publicProfileHref
-                    ? [
-                          {
-                              title: 'Vedi profilo pubblico',
-                              href: publicProfileHref,
-                              icon: Eye,
-                          },
-                      ]
-                    : []),
-                {
-                    title: 'Eventi',
-                    href: gymEvents.url(),
-                    icon: CalendarDays,
                 },
                 {
                     title: 'Modifica profilo',
@@ -129,7 +105,7 @@ function menuGroups({
                     icon: Settings,
                 },
             ],
-            [help],
+            [explore, help],
         ];
     }
 
@@ -140,30 +116,6 @@ function menuGroups({
                     title: 'La mia area',
                     href: today.url(),
                     icon: LayoutDashboard,
-                },
-                ...(publicProfileHref
-                    ? [
-                          {
-                              title: 'Vedi profilo pubblico',
-                              href: publicProfileHref,
-                              icon: Eye,
-                          },
-                      ]
-                    : []),
-                {
-                    title: 'Condividi profilo',
-                    href: trainerShare.url(),
-                    icon: Share2,
-                },
-                {
-                    title: 'Palestre',
-                    href: trainerGyms.url(),
-                    icon: Building2,
-                },
-                {
-                    title: 'Eventi',
-                    href: trainerEvents.url(),
-                    icon: CalendarDays,
                 },
                 {
                     title: 'Modifica profilo',
@@ -176,7 +128,7 @@ function menuGroups({
                     icon: Settings,
                 },
             ],
-            [help],
+            [explore, help],
         ];
     }
 
@@ -188,20 +140,9 @@ function menuGroups({
                 icon: Calendar,
             },
             {
-                title: 'Preferiti',
-                href: favorites.url(),
-                icon: Heart,
-                badge: favoritesCount,
-            },
-            {
-                title: 'Cerca palestre',
-                href: gymSearchUrl(),
-                icon: Building2,
-            },
-            {
-                title: 'Eventi',
-                href: eventsSearch.url(),
-                icon: CalendarDays,
+                title: 'Il mio profilo',
+                href: clientProfile.url(),
+                icon: User,
             },
             {
                 title: 'Impostazioni account',
@@ -253,11 +194,7 @@ export default function AccountMenu(props: AccountMenuProps) {
     const email = auth?.user?.email ?? '';
     // The photo of "Completa il tuo profilo"; without it, the initials.
     const avatar = auth?.user?.avatar;
-    const groups = menuGroups({
-        ...props,
-        favoritesCount:
-            props.favoritesCount ?? auth?.favoritesCount ?? undefined,
-    });
+    const groups = menuGroups(variant);
     const roleLabel = {
         trainer: 'Trainer',
         gym: 'Palestra',
@@ -304,11 +241,6 @@ export default function AccountMenu(props: AccountMenuProps) {
             ) : (
                 <span>{item.title}</span>
             )}
-            {item.badge ? (
-                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-bold tabular-nums">
-                    {item.badge}
-                </span>
-            ) : null}
         </>
     );
 

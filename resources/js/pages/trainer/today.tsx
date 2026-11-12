@@ -13,7 +13,12 @@ import WeekAgenda from '@/components/trainer/dashboard/week-agenda';
 import { Button } from '@/components/ui/button';
 import { romeParts } from '@/lib/calendar';
 import { formatDayLong } from '@/lib/format';
-import { availability, requests as requestsPage } from '@/routes/trainer';
+import {
+    availability,
+    requests as requestsPage,
+    services,
+    share,
+} from '@/routes/trainer';
 import type {
     TrainerBookingRequest,
     TrainerPackage,
@@ -107,6 +112,26 @@ export default function Today({
                     </div>
                 }
             />
+
+            {/* Phones: the shortcuts of the buttons above, which are desktop only. */}
+            <nav
+                aria-label="Scorciatoie"
+                className="-mt-2 flex [scrollbar-width:none] gap-2 overflow-x-auto md:hidden"
+            >
+                {[
+                    { label: 'Disponibilità', href: availability.url() },
+                    { label: 'Servizi e prezzi', href: services.url() },
+                    { label: 'Condividi profilo', href: share.url() },
+                ].map((link) => (
+                    <Link
+                        key={link.label}
+                        href={link.href}
+                        className="inline-flex h-9 shrink-0 items-center rounded-full border bg-card px-3.5 text-sm font-medium"
+                    >
+                        {link.label}
+                    </Link>
+                ))}
+            </nav>
 
             <AppNotificationsCard
                 title="Ricevi subito le nuove richieste"

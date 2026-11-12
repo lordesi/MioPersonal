@@ -153,7 +153,7 @@ final class GymCourseWeek
     }
 
     /** "Lun e Gio 18:30 · Sab 10:00": the weekly lessons grouped by time. */
-    private static function when(GymCourse $course): string
+    public static function when(GymCourse $course): string
     {
         $short = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
         $byTime = [];

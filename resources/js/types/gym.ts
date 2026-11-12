@@ -149,6 +149,25 @@ export type GymCourseDay = {
     lessons: GymCourseLessonSlot[];
 };
 
+/** A course on the search cards (App\Support\CourseCard). */
+export type CourseSummary = {
+    id: number;
+    name: string;
+    /** The gym's page with the plan of this course open. */
+    href: string;
+    /** The course's photo, or the gym's cover. */
+    photoUrl: string | null;
+    level: string;
+    discipline: string | null;
+    instructor: string | null;
+    instructorHref: string | null;
+    /** "Lun, Gio 18:30 · Sab 10:00" */
+    when: string;
+    /** "Prenota il posto" on MioPersonal. */
+    bookable: boolean;
+    gym: { name: string; slug: string; city: string; href: string };
+};
+
 /** A course under the plan: photo, description and when. */
 export type GymCourseInfo = {
     id: number;
@@ -195,4 +214,6 @@ export type TrainerGymLinkRow = {
     id: number;
     message: string | null;
     gym: GymSummary;
+    /** "Corsi che tieni qui": the gym's courses with the trainer as instructor. */
+    courses: { id: number; name: string; when: string; href: string }[];
 };

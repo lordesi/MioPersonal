@@ -2,29 +2,33 @@ import { Link, usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import BrandLogo from '@/components/layout/brand-logo';
 import { openCookieSettings } from '@/lib/cookie-consent';
+import { courseSearchUrl } from '@/lib/course';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
-import { home, howItWorks, news } from '@/routes';
+import { howItWorks, news } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
 import { search as eventsSearch } from '@/routes/events';
 import { register as gymRegister } from '@/routes/gym';
 import { cookies, privacy, terms } from '@/routes/legal';
 import { register as trainerRegister } from '@/routes/trainer';
 
-const platformLinks = [
-    { title: 'Home', href: home.url() },
-    { title: 'Cerca trainer', href: searchUrl() },
-    { title: 'Cerca palestre', href: gymSearchUrl() },
+const exploreLinks = [
+    { title: 'Personal trainer', href: searchUrl() },
+    { title: 'Palestre', href: gymSearchUrl() },
+    { title: 'Corsi', href: courseSearchUrl() },
     { title: 'Eventi', href: eventsSearch.url() },
     { title: 'Novità', href: news.url() },
-    { title: 'Come funziona', href: howItWorks.url() },
-    { title: 'Sei un trainer?', href: trainerRegister.url() },
+];
+
+const proLinks = [
+    { title: 'Sei un personal trainer?', href: trainerRegister.url() },
     { title: 'Hai una palestra?', href: gymRegister.url() },
-    { title: 'Contatti', href: contactPage.url() },
+    { title: 'Come funziona', href: howItWorks.url() },
 ];
 
 const legalLinks = [
+    { title: 'Contatti', href: contactPage.url() },
     { title: 'Privacy policy', href: privacy.url() },
     { title: 'Cookie policy', href: cookies.url() },
     { title: 'Termini e condizioni', href: terms.url() },
@@ -97,14 +101,20 @@ export default function PublicFooter({ className }: { className?: string }) {
                     />
                     <div className="flex flex-wrap gap-x-18 gap-y-10">
                         <LinkList
-                            id="footer-platform"
-                            title="Piattaforma"
-                            links={platformLinks}
+                            id="footer-explore"
+                            title="Esplora"
+                            links={exploreLinks}
+                            currentPath={currentPath}
+                        />
+                        <LinkList
+                            id="footer-pro"
+                            title="Per i professionisti"
+                            links={proLinks}
                             currentPath={currentPath}
                         />
                         <LinkList
                             id="footer-legal"
-                            title="Legale"
+                            title="Supporto e legale"
                             links={legalLinks}
                             currentPath={currentPath}
                         >

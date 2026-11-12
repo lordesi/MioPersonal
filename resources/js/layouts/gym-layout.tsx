@@ -1,17 +1,18 @@
 import { Link, usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import AccountMenu from '@/components/layout/account-menu';
+import { AreaSidebar, AreaTabBar } from '@/components/layout/area-nav';
 import BrandLogo from '@/components/layout/brand-logo';
 import NotificationBell from '@/components/layout/notification-bell';
 import type { GymSection } from '@/components/layout/gym-nav';
 import {
-    GymSidebar,
-    GymTabBar,
-    gymNavItems,
+    GYM_TABS,
+    gymNavGroups,
+    gymSheetLinks,
 } from '@/components/layout/gym-nav';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { register } from '@/routes/gym';
+import { dashboard, register } from '@/routes/gym';
 import type { GymAreaData } from '@/types';
 
 type GymLayoutProps = {
@@ -86,14 +87,18 @@ function StatusNotice({
  */
 export default function GymLayout({ children, section }: GymLayoutProps) {
     const { auth, gymArea } = usePage<{ gymArea?: GymAreaData }>().props;
-    const items = gymNavItems(section, gymArea?.pendingCount ?? 0);
+    const groups = gymNavGroups(section, gymArea?.pendingCount ?? 0);
     const name = auth?.user?.name ?? '';
     const profileHref = gymArea?.publicProfileHref ?? undefined;
 
     return (
         <div className="flex min-h-screen bg-secondary">
-            <GymSidebar
-                items={items}
+            <AreaSidebar
+                groups={groups}
+                label="Area palestra"
+                areaLabel="AREA PALESTRA"
+                homeHref={dashboard.url()}
+                variant="gym"
                 userName={name}
                 publicProfileHref={profileHref}
             />
@@ -109,11 +114,7 @@ export default function GymLayout({ children, section }: GymLayoutProps) {
                         </Badge>
                         <div className="ml-auto flex items-center gap-1">
                             <NotificationBell />
-                            <AccountMenu
-                                variant="gym"
-                                userName={name}
-                                publicProfileHref={profileHref}
-                            />
+                            <AccountMenu variant="gym" userName={name} />
                         </div>
                     </div>
                 </header>
@@ -126,7 +127,17 @@ export default function GymLayout({ children, section }: GymLayoutProps) {
                     )}
                     {children}
                 </main>
-                <GymTabBar items={items} />
+                <AreaTabBar
+                    groups={groups}
+                    tabs={GYM_TABS}
+                    label="Area palestra"
+                    current={section}
+                    more={{
+                        title: 'Altro',
+                        links: gymSheetLinks(profileHref),
+                        sections: ['settings'],
+                    }}
+                />
             </div>
         </div>
     );

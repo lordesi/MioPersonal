@@ -140,30 +140,39 @@ export default function ClientCard({
                             const day = dateBlockParts(session.start);
 
                             return (
-                                <li
-                                    key={session.id}
-                                    className="flex items-center gap-3 rounded-[14px] border bg-secondary/50 p-2.5"
-                                >
-                                    <span className="flex h-12.5 w-11.5 flex-none flex-col items-center justify-center rounded-[10px] bg-foreground text-background">
-                                        <span className="text-[10px] leading-3 font-bold tracking-[0.06em] uppercase">
-                                            {day.weekday.replace('.', '')}
+                                <li key={session.id}>
+                                    {/* The day of the session in the calendar. */}
+                                    <Link
+                                        href={calendar({
+                                            query: {
+                                                vista: 'giorno',
+                                                giorno: romeParts(session.start)
+                                                    .date,
+                                            },
+                                        })}
+                                        className="flex items-center gap-3 rounded-[14px] border bg-secondary/50 p-2.5 hover:bg-secondary"
+                                    >
+                                        <span className="flex h-12.5 w-11.5 flex-none flex-col items-center justify-center rounded-[10px] bg-foreground text-background">
+                                            <span className="text-[10px] leading-3 font-bold tracking-[0.06em] uppercase">
+                                                {day.weekday.replace('.', '')}
+                                            </span>
+                                            <span className="text-lg leading-5.5 font-bold tabular-nums">
+                                                {day.day}
+                                            </span>
                                         </span>
-                                        <span className="text-lg leading-5.5 font-bold tabular-nums">
-                                            {day.day}
+                                        <span className="flex min-w-0 flex-1 flex-col">
+                                            <span className="text-sm font-bold tabular-nums">
+                                                {formatTime(session.start)} –{' '}
+                                                {formatTime(session.end)}
+                                            </span>
+                                            <span className="text-[13px] leading-4.5 text-muted-foreground">
+                                                {session.serviceName}
+                                                {samePlace === null &&
+                                                    session.placeLabel &&
+                                                    ` · ${session.placeLabel}`}
+                                            </span>
                                         </span>
-                                    </span>
-                                    <span className="flex min-w-0 flex-1 flex-col">
-                                        <span className="text-sm font-bold tabular-nums">
-                                            {formatTime(session.start)} –{' '}
-                                            {formatTime(session.end)}
-                                        </span>
-                                        <span className="text-[13px] leading-4.5 text-muted-foreground">
-                                            {session.serviceName}
-                                            {samePlace === null &&
-                                                session.placeLabel &&
-                                                ` · ${session.placeLabel}`}
-                                        </span>
-                                    </span>
+                                    </Link>
                                 </li>
                             );
                         })}
