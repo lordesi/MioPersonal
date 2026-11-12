@@ -1,7 +1,8 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     ArrowRight,
+    Building2,
     Check,
     Clock,
     FileText,
@@ -39,9 +40,9 @@ import StepErrors from '@/components/onboarding/trainer/step-errors';
 import NumberedSection from '@/components/trainer/area/numbered-section';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { home, login } from '@/routes';
+import { dashboard as areaHome, home, login } from '@/routes';
 import { dashboard } from '@/routes/gym';
-import { check, store } from '@/routes/gym/register';
+import { check, store, switchMethod } from '@/routes/gym/register';
 import { privacy, terms } from '@/routes/legal';
 import type { CatalogOption } from '@/types';
 
@@ -65,6 +66,8 @@ const titles: Record<number, string> = {
 
 type GymRegistrationProps = {
     submitted: boolean;
+    /** A client or trainer is logged in: the gym needs another account. */
+    otherAccount: boolean;
     cities: CatalogOption[];
     amenities: CatalogOption[];
     /** A gym fixing the profile: no step 1. */
@@ -77,6 +80,7 @@ type GymRegistrationProps = {
 /** "Registra la tua palestra": 5 steps, then the team checks the profile. */
 export default function GymRegistration({
     submitted,
+    otherAccount,
     cities,
     amenities,
     editing,
@@ -102,6 +106,65 @@ export default function GymRegistration({
             : initialGymDraft,
     );
     const [existing, setExisting] = useState<ExistingAccount | null>(null);
+
+    if (otherAccount) {
+        return (
+            <>
+                <Head title="Registra la tua palestra" />
+                <OnboardingShell
+                    step={1}
+                    reached={1}
+                    firstStep={1}
+                    onSelect={() => {}}
+                    user={null}
+                    stepItems={gymSteps}
+                    eyebrow="REGISTRA LA PALESTRA"
+                >
+                    <section className="flex flex-col gap-4 rounded-[28px] bg-sidebar p-6 text-sidebar-foreground md:p-10">
+                        <span className="flex size-14 items-center justify-center rounded-full bg-sidebar-primary text-sidebar-primary-foreground">
+                            <Building2
+                                aria-hidden="true"
+                                className="size-6.5"
+                            />
+                        </span>
+                        <h1 className="text-[34px] leading-10 font-bold tracking-[-0.03em]">
+                            La palestra ha bisogno di un suo account
+                        </h1>
+                        <p className="max-w-130 text-base text-sidebar-foreground/85">
+                            Sei collegato come {authUser?.name}. Per registrare
+                            la palestra serve un account separato, con un’altra
+                            email: il tuo account resta com’è e puoi rientrarci
+                            quando vuoi.
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2.5">
+                            <Button
+                                asChild
+                                className="h-11.5 rounded-xl bg-sidebar-primary px-5 font-semibold text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
+                            >
+                                <Link
+                                    href={switchMethod()}
+                                    as="button"
+                                    onClick={() => router.flushAll()}
+                                >
+                                    Esci e registra la palestra
+                                    <ArrowRight aria-hidden="true" />
+                                </Link>
+                            </Button>
+                            <Button
+                                asChild
+                                variant="outline"
+                                className="h-11.5 rounded-xl border-sidebar-border bg-transparent px-4.5 font-semibold text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                            >
+                                <Link href={areaHome()}>
+                                    Torna alla tua area
+                                </Link>
+                            </Button>
+                        </div>
+                    </section>
+                </OnboardingShell>
+            </>
+        );
+    }
 
     if (submitted) {
         return (

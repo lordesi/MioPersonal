@@ -180,6 +180,8 @@ Route::post('registrazione-trainer/passo/{step}', [TrainerRegistrationController
 // team asks for changes.
 Route::get('registrazione-palestra', [GymRegistrationController::class, 'show'])->name('gym.register');
 Route::post('registrazione-palestra', [GymRegistrationController::class, 'store'])->name('gym.register.store');
+// "Esci e registra la palestra": a client or trainer signs out to create the gym's own account.
+Route::post('registrazione-palestra/esci', [GymRegistrationController::class, 'switchAccount'])->middleware('auth')->name('gym.register.switch');
 Route::post('registrazione-palestra/passo/{step}', [GymRegistrationController::class, 'check'])
     ->whereIn('step', ['1', '2', '3', '4'])
     ->middleware('throttle:20,1')

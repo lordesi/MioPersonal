@@ -128,10 +128,25 @@ class GymRegistrationTest extends TestCase
     {
         $client = User::factory()->create();
 
-        $this->actingAs($client)->get(route('gym.register'))->assertRedirect(route('client.home'));
+        $this->actingAs($client)->get(route('gym.register'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('onboarding/gym-registration')
+                ->where('otherAccount', true)
+                ->where('editing', false));
         $this->actingAs($client)->post(route('gym.register.store'), $this->profile())->assertRedirect(route('client.home'));
 
         $this->assertSame(UserRole::Client, $client->fresh()->role);
+    }
+
+    public function test_a_client_signs_out_to_register_the_gym_with_another_account()
+    {
+        $client = User::factory()->create();
+
+        $this->actingAs($client)->post(route('gym.register.switch'))->assertRedirect(route('gym.register'));
+
+        $this->assertGuest();
+        $this->get(route('gym.register'))->assertInertia(fn (Assert $page) => $page->where('otherAccount', false));
     }
 
     public function test_a_gym_sees_its_area_and_other_roles_are_sent_to_theirs()

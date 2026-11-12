@@ -38,7 +38,10 @@ class GymRegistrationController extends Controller
         $submitted = $request->session()->get('status') === 'gym-registered';
         $user = $request->user();
 
-        if ($user !== null && ! $submitted && ! $this->canSend($user)) {
+        // Clients and trainers are told a gym needs its own account, and can sign out to make it.
+        $otherAccount = $user !== null && ! $submitted && in_array($user->role, [UserRole::Client, UserRole::Trainer], true);
+
+        if ($user !== null && ! $submitted && ! $otherAccount && ! $this->canSend($user)) {
             return to_route($user->role->homeRoute());
         }
 
@@ -46,6 +49,7 @@ class GymRegistrationController extends Controller
 
         return Inertia::render('onboarding/gym-registration', [
             'submitted' => $submitted,
+            'otherAccount' => $otherAccount,
             'cities' => CatalogOptions::cities(),
             'amenities' => GymAmenity::options(),
             // A gym fixing the profile starts from step 2, with what was sent.
@@ -91,6 +95,16 @@ class GymRegistrationController extends Controller
         }
 
         return to_route('gym.register')->with('status', 'gym-registered');
+    }
+
+    /** "Esci e registra la palestra": a client or trainer signs out and starts as a guest. */
+    public function switchAccount(Request $request): RedirectResponse
+    {
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return to_route('gym.register');
     }
 
     /** "Continua": the fields of the step being left are checked now. Nothing is saved. */

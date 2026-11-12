@@ -5,7 +5,7 @@ import ClientHeader from '@/components/layout/client-header';
 import ClientTabBar from '@/components/layout/client-tab-bar';
 import type { ClientSection } from '@/components/layout/client-nav';
 import { clientNavGroups } from '@/components/layout/client-nav';
-import { home } from '@/routes/client';
+import { home } from '@/routes';
 
 type ClientLayoutProps = {
     children: ReactNode;
