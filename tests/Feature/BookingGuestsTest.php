@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Actions\Bookings\SendSessionReminders;
+use App\Actions\Trainer\SaveTrainerServices;
 use App\Enums\BookingGuestStatus;
 use App\Enums\BookingStatus;
 use App\Http\Controllers\BookingInviteController;
@@ -355,6 +356,30 @@ class BookingGuestsTest extends TestCase
         $this->actingAs($booking->client)->patch(route('client.bookings.people', $booking), ['people' => 1])->assertSessionHasNoErrors();
         $this->assertSame(4000, $booking->fresh()?->price_cents);
         $this->assertNull($booking->fresh()?->invite_token);
+    }
+
+    /** The trainer saved "Servizi e prezzi" again: the booking keeps its service. */
+    public function test_the_booker_changes_the_people_after_the_trainer_changed_the_prices()
+    {
+        $booking = $this->groupBooking(1);
+        $trainer = $booking->trainerProfile;
+
+        app(SaveTrainerServices::class)->handle($trainer, [
+            'sessions' => [[
+                'name' => $this->service($trainer)->name,
+                'prices' => [['minutes' => 60, 'price_cents' => 4500]],
+                'group_prices' => [['people' => 2, 'minutes' => 60, 'price_cents' => 7000]],
+                'note' => '',
+            ]],
+            'first_session' => null,
+            'packages' => [],
+        ]);
+
+        $this->actingAs($booking->client)
+            ->patch(route('client.bookings.people', $booking), ['people' => 2])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(7000, $booking->fresh()?->price_cents);
     }
 
     public function test_a_new_link_stops_the_old_one()

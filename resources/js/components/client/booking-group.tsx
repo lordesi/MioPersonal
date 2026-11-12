@@ -198,6 +198,9 @@ export default function BookingGroup({
                             </button>
                         ))}
                     </div>
+                    <span className={cn('w-full text-xs', muted)}>
+                        Il prezzo per più persone è quello attuale del trainer.
+                    </span>
                 </div>
             )}
 

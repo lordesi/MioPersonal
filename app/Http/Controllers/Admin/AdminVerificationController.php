@@ -174,10 +174,10 @@ class AdminVerificationController extends Controller
                 ...$profile->gymLinks->where('status', GymLinkStatus::Pending)
                     ->map(fn ($link) => "Palestra {$link->gymProfile->name} (in attesa di conferma)")->values()->all(),
             ],
-            'services' => $profile->services->map(fn ($service) => [
+            'services' => $profile->services->where('is_active', true)->map(fn ($service) => [
                 'label' => "{$service->name} · {$service->minutes} min",
                 'priceCents' => $service->price_cents,
-            ])->all(),
+            ])->values()->all(),
             'weeklyHours' => $profile->workingHours->sum(fn ($range) => count($range->startHours())),
             'hasIdentityDocument' => false,
             'certifications' => $certificates->map(fn (TrainerDocument $document) => [

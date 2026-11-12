@@ -5,6 +5,7 @@ use App\Actions\Bookings\GenerateSeries;
 use App\Actions\Bookings\SendSessionReminders;
 use App\Actions\GroupSessions\SendGroupSessionReminders;
 use App\Actions\Trainer\DeleteTrainerProfile;
+use App\Actions\Trainer\RelinkServices;
 use App\Actions\Waitlist\Waitlist;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
@@ -79,6 +80,21 @@ Artisan::command('trainer:delete-profile {email}', function (string $email, Dele
 
 // The history collected by App\Support\Stats starts again from zero. The numbers
 // read from users and bookings stay: delete the test accounts for those.
+// Once on the server, after the services stopped being replaced on every save:
+// the bookings, series and packages that lost their service get it back (App\Actions\Trainer\RelinkServices).
+Artisan::command('services:relink {--force : Write the changes; without it only counts them}', function (RelinkServices $relink) {
+    $write = (bool) $this->option('force');
+    $counts = $relink->handle($write);
+
+    $this->info(($write ? 'Relinked' : 'Would relink').": {$counts['relinked']}");
+    $this->line("Ambiguous (more services with that name and duration): {$counts['ambiguous']}");
+    $this->line("Missing (no service with that name and duration): {$counts['missing']}");
+
+    if (! $write) {
+        $this->comment('Dry run: nothing saved. Run again with --force to write.');
+    }
+})->purpose('Link bookings, series and packages back to their service');
+
 Artisan::command('stats:reset', function () {
     if (! $this->confirm('Delete all the visits, page views, searches, profile views and activity days collected so far?')) {
         return 1;

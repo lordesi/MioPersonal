@@ -76,7 +76,7 @@ final class TrainerDraft
      */
     public static function pricing(TrainerProfile $profile): array
     {
-        $services = $profile->services->sortBy('sort');
+        $services = $profile->services->where('is_active', true)->sortBy('sort');
         // The kinds of session and their online prices: one row for each duration
         // (fixed_duration = false), the rows of a kind share its name.
         $kinds = $services->filter(fn (Service $service) => $service->kind === 'session' && ! $service->fixed_duration);

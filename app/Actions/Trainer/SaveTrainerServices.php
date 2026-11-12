@@ -2,6 +2,9 @@
 
 namespace App\Actions\Trainer;
 
+use App\Models\Booking;
+use App\Models\BookingSeries;
+use App\Models\ClientPackage;
 use App\Models\Service;
 use App\Models\TrainerProfile;
 use App\Support\TrainerSlots;
@@ -10,8 +13,8 @@ use Illuminate\Support\Facades\DB;
 /**
  * Saves "Servizi e prezzi": from the "Servizi" page of the trainer area
  * (handle) and from step 4 of "Diventa trainer" (save, inside the
- * transaction of SaveTrainerProfile). The services are replaced, then the
- * computed fields of the search are updated.
+ * transaction of SaveTrainerProfile). The services are kept in step with
+ * the form (see sync()), then the computed fields of the search are updated.
  */
 class SaveTrainerServices
 {
@@ -52,7 +55,10 @@ class SaveTrainerServices
             return;
         }
 
-        if ($profile->services()->where('online_only', true)->delete() > 0) {
+        $online = $profile->services()->where('online_only', true)->where('is_active', true)->get();
+
+        if ($online->isNotEmpty()) {
+            $this->retire($profile, $online->all());
             self::refreshComputedFields($profile);
         }
     }
@@ -69,7 +75,7 @@ class SaveTrainerServices
      */
     private static function refreshComputedFields(TrainerProfile $profile): void
     {
-        $services = $profile->services()->get();
+        $services = $profile->services()->where('is_active', true)->get();
         $kinds = $services->filter(fn (Service $service) => $service->kind === 'session' && ! $service->fixed_duration);
         $minutes = $services->pluck('minutes')->unique()->sort()->values()->all();
 
@@ -165,9 +171,6 @@ class SaveTrainerServices
      */
     private function saveRows(TrainerProfile $profile, array $data, array $sessions): void
     {
-        // TODO (step 5): bookings will point to services; then hide the old ones instead of deleting them.
-        $profile->services()->delete();
-
         /** @var array{minutes: int|string, price_cents: int|string, note?: string|null}|null $first */
         $first = $data['first_session'] ?? null;
         /** @var list<array{sessions: int|string, minutes: int|string, price_cents: int|string, note?: string|null}> $packages */
@@ -210,8 +213,91 @@ class SaveTrainerServices
             ];
         }
 
+        $this->sync($profile, $rows);
+    }
+
+    /**
+     * The rows are kept, not replaced: bookings, "sedute fisse" and the
+     * clients' packages point to them (service_id). A row of the form that
+     * matches a saved one (same kind, name, duration, online, sessions) only
+     * gets the new price and note; a new one is created; a saved one left
+     * out is hidden when something points to it, deleted otherwise.
+     *
+     * @param  list<array<string, mixed>>  $rows
+     */
+    private function sync(TrainerProfile $profile, array $rows): void
+    {
+        // The saved rows by key; the same key twice (two equal packages) is a list.
+        $saved = $profile->services()->orderBy('sort')->orderBy('id')->get()
+            ->groupBy(fn (Service $service) => self::key($service->getAttributes()))
+            ->map(fn ($group) => $group->all())
+            ->all();
+
         foreach ($rows as $index => $row) {
-            $profile->services()->create([...$row, 'sort' => $index]);
+            // Every field, the defaults included: an updated row loses what the form no longer has.
+            $values = [
+                'group_prices' => null,
+                'price_per_hour' => false,
+                'fixed_duration' => true,
+                'online_only' => false,
+                'package_sessions' => null,
+                'note' => null,
+                ...$row,
+                'sort' => $index,
+                'is_active' => true,
+            ];
+            $key = self::key($values);
+            $service = isset($saved[$key]) ? array_shift($saved[$key]) : null;
+
+            if ($service instanceof Service) {
+                $service->update($values);
+            } else {
+                $profile->services()->create($values);
+            }
         }
+
+        $this->retire($profile, array_merge(...array_values($saved)));
+    }
+
+    /**
+     * The rows the trainer took away: hidden when a booking, a "seduta
+     * fissa" or a client's package points to them (the history keeps its
+     * service), deleted otherwise.
+     *
+     * @param  array<int, Service>  $services
+     */
+    private function retire(TrainerProfile $profile, array $services): void
+    {
+        $ids = array_map(fn (Service $service) => $service->id, $services);
+
+        if ($ids === []) {
+            return;
+        }
+
+        $used = Booking::query()->whereIn('service_id', $ids)->pluck('service_id')
+            ->merge(BookingSeries::query()->whereIn('service_id', $ids)->pluck('service_id'))
+            ->merge(ClientPackage::query()->whereIn('service_id', $ids)->pluck('service_id'))
+            ->unique()
+            ->all();
+
+        $profile->services()->whereKey($used)->update(['is_active' => false]);
+        $profile->services()->whereKey(array_diff($ids, $used))->delete();
+    }
+
+    /**
+     * What makes two rows the same service: "Seduta singola, 60 min, in
+     * person" stays the same row when only its price or note changes.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    private static function key(array $row): string
+    {
+        return implode('|', [
+            $row['kind'] ?? 'session',
+            mb_strtolower(trim((string) ($row['name'] ?? ''))),
+            (int) ($row['minutes'] ?? 0),
+            (bool) ($row['online_only'] ?? false) ? 'online' : 'in-person',
+            (int) ($row['package_sessions'] ?? 0),
+        ]);
     }
 }
