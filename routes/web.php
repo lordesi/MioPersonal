@@ -24,6 +24,7 @@ use App\Http\Controllers\BookingSentController;
 use App\Http\Controllers\ClientBookingsController;
 use App\Http\Controllers\ClientFavoritesController;
 use App\Http\Controllers\ClientHomeController;
+use App\Http\Controllers\ClientProgressController;
 use App\Http\Controllers\ClientRescheduleController;
 use App\Http\Controllers\ClientReviewController;
 use App\Http\Controllers\CompleteProfileController;
@@ -276,6 +277,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('area-cliente', ClientHomeController::class)->name('client.home');
         // "Le mie prenotazioni", also the address in the links already sent.
         Route::get('prenotazioni', ClientBookingsController::class)->name('client.bookings');
+        // What the client writes in "Panoramica": trainings, weekly goal, weight.
+        Route::controller(ClientProgressController::class)->middleware('throttle:30,1')->group(function () {
+            Route::post('allenamenti', 'storeActivity')->name('client.activities.store');
+            Route::delete('allenamenti/{log}', 'destroyActivity')->whereNumber('log')->name('client.activities.destroy');
+            Route::put('obiettivo', 'updateGoal')->name('client.goal.update');
+            Route::post('peso', 'storeWeight')->name('client.weight.store');
+            Route::delete('peso/{measurement}', 'destroyWeight')->whereNumber('measurement')->name('client.weight.destroy');
+        });
         // Public on the trainer's profile: only with a verified email.
         Route::post('prenotazioni/{booking}/recensione', [ClientReviewController::class, 'store'])
             ->whereNumber('booking')

@@ -8,6 +8,7 @@ use App\Models\ClientPreference;
 use App\Models\Discipline;
 use App\Models\User;
 use App\Support\CatalogOptions;
+use App\Support\ClientProgress;
 use App\Support\SafeImage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -69,6 +70,22 @@ class CompleteProfileController extends Controller
             // The first time it was given, kept while it is not withdrawn.
             'body_data_consent_at' => $bodyConsent ? ($consentedAt ?? now()) : null,
         ]);
+
+        // The weight over time of "Panoramica" goes with the consent.
+        if (! $bodyConsent) {
+            $user->bodyMeasurements()->delete();
+        } elseif ($request->filled('weight_kg')) {
+            // A new weight written here is today's in the trend too.
+            $grams = $request->integer('weight_kg') * 1000;
+            $last = $user->bodyMeasurements()->latest('measured_on')->value('weight_grams');
+
+            if ($last === null || (int) round($last / 1000) * 1000 !== $grams) {
+                $user->bodyMeasurements()->updateOrCreate(
+                    ['measured_on' => now(ClientProgress::TIMEZONE)->format('Y-m-d')],
+                    ['weight_grams' => $grams],
+                );
+            }
+        }
 
         // "Modifica profilo" stays on the page; the sign-up goes on to the dashboard.
         if ($request->routeIs('client.profile.update')) {

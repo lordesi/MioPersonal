@@ -14,6 +14,8 @@ export type ProgressEntry = {
     date: string;
     source: ProgressSource;
     label: string;
+    /** Only for the diary's trainings: they can be deleted. */
+    logId: number | null;
 };
 
 /** App\Support\ClientProgress::summary(). */
@@ -29,4 +31,18 @@ export type ClientProgressSummary = {
     weeks: ProgressWeek[];
     /** The most recent first. */
     recent: ProgressEntry[];
+};
+
+/** A weight in the trend of "Panoramica" (only with the consent). */
+export type WeightPoint = {
+    id: number;
+    /** A Rome calendar day. */
+    date: string;
+    kg: number;
+};
+
+/** An option of "Segna un allenamento" (App\Enums\ActivityKind). */
+export type ActivityKindOption = {
+    value: string;
+    label: string;
 };

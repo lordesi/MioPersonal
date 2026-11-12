@@ -1,9 +1,12 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowRight, Plus, Sparkles } from 'lucide-react';
+import { ArrowRight, Check, Plus, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import NextSessionSummary from '@/components/client/next-session-summary';
 import PackageCarousel from '@/components/client/package-carousel';
 import ActivityPanel from '@/components/client/progress/activity-panel';
+import GoalCard from '@/components/client/progress/goal-card';
+import LogActivityDialog from '@/components/client/progress/log-activity-dialog';
+import WeightPanel from '@/components/client/progress/weight-panel';
 import RecommendedTrainersPanel from '@/components/client/recommended-trainers-panel';
 import YourTrainersPanel from '@/components/client/your-trainers-panel';
 import NewsStrip from '@/components/news/news-strip';
@@ -17,12 +20,14 @@ import { searchUrl } from '@/lib/search';
 import { profile } from '@/routes/client';
 import { search as eventsSearch } from '@/routes/events';
 import type {
+    ActivityKindOption,
     ClientPackage,
     ClientProgressSummary,
     ClientTrainer,
     ClientUpcomingBooking,
     NewsPreview,
     TrainerSummary,
+    WeightPoint,
 } from '@/types';
 
 type HomeProps = {
@@ -32,6 +37,13 @@ type HomeProps = {
     /** Bookings waiting for the client's answer. */
     toAnswer: number;
     progress: ClientProgressSummary;
+    /** Null without the consent to body data. */
+    weights: WeightPoint[] | null;
+    activityKinds: ActivityKindOption[];
+    /** Rome day. */
+    today: string;
+    /** How many days back a training can be added. */
+    daysBack: number;
     packages: ClientPackage[];
     trainers: ClientTrainer[];
     /** Only while `trainers` is empty. */
@@ -52,6 +64,10 @@ export default function Home({
     next,
     toAnswer,
     progress,
+    weights,
+    activityKinds,
+    today,
+    daysBack,
     packages,
     trainers,
     recommended,
@@ -71,6 +87,23 @@ export default function Home({
                 title={`Ciao ${firstName}`}
                 action={
                     <div className="flex flex-wrap gap-2">
+                        <LogActivityDialog
+                            kinds={activityKinds}
+                            today={today}
+                            daysBack={daysBack}
+                            trigger={
+                                <Button
+                                    variant="outline"
+                                    className="h-11.5 rounded-xl bg-card px-5 text-[15px] font-semibold"
+                                >
+                                    <Check
+                                        aria-hidden="true"
+                                        strokeWidth={2.5}
+                                    />
+                                    Segna un allenamento
+                                </Button>
+                            }
+                        />
                         <Button
                             asChild
                             className="h-11.5 rounded-xl px-5 text-[15px] font-semibold"
@@ -115,16 +148,29 @@ export default function Home({
 
                     <ActivityPanel
                         progress={progress}
+                        editable
                         empty={
                             <p className="text-sm text-muted-foreground">
                                 Le sedute, i corsi e gli eventi che prenoti
                                 finiscono qui da soli, settimana dopo settimana.
+                                Quello che fai per conto tuo lo aggiungi con
+                                "Segna un allenamento".
                             </p>
                         }
                     />
                 </div>
 
                 <div className="flex min-w-0 flex-[2_1_320px] flex-col gap-5">
+                    <GoalCard
+                        progress={progress}
+                        hasTrainer={trainers.some((trainer) => trainer.booked)}
+                        searchHref={bookUrl}
+                    />
+
+                    {weights !== null && (
+                        <WeightPanel weights={weights} today={today} />
+                    )}
+
                     {!hasPreferences && <CompleteProfileCard />}
 
                     {packages.length > 0 && (

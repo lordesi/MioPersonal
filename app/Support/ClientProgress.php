@@ -4,6 +4,8 @@ namespace App\Support;
 
 use App\Enums\BookingStatus;
 use App\Enums\GroupSessionStatus;
+use App\Models\ActivityLog;
+use App\Models\BodyMeasurement;
 use App\Models\Booking;
 use App\Models\GroupSession;
 use App\Models\User;
@@ -15,7 +17,8 @@ use Illuminate\Support\Collection;
 /**
  * A client's training, the only source of the numbers of "Panoramica" (and
  * of the "Progressi" a trainer sees when the client shares them): sessions
- * done, courses and events attended. Weeks are ISO weeks (Monday first) in
+ * done, courses and events attended, and the trainings of the diary
+ * ("Segna un allenamento"). Weeks are ISO weeks (Monday first) in
  * Europe/Rome, like the dates in the calendar.
  *
  * The "Saltata" mark is only for the trainer: the client still sees the
@@ -32,7 +35,7 @@ final class ClientProgress
     private const RECENT = 5;
 
     /**
-     * @param  Collection<int, array{date: string, source: string, label: string, discipline: string, trainerProfileId: int|null}>  $entries  the most recent first
+     * @param  Collection<int, array{date: string, source: string, label: string, discipline: string, trainerProfileId: int|null, logId: int|null}>  $entries  the most recent first
      */
     private function __construct(
         public readonly Collection $entries,
@@ -59,6 +62,7 @@ final class ClientProgress
                 'label' => 'Seduta con '.$booking->trainerProfile->user->first_name,
                 'discipline' => $booking->trainerProfile->disciplines->first()->name ?? $booking->service_name,
                 'trainerProfileId' => $booking->trainer_profile_id,
+                'logId' => null,
             ]);
 
         $events = GroupSession::query()
@@ -73,9 +77,22 @@ final class ClientProgress
                 'label' => $event->title,
                 'discipline' => $event->discipline->name ?? $event->title,
                 'trainerProfileId' => null,
+                'logId' => null,
             ]);
 
-        $entries = $sessions->toBase()->concat($events->toBase())
+        $logs = $client->activityLogs()
+            ->where('done_on', '<=', $day($now))
+            ->get()
+            ->map(fn (ActivityLog $log) => [
+                'date' => substr($log->done_on, 0, 10),
+                'source' => 'log',
+                'label' => $log->kind->label().($log->minutes !== null ? ' · '.$log->minutes.' min' : ''),
+                'discipline' => $log->kind->label(),
+                'trainerProfileId' => null,
+                'logId' => $log->id,
+            ]);
+
+        $entries = $sessions->toBase()->concat($events->toBase())->concat($logs->toBase())
             ->sortByDesc('date')
             ->values();
 
@@ -170,8 +187,34 @@ final class ClientProgress
                     'date' => $entry['date'],
                     'source' => $entry['source'],
                     'label' => $entry['label'],
+                    // Only the diary's ones can be deleted.
+                    'logId' => $entry['logId'],
                 ])->all()),
         ];
+    }
+
+    /**
+     * The weight over time, the oldest first; null without the consent to
+     * body data (GDPR art. 9).
+     *
+     * @return list<array{id: int, date: string, kg: float}>|null
+     */
+    public static function weights(User $client, int $limit = 26): ?array
+    {
+        if ($client->clientPreference?->body_data_consent_at === null) {
+            return null;
+        }
+
+        return array_values($client->bodyMeasurements()
+            ->latest('measured_on')
+            ->limit($limit)
+            ->get()
+            ->reverse()
+            ->map(fn (BodyMeasurement $measurement) => [
+                'id' => $measurement->id,
+                'date' => substr($measurement->measured_on, 0, 10),
+                'kg' => round($measurement->weight_grams / 1000, 1),
+            ])->all());
     }
 
     /**

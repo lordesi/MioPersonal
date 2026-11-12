@@ -233,6 +233,26 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * "Segna un allenamento": the client's own diary.
+     *
+     * @return HasMany<ActivityLog, $this>
+     */
+    public function activityLogs(): HasMany
+    {
+        return $this->hasMany(ActivityLog::class);
+    }
+
+    /**
+     * The weight over time, only with the consent to body data.
+     *
+     * @return HasMany<BodyMeasurement, $this>
+     */
+    public function bodyMeasurements(): HasMany
+    {
+        return $this->hasMany(BodyMeasurement::class);
+    }
+
+    /**
      * The sessions booked as a client.
      *
      * @return HasMany<Booking, $this>

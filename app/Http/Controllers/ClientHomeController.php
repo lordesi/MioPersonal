@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ActivityKind;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\User;
@@ -50,6 +51,12 @@ class ClientHomeController extends Controller
             'next' => $next === null ? null : ClientBookingData::upcoming($next),
             'toAnswer' => $toAnswer,
             'progress' => ClientProgress::for($client)->summary(),
+            // Null without the consent to body data: the panel is not shown.
+            'weights' => ClientProgress::weights($client),
+            // "Segna un allenamento".
+            'activityKinds' => array_map(fn (ActivityKind $kind) => ['value' => $kind->value, 'label' => $kind->label()], ActivityKind::cases()),
+            'today' => now(ClientProgress::TIMEZONE)->format('Y-m-d'),
+            'daysBack' => ClientProgressController::DAYS_BACK,
             'packages' => ClientBookingData::packages($client),
             'trainers' => $trainers,
             // Only for a client without trainers yet: one query less for the others.

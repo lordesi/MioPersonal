@@ -1,4 +1,7 @@
+import { router } from '@inertiajs/react';
+import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
+import ClientProgressController from '@/actions/App/Http/Controllers/ClientProgressController';
 import WeekBars from '@/components/client/progress/week-bars';
 import Panel from '@/components/trainer/area/panel';
 import { formatDayMonthShort, formatWeekdayShort } from '@/lib/format';
@@ -11,6 +14,8 @@ type ActivityPanelProps = {
     /** Shown when nothing was done yet, under the numbers. */
     empty?: ReactNode;
     title?: string;
+    /** The client's own page: the diary's trainings can be deleted. */
+    editable?: boolean;
 };
 
 const SOURCE: Record<ProgressSource, string> = {
@@ -29,6 +34,7 @@ export default function ActivityPanel({
     action,
     empty,
     title = 'La tua attività',
+    editable = false,
 }: ActivityPanelProps) {
     const numbers = [
         { label: 'Questa settimana', value: progress.thisWeek },
@@ -80,6 +86,26 @@ export default function ActivityPanel({
                                     <span className="flex-none text-xs text-muted-foreground">
                                         {SOURCE[entry.source]}
                                     </span>
+                                    {editable && entry.logId !== null && (
+                                        <button
+                                            type="button"
+                                            aria-label={`Elimina ${entry.label}`}
+                                            onClick={() =>
+                                                router.delete(
+                                                    ClientProgressController.destroyActivity.url(
+                                                        entry.logId!,
+                                                    ),
+                                                    { preserveScroll: true },
+                                                )
+                                            }
+                                            className="-mr-1.5 flex size-7 flex-none items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                        >
+                                            <X
+                                                aria-hidden="true"
+                                                className="size-3.5"
+                                            />
+                                        </button>
+                                    )}
                                 </li>
                             ))}
                         </ul>
