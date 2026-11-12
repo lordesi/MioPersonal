@@ -27,6 +27,8 @@ type BookingAsideProps = {
     people: number;
     /** "Quante persone?", under the services (PeoplePicker). */
     peoplePicker?: ReactNode;
+    /** "Ripeti ogni settimana", once a slot is chosen (RepeatWeeklyToggle). */
+    repeatToggle?: ReactNode;
 };
 
 /** The black booking box next to the profile content (from lg). */
@@ -43,6 +45,7 @@ export default function BookingAside({
     placePicker,
     people,
     peoplePicker,
+    repeatToggle,
 }: BookingAsideProps) {
     return (
         <aside
@@ -74,6 +77,8 @@ export default function BookingAside({
             {peoplePicker}
 
             {placePicker}
+
+            {repeatToggle}
 
             {selectedStart ? (
                 <Button

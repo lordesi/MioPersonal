@@ -24,7 +24,7 @@ use Inertia\Response;
  * "Giorno" (?giorno=lun) and "Fascia" (?fascia=sera) look at the same lesson:
  * a course matches when one of its lessons is on that day in that time.
  *
- * @phpstan-type Filters array{disciplina: string|null, giorno: string|null, fascia: string|null, livello: string|null, online: string|null}
+ * @phpstan-type Filters array{disciplina: string|null, giorno: string|null, fascia: string|null, livello: string|null}
  */
 class CourseSearchController extends Controller
 {
@@ -48,8 +48,8 @@ class CourseSearchController extends Controller
         $filters = $this->filters($request);
         $query = GymCourse::query()->with(CourseCard::RELATIONS);
         $this->filter($query, $filters, $city);
-        // "Prenoti online" first, then the courses with more lessons.
-        $query->orderByDesc('bookable')->withCount('lessons')->orderByDesc('lessons_count')->orderByDesc('gym_courses.id');
+        // The courses with more lessons first, then the newest.
+        $query->withCount('lessons')->orderByDesc('lessons_count')->orderByDesc('gym_courses.id');
 
         $page = $query->paginate(self::PER_PAGE, ['*'], 'pagina');
 
@@ -100,7 +100,6 @@ class CourseSearchController extends Controller
             'giorno' => $pick('giorno', array_keys(self::DAYS)),
             'fascia' => $pick('fascia', array_keys(self::TIMES)),
             'livello' => $pick('livello', array_column(CourseLevel::options(), 'value')),
-            'online' => $request->query('online') === '1' ? '1' : null,
         ];
     }
 
@@ -122,10 +121,6 @@ class CourseSearchController extends Controller
                     [$from, $to] = self::TIMES[$filters['fascia']];
                     $lesson->where('starts_at', '>=', $from)->where('starts_at', '<', $to);
                 }
-
-                if ($filters['online'] !== null) {
-                    $lesson->whereNotNull('capacity');
-                }
             });
 
         if ($filters['disciplina'] !== null) {
@@ -135,10 +130,6 @@ class CourseSearchController extends Controller
         if ($filters['livello'] !== null) {
             $query->where('level', $filters['livello']);
         }
-
-        if ($filters['online'] !== null) {
-            $query->where('bookable', true);
-        }
     }
 
     /**
@@ -147,9 +138,9 @@ class CourseSearchController extends Controller
     private function suggestions(?City $city): array
     {
         $query = GymCourse::query()->with(CourseCard::RELATIONS);
-        $this->filter($query, ['disciplina' => null, 'giorno' => null, 'fascia' => null, 'livello' => null, 'online' => null], $city);
+        $this->filter($query, ['disciplina' => null, 'giorno' => null, 'fascia' => null, 'livello' => null], $city);
 
-        return CourseCard::many($query->orderByDesc('bookable')->orderByDesc('gym_courses.id')->limit(self::PER_PAGE)->get());
+        return CourseCard::many($query->orderByDesc('gym_courses.id')->limit(self::PER_PAGE)->get());
     }
 
     /**
@@ -168,7 +159,7 @@ class CourseSearchController extends Controller
         $count = $total === 1 ? '1 corso' : "{$total} corsi";
         $description = $total === 0
             ? "Cerca corsi in palestra {$place} su MioPersonal: pilates, yoga, spinning, functional e altro, con orari e istruttori."
-            : "{$count} in palestra {$place}: orari della settimana, livello e istruttore. Per alcuni prenoti il posto online.";
+            : "{$count} in palestra {$place}: orari della settimana, livello e istruttore. Chiedi alla palestra per iscriverti.";
 
         $listUrl = route('courses.search', $city?->slug);
         $crumbs = ['Home' => route('home'), 'Corsi' => route('courses.search')];

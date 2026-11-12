@@ -144,6 +144,17 @@ export default function BookingSent({ booking }: BookingSentProps) {
                             label: 'Quando',
                             value: `${formatDateMedium(booking.start)}, ${formatTimeRange(booking.start, booking.hours)}`,
                         },
+                        // "Ripeti ogni settimana": asked, or already set ("Sedute fisse").
+                        ...(booking.repeatWeekly
+                            ? [
+                                  {
+                                      label: 'Ogni settimana',
+                                      value: booking.repeatWeekly.set
+                                          ? `${booking.repeatWeekly.label}: sedute fisse attive`
+                                          : `${booking.repeatWeekly.label}: il trainer può accettare anche solo questa seduta`,
+                                  },
+                              ]
+                            : []),
                         // No place when the trainer has more than one: the row is left out.
                         ...(booking.placeLabel
                             ? [

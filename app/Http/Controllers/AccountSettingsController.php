@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Fortify\CreateNewUser;
+use App\Enums\PushCategory;
 use App\Http\Controllers\Concerns\BuildsAccountSettings;
 use App\Http\Requests\Account\PasswordUpdateRequest;
 use App\Http\Requests\Account\PersonalDataUpdateRequest;
@@ -58,17 +59,38 @@ class AccountSettingsController extends Controller
         return back();
     }
 
-    /** "Notifiche": the switches saved on the user, the push devices have their own controller. */
+    /**
+     * "Notifiche": the switches saved on the user (one per request: "Promemoria"
+     * or a kind of push of "Cosa ricevere sul dispositivo"). The push devices
+     * have their own controller.
+     */
     public function updateNotifications(Request $request): RedirectResponse
     {
-        $data = $request->validate(['reminders' => ['required', 'boolean']]);
-
         /** @var User $user */
         $user = $request->user();
+        $categories = array_map(
+            fn (PushCategory $category) => $category->value,
+            PushCategory::forRole($user->role),
+        );
+
+        $data = $request->validate([
+            'reminders' => ['required_without:push', 'boolean'],
+            'push' => ['required_without:reminders', 'array:'.implode(',', $categories)],
+            'push.*' => ['boolean'],
+        ]);
+
+        $settings = $user->notification_settings ?? [];
+
+        if (array_key_exists('reminders', $data)) {
+            $settings['reminders'] = (bool) $data['reminders'];
+        }
+
+        foreach ($data['push'] ?? [] as $category => $enabled) {
+            $settings['push'][$category] = (bool) $enabled;
+        }
+
         // Not fillable on purpose, as the other settings saved by the app.
-        $user->forceFill([
-            'notification_settings' => [...($user->notification_settings ?? []), 'reminders' => (bool) $data['reminders']],
-        ])->save();
+        $user->forceFill(['notification_settings' => $settings])->save();
 
         return back();
     }

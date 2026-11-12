@@ -2,12 +2,10 @@
 
 namespace App\Support;
 
-use App\Models\GroupSession;
 use App\Models\GymCourse;
 use App\Models\GymCourseCancellation;
 use App\Models\GymCourseLesson;
 use App\Models\GymProfile;
-use App\Models\User;
 use Carbon\CarbonImmutable;
 
 /**
@@ -28,10 +26,9 @@ final class GymCourseWeek
 
     /**
      * @param  bool  $withHidden  the gym area also sees the courses switched off
-     * @param  User|null  $viewer  marks the lessons where this client has a place
      * @return list<array<string, mixed>>
      */
-    public static function days(GymProfile $gym, CarbonImmutable $monday, bool $withHidden = false, ?User $viewer = null): array
+    public static function days(GymProfile $gym, CarbonImmutable $monday, bool $withHidden = false): array
     {
         $sunday = $monday->addDays(6);
         $courses = $gym->courses()
@@ -42,16 +39,6 @@ final class GymCourseWeek
                 'lessons.cancellations' => fn ($query) => $query->whereBetween('date', [$monday->toDateString(), $sunday->toDateString()]),
             ])
             ->get();
-
-        // "Prenotazione posto": the lessons with places already taken this week.
-        $sessions = GroupSession::query()
-            ->whereIn('gym_course_lesson_id', $courses->flatMap(fn (GymCourse $course) => $course->lessons->pluck('id')))
-            ->whereBetween('lesson_date', [$monday->toDateString(), $sunday->toDateString()])
-            ->withCount('activeRegistrations as registered_count')
-            ->with(['activeRegistrations' => fn ($query) => $query->where('user_id', $viewer->id ?? 0)])
-            ->get()
-            ->keyBy(fn (GroupSession $session) => $session->gym_course_lesson_id.'@'.$session->lesson_date?->toDateString());
-        $now = CarbonImmutable::now(TrainerSlots::TIMEZONE);
         $days = [];
 
         foreach (range(1, 7) as $weekday) {
@@ -62,10 +49,7 @@ final class GymCourseWeek
                 foreach ($course->lessons->where('weekday', $weekday) as $lesson) {
                     /** @var GymCourseCancellation|null $cancellation */
                     $cancellation = $lesson->cancellations->first(fn (GymCourseCancellation $item) => $item->date->isSameDay($date));
-                    $lessons[] = [
-                        ...self::lesson($course, $lesson, $cancellation),
-                        ...self::places($course, $lesson, $date, $sessions->get($lesson->id.'@'.$date->toDateString()), $now),
-                    ];
+                    $lessons[] = self::lesson($course, $lesson, $cancellation);
                 }
             }
 
@@ -79,27 +63,6 @@ final class GymCourseWeek
         }
 
         return $days;
-    }
-
-    /**
-     * "Prenotazione posto": places left, the viewer's place, and the event of
-     * the lesson that day (for the gym's "Iscritti").
-     *
-     * @return array{bookable: bool, remaining: int|null, booked: bool, started: bool, eventSlug: string|null, registered: int}
-     */
-    private static function places(GymCourse $course, GymCourseLesson $lesson, CarbonImmutable $date, ?GroupSession $session, CarbonImmutable $now): array
-    {
-        $bookable = $course->bookable && $lesson->capacity !== null;
-        [$hour, $minute] = array_map(intval(...), explode(':', $lesson->startTime()));
-
-        return [
-            'bookable' => $bookable,
-            'remaining' => ! $bookable ? null : ($session?->remainingSeats() ?? $lesson->capacity),
-            'booked' => $session !== null && $session->activeRegistrations->isNotEmpty(),
-            'started' => $date->setTime($hour, $minute)->lte($now),
-            'eventSlug' => $session?->slug,
-            'registered' => $session?->registeredCount() ?? 0,
-        ];
     }
 
     /**
@@ -128,7 +91,7 @@ final class GymCourseWeek
     }
 
     /**
-     * The courses, for the details under the plan: photo, description, when.
+     * The courses, for the details under the plan: photos, description, when.
      *
      * @return list<array<string, mixed>>
      */
@@ -136,14 +99,15 @@ final class GymCourseWeek
     {
         return array_values($gym->courses()
             ->where('is_active', true)
-            ->with(['discipline', 'instructor.user', 'lessons'])
+            ->with(['discipline', 'instructor.user', 'lessons', 'photos'])
             ->get()
             ->filter(fn (GymCourse $course) => $course->lessons->isNotEmpty())
             ->map(fn (GymCourse $course) => [
                 'id' => $course->id,
                 'name' => $course->name,
                 'description' => $course->description,
-                'photoUrl' => $course->photoUrl(),
+                'photos' => $course->photoUrls(),
+                'maxPlaces' => $course->maxPlaces(),
                 'level' => $course->level->label(),
                 'discipline' => $course->discipline?->name,
                 'instructor' => $course->instructorLabel(),

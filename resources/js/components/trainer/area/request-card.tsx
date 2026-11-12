@@ -1,4 +1,4 @@
-import { Check, Clock } from 'lucide-react';
+import { Check, Clock, Repeat } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import UserAvatar from '@/components/shared/user-avatar';
 import ClientAbout from '@/components/trainer/area/client-about';
@@ -16,14 +16,17 @@ type RequestCardProps = {
     request: TrainerBookingRequest;
     /** While an answer is being saved: the buttons wait. */
     busy: boolean;
-    onConfirm: () => void;
+    /** `weekly`: "Accetta ogni settimana" of a "Ripeti ogni settimana" request. */
+    onConfirm: (weekly: boolean) => void;
     onDecline: () => void;
 };
 
 /**
  * A request of "Richieste" waiting for the trainer (docs/design): when, who,
  * how often the client shows up and how long is left to answer.
- * "Conferma" saves at once; "Rifiuta" asks first, in the black strip.
+ * "Conferma" saves at once; "Rifiuta" asks first, in the black strip. When
+ * the client asks to repeat it every week: "Accetta ogni settimana" or
+ * "Solo questa seduta".
  */
 export default function RequestCard({
     request,
@@ -94,6 +97,13 @@ export default function RequestCard({
                     <span className="text-sm text-foreground/70">
                         {request.serviceName}
                     </span>
+                    {request.repeatWeekly && (
+                        <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-[13px] font-semibold">
+                            <Repeat aria-hidden="true" className="size-3.5" />
+                            Chiede di ripeterla:{' '}
+                            {request.repeatWeekly.toLowerCase()}
+                        </span>
+                    )}
                     {request.guestNames.length > 0 && (
                         <span className="text-sm text-foreground/70">
                             Con {request.guestNames.join(', ')}
@@ -185,15 +195,38 @@ export default function RequestCard({
                     >
                         Rifiuta
                     </Button>
-                    <Button
-                        type="button"
-                        disabled={busy}
-                        onClick={onConfirm}
-                        className="h-11 flex-1 rounded-xl px-5 font-semibold sm:flex-none"
-                    >
-                        <Check aria-hidden="true" strokeWidth={2.5} />
-                        Conferma
-                    </Button>
+                    {request.repeatWeekly ? (
+                        <>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={busy}
+                                onClick={() => onConfirm(false)}
+                                className="h-11 flex-1 rounded-xl px-4.5 font-semibold sm:flex-none"
+                            >
+                                Solo questa seduta
+                            </Button>
+                            <Button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => onConfirm(true)}
+                                className="h-11 flex-1 rounded-xl px-5 font-semibold sm:flex-none"
+                            >
+                                <Repeat aria-hidden="true" strokeWidth={2.5} />
+                                Accetta ogni settimana
+                            </Button>
+                        </>
+                    ) : (
+                        <Button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => onConfirm(false)}
+                            className="h-11 flex-1 rounded-xl px-5 font-semibold sm:flex-none"
+                        >
+                            <Check aria-hidden="true" strokeWidth={2.5} />
+                            Conferma
+                        </Button>
+                    )}
                 </div>
             )}
         </article>

@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Enums\GymLinkSide;
+use App\Enums\PushCategory;
 use App\Models\GymTrainerLink;
 use App\Models\User;
 use App\Notifications\Concerns\SendsPush;
@@ -17,6 +18,11 @@ use NotificationChannels\WebPush\WebPushMessage;
 class GymLinkRequested extends Notification
 {
     use Queueable, SendsPush;
+
+    protected function pushCategory(): PushCategory
+    {
+        return PushCategory::GymLinks;
+    }
 
     public function __construct(public GymTrainerLink $link) {}
 

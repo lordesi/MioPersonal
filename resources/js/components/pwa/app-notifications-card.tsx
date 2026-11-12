@@ -1,5 +1,6 @@
-import { Bell, Download, Share, X } from 'lucide-react';
+import { Bell, Download, X } from 'lucide-react';
 import { useState } from 'react';
+import InstallSteps from '@/components/pwa/install-steps';
 import { Button } from '@/components/ui/button';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { installApp, isStandalone, useCanInstall } from '@/lib/pwa';
@@ -93,30 +94,7 @@ export default function AppNotificationsCard({
                                 sulla schermata Home. Ci vogliono 10 secondi:
                             </span>
                         </div>
-                        <ol className="flex list-decimal flex-col gap-1 pl-4.5">
-                            <li>
-                                In Safari tocca{' '}
-                                <Share
-                                    aria-label="Condividi"
-                                    className="inline size-4 align-text-bottom"
-                                />{' '}
-                                <strong className="font-semibold">
-                                    Condividi
-                                </strong>
-                            </li>
-                            <li>
-                                Scegli{' '}
-                                <strong className="font-semibold">
-                                    Aggiungi alla schermata Home
-                                </strong>
-                            </li>
-                            <li>
-                                Apri MioPersonal dalla Home e premi{' '}
-                                <strong className="font-semibold">
-                                    Attiva le notifiche
-                                </strong>
-                            </li>
-                        </ol>
+                        <InstallSteps method="ios" withNotifications />
                     </>
                 ) : (
                     <div className="flex flex-col gap-1">

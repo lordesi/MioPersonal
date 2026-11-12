@@ -39,9 +39,12 @@ class AccountSettingsTest extends TestCase
                 ->where('account.hasPassword', true)
                 ->where('account.passwordChangedAt', null)
                 ->has('account.providers', 1)
-                // Removed from the page: devices. "Notifiche" has only the reminders.
+                // Removed from the page: devices. "Notifiche": the reminders and the kinds of push of a client.
                 ->missing('account.devices')
-                ->where('account.notifications', ['reminders' => true])
+                ->where('account.notifications.reminders', true)
+                ->where('account.notifications.push.0.key', 'bookings')
+                ->where('account.notifications.push.0.enabled', true)
+                ->has('account.notifications.push', 4)
             );
     }
 

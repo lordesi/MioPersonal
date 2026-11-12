@@ -196,10 +196,9 @@ export default function GymDashboard({
                                             Annullata
                                         </span>
                                     ) : (
-                                        lesson.bookable && (
+                                        lesson.capacity !== null && (
                                             <span className="shrink-0 text-muted-foreground tabular-nums">
-                                                {lesson.registered}/
-                                                {lesson.capacity} iscritti
+                                                Max {lesson.capacity} posti
                                             </span>
                                         )
                                     )}

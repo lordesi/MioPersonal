@@ -93,7 +93,7 @@ class DemoFeaturesSeeder extends Seeder
             }
         }
 
-        // "Nuovi su MioPersonal": approved in the last month (only if they are older now).
+        // "Novità": approved in the last month (only if they are older now).
         foreach (['elena-ricci' => 3, 'davide-greco' => 9, 'francesca-marino' => 15] as $slug => $daysAgo) {
             $profile = $this->trainer($slug);
 
@@ -105,7 +105,7 @@ class DemoFeaturesSeeder extends Seeder
 
     private function courses(): void
     {
-        // gym => [name, description, level, instructor trainer slug|null, instructor name|null, bookable, [[weekday, from, to, room, capacity]]]
+        // gym => [name, description, level, instructor trainer slug|null, instructor name|null, (was bookable, unused), [[weekday, from, to, room, capacity]]]
         $plan = [
             'FitLab Centro' => [
                 ['Pilates Mat', 'Lavoro a corpo libero su tappetino per postura, core e mobilità.', CourseLevel::All, 'giulia-rossi', null, true, [[1, '19:00', '20:00', 'Sala 2', 12], [3, '19:00', '20:00', 'Sala 2', 12]]],
@@ -131,7 +131,7 @@ class DemoFeaturesSeeder extends Seeder
                 continue;
             }
 
-            foreach ($courses as $sort => [$name, $description, $level, $trainer, $instructor, $bookable, $lessons]) {
+            foreach ($courses as $sort => [$name, $description, $level, $trainer, $instructor, , $lessons]) {
                 // A course the gym already has with this name stays as it is.
                 if ($gym->courses()->where('name', $name)->exists()) {
                     continue;
@@ -144,7 +144,6 @@ class DemoFeaturesSeeder extends Seeder
                     'instructor_trainer_id' => $trainer ? $this->trainer($trainer)?->id : null,
                     'instructor_name' => $instructor,
                     'is_active' => true,
-                    'bookable' => $bookable,
                     'sort' => $sort,
                 ]);
 

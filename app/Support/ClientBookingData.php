@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Actions\Bookings\CreateBookingSeries;
 use App\Enums\BookingActor;
 use App\Enums\BookingGuestStatus;
 use App\Enums\BookingStatus;
@@ -10,6 +11,7 @@ use App\Models\Booking;
 use App\Models\BookingGuest;
 use App\Models\ClientPackage;
 use App\Models\Review;
+use App\Models\TrainerClient;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use Carbon\CarbonInterface;
@@ -151,6 +153,10 @@ final class ClientBookingData
             'start' => self::iso($booking->starts_at),
             'hours' => self::hours($booking),
             'serviceName' => $booking->service_name,
+            // "Ripeti ogni settimana": "Ogni martedì alle 18:00", while waiting for the trainer.
+            'repeatWeekly' => $booking->repeat_weekly && $booking->isPending()
+                ? CreateBookingSeries::label($booking->starts_at->toImmutable())
+                : null,
             'status' => match (true) {
                 $booking->status === BookingStatus::Cancelled => 'cancelled',
                 $booking->status === BookingStatus::Declined => 'declined',
@@ -303,6 +309,9 @@ final class ClientBookingData
             ->filter(self::isDone(...))
             ->countBy('trainer_profile_id');
 
+        // "Scrivi": the trainers who have the client in their "Clienti".
+        $records = TrainerClient::query()->where('user_id', $client->id)->pluck('id', 'trainer_profile_id');
+
         return array_values($booked
             ->concat($favorites->whereNotIn('id', $bookedIds))
             ->take(self::TRAINERS_LIMIT)
@@ -317,6 +326,9 @@ final class ClientBookingData
                 'discipline' => $trainer->disciplines->first()?->name,
                 'favorite' => in_array($trainer->id, $favoriteIds, true),
                 'booked' => in_array($trainer->id, $bookedIds, true),
+                'messageHref' => $records->has($trainer->id)
+                    ? route('client.messages', ['con' => $records->get($trainer->id)], false)
+                    : null,
             ])->all());
     }
 

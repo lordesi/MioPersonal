@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\PushCategory;
 use App\Models\GroupSession;
 use App\Models\User;
 use App\Notifications\Concerns\SendsPush;
@@ -20,6 +21,11 @@ use NotificationChannels\WebPush\WebPushMessage;
 class GroupSessionChanged extends Notification implements ShouldQueue
 {
     use Queueable, SendsPush;
+
+    protected function pushCategory(): PushCategory
+    {
+        return PushCategory::Events;
+    }
 
     public const CANCELLED = 'cancelled';
 

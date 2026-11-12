@@ -2,32 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\GroupSessions\CourseLessonSessions;
 use App\Actions\GroupSessions\GroupSessionPlaces;
 use App\Enums\GroupSessionPlace;
 use App\Enums\GroupSessionStatus;
 use App\Enums\UserRole;
 use App\Models\GroupSession;
 use App\Models\GroupSessionHost;
-use App\Models\GymCourseLesson;
-use App\Models\GymProfile;
 use App\Models\User;
 use App\Support\CourseCard;
 use App\Support\GroupSessionCard;
 use App\Support\Seo;
-use App\Support\TrainerSlots;
-use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
  * The page of an event (/evento/{slug}) and its places: a client takes one,
  * confirmed at once while there are places left, and gives it back until
- * the event starts. The lessons of a course with "Prenotazione posto" are
- * booked from the gym's page, then shown here too.
+ * the event starts. The places already taken in a course lesson (before the
+ * courses were only to look at) are shown here too.
  */
 class EventController extends Controller
 {
@@ -165,41 +159,6 @@ class EventController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Iscrizione annullata: il posto torna libero.']);
 
         return back();
-    }
-
-    /** "Prenota il posto" of a lesson in the gym's plan of the week. */
-    public function registerLesson(Request $request, string $slug, GymCourseLesson $lesson, CourseLessonSessions $lessons, GroupSessionPlaces $places): RedirectResponse
-    {
-        $gym = GymProfile::query()->where('slug', $slug)->firstOrFail();
-        $lesson->loadMissing('course');
-        abort_unless($lesson->course->gym_profile_id === $gym->id && $gym->isApproved(), 404);
-
-        $data = $request->validate(['date' => ['required', 'date_format:Y-m-d']], ['date.*' => 'Scegli il giorno della lezione.']);
-        $date = CarbonImmutable::createFromFormat('Y-m-d', $data['date'], TrainerSlots::TIMEZONE)?->startOfDay();
-        $today = CarbonImmutable::now(TrainerSlots::TIMEZONE)->startOfDay();
-
-        if (! $lesson->course->bookable || ! $lesson->course->is_active || $lesson->capacity === null) {
-            throw ValidationException::withMessages(['place' => 'Questo corso si prenota in palestra.']);
-        }
-
-        // This week and the next, as in the plan.
-        if ($date === null || $date->lt($today) || $date->gt($today->addDays(14))) {
-            throw ValidationException::withMessages(['place' => 'Puoi prenotare le lezioni di questa settimana e della prossima.']);
-        }
-
-        /** @var User $client */
-        $client = $request->user();
-        $places->register($lessons->occurrence($lesson, $date), $client);
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Posto prenotato. Ti abbiamo mandato una mail.']);
-
-        return back();
-    }
-
-    /** "Accedi per prenotare" a lesson: back to the gym's page. */
-    public function startLesson(string $slug): RedirectResponse
-    {
-        return to_route('gyms.show', $slug);
     }
 
     private function session(string $slug): GroupSession

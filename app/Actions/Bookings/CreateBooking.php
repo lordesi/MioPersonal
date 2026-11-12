@@ -2,6 +2,7 @@
 
 namespace App\Actions\Bookings;
 
+use App\Actions\Calendar\SyncBusyTimes;
 use App\Actions\Trainer\LinkClient;
 use App\Actions\Waitlist\Waitlist;
 use App\Enums\BookingStatus;
@@ -31,20 +32,31 @@ class CreateBooking
 {
     public const SLOT_TAKEN = 'Slot appena preso: qualcuno l’ha prenotato un attimo prima di te. Scegli un altro orario.';
 
+    /** The trainer just took that time on their Google calendar. */
+    public const TRAINER_BUSY = 'Il trainer si è appena impegnato a quest’ora. Scegli un altro orario.';
+
     /** PostgreSQL error code of an exclusion constraint (`bookings_no_overlap`). */
     private const EXCLUSION_VIOLATION = '23P01';
 
     /**
      * A session of a service. A package service also creates the package:
      * this booking is its first session. "Invita un amico": `$people` with
-     * the booker, at the total price of the service for them.
+     * the booker, at the total price of the service for them. "Ripeti ogni
+     * settimana" (`$repeatWeekly`): the client asks for "sedute fisse".
      */
-    public function handle(User $client, TrainerProfile $profile, Service $service, CarbonImmutable $start, int $minutes, ?TrainerPlace $place = null, int $people = 1): Booking
+    public function handle(User $client, TrainerProfile $profile, Service $service, CarbonImmutable $start, int $minutes, ?TrainerPlace $place = null, int $people = 1, bool $repeatWeekly = false): Booking
     {
         $this->ensureDurationIsAllowed($service, $minutes);
+
+        if ($repeatWeekly && ! CreateBookingSeries::canRepeat($service, $people)) {
+            throw ValidationException::withMessages(['repeat_weekly' => $people > 1
+                ? 'Le sedute con amici non si ripetono ogni settimana.'
+                : 'Questa seduta non si può ripetere ogni settimana.']);
+        }
+
         $price = $this->priceFor($service, $people);
 
-        return $this->book($client, $profile, $start, $minutes, function () use ($client, $profile, $service, $place, $people, $price) {
+        return $this->book($client, $profile, $start, $minutes, function () use ($client, $profile, $service, $place, $people, $price, $repeatWeekly) {
             // Inside the lock: two requests of the same client can't both be "the first".
             $this->ensureFirstSessionIsFirst($profile, $service, $client);
 
@@ -56,6 +68,7 @@ class CreateBooking
                 'people' => $people,
                 'invite_token' => $people > 1 ? Booking::newInviteToken() : null,
                 'place_label' => $this->placeLabel($profile, $service->online_only, $place),
+                'repeat_weekly' => $repeatWeekly,
             ];
         });
     }
@@ -78,11 +91,11 @@ class CreateBooking
      * "Il tuo pacchetto": one more session of a package the client bought.
      * Free, it was paid with the package.
      */
-    public function fromPackage(User $client, ClientPackage $package, CarbonImmutable $start, ?TrainerPlace $place = null): Booking
+    public function fromPackage(User $client, ClientPackage $package, CarbonImmutable $start, ?TrainerPlace $place = null, bool $repeatWeekly = false): Booking
     {
         $profile = $package->trainerProfile;
 
-        return $this->book($client, $profile, $start, $package->minutes, function () use ($client, $package, $profile, $place) {
+        return $this->book($client, $profile, $start, $package->minutes, function () use ($client, $package, $profile, $place, $repeatWeekly) {
             // Counted inside the lock: two requests can't both take the last session.
             $booked = $package->activeBookings()->count();
 
@@ -96,6 +109,7 @@ class CreateBooking
                 'service_name' => $package->name,
                 'price_cents' => 0,
                 'place_label' => $this->placeLabel($profile, false, $place),
+                'repeat_weekly' => $repeatWeekly,
             ];
         });
     }
@@ -110,6 +124,7 @@ class CreateBooking
     {
         $this->ensureNotPaused($profile);
         $this->ensureAcceptsClient($profile, $client);
+        $this->ensureNotBusyOnGoogle($profile, $start, $minutes);
 
         try {
             $booking = DB::transaction(function () use ($client, $profile, $start, $minutes, $details) {
@@ -156,6 +171,16 @@ class CreateBooking
 
         // The client joins the trainer's own list (or is recognized in it).
         app(LinkClient::class)->forBooking($profile, $client);
+
+        // "Conferma automatica" also says yes to "Ripeti ogni settimana":
+        // no date free, or no sessions left in the package, keeps the one session.
+        if ($booking->repeat_weekly && $booking->status === BookingStatus::Confirmed) {
+            try {
+                app(CreateBookingSeries::class)->fromRequest($booking);
+            } catch (ValidationException) {
+                // Only this session, as if the trainer chose "Solo questa seduta".
+            }
+        }
         // Booked that day: no longer waiting for a slot on it.
         app(Waitlist::class)->forgetDay($client, $profile, $start);
 
@@ -198,6 +223,18 @@ class CreateBooking
         // Or the trainer's account is suspended, or being deleted.
         if ($profile->paused_at !== null || ! $profile->ownerIsActive()) {
             throw ValidationException::withMessages(['start' => 'Al momento questo trainer non accetta prenotazioni.']);
+        }
+    }
+
+    /**
+     * "Blocca gli orari occupati": asked to Google right now, the saved busy
+     * times may be some minutes old. Before the lock: a slow Google must not
+     * hold up the other requests to this trainer.
+     */
+    private function ensureNotBusyOnGoogle(TrainerProfile $profile, CarbonImmutable $start, int $minutes): void
+    {
+        if (app(SyncBusyTimes::class)->isBusyAt($profile, $start, $minutes)) {
+            throw ValidationException::withMessages(['start' => self::TRAINER_BUSY]);
         }
     }
 

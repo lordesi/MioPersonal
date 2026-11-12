@@ -90,8 +90,9 @@ export default function TrainerSettings({
                         <GoogleCalendarSection {...googleCalendar} />
                     )}
                     <NotificationsSection
+                        role="trainer"
                         reminders={account.notifications.reminders}
-                        forTrainer
+                        push={account.notifications.push}
                     />
                     {visibility && <ProfileVisibilitySection {...visibility} />}
                     <CloseTrainerProfileSection

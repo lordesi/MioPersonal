@@ -13,7 +13,7 @@ const LIST_URL = '/notifiche';
 const READ_URL = '/notifiche/lette';
 
 /** Laravel's CSRF cookie, sent back in the header. */
-function xsrfToken(): string {
+export function xsrfToken(): string {
     const cookie = document.cookie
         .split('; ')
         .find((part) => part.startsWith('XSRF-TOKEN='));

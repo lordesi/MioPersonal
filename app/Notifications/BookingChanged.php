@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Enums\BookingActor;
+use App\Enums\PushCategory;
 use App\Models\Booking;
 use App\Models\User;
 use App\Notifications\Concerns\SendsPush;
@@ -27,6 +28,11 @@ use NotificationChannels\WebPush\WebPushMessage;
 class BookingChanged extends Notification implements ShouldQueue
 {
     use Queueable, SendsPush;
+
+    protected function pushCategory(): PushCategory
+    {
+        return PushCategory::Bookings;
+    }
 
     public function __construct(public Booking $booking, public string $kind)
     {

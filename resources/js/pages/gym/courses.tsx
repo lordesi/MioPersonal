@@ -10,6 +10,8 @@ import {
 import { useState } from 'react';
 import InputError from '@/components/input-error';
 import ChoiceChips from '@/components/shared/choice-chips';
+import CoursePhotos from '@/components/gym/course-photos';
+import type { CoursePhoto } from '@/components/gym/course-photos';
 import ConfirmDialog from '@/components/shared/confirm-dialog';
 import SwitchRow from '@/components/shared/switch-row';
 import PageHeading from '@/components/trainer/area/page-heading';
@@ -61,10 +63,8 @@ type Course = {
     level: string;
     instructorTrainerId: number | null;
     instructorName: string;
-    photoUrl: string | null;
+    photos: CoursePhoto[];
     isActive: boolean;
-    /** "Prenotazione posto": clients take a place in each lesson. */
-    bookable: boolean;
     lessons: Lesson[];
 };
 
@@ -78,6 +78,7 @@ type GymCoursesProps = {
     trainers: CatalogOption[];
     max: number;
     maxLessons: number;
+    maxPhotos: number;
 };
 
 const WEEKDAYS = [
@@ -114,6 +115,7 @@ export default function GymCourses({
     trainers,
     max,
     maxLessons,
+    maxPhotos,
 }: GymCoursesProps) {
     const publicProfileHref = usePage<{ gymArea?: GymAreaData }>().props.gymArea
         ?.publicProfileHref;
@@ -126,7 +128,11 @@ export default function GymCourses({
     });
     const [editing, setEditing] = useState<Course | 'new' | null>(null);
     const [deleting, setDeleting] = useState<Course | null>(null);
-    const [preview, setPreview] = useState<string | null>(null);
+    // The photos of the course being edited, fresh after each upload.
+    const editingPhotos =
+        editing && editing !== 'new'
+            ? (courses.find((course) => course.id === editing.id)?.photos ?? [])
+            : [];
     const form = useForm({
         name: '',
         description: '',
@@ -134,16 +140,12 @@ export default function GymCourses({
         level: 'all',
         instructor_trainer_id: null as number | null,
         instructor_name: '',
-        photo: null as File | null,
-        remove_photo: false,
         is_active: true,
-        bookable: false,
         lessons: [emptyLesson] as Lesson[],
     });
 
     const open = (course: Course | 'new') => {
         form.clearErrors();
-        setPreview(null);
         form.setData(
             course === 'new'
                 ? {
@@ -153,10 +155,7 @@ export default function GymCourses({
                       level: 'all',
                       instructor_trainer_id: null,
                       instructor_name: '',
-                      photo: null,
-                      remove_photo: false,
                       is_active: true,
-                      bookable: false,
                       lessons: [emptyLesson],
                   }
                 : {
@@ -166,10 +165,7 @@ export default function GymCourses({
                       level: course.level,
                       instructor_trainer_id: course.instructorTrainerId,
                       instructor_name: course.instructorName,
-                      photo: null,
-                      remove_photo: false,
                       is_active: course.isActive,
-                      bookable: course.bookable,
                       lessons: course.lessons,
                   },
         );
@@ -178,7 +174,6 @@ export default function GymCourses({
 
     const submit = () => {
         const options = {
-            forceFormData: true,
             preserveScroll: true,
             // Stay on the tab in use.
             preserveState: true,
@@ -200,11 +195,6 @@ export default function GymCourses({
             ),
         );
 
-    const shownPhoto =
-        preview ??
-        (editing && editing !== 'new' && !form.data.remove_photo
-            ? editing.photoUrl
-            : null);
     const errors = form.errors as Record<string, string | undefined>;
     const lessonError = Object.entries(errors).find(([field]) =>
         field.startsWith('lessons'),
@@ -283,11 +273,6 @@ export default function GymCourses({
                                     title={course.name}
                                     action={
                                         <div className="flex items-center gap-1">
-                                            {course.bookable && (
-                                                <Badge variant="secondary">
-                                                    Prenotabile
-                                                </Badge>
-                                            )}
                                             {!course.isActive && (
                                                 <Badge variant="outline">
                                                     Nascosto
@@ -535,55 +520,18 @@ export default function GymCourses({
                             <InputError message={errors.description} />
                         </div>
 
-                        <div className="flex flex-col gap-2">
-                            <Label htmlFor="course-photo">
-                                Foto (facoltativa)
-                            </Label>
-                            {shownPhoto && (
-                                <div className="relative overflow-hidden rounded-xl">
-                                    <img
-                                        src={shownPhoto}
-                                        alt=""
-                                        className="aspect-16/9 w-full object-cover"
-                                    />
-                                    <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="secondary"
-                                        aria-label="Togli la foto"
-                                        className="absolute right-2 bottom-2 size-8"
-                                        onClick={() => {
-                                            setPreview(null);
-                                            form.setData((data) => ({
-                                                ...data,
-                                                photo: null,
-                                                remove_photo: true,
-                                            }));
-                                        }}
-                                    >
-                                        <Trash2 aria-hidden="true" />
-                                    </Button>
-                                </div>
-                            )}
-                            <Input
-                                id="course-photo"
-                                type="file"
-                                accept="image/jpeg,image/png"
-                                onChange={(event) => {
-                                    const file =
-                                        event.target.files?.[0] ?? null;
-                                    setPreview(
-                                        file ? URL.createObjectURL(file) : null,
-                                    );
-                                    form.setData((data) => ({
-                                        ...data,
-                                        photo: file,
-                                        remove_photo: false,
-                                    }));
-                                }}
+                        {editing && editing !== 'new' ? (
+                            <CoursePhotos
+                                courseId={editing.id}
+                                photos={editingPhotos}
+                                max={maxPhotos}
                             />
-                            <InputError message={errors.photo} />
-                        </div>
+                        ) : (
+                            <p className="rounded-xl bg-muted/60 px-3 py-2.5 text-sm text-muted-foreground">
+                                Le foto (fino a {maxPhotos}) le aggiungi dopo
+                                aver salvato il corso.
+                            </p>
+                        )}
 
                         <fieldset className="flex flex-col gap-2">
                             <legend className="pb-1 text-sm font-medium">
@@ -657,8 +605,8 @@ export default function GymCourses({
                                         type="number"
                                         min={1}
                                         max={500}
-                                        aria-label={`Posti della lezione ${index + 1}`}
-                                        placeholder="Posti"
+                                        aria-label={`Posti massimi della lezione ${index + 1}`}
+                                        placeholder="Max posti"
                                         className="bg-background"
                                         value={lesson.capacity ?? ''}
                                         onChange={(event) =>
@@ -713,15 +661,6 @@ export default function GymCourses({
                             </Button>
                             <InputError message={lessonError} />
                         </fieldset>
-
-                        <SwitchRow
-                            label="Prenotazione posto"
-                            description="I clienti prenotano il posto su MioPersonal, fino ai posti di ogni lezione. Scrivi i posti di ogni lezione."
-                            checked={form.data.bookable}
-                            onCheckedChange={(checked) =>
-                                form.setData('bookable', checked)
-                            }
-                        />
 
                         <SwitchRow
                             label="Visibile sul profilo"
@@ -895,29 +834,11 @@ function WeekPlans({ weeks }: { weeks: GymCourseDay[][] }) {
                                             {lesson.name}
                                             {lesson.room && ` · ${lesson.room}`}
                                         </span>
-                                        {lesson.bookable &&
+                                        {lesson.capacity !== null &&
                                             !lesson.cancelled && (
-                                                <Button
-                                                    asChild
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="ml-auto"
-                                                >
-                                                    <Link
-                                                        href={lessons.clients.url(
-                                                            lesson.lessonId,
-                                                            {
-                                                                query: {
-                                                                    date: day.date,
-                                                                },
-                                                            },
-                                                        )}
-                                                    >
-                                                        Iscritti{' '}
-                                                        {lesson.registered}/
-                                                        {lesson.capacity}
-                                                    </Link>
-                                                </Button>
+                                                <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+                                                    Max {lesson.capacity} posti
+                                                </span>
                                             )}
                                         {day.date >= today && (
                                             <Button

@@ -22,7 +22,13 @@ class GoogleCalendar
 
     private const REVOKE_URL = 'https://oauth2.googleapis.com/revoke';
 
-    public function __construct(private readonly TrainerCalendarConnection $connection) {}
+    /** The days asked to /freeBusy in one call. */
+    private const BUSY_DAYS_PER_CALL = 30;
+
+    /**
+     * @param  int  $timeout  seconds for each call: short when a client is waiting
+     */
+    public function __construct(private readonly TrainerCalendarConnection $connection, private readonly int $timeout = 15) {}
 
     /** The id of the "MioPersonal" calendar, made on the first call. */
     public function calendarId(): string
@@ -71,6 +77,70 @@ class GoogleCalendar
         $this->send('delete', '/calendars/'.rawurlencode($this->calendarId()).'/events/'.rawurlencode($eventId), [], [404, 410]);
     }
 
+    /**
+     * "Blocca gli orari occupati": the calendars of the trainer that say when
+     * they're busy. Theirs or shared with them to write on (a partner's, the
+     * studio's); not the ones only to read (holidays, birthdays, someone
+     * else's agenda), nor "MioPersonal", whose sessions are already here.
+     *
+     * @return list<string>
+     */
+    public function busyCalendarIds(): array
+    {
+        $ids = [];
+        $pageToken = null;
+
+        do {
+            $query = http_build_query(array_filter(['minAccessRole' => 'writer', 'maxResults' => 250, 'pageToken' => $pageToken]));
+            $page = $this->send('get', '/users/me/calendarList?'.$query)->json();
+
+            foreach ($page['items'] ?? [] as $calendar) {
+                if (($calendar['deleted'] ?? false) || $calendar['id'] === $this->connection->calendar_id) {
+                    continue;
+                }
+
+                $ids[] = (string) $calendar['id'];
+            }
+
+            $pageToken = $page['nextPageToken'] ?? null;
+        } while ($pageToken !== null);
+
+        return $ids;
+    }
+
+    /**
+     * When the trainer is busy between the two times, on these calendars:
+     * only start and end, Google gives nothing else.
+     *
+     * @param  list<string>  $calendarIds
+     * @return list<array{start: CarbonImmutable, end: CarbonImmutable}>
+     */
+    public function busy(CarbonImmutable $from, CarbonImmutable $to, array $calendarIds): array
+    {
+        $busy = [];
+
+        // Google answers for 50 calendars and a few weeks at a time.
+        foreach (array_chunk($calendarIds, 50) as $chunk) {
+            for ($start = $from; $start->lessThan($to); $start = $start->addDays(self::BUSY_DAYS_PER_CALL)) {
+                $end = $start->addDays(self::BUSY_DAYS_PER_CALL)->min($to);
+
+                $calendars = $this->send('post', '/freeBusy', [
+                    'timeMin' => $start->toRfc3339String(),
+                    'timeMax' => $end->toRfc3339String(),
+                    'items' => array_map(fn (string $id) => ['id' => $id], $chunk),
+                ])->json('calendars', []);
+
+                foreach ($calendars as $calendar) {
+                    foreach ($calendar['busy'] ?? [] as $time) {
+                        $busy[] = ['start' => CarbonImmutable::parse($time['start']), 'end' => CarbonImmutable::parse($time['end'])];
+                    }
+                }
+            }
+        }
+
+        return $busy;
+    }
+
     /** "Scollega": the calendar and all its events go, then the access is revoked. Best effort. */
     public function disconnect(): void
     {
@@ -103,8 +173,12 @@ class GoogleCalendar
             $response = $this->request($method, $path, $data);
         }
 
-        if ($response->status() === 401 || ($response->status() === 403 && $this->isAccessDenied($response))) {
+        if ($response->status() === 401) {
             throw new CalendarAccessRevoked('Google non accetta più il collegamento.');
+        }
+
+        if ($response->status() === 403 && $this->isAccessDenied($response)) {
+            throw new CalendarAccessRevoked('Google non accetta più il collegamento.', permissionOnly: true);
         }
 
         if (! in_array($response->status(), $allowed, true)) {
@@ -120,7 +194,7 @@ class GoogleCalendar
     private function request(string $method, string $path, array $data): Response
     {
         /** @var PendingRequest $http */
-        $http = Http::withToken($this->connection->access_token)->acceptJson()->timeout(15);
+        $http = Http::withToken($this->connection->access_token)->acceptJson()->timeout($this->timeout);
 
         return $method === 'delete' || $method === 'get'
             ? $http->{$method}(self::API.$path)
@@ -149,7 +223,7 @@ class GoogleCalendar
             throw new CalendarAccessRevoked('Manca il permesso di restare collegati.');
         }
 
-        $response = Http::asForm()->post(self::TOKEN_URL, [
+        $response = Http::asForm()->timeout($this->timeout)->post(self::TOKEN_URL, [
             'client_id' => config('services.google-calendar.client_id'),
             'client_secret' => config('services.google-calendar.client_secret'),
             'refresh_token' => $this->connection->refresh_token,

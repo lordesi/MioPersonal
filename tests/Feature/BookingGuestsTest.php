@@ -270,7 +270,9 @@ class BookingGuestsTest extends TestCase
             ->post(route('bookings.invite.join', $booking->invite_token))
             ->assertSessionHasErrors('invite');
 
-        $this->get(route('bookings.invite', 'x'.substr((string) $booking->invite_token, 1)))->assertNotFound();
+        // A token that is surely another one: the first character changed.
+        $token = (string) $booking->invite_token;
+        $this->get(route('bookings.invite', (strtolower($token[0]) === 'x' ? 'y' : 'x').substr($token, 1)))->assertNotFound();
     }
 
     public function test_a_friend_who_joined_sees_the_session_without_cancelling_it()

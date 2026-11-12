@@ -57,6 +57,8 @@ export type SentBooking = {
     start: string;
     hours: number;
     serviceName: string;
+    /** "Ripeti ogni settimana": `set` once the "sedute fisse" exist. */
+    repeatWeekly: { label: string; set: boolean } | null;
     placeLabel: string;
     priceCents: number;
     /** "Invita un amico": a session for more people. */
@@ -79,6 +81,8 @@ export type ClientPendingBooking = {
     start: string;
     hours: number;
     serviceName: string;
+    /** "Ripeti ogni settimana": "Ogni martedì alle 18:00" while pending. */
+    repeatWeekly: string | null;
     /**
      * 'declined' = refused by the trainer, 'expired' = no answer in time,
      * 'cancelled' = a confirmed session the trainer cancelled.
@@ -118,6 +122,8 @@ export type ClientTrainer = {
     favorite: boolean;
     /** At least one confirmed session with this trainer. */
     booked: boolean;
+    /** "Scrivi": the conversation in "Messaggi", when the trainer has the client in "Clienti". */
+    messageHref: string | null;
 };
 
 /** A session done, in "Sedute svolte". */

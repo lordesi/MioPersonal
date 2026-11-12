@@ -1,4 +1,5 @@
-import { Mail, MessageCircle, Phone } from 'lucide-react';
+import { Link } from '@inertiajs/react';
+import { Mail, MessageCircle, MessagesSquare, Phone } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useId } from 'react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,8 @@ import type { TrainerClient } from '@/types';
 type ClientContactsProps = {
     name: string;
     contacts: TrainerClient['contacts'];
+    /** "Scrivi in chat": only for the clients with an account. */
+    messageHref?: string;
 };
 
 /**
@@ -17,6 +20,7 @@ type ClientContactsProps = {
 export default function ClientContacts({
     name,
     contacts,
+    messageHref,
 }: ClientContactsProps) {
     const titleId = useId();
     const phone = contacts.phone;
@@ -27,7 +31,25 @@ export default function ClientContacts({
                 Contatti
             </h3>
 
-            {!phone && !contacts.email && (
+            {messageHref && (
+                <Button
+                    asChild
+                    className="h-12 gap-2.5 rounded-xl text-[15px] font-semibold"
+                >
+                    <Link
+                        href={messageHref}
+                        aria-label={`Scrivi a ${name} in chat`}
+                    >
+                        <MessagesSquare
+                            aria-hidden="true"
+                            className="size-4.5"
+                        />
+                        Scrivi in chat
+                    </Link>
+                </Button>
+            )}
+
+            {!phone && !contacts.email && !messageHref && (
                 <p className="text-sm text-muted-foreground">
                     Nessun contatto: aggiungilo in «Scheda del cliente» o
                     mandagli il link personale.
@@ -60,6 +82,7 @@ export default function ClientContacts({
             {phone && (
                 <Button
                     asChild
+                    variant={messageHref ? 'outline' : 'default'}
                     className="h-12 gap-2.5 rounded-xl text-[15px] font-semibold"
                 >
                     <a

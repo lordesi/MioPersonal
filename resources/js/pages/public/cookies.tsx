@@ -150,9 +150,10 @@ const sections: LegalSection[] = [
                     direttamente dai nostri server.
                 </LegalParagraph>
                 <LegalParagraph>
-                    Se scegli «Continua con Google», per l’accesso passi dal
-                    sito di Google, che usa i propri cookie secondo la sua
-                    privacy policy.
+                    Se scegli «Continua con Google», o se da trainer colleghi
+                    Google Calendar, passi per un momento dal sito di Google,
+                    che usa i propri cookie secondo la sua privacy policy. Il
+                    collegamento non aggiunge cookie sul nostro sito.
                 </LegalParagraph>
             </>
         ),
@@ -220,7 +221,7 @@ export default function Cookies() {
             pageName="Cookie policy"
             title="Cookie policy"
             intro="Quali cookie usa MioPersonal e come puoi gestirli."
-            updatedOn="8 novembre 2026"
+            updatedOn="12 novembre 2026"
             summary={[
                 'Oggi usiamo solo cookie tecnici, necessari a far funzionare il sito, e un cookie anonimo nostro per contare i visitatori.',
                 'Nessun cookie di profilazione o di pubblicità, nessuno strumento di analisi esterno.',

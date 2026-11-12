@@ -1,6 +1,7 @@
 import type { Page, SharedPageProps } from '@inertiajs/core';
 import type { ComponentType, ReactElement, ReactNode } from 'react';
 import CookieConsent from '@/components/cookies/cookie-consent';
+import AppPrompt from '@/components/pwa/app-prompt';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Sentry } from '@/lib/sentry';
@@ -73,6 +74,7 @@ export function withApp(
             </Sentry.ErrorBoundary>
             <Toaster />
             <CookieConsent initialPage={page} />
+            <AppPrompt initialPage={page} />
         </TooltipProvider>
     );
 }

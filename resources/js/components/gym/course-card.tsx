@@ -25,7 +25,9 @@ export default function CourseCard({
                 course.name,
                 course.when,
                 `${course.gym.name}, ${course.gym.city}`,
-                course.bookable ? 'prenoti online' : null,
+                course.maxPlaces !== null
+                    ? `massimo ${course.maxPlaces} posti`
+                    : null,
             ]
                 .filter(Boolean)
                 .join(', ')}
@@ -46,9 +48,9 @@ export default function CourseCard({
                 ) : (
                     <CalendarDays aria-hidden="true" className="size-8" />
                 )}
-                {course.bookable && (
-                    <span className="absolute top-2 left-2 rounded-full bg-background px-2 py-0.5 text-[11px] font-semibold text-foreground shadow sm:top-3 sm:left-3 sm:text-xs">
-                        Prenoti online
+                {course.maxPlaces !== null && (
+                    <span className="absolute top-2 left-2 rounded-full bg-background px-2 py-0.5 text-[11px] font-semibold text-foreground tabular-nums shadow sm:top-3 sm:left-3 sm:text-xs">
+                        Max {course.maxPlaces} posti
                     </span>
                 )}
             </span>

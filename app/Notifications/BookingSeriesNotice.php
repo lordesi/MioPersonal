@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\PushCategory;
 use App\Models\BookingSeries;
 use App\Models\User;
 use App\Notifications\Concerns\SendsPush;
@@ -18,6 +19,11 @@ use NotificationChannels\WebPush\WebPushMessage;
 class BookingSeriesNotice extends Notification implements ShouldQueue
 {
     use Queueable, SendsPush;
+
+    protected function pushCategory(): PushCategory
+    {
+        return PushCategory::Bookings;
+    }
 
     public const CREATED = 'created';
 

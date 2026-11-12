@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PushCategory;
 use App\Models\Booking;
 use App\Models\User;
 use App\Notifications\BookingConfirmed;
@@ -114,6 +115,48 @@ class PushNotificationsTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertFalse($user->fresh()->wantsReminders());
+    }
+
+    public function test_a_kind_turned_off_stops_only_the_push()
+    {
+        $booking = Booking::factory()->confirmed()->create();
+        /** @var User $client */
+        $client = $booking->client;
+        $client->updatePushSubscription(self::ENDPOINT, 'key', 'token', 'aes128gcm');
+        $this->assertTrue($client->wantsPush(PushCategory::Bookings));
+
+        $this->actingAs($client)
+            ->patch(route('account.notifications.update'), ['push' => ['bookings' => false]])
+            ->assertSessionHasNoErrors();
+
+        $client = $client->fresh();
+        $this->assertFalse($client->wantsPush(PushCategory::Bookings));
+        $this->assertTrue($client->wantsReminders());
+        // The bell inside the site stays.
+        $this->assertSame(['database'], (new BookingConfirmed($booking))->via($client));
+    }
+
+    public function test_only_the_kinds_of_the_role_can_be_saved()
+    {
+        $client = User::factory()->create();
+
+        $this->actingAs($client)
+            ->patch(route('account.notifications.update'), ['push' => ['requests' => false]])
+            ->assertSessionHasErrors('push');
+
+        $this->assertTrue($client->fresh()->wantsPush(PushCategory::Requests));
+    }
+
+    public function test_a_gym_chooses_its_push_notifications()
+    {
+        $gym = User::factory()->gym()->create();
+
+        $this->actingAs($gym)
+            ->patch(route('account.notifications.update'), ['push' => ['gym_links' => false]])
+            ->assertSessionHasNoErrors();
+
+        $this->assertFalse($gym->fresh()->wantsPush(PushCategory::GymLinks));
+        $this->assertTrue($gym->fresh()->wantsPush(PushCategory::Events));
     }
 
     public function test_the_app_icon_opens_the_users_area()

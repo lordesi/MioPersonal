@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Enums\PushCategory;
 use App\Models\User;
 use App\Providers\FortifyServiceProvider;
 
@@ -27,7 +28,16 @@ trait BuildsAccountSettings
             // "Continua con Google" and "Collega" save google_id. Not available
             // without the keys in the .env: "Collega" is hidden.
             // "Notifiche": the push devices are read by the browser (lib/push.ts).
-            'notifications' => ['reminders' => $user->wantsReminders()],
+            'notifications' => [
+                'reminders' => $user->wantsReminders(),
+                // "Cosa ricevere sul dispositivo": only the kinds this role receives.
+                'push' => array_map(fn (PushCategory $category) => [
+                    'key' => $category->value,
+                    'label' => $category->label(),
+                    'description' => $category->description($user->role),
+                    'enabled' => $user->wantsPush($category),
+                ], PushCategory::forRole($user->role)),
+            ],
             'providers' => [
                 [
                     'name' => 'Google',

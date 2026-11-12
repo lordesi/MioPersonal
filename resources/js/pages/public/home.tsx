@@ -4,7 +4,6 @@ import FeaturedCourses from '@/components/home/featured-courses';
 import FeaturedGyms from '@/components/home/featured-gyms';
 import FeaturedTrainers from '@/components/home/featured-trainers';
 import HeroSearch from '@/components/home/hero-search';
-import PopularDisciplines from '@/components/home/popular-disciplines';
 import ProBand from '@/components/home/pro-band';
 import NewsStrip from '@/components/news/news-strip';
 import type {
@@ -18,23 +17,22 @@ import type {
     TrainerSummary,
 } from '@/types';
 
+/** "In tendenza", or "in evidenza" while too few are trending (HomeController). */
+type Shelf<T> = {
+    key: 'trending' | 'featured';
+    title: string;
+    items: T[];
+};
+
 type HomeProps = {
-    featuredTrainers: TrainerSummary[];
-    /** "In tendenza" and "Nuovi": only with enough trainers. */
-    trainerShelves: {
-        key: string;
-        title: string;
-        trainers: TrainerSummary[];
-    }[];
-    /** "Palestre in evidenza": hidden when empty. */
-    featuredGyms: GymSummary[];
+    trainers: Shelf<TrainerSummary>;
+    /** Hidden when empty. */
+    gyms: Shelf<GymSummary>;
     /** "Corsi in palestra": hidden when empty. */
     featuredCourses: CourseSummary[];
     /** "Prossimi eventi": hidden when empty. */
     events: GroupSessionSummary[];
     disciplines: CatalogOption[];
-    /** "Cosa vuoi allenare?": the same disciplines, the most searched first. */
-    popularDisciplines: CatalogOption[];
     /** With their center, for "Usa la mia posizione". */
     cities: CityWithCoordinates[];
     /** "Servizi" of the gyms' search. */
@@ -47,18 +45,17 @@ type HomeProps = {
 };
 
 /**
- * The home: the search of the four kinds, the disciplines, then one row per
- * kind (trainer, palestre, corsi, eventi), the news and the professionals.
+ * The home: the search of the four kinds, then the trainers and the gyms
+ * "in tendenza" (or "in evidenza"), the courses, the events, the news and
+ * the professionals.
  */
 export default function Home({
-    featuredTrainers,
-    trainerShelves,
-    featuredGyms,
+    trainers,
+    gyms,
     featuredCourses,
     events,
     news,
     disciplines,
-    popularDisciplines,
     cities,
     amenities,
     eventTypes,
@@ -73,17 +70,16 @@ export default function Home({
                 amenities={amenities}
                 eventTypes={eventTypes}
             />
-            <PopularDisciplines disciplines={popularDisciplines} />
-            <FeaturedTrainers trainers={featuredTrainers} />
-            {trainerShelves.map((shelf) => (
-                <FeaturedTrainers
-                    key={shelf.key}
-                    id={shelf.key}
-                    title={shelf.title}
-                    trainers={shelf.trainers}
-                />
-            ))}
-            <FeaturedGyms gyms={featuredGyms} />
+            <FeaturedTrainers
+                id={`${trainers.key}-trainers`}
+                title={trainers.title}
+                trainers={trainers.items}
+            />
+            <FeaturedGyms
+                id={`${gyms.key}-gyms`}
+                title={gyms.title}
+                gyms={gyms.items}
+            />
             <FeaturedCourses courses={featuredCourses} />
             <UpcomingEvents
                 events={events}

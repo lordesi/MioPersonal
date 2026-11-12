@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
-/** The home shelves "In tendenza" and "Nuovi": hidden when too few trainers. */
+/** "Trainer in tendenza" on the home, or "in evidenza" when too few trainers. */
 class TrainerShelvesTest extends TestCase
 {
     use RefreshDatabase;
@@ -61,25 +61,17 @@ class TrainerShelvesTest extends TestCase
         );
     }
 
-    public function test_a_shelf_with_too_few_trainers_is_not_shown()
+    public function test_too_few_trending_trainers_give_no_shelf()
     {
         foreach (range(1, TrainerShelves::MIN_TRAINERS - 1) as $ignored) {
             $this->visit($this->trainer(), 5);
         }
 
-        $this->assertSame([], TrainerShelves::all());
+        $this->assertNull(TrainerShelves::trending());
 
         $this->visit($this->trainer(), 5);
 
-        $this->assertSame(['trending'], array_column(TrainerShelves::all(), 'key'));
-    }
-
-    public function test_new_trainers_are_the_ones_approved_in_the_last_month()
-    {
-        $new = $this->trainer(['approved_at' => $this->now->subDays(5)]);
-        $this->trainer();
-
-        $this->assertSame([$new->id], TrainerShelves::newIds($this->now));
+        $this->assertCount(TrainerShelves::MIN_TRAINERS, TrainerShelves::trending() ?? []);
     }
 
     public function test_hidden_or_paused_profiles_never_show()
@@ -90,19 +82,26 @@ class TrainerShelvesTest extends TestCase
         $this->assertNotContains($paused->id, TrainerShelves::trendingIds($this->now));
     }
 
-    public function test_the_home_carries_the_shelves_only_when_they_are_full()
+    public function test_the_home_shows_the_trending_trainers_or_else_the_featured_ones()
     {
         $this->seed(CatalogSeeder::class);
+        $this->trainer();
 
-        $this->get(route('home'))->assertOk()->assertInertia(fn ($page) => $page->where('trainerShelves', []));
+        $this->get(route('home'))->assertOk()->assertInertia(fn ($page) => $page
+            ->where('trainers.key', 'featured')
+            ->where('trainers.title', 'Trainer in evidenza')
+            ->has('trainers.items', 1)
+            // "Nuovi su MioPersonal" and "Cosa vuoi allenare?" are gone.
+            ->missing('trainerShelves')
+            ->missing('popularDisciplines'));
 
         foreach (range(1, TrainerShelves::MIN_TRAINERS) as $ignored) {
             $this->visit($this->trainer(), 5);
         }
 
         $this->get(route('home'))->assertOk()->assertInertia(fn ($page) => $page
-            ->has('trainerShelves', 1)
-            ->where('trainerShelves.0.key', 'trending')
-            ->has('trainerShelves.0.trainers', TrainerShelves::MIN_TRAINERS));
+            ->where('trainers.key', 'trending')
+            ->where('trainers.title', 'Trainer in tendenza')
+            ->has('trainers.items', TrainerShelves::MIN_TRAINERS));
     }
 }

@@ -4,6 +4,7 @@ import {
     CircleHelp,
     Dumbbell,
     Building2,
+    Download,
     Menu,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -27,6 +28,7 @@ import {
     SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
+import { openAppPrompt, useInstallMethod } from '@/lib/pwa';
 import { cn } from '@/lib/utils';
 import { dashboard, howItWorks, login, register } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
@@ -215,6 +217,7 @@ const sheetRow =
 function GuestMenu({ active }: { active: SearchKind | null }) {
     const [open, setOpen] = useState(false);
     const close = () => setOpen(false);
+    const canInstall = useInstallMethod() !== null;
 
     return (
         <Sheet open={open} onOpenChange={setOpen}>
@@ -274,6 +277,19 @@ function GuestMenu({ active }: { active: SearchKind | null }) {
                         <CircleHelp aria-hidden="true" className="size-5" />
                         Contatti
                     </Link>
+                    {canInstall && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                close();
+                                openAppPrompt();
+                            }}
+                            className={cn(sheetRow, 'text-left')}
+                        >
+                            <Download aria-hidden="true" className="size-5" />
+                            Installa l’app
+                        </button>
+                    )}
                     <div className="mt-4 grid grid-cols-2 gap-2 px-1">
                         <Link
                             href={login()}

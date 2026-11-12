@@ -46,6 +46,9 @@ class TrainerSettingsController extends Controller
                 'email' => $profile->calendarConnection?->google_email,
                 // Google refused: "Ricollega".
                 'error' => $profile->calendarConnection?->last_error,
+                // "Blocca gli orari occupati".
+                'readsBusy' => $profile->calendarConnection?->readsBusy() ?? false,
+                'busySyncedAt' => $profile->calendarConnection?->busy_synced_at?->toIso8601String(),
             ],
             'contacts' => $profile === null ? null : [
                 'phone' => $user->phone,

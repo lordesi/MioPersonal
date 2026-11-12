@@ -12,7 +12,7 @@ use App\Models\GymCourse;
 final class CourseCard
 {
     /** The relations a card reads: load them to avoid one query per card. */
-    public const RELATIONS = ['discipline', 'instructor.user', 'lessons', 'gymProfile.city', 'gymProfile.cover'];
+    public const RELATIONS = ['discipline', 'instructor.user', 'lessons', 'photos', 'gymProfile.city', 'gymProfile.cover'];
 
     /**
      * @return array<string, mixed>
@@ -33,8 +33,8 @@ final class CourseCard
             'instructorHref' => $instructor !== null && $instructor->isApproved() ? route('trainers.show', $instructor->slug, false) : null,
             // "Lun, Gio 18:30 · Sab 10:00"
             'when' => GymCourseWeek::when($course),
-            // "Prenotazione posto": a place is taken here, confirmed at once.
-            'bookable' => $course->bookable && $course->lessons->contains(fn ($lesson) => $lesson->capacity !== null),
+            // "Max 15 posti": the course is booked at the gym, not here.
+            'maxPlaces' => $course->maxPlaces(),
             'gym' => [
                 'name' => $gym->name,
                 'slug' => $gym->slug,

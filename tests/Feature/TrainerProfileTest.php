@@ -250,7 +250,7 @@ class TrainerProfileTest extends TestCase
         // Sara Colombo has the best average (5.0).
         $this->get(route('home'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('featuredTrainers.0.href', route('trainers.show', 'sara-colombo', false))
+                ->where('trainers.items.0.href', route('trainers.show', 'sara-colombo', false))
             );
     }
 }

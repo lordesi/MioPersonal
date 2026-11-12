@@ -8,17 +8,17 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The extra shelves of the home: "In tendenza" and "Nuovi".
- *
- * A shelf with fewer than MIN_TRAINERS trainers is not shown at all: three
- * trainers fill one page of the carousel, fewer would look empty or made up.
+ * "Trainer in tendenza" on the home: visits and booking requests of the last
+ * days. With fewer than MIN_TRAINERS the home shows "Trainer in evidenza"
+ * (the best rated) instead: three trainers fill one page of the carousel,
+ * fewer would look empty or made up.
  */
 final class TrainerShelves
 {
-    /** Below this many trainers a shelf disappears. The only knob. */
+    /** Below this many trainers "in tendenza" gives way to "in evidenza". */
     public const MIN_TRAINERS = 3;
 
-    /** Trainers per shelf (the carousel shows 3 per page). */
+    /** Trainers in the carousel (3 per page). */
     public const LIMIT = 9;
 
     /** "In tendenza" counts the activity of the last days. */
@@ -27,46 +27,34 @@ final class TrainerShelves
     /** A booking request says more than a visit. */
     private const BOOKING_WEIGHT = 5;
 
-    /** "Nuovi": approved in the last days. */
-    public const NEW_DAYS = 30;
-
     /**
+     * The cards "in tendenza", or null when there are too few.
+     *
      * @param  list<int>  $favoriteIds
-     * @return list<array{key: string, title: string, trainers: list<array<string, mixed>>}>
+     * @return list<array<string, mixed>>|null
      */
-    public static function all(array $favoriteIds = [], ?CarbonImmutable $now = null): array
+    public static function trending(array $favoriteIds = [], ?CarbonImmutable $now = null): ?array
     {
-        $now ??= CarbonImmutable::now();
+        $ids = self::trendingIds($now ?? CarbonImmutable::now());
 
-        $shelves = [
-            ['key' => 'trending', 'title' => 'Trainer in tendenza', 'ids' => self::trendingIds($now)],
-            ['key' => 'new', 'title' => 'Nuovi su MioPersonal', 'ids' => self::newIds($now)],
-        ];
-
-        $shelves = array_values(array_filter($shelves, fn (array $shelf) => count($shelf['ids']) >= self::MIN_TRAINERS));
-
-        if ($shelves === []) {
-            return [];
+        if (count($ids) < self::MIN_TRAINERS) {
+            return null;
         }
 
         $profiles = TrainerProfile::query()
             ->published()
             ->with(TrainerCard::RELATIONS)
-            ->whereIn('id', array_merge(...array_column($shelves, 'ids')))
+            ->whereIn('id', $ids)
             ->get()
             ->keyBy('id');
 
-        return array_map(fn (array $shelf) => [
-            'key' => $shelf['key'],
-            'title' => $shelf['title'],
-            'trainers' => array_map(
-                fn (int $id) => [
-                    ...TrainerCard::from($profiles[$id]),
-                    'favorite' => in_array($id, $favoriteIds, true),
-                ],
-                array_values(array_filter($shelf['ids'], fn (int $id) => $profiles->has($id))),
-            ),
-        ], $shelves);
+        return array_map(
+            fn (int $id) => [
+                ...TrainerCard::from($profiles[$id]),
+                'favorite' => in_array($id, $favoriteIds, true),
+            ],
+            array_values(array_filter($ids, fn (int $id) => $profiles->has($id))),
+        );
     }
 
     /**
@@ -108,20 +96,5 @@ final class TrainerShelves
         arsort($scores);
 
         return array_map('intval', array_slice(array_keys($scores), 0, self::LIMIT));
-    }
-
-    /**
-     * @return list<int>
-     */
-    public static function newIds(CarbonImmutable $now): array
-    {
-        return array_values(TrainerProfile::query()
-            ->published()
-            ->where('approved_at', '>=', $now->subDays(self::NEW_DAYS))
-            ->latest('approved_at')
-            ->limit(self::LIMIT)
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all());
     }
 }

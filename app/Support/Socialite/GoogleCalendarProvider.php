@@ -14,6 +14,16 @@ class GoogleCalendarProvider extends GoogleProvider
 {
     public const SCOPE = 'https://www.googleapis.com/auth/calendar.app.created';
 
+    /**
+     * "Blocca gli orari occupati", optional and asked only when the trainer
+     * turns it on: the list of their calendars and when they're busy on them
+     * (never titles or details).
+     */
+    public const BUSY_SCOPES = [
+        'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
+        'https://www.googleapis.com/auth/calendar.freebusy',
+    ];
+
     /** @var list<string> */
     protected $scopes = ['openid', 'email', self::SCOPE];
 

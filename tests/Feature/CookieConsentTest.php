@@ -88,4 +88,21 @@ class CookieConsentTest extends TestCase
             ->get(route('legal.cookies'))
             ->assertInertia(fn (Assert $page) => $page->where('cookieConsent', null));
     }
+
+    public function test_the_choices_older_than_a_year_are_deleted()
+    {
+        foreach (['old' => 13, 'recent' => 11] as $id => $months) {
+            CookieConsent::forceCreate([
+                'consent_id' => $id,
+                'policy_version' => CookieConsent::POLICY_VERSION,
+                'analytics' => false,
+                'marketing' => false,
+                'created_at' => now()->subMonths($months),
+            ]);
+        }
+
+        $this->artisan('cookie-consents:prune')->assertSuccessful();
+
+        $this->assertSame(['recent'], CookieConsent::pluck('consent_id')->all());
+    }
 }

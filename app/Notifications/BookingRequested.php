@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Enums\BookingStatus;
+use App\Enums\PushCategory;
 use App\Models\Booking;
 use App\Models\User;
 use App\Notifications\Concerns\SendsPush;
@@ -23,6 +24,11 @@ use NotificationChannels\WebPush\WebPushMessage;
 class BookingRequested extends Notification implements ShouldQueue
 {
     use Queueable, SendsPush;
+
+    protected function pushCategory(): PushCategory
+    {
+        return PushCategory::Requests;
+    }
 
     /** Decided now: the trainer may answer before the queue sends the email. */
     public bool $alreadyConfirmed;
@@ -50,7 +56,7 @@ class BookingRequested extends Notification implements ShouldQueue
 
         return $this->pushMessage(
             $this->alreadyConfirmed ? 'Nuova prenotazione' : 'Nuova richiesta da confermare',
-            "{$client} · {$when}",
+            "{$client} · {$when}".($booking->repeat_weekly ? ' · chiede di ripeterla ogni settimana' : ''),
             route($this->alreadyConfirmed ? 'trainer.today' : 'trainer.requests'),
             "booking-{$booking->id}",
         );

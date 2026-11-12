@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Bookings\CreateBookingSeries;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\User;
@@ -33,6 +34,11 @@ class BookingSentController extends Controller
                 'start' => $booking->starts_at->utc()->format('Y-m-d\TH:i:s\Z'),
                 'hours' => $booking->starts_at->diffInMinutes($booking->ends_at) / 60,
                 'serviceName' => $booking->service_name,
+                // "Ripeti ogni settimana": `set` once the "sedute fisse" exist (automatic confirmation).
+                'repeatWeekly' => $booking->repeat_weekly ? [
+                    'label' => CreateBookingSeries::label($booking->starts_at->toImmutable()),
+                    'set' => $booking->booking_series_id !== null,
+                ] : null,
                 'placeLabel' => $booking->place_label,
                 'priceCents' => $booking->price_cents,
                 // "Invita un amico": the link to share, for a session of more people.

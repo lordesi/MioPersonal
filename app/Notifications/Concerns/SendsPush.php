@@ -2,6 +2,7 @@
 
 namespace App\Notifications\Concerns;
 
+use App\Enums\PushCategory;
 use App\Models\User;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
@@ -60,12 +61,27 @@ trait SendsPush
     }
 
     /**
+     * The switch of "Cosa ricevere sul dispositivo" that can stop this push;
+     * null = always sent (decisions of the team, reminders with their own switch).
+     */
+    protected function pushCategory(): ?PushCategory
+    {
+        return null;
+    }
+
+    /**
      * @param  list<string>  $channels
      * @return list<string>
      */
     protected function withPush(object $notifiable, array $channels): array
     {
-        if ($notifiable instanceof User && $notifiable->hasPushDevices()) {
+        $category = $this->pushCategory();
+
+        if (
+            $notifiable instanceof User
+            && ($category === null || $notifiable->wantsPush($category))
+            && $notifiable->hasPushDevices()
+        ) {
             $channels[] = WebPushChannel::class;
         }
 

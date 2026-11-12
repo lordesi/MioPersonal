@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Bookings\CreateBookingSeries;
 use App\Actions\Trainer\LinkClient;
 use App\Enums\PlaceType;
 use App\Models\ClientPackage;
@@ -349,7 +350,7 @@ class TrainerProfileController extends Controller
      * A client with a package of this trainer finds it first, "Il tuo
      * pacchetto": its sessions are already paid.
      *
-     * @return list<array{id: int, packageId: int|null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool}>
+     * @return list<array{id: int, packageId: int|null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool, repeatable: bool}>
      */
     private function services(TrainerProfile $profile, ?User $viewer): array
     {
@@ -360,7 +361,7 @@ class TrainerProfileController extends Controller
      * The viewer's bought packages with sessions still to book. The id is
      * negative, so it never matches the id of a service.
      *
-     * @return list<array{id: int, packageId: int, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool}>
+     * @return list<array{id: int, packageId: int, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool, repeatable: bool}>
      */
     private function packages(TrainerProfile $profile, ?User $viewer): array
     {
@@ -387,12 +388,14 @@ class TrainerProfileController extends Controller
                     'priceCents' => 0,
                     'options' => [['serviceId' => -$package->id, 'minutes' => $package->minutes, 'priceCents' => 0, 'groupPrices' => []]],
                     'mostBooked' => false,
+                    // "Ripeti ogni settimana": the next sessions of the package.
+                    'repeatable' => true,
                 ];
             })->all());
     }
 
     /**
-     * @return list<array{id: int, packageId: null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool}>
+     * @return list<array{id: int, packageId: null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool, repeatable: bool}>
      */
     private function bookableServices(TrainerProfile $profile, ?User $viewer): array
     {
@@ -442,6 +445,8 @@ class TrainerProfileController extends Controller
                 'priceCents' => min($first->price_cents, ...array_column($options, 'priceCents')),
                 'options' => $options,
                 'mostBooked' => $key === $mostBooked,
+                // "Ripeti ogni settimana": a plain session or a package, not the first one.
+                'repeatable' => CreateBookingSeries::canRepeat($first),
             ];
         }, $groups, array_keys($groups));
     }

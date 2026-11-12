@@ -32,7 +32,8 @@ use Illuminate\Support\Str;
  * @property int $trainer_profile_id
  * @property int|null $service_id
  * @property int|null $client_package_id the package this session buys or uses
- * @property int|null $booking_series_id the "sedute fisse" rule that made it
+ * @property int|null $booking_series_id the "sedute fisse" rule that made it (or that it started)
+ * @property bool $repeat_weekly "Ripeti ogni settimana": the client asked for "sedute fisse"
  * @property CarbonImmutable $starts_at
  * @property CarbonImmutable $ends_at
  * @property CarbonImmutable $blocked_until end + the trainer's break
@@ -62,7 +63,7 @@ use Illuminate\Support\Str;
  */
 #[ObservedBy([BookingCalendarObserver::class, BookingWaitlistObserver::class])]
 #[Fillable([
-    'client_id', 'trainer_profile_id', 'service_id', 'client_package_id', 'booking_series_id',
+    'client_id', 'trainer_profile_id', 'service_id', 'client_package_id', 'booking_series_id', 'repeat_weekly',
     'starts_at', 'ends_at', 'blocked_until',
     'service_name', 'price_cents', 'people', 'invite_token', 'place_label',
     'status', 'expires_at', 'confirmed_at', 'client_note',
@@ -71,6 +72,9 @@ class Booking extends Model
 {
     /** @use HasFactory<BookingFactory> */
     use HasFactory;
+
+    /** @var array<string, mixed> */
+    protected $attributes = ['repeat_weekly' => false];
 
     /** Days after the end in which the trainer can mark (or unmark) a session as missed. */
     public const NO_SHOW_DAYS = 7;
@@ -86,6 +90,7 @@ class Booking extends Model
             'blocked_until' => 'datetime',
             'price_cents' => 'integer',
             'people' => 'integer',
+            'repeat_weekly' => 'boolean',
             'status' => BookingStatus::class,
             'expires_at' => 'datetime',
             'confirmed_at' => 'datetime',

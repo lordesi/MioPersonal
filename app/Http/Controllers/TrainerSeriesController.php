@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Bookings\CreateBooking;
-use App\Actions\Bookings\GenerateSeries;
+use App\Actions\Bookings\CreateBookingSeries;
 use App\Enums\BookingActor;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\BookingSeries;
-use App\Models\ClientPackage;
-use App\Models\Service;
 use App\Models\TrainerClient;
 use App\Models\TrainerProfile;
 use App\Models\User;
@@ -26,13 +23,14 @@ use Inertia\Inertia;
  * "Sedute fisse" in the card of a client: "ogni martedì alle 18", for a
  * client with an account. The sessions are real confirmed bookings made some
  * weeks ahead (GenerateSeries) and topped up every day (bookings:extend-series).
+ * A client can also ask for them when booking ("Ripeti ogni settimana").
  */
 class TrainerSeriesController extends Controller
 {
     /** A rule can't run for more than this: it is set again after a year. */
     private const MAX_DAYS = 366;
 
-    public function store(Request $request, TrainerClient $client, GenerateSeries $generate): RedirectResponse
+    public function store(Request $request, TrainerClient $client, CreateBookingSeries $create): RedirectResponse
     {
         $profile = $this->profile($request);
         abort_unless($client->trainer_profile_id === $profile->id, 404);
@@ -61,54 +59,29 @@ class TrainerSeriesController extends Controller
 
         /** @var User $clientUser */
         $clientUser = $client->user;
-        [$name, $price, $minutes, $serviceId, $packageId, $online] = $this->what($profile, $clientUser, $data);
+        $result = $create->handle($profile, $clientUser, $data);
 
-        $exists = BookingSeries::query()->active()
-            ->where('trainer_profile_id', $profile->id)
-            ->where('client_id', $clientUser->id)
-            ->where('weekday', $data['weekday'])
-            ->where('start_time', $data['start_time'])
-            ->exists();
-
-        if ($exists) {
-            throw ValidationException::withMessages(['series' => 'Questo cliente ha già una seduta fissa a quel giorno e a quell’ora.']);
-        }
-
-        $series = new BookingSeries([
-            'client_id' => $clientUser->id,
-            'service_id' => $serviceId,
-            'client_package_id' => $packageId,
-            'service_name' => $name,
-            'price_cents' => $price,
-            'minutes' => $minutes,
-            'place_label' => app(CreateBooking::class)->placeLabel($profile, $online),
-            'weekday' => $data['weekday'],
-            'start_time' => $data['start_time'],
-            'starts_on' => $data['starts_on'],
-            'ends_on' => $data['ends_on'] ?? null,
-        ]);
-        $series->trainer_profile_id = $profile->id;
-        $series->save();
-        $series->setRelation('trainerProfile', $profile)->setRelation('client', $clientUser);
-
-        $result = $generate->handle($series);
-
-        // Not a single date free: nothing worth keeping.
-        if ($result['created'] === 0) {
-            $series->delete();
-
-            throw ValidationException::withMessages(['series' => 'Nessuna di queste date è libera: scegli un altro giorno o un altro orario.']);
-        }
-
-        $clientUser->notify(new BookingSeriesNotice($series, BookingSeriesNotice::CREATED, $result['created']));
-
-        $skipped = $result['skipped'] === []
-            ? ''
-            : ' Saltate perché occupate o chiuse: '.collect($result['skipped'])->map(fn (string $date) => CarbonImmutable::parse($date)->settings(['locale' => 'it'])->isoFormat('D MMM'))->implode(', ').'.';
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => ($result['created'] === 1 ? '1 seduta fissata.' : "{$result['created']} sedute fissate.").$skipped]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => self::createdMessage($result['created'], $result['skipped'])]);
 
         return back();
+    }
+
+    /**
+     * "4 sedute fissate. Saltate perché occupate o chiuse: 3 nov."
+     *
+     * @param  list<string>  $skipped  Y-m-d
+     */
+    public static function createdMessage(int $created, array $skipped): string
+    {
+        $message = $created === 1 ? '1 seduta fissata.' : "{$created} sedute fissate.";
+
+        if ($skipped === []) {
+            return $message;
+        }
+
+        return $message.' Saltate perché occupate o chiuse: '.collect($skipped)
+            ->map(fn (string $date) => CarbonImmutable::parse($date)->settings(['locale' => 'it'])->isoFormat('D MMM'))
+            ->implode(', ').'.';
     }
 
     /**
@@ -151,41 +124,6 @@ class TrainerSeriesController extends Controller
             : 'Sedute fisse terminate: quelle già in calendario restano.']);
 
         return back();
-    }
-
-    /**
-     * What is booked: a session of the trainer, or one of the client's package.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array{string, int, int, int|null, int|null, bool} name, price, minutes, service id, package id, online
-     */
-    private function what(TrainerProfile $profile, User $client, array $data): array
-    {
-        if (filled($data['client_package_id'] ?? null)) {
-            $package = ClientPackage::query()->bought()
-                ->withSessionCounts()
-                ->where('trainer_profile_id', $profile->id)
-                ->where('client_id', $client->id)
-                ->whereKey($data['client_package_id'])
-                ->first();
-
-            if ($package === null || $package->remaining() < 1) {
-                throw ValidationException::withMessages(['client_package_id' => 'Questo pacchetto non ha più sedute da prenotare.']);
-            }
-
-            $online = $package->service_id !== null && Service::whereKey($package->service_id)->value('online_only');
-
-            return [$package->name, 0, $package->minutes, $package->service_id, $package->id, (bool) $online];
-        }
-
-        $service = $profile->services()->where('is_active', true)->whereKey($data['service_id'])->first();
-
-        // The "Prima seduta" and the packages are not sessions to repeat every week.
-        if ($service === null || $service->kind !== 'session' || $service->isFirstSession()) {
-            throw ValidationException::withMessages(['service_id' => 'Scegli una delle tue sedute.']);
-        }
-
-        return [$service->displayName(), $service->price_cents, $service->minutes, $service->id, null, (bool) $service->online_only];
     }
 
     private function profile(Request $request): TrainerProfile

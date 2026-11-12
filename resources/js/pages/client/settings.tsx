@@ -48,7 +48,9 @@ export default function Settings({
                             providers={account.providers}
                         />
                         <NotificationsSection
+                            role="client"
                             reminders={account.notifications.reminders}
+                            push={account.notifications.push}
                         />
                         <DeleteAccountSection
                             description="Eliminando il profilo, accetti di perdere tutti i tuoi dati. Hai 30 giorni per ripensarci, poi sarà impossibile recuperarlo."

@@ -4,7 +4,7 @@ import LegalPage, {
     LegalParagraph,
 } from '@/components/legal/legal-page';
 
-// Draft: the [placeholders] must be filled in and checked by a lawyer.
+// To be checked by a lawyer before the public launch.
 // Each sentence describes what the code does today: change them together.
 const sections: LegalSection[] = [
     {
@@ -19,8 +19,13 @@ const sections: LegalSection[] = [
                     e trainer.
                 </LegalParagraph>
                 <LegalParagraph>
-                    Gestito da [nome e cognome del titolare / futura società],
-                    contattabile a [email di contatto].
+                    MioPersonal è gestito a titolo personale, senza scopo di
+                    lucro, da due persone fisiche: Alessandro Pio Siligato e
+                    Lorenzo De Simone. Puoi scriverci a{' '}
+                    <a href="mailto:info@miopersonal.it" className="underline">
+                        info@miopersonal.it
+                    </a>
+                    .
                 </LegalParagraph>
             </>
         ),
@@ -103,11 +108,12 @@ const sections: LegalSection[] = [
             <LegalList
                 items={[
                     'Pubblichi informazioni vere su qualifiche, esperienza, servizi e prezzi.',
-                    'Ti impegni a possedere le qualifiche e le eventuali assicurazioni richieste per la tua attività [da verificare].',
+                    'Ti impegni a possedere le qualifiche che dichiari. Ti consigliamo un’assicurazione di responsabilità civile professionale per la tua attività.',
                     'Mantieni aggiornati orari e regole di prenotazione e rispondi alle richieste entro 24 ore.',
                     'Il profilo è pubblicato la prima volta solo dopo la verifica del nostro team, che può chiedere modifiche o rifiutarlo. Il team controlla le informazioni del profilo e gli eventuali attestati caricati: non è una verifica dell’identità né una garanzia delle qualifiche.',
                     'Dopo l’approvazione, le modifiche a profilo, servizi e foto sono pubblicate subito, sotto la tua responsabilità; il team può controllarle in ogni momento.',
                     'Segni una seduta come saltata solo se il cliente non si è presentato davvero: conta nella percentuale di presenza che vedono gli altri trainer.',
+                    'Puoi collegare il tuo Google Calendar: le sedute confermate compaiono in un calendario «MioPersonal» sul tuo account e, se attivi «Blocca gli orari occupati», gli orari in cui sei impegnato su Google non si possono prenotare. È facoltativo e puoi scollegarlo quando vuoi. Fanno fede le prenotazioni su MioPersonal: il calendario Google è una copia che può aggiornarsi con qualche minuto di ritardo o non aggiornarsi se Google non risponde, e un impegno conta come occupato solo se su Google è segnato «Occupato».',
                 ]}
             />
         ),
@@ -204,9 +210,12 @@ const sections: LegalSection[] = [
         content: (
             <LegalParagraph>
                 Per domande, reclami e segnalazioni di contenuti illeciti, anche
-                da parte delle autorità, il nostro punto di contatto è [email di
-                contatto], in italiano o in inglese. Puoi scriverci anche dalla
-                pagina Contatti.
+                da parte delle autorità, il nostro punto di contatto è{' '}
+                <a href="mailto:info@miopersonal.it" className="underline">
+                    info@miopersonal.it
+                </a>
+                , in italiano o in inglese. Puoi scriverci anche dalla pagina
+                Contatti.
             </LegalParagraph>
         ),
     },
@@ -240,7 +249,7 @@ export default function Terms() {
             pageName="Termini e condizioni"
             title="Termini e condizioni d’uso"
             intro="Le regole per usare MioPersonal, sia se cerchi un trainer sia se sei un personal trainer."
-            updatedOn="29 ottobre 2026"
+            updatedOn="12 novembre 2026"
             summary={[
                 'MioPersonal mette in contatto clienti e personal trainer indipendenti: la seduta è un accordo tra voi.',
                 'Durante la beta la piattaforma è gratuita e non gestisce pagamenti, nemmeno dei pacchetti.',

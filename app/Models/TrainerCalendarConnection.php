@@ -11,8 +11,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * The Google account a trainer linked ("Collega Google Calendar"). The app
- * writes the confirmed sessions on a calendar "MioPersonal" it makes there;
- * it never reads the trainer's own calendars.
+ * writes the confirmed sessions on a calendar "MioPersonal" it makes there.
+ * Only with "Blocca gli orari occupati" on (reads_busy_at) it reads when the
+ * trainer is busy on their own calendars: the times, never what.
  *
  * @property int $id
  * @property int $trainer_profile_id
@@ -25,12 +26,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $last_error
  * @property CarbonImmutable $connected_at
  * @property CarbonImmutable|null $last_synced_at
+ * @property CarbonImmutable|null $reads_busy_at
+ * @property CarbonImmutable|null $busy_synced_at
  * @property-read TrainerProfile $trainerProfile
  * @property-read Collection<int, CalendarEvent> $events
+ * @property-read Collection<int, CalendarBusyTime> $busyTimes
  */
 #[Fillable([
     'google_user_id', 'google_email', 'access_token', 'refresh_token', 'token_expires_at',
-    'calendar_id', 'last_error', 'connected_at', 'last_synced_at',
+    'calendar_id', 'last_error', 'connected_at', 'last_synced_at', 'reads_busy_at', 'busy_synced_at',
 ])]
 class TrainerCalendarConnection extends Model
 {
@@ -48,7 +52,15 @@ class TrainerCalendarConnection extends Model
             'token_expires_at' => 'datetime',
             'connected_at' => 'datetime',
             'last_synced_at' => 'datetime',
+            'reads_busy_at' => 'datetime',
+            'busy_synced_at' => 'datetime',
         ];
+    }
+
+    /** "Blocca gli orari occupati" is on. */
+    public function readsBusy(): bool
+    {
+        return $this->reads_busy_at !== null;
     }
 
     /** Whether the link is on, or Google said no and the trainer has to link again. */
@@ -71,5 +83,13 @@ class TrainerCalendarConnection extends Model
     public function events(): HasMany
     {
         return $this->hasMany(CalendarEvent::class);
+    }
+
+    /**
+     * @return HasMany<CalendarBusyTime, $this>
+     */
+    public function busyTimes(): HasMany
+    {
+        return $this->hasMany(CalendarBusyTime::class);
     }
 }

@@ -17,6 +17,7 @@ import SimilarTrainers from '@/components/profile/similar-trainers';
 import SlotPicker from '@/components/profile/slot-picker';
 import PeoplePicker from '@/components/profile/people-picker';
 import PlacePicker from '@/components/profile/place-picker';
+import RepeatWeeklyToggle from '@/components/profile/repeat-weekly-toggle';
 import TrainerCourses from '@/components/profile/trainer-courses';
 import TrainerGyms from '@/components/profile/trainer-gyms';
 import TrainingPlaces from '@/components/profile/training-places';
@@ -187,6 +188,20 @@ export default function Profile({
             />
         ) : null;
 
+    // "Ripeti ogni settimana": alone (not with friends), for a session or a package.
+    const [wantsRepeat, setRepeat] = useState(choice.repeat);
+    const canRepeat = service.repeatable === true && people === 1;
+    const repeatWeekly = canRepeat && wantsRepeat;
+    const repeatToggle = (variant: 'light' | 'dark') =>
+        canRepeat && start ? (
+            <RepeatWeeklyToggle
+                start={start}
+                checked={wantsRepeat}
+                onChange={setRepeat}
+                variant={variant}
+            />
+        ) : null;
+
     const changeMinutes = (newMinutes: number) => {
         setMinutes(newMinutes);
         setStart(null);
@@ -240,6 +255,7 @@ export default function Profile({
                         inizio: start,
                         luogo: placeId,
                         persone: people > 1 ? people : null,
+                        ripeti: repeatWeekly ? 1 : null,
                     },
                 }),
             );
@@ -261,6 +277,7 @@ export default function Profile({
                       client_package_id: service.packageId,
                       start,
                       place_id: placeId,
+                      repeat_weekly: repeatWeekly,
                   }
                 : {
                       service_id: serviceId,
@@ -268,6 +285,7 @@ export default function Profile({
                       minutes,
                       place_id: placeId,
                       people,
+                      repeat_weekly: repeatWeekly,
                   },
             {
                 preserveScroll: true,
@@ -280,6 +298,7 @@ export default function Profile({
                             errors.client_package_id ??
                             errors.minutes ??
                             errors.people ??
+                            errors.repeat_weekly ??
                             errors.service_id ??
                             'Riprova tra poco.',
                     );
@@ -455,6 +474,12 @@ export default function Profile({
                                         waitlistDays={trainer.waitlistDays}
                                         onWaitlistToggle={toggleWaitlist}
                                     />
+                                    {/* Phones: under the slots; from lg it is in the booking box. */}
+                                    {repeatToggle('light') && (
+                                        <div className="mt-3 lg:hidden">
+                                            {repeatToggle('light')}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -534,6 +559,7 @@ export default function Profile({
                             placePicker={placePicker('dark')}
                             people={people}
                             peoplePicker={peoplePicker('dark')}
+                            repeatToggle={repeatToggle('dark')}
                         />
                     </div>
 
@@ -583,6 +609,8 @@ function savedChoice(
     start: string | null;
     /** "Invita un amico": the page keeps it under the most people of the duration. */
     people: number;
+    /** "Ripeti ogni settimana", ticked before login. */
+    repeat: boolean;
 } {
     const query = new URLSearchParams(url.split('?')[1] ?? '');
     const service =
@@ -594,6 +622,7 @@ function savedChoice(
     const minutes = Number(query.get('durata'));
     const start = query.get('inizio');
     const people = Math.max(1, Number(query.get('persone')) || 1);
+    const repeat = query.get('ripeti') === '1';
 
     if (!serviceDurations(service).includes(minutes)) {
         return {
@@ -603,6 +632,7 @@ function savedChoice(
             date: null,
             start: null,
             people,
+            repeat,
         };
     }
 
@@ -618,6 +648,7 @@ function savedChoice(
             date: null,
             start: null,
             people,
+            repeat,
         };
     }
 
@@ -632,6 +663,7 @@ function savedChoice(
         date: day?.date ?? null,
         start,
         people,
+        repeat,
     };
 }
 

@@ -12,8 +12,6 @@ export type CourseSearchFilters = {
     fascia?: CourseTime | null;
     /** App\Enums\CourseLevel value. */
     livello?: string | null;
-    /** Only the courses with "Prenota il posto" on MioPersonal. */
-    online?: '1' | null;
     pagina?: number | null;
 };
 

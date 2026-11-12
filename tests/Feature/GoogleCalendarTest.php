@@ -243,7 +243,7 @@ class GoogleCalendarTest extends TestCase
         $profile = $this->linkedTrainer();
 
         $this->actingAs($profile->user)->get(route('trainer.settings'))
-            ->assertInertia(fn (Assert $page) => $page->where('googleCalendar', ['connected' => true, 'email' => 'giulia@gmail.com', 'error' => null]));
+            ->assertInertia(fn (Assert $page) => $page->where('googleCalendar', ['connected' => true, 'email' => 'giulia@gmail.com', 'error' => null, 'readsBusy' => false, 'busySyncedAt' => null]));
 
         config(['services.google-calendar.client_id' => null]);
 

@@ -56,7 +56,7 @@ const titles: Record<SearchKind, string> = {
 const hints: Record<SearchKind, string> = {
     trainer: 'Per guardare i profili non serve registrarsi',
     gym: 'Orari, abbonamenti, promozioni e i trainer che allenano lì',
-    course: 'Gli orari della settimana delle palestre; per alcuni prenoti il posto qui',
+    course: 'Gli orari della settimana delle palestre, con istruttori e posti',
     event: 'Prenoti il posto qui, paghi sul posto',
 };
 

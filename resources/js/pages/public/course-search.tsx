@@ -1,9 +1,9 @@
 import { Head, router } from '@inertiajs/react';
-import { Search as SearchIcon, Ticket } from 'lucide-react';
+import { Search as SearchIcon } from 'lucide-react';
 import { CourseGrid } from '@/components/gym/course-card';
 import ActiveFilters from '@/components/search/active-filters';
 import type { ActiveChip } from '@/components/search/active-filters';
-import { FilterPill, TogglePill } from '@/components/search/filter-pill';
+import { FilterPill } from '@/components/search/filter-pill';
 import FilterSheet from '@/components/search/filter-sheet';
 import SearchPageHeader from '@/components/search/search-page-header';
 import SearchPagination from '@/components/search/search-pagination';
@@ -26,7 +26,6 @@ type Filters = {
     giorno: CourseDay | null;
     fascia: CourseTime | null;
     livello: string | null;
-    online: '1' | null;
 };
 
 type CourseSearchProps = {
@@ -102,9 +101,6 @@ export default function CourseSearch({
     addChip('livello', labelOf(levels, filters.livello), () =>
         change({ livello: null }),
     );
-    addChip('online', filters.online ? 'Prenoti online' : undefined, () =>
-        change({ online: null }),
-    );
 
     return (
         <>
@@ -115,7 +111,7 @@ export default function CourseSearch({
                 city={city}
                 title={`Corsi in palestra ${place}`}
                 count={total === 1 ? '1 corso' : `${total} corsi`}
-                intro="Pilates, yoga, spinning, functional e altro: gli orari della settimana delle palestre di MioPersonal. Dove vedi “Prenoti online” prenoti il posto qui."
+                intro="Pilates, yoga, spinning, functional e altro: gli orari della settimana delle palestre di MioPersonal. Per partecipare chiedi alla palestra."
             />
 
             <div className="flex-1 bg-muted">
@@ -185,14 +181,6 @@ export default function CourseSearch({
                                         onChange: (livello) =>
                                             change({ livello }),
                                     },
-                                    {
-                                        kind: 'toggle',
-                                        id: 'sheet-online',
-                                        title: 'Prenoti online',
-                                        checked: filters.online !== null,
-                                        onChange: (on) =>
-                                            change({ online: on ? '1' : null }),
-                                    },
                                 ]}
                             />
                             <FilterPill
@@ -230,16 +218,6 @@ export default function CourseSearch({
                                 onChange={(livello) => change({ livello })}
                                 className={desktopOnly}
                             />
-                            <TogglePill
-                                pressed={filters.online !== null}
-                                onPressedChange={(pressed) =>
-                                    change({ online: pressed ? '1' : null })
-                                }
-                                className={desktopOnly}
-                            >
-                                <Ticket aria-hidden="true" className="size-4" />
-                                Prenoti online
-                            </TogglePill>
                         </div>
                         <ActiveFilters chips={chips} onClearAll={reset} />
                     </div>

@@ -308,7 +308,6 @@ export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
                                 <GymCoursePlanner
                                     weeks={gym.courseWeeks}
                                     courses={gym.courses}
-                                    gymSlug={preview ? undefined : gym.slug}
                                 />
                             </ProfileSection>
                         )}

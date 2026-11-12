@@ -41,7 +41,6 @@ class CourseSearchTest extends TestCase
             'name' => $name,
             'level' => CourseLevel::All,
             'is_active' => true,
-            'bookable' => false,
             ...$attributes,
         ]);
 
@@ -92,32 +91,34 @@ class CourseSearchTest extends TestCase
                 ->where('filters.fascia', 'sera'));
     }
 
-    public function test_city_discipline_level_and_online_filters(): void
+    public function test_city_discipline_and_level_filters_and_the_max_places(): void
     {
         $milano = City::query()->where('slug', 'milano')->firstOrFail();
         $discipline = Discipline::query()->active()->firstOrFail();
         $here = GymProfile::factory()->approved()->inCity($milano)->create();
         $elsewhere = GymProfile::factory()->approved()->create();
 
-        $this->course($here, 'Prenotabile', [[2, '18:00', 12]], [
-            'bookable' => true,
+        $this->course($here, 'Pilates', [[2, '18:00', 12], [4, '18:00', 15]], [
             'discipline_id' => $discipline->id,
             'level' => CourseLevel::Beginner,
         ]);
         $this->course($here, 'In palestra', [[2, '18:00']]);
-        $this->course($elsewhere, 'Altrove', [[2, '18:00', 12]], ['bookable' => true]);
+        $this->course($elsewhere, 'Altrove', [[2, '18:00', 12]]);
 
         $this->get(route('courses.search', 'milano'))
             ->assertInertia(fn (Assert $page) => $page->where('total', 2)->where('city.slug', 'milano'));
 
+        // The old "Prenoti online" filter is dropped: the courses are booked at the gym.
         $this->get(route('courses.search', ['milano', 'online' => '1']))
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('total', 1)
-                ->where('courses.0.name', 'Prenotabile')
-                ->where('courses.0.bookable', true));
+            ->assertInertia(fn (Assert $page) => $page->where('total', 2)->missing('filters.online'));
 
         $this->get(route('courses.search', ['disciplina' => $discipline->slug, 'livello' => 'beginner']))
-            ->assertInertia(fn (Assert $page) => $page->where('total', 1)->where('courses.0.name', 'Prenotabile'));
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('total', 1)
+                ->where('courses.0.name', 'Pilates')
+                // The most places of its lessons.
+                ->where('courses.0.maxPlaces', 15)
+                ->missing('courses.0.bookable'));
     }
 
     public function test_unknown_filters_are_dropped_and_empty_results_suggest_the_others(): void

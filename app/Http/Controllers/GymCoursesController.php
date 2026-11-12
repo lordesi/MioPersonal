@@ -8,17 +8,14 @@ use App\Http\Controllers\Concerns\BuildsGymArea;
 use App\Models\Discipline;
 use App\Models\GymCourse;
 use App\Models\GymCourseLesson;
-use App\Models\GymPhoto;
+use App\Models\GymCoursePhoto;
 use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use App\Support\GymCourseWeek;
-use App\Support\SafeImage;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator as ValidatorFacade;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -29,8 +26,8 @@ use Inertia\Response;
 /**
  * "Corsi" of the gym area: each course with its weekly lessons, public at
  * once as the plan of the week on the profile. A lesson can be called off on
- * one day ("Annulla questa lezione"). With "Prenotazione posto" the clients
- * take a place in each lesson (CourseLessonSessions); else booked at the gym.
+ * one day ("Annulla questa lezione"). Only to look at: the gym's members book
+ * at the gym. The photos are saved apart (GymCoursePhotoController).
  */
 class GymCoursesController extends Controller
 {
@@ -48,7 +45,7 @@ class GymCoursesController extends Controller
 
         return Inertia::render('gym/courses', [
             'gymArea' => $this->gymArea(),
-            'courses' => $profile->courses()->with('lessons')->get()->map(fn (GymCourse $course) => [
+            'courses' => $profile->courses()->with(['lessons', 'photos'])->get()->map(fn (GymCourse $course) => [
                 'id' => $course->id,
                 'name' => $course->name,
                 'description' => $course->description ?? '',
@@ -56,9 +53,11 @@ class GymCoursesController extends Controller
                 'level' => $course->level->value,
                 'instructorTrainerId' => $course->instructor_trainer_id,
                 'instructorName' => $course->instructor_name ?? '',
-                'photoUrl' => $course->photoUrl(),
+                'photos' => $course->photos->map(fn (GymCoursePhoto $photo) => [
+                    'id' => $photo->id,
+                    'url' => $photo->url(),
+                ])->values(),
                 'isActive' => $course->is_active,
-                'bookable' => $course->bookable,
                 'lessons' => $course->lessons->map(fn (GymCourseLesson $lesson) => [
                     'id' => $lesson->id,
                     'weekday' => $lesson->weekday,
@@ -80,6 +79,7 @@ class GymCoursesController extends Controller
                 ->map(fn (TrainerProfile $trainer) => ['value' => (string) $trainer->id, 'label' => $trainer->user->name])->values(),
             'max' => GymProfile::MAX_COURSES,
             'maxLessons' => GymCourse::MAX_LESSONS,
+            'maxPhotos' => GymCourse::MAX_PHOTOS,
         ]);
     }
 
@@ -98,7 +98,6 @@ class GymCoursesController extends Controller
         return to_route('gym.courses');
     }
 
-    /** A POST, not a PUT: the form may send a photo. */
     public function update(Request $request, GymCourse $course): RedirectResponse
     {
         $profile = $this->gymOrFail();
@@ -116,18 +115,13 @@ class GymCoursesController extends Controller
         $profile = $this->gymOrFail();
         $this->ensureOwn($profile, $course);
 
-        $photo = $course->photo_path;
-
         // The places taken in its next lessons: cancelled, the clients told.
         foreach ($course->lessons as $lesson) {
             $this->lessonSessions->retire($lesson, 'Il corso non è più in programma.');
         }
 
+        // Its photos' files too (GymCourse::booted).
         $course->delete();
-
-        if ($photo !== null) {
-            Storage::disk(GymPhoto::DISK)->delete($photo);
-        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Corso eliminato.']);
 
@@ -170,69 +164,29 @@ class GymCoursesController extends Controller
         return back();
     }
 
-    /** "Iscritti" of a lesson on a day: its page in "Eventi", with the places left. */
-    public function lessonClients(Request $request, GymCourseLesson $lesson): RedirectResponse
-    {
-        $this->ensureOwnLesson($lesson);
-        abort_unless($lesson->course->bookable && $lesson->capacity !== null, 404);
-
-        $session = $this->lessonSessions->occurrence($lesson, $this->lessonDate($request, $lesson));
-
-        return to_route('gym.events.show', $session);
-    }
-
     private function save(Request $request, GymProfile $profile, GymCourse $course): void
     {
         $data = $this->validated($request, $profile);
-        $file = $request->file('photo');
-        $oldPhoto = null;
-        $newPhoto = null;
 
-        if ($file instanceof UploadedFile) {
-            $newPhoto = SafeImage::store($file, "gyms/{$profile->id}/courses", GymPhoto::DISK);
-            $oldPhoto = $course->photo_path;
-        } elseif ($request->boolean('remove_photo')) {
-            $oldPhoto = $course->photo_path;
-        }
+        DB::transaction(function () use ($profile, $course, $data) {
+            $trainerId = filled($data['instructor_trainer_id'] ?? null) ? (int) $data['instructor_trainer_id'] : null;
 
-        try {
-            DB::transaction(function () use ($profile, $course, $data, $file, $newPhoto, $request) {
-                $trainerId = filled($data['instructor_trainer_id'] ?? null) ? (int) $data['instructor_trainer_id'] : null;
+            $course->fill([
+                'name' => trim($data['name']),
+                'description' => filled($data['description'] ?? null) ? trim($data['description']) : null,
+                'discipline_id' => filled($data['discipline_id'] ?? null) ? (int) $data['discipline_id'] : null,
+                'level' => CourseLevel::from($data['level']),
+                'instructor_trainer_id' => $trainerId,
+                // A trainer of MioPersonal has their own name.
+                'instructor_name' => $trainerId === null && filled($data['instructor_name'] ?? null) ? trim($data['instructor_name']) : null,
+                'is_active' => (bool) ($data['is_active'] ?? true),
+            ]);
 
-                $course->fill([
-                    'name' => trim($data['name']),
-                    'description' => filled($data['description'] ?? null) ? trim($data['description']) : null,
-                    'discipline_id' => filled($data['discipline_id'] ?? null) ? (int) $data['discipline_id'] : null,
-                    'level' => CourseLevel::from($data['level']),
-                    'instructor_trainer_id' => $trainerId,
-                    // A trainer of MioPersonal has their own name.
-                    'instructor_name' => $trainerId === null && filled($data['instructor_name'] ?? null) ? trim($data['instructor_name']) : null,
-                    'is_active' => (bool) ($data['is_active'] ?? true),
-                    'bookable' => (bool) ($data['bookable'] ?? false),
-                ]);
+            $course->gymProfile()->associate($profile);
+            $course->save();
 
-                if ($file instanceof UploadedFile) {
-                    $course->photo_path = $newPhoto;
-                } elseif ($request->boolean('remove_photo')) {
-                    $course->photo_path = null;
-                }
-
-                $course->gymProfile()->associate($profile);
-                $course->save();
-
-                $this->saveLessons($course, $data['lessons']);
-            });
-        } catch (\Throwable $exception) {
-            if ($newPhoto !== null) {
-                Storage::disk(GymPhoto::DISK)->delete($newPhoto);
-            }
-
-            throw $exception;
-        }
-
-        if ($oldPhoto !== null) {
-            Storage::disk(GymPhoto::DISK)->delete($oldPhoto);
-        }
+            $this->saveLessons($course, $data['lessons']);
+        });
     }
 
     /**
@@ -287,18 +241,15 @@ class GymCoursesController extends Controller
             'level' => ['required', Rule::enum(CourseLevel::class)],
             'instructor_trainer_id' => ['nullable', 'integer', Rule::in($trainerIds)],
             'instructor_name' => ['nullable', 'string', 'max:80'],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=800,min_height=500'],
-            'remove_photo' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
-            'bookable' => ['nullable', 'boolean'],
             'lessons' => ['required', 'array', 'min:1', 'max:'.GymCourse::MAX_LESSONS],
             'lessons.*.id' => ['nullable', 'integer'],
             'lessons.*.weekday' => ['required', 'integer', 'between:1,7'],
             'lessons.*.start' => ['required', 'date_format:H:i'],
             'lessons.*.end' => ['required', 'date_format:H:i'],
             'lessons.*.room' => ['nullable', 'string', 'max:60'],
-            // "Prenotazione posto": each lesson says how many places it has.
-            'lessons.*.capacity' => [$request->boolean('bookable') ? 'required' : 'nullable', 'integer', 'between:1,500'],
+            // "Posti massimi": shown as "Max N posti", optional.
+            'lessons.*.capacity' => ['nullable', 'integer', 'between:1,500'],
         ], [
             'name.required' => 'Scrivi il nome del corso.',
             'name.max' => 'Il nome può avere al massimo '.GymCourse::NAME_MAX.' caratteri.',
@@ -307,10 +258,6 @@ class GymCoursesController extends Controller
             'level.*' => 'Scegli il livello del corso.',
             'instructor_trainer_id.*' => 'Scegli uno dei trainer che lavorano nella tua palestra.',
             'instructor_name.max' => 'Il nome dell’istruttore può avere al massimo 80 caratteri.',
-            'photo.image' => 'La foto deve essere un’immagine JPG o PNG.',
-            'photo.mimes' => 'La foto deve essere un’immagine JPG o PNG.',
-            'photo.max' => 'La foto può pesare al massimo 5 MB.',
-            'photo.dimensions' => 'La foto deve essere almeno 800 × 500 px.',
             'lessons.required' => 'Aggiungi almeno una lezione nella settimana.',
             'lessons.min' => 'Aggiungi almeno una lezione nella settimana.',
             'lessons.max' => 'Al massimo '.GymCourse::MAX_LESSONS.' lezioni a settimana.',
@@ -318,7 +265,6 @@ class GymCoursesController extends Controller
             'lessons.*.start.*' => 'Scrivi l’ora di inizio di ogni lezione.',
             'lessons.*.end.*' => 'Scrivi l’ora di fine di ogni lezione.',
             'lessons.*.room.max' => 'La sala può avere al massimo 60 caratteri.',
-            'lessons.*.capacity.required' => 'Con la prenotazione del posto, scrivi i posti di ogni lezione.',
             'lessons.*.capacity.*' => 'I posti devono essere da 1 a 500.',
         ])->after(function (Validator $validator) use ($request) {
             // Each lesson ends after it starts: the rules can't compare two fields of a row.

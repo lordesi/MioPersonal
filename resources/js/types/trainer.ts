@@ -54,6 +54,8 @@ export type TrainerService = {
     options: ServiceOption[];
     /** "Il più prenotato": the most confirmed sessions of the last 90 days. */
     mostBooked?: boolean;
+    /** "Ripeti ogni settimana": a plain session or a package, not the first one. */
+    repeatable?: boolean;
 };
 
 export type TrainingPlace = {
@@ -229,6 +231,8 @@ export type ClientAttendance = {
 /** A booking waiting for the trainer's answer. */
 export type TrainerBookingRequest = TrainerSession & {
     note: string | null;
+    /** "Ripeti ogni settimana": "Ogni martedì alle 18:00", or null. */
+    repeatWeekly: string | null;
     /** ISO UTC string: when the client asked. */
     requestedAt: string;
     /** ISO UTC string: after this the request decays and the slot is freed. */

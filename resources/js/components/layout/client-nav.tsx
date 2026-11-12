@@ -8,6 +8,7 @@ import {
     Dumbbell,
     Heart,
     LayoutDashboard,
+    MessageCircle,
     Search,
     Settings,
     User,
@@ -23,7 +24,7 @@ import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { home as publicHome } from '@/routes';
 import { settings } from '@/routes/account';
-import { bookings, favorites, home, profile } from '@/routes/client';
+import { bookings, favorites, home, messages, profile } from '@/routes/client';
 import { show as contactPage } from '@/routes/contact';
 import { search as eventsSearch } from '@/routes/events';
 import { register as trainerRegister } from '@/routes/trainer';
@@ -34,6 +35,7 @@ export type ClientSection =
     | 'home'
     | 'bookings'
     | 'favorites'
+    | 'messages'
     | 'profile'
     | 'settings';
 
@@ -60,6 +62,7 @@ const mySpace = () => [
         shortTitle: 'Prenotazioni',
     }),
     item('favorites', 'Preferiti', Heart, favorites.url()),
+    item('messages', 'Messaggi', MessageCircle, messages.url()),
     item('profile', 'Il mio profilo', User, profile.url()),
 ];
 

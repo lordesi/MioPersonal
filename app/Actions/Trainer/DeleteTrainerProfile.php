@@ -3,6 +3,7 @@
 namespace App\Actions\Trainer;
 
 use App\Actions\GroupSessions\CancelGroupSession;
+use App\Models\Conversation;
 use App\Models\TrainerDocument;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
@@ -33,6 +34,11 @@ class DeleteTrainerProfile
             if ($profile->calendarConnection !== null) {
                 (new GoogleCalendar($profile->calendarConnection))->disconnect();
             }
+
+            // "Messaggi" with the clients, with their PDFs.
+            Conversation::purge(Conversation::query()
+                ->whereIn('trainer_client_id', $profile->clientRecords()->select('id'))
+                ->get());
 
             $profile->delete();
 

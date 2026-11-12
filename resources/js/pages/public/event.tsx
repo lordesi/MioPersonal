@@ -92,7 +92,8 @@ export default function Event({
     const { auth } = usePage().props;
     const [busy, setBusy] = useState(false);
     const [confirmCancel, setConfirmCancel] = useState(false);
-    const closed = event.cancelled || event.started;
+    // A course lesson: only the places already taken; the gym books the others.
+    const closed = event.cancelled || event.started || event.lesson;
 
     const options = {
         preserveScroll: true,

@@ -157,8 +157,8 @@ class GymProfileController extends Controller
             // "Corsi": the plan of this week and the next one, and the courses.
             'courses' => GymCourseWeek::courses($gym),
             'courseWeeks' => [
-                GymCourseWeek::days($gym, GymCourseWeek::thisMonday(), viewer: request()->user()),
-                GymCourseWeek::days($gym, GymCourseWeek::thisMonday()->addWeek(), viewer: request()->user()),
+                GymCourseWeek::days($gym, GymCourseWeek::thisMonday()),
+                GymCourseWeek::days($gym, GymCourseWeek::thisMonday()->addWeek()),
             ],
             'monthlyFromCents' => $gym->monthly_from_cents,
             'plans' => $gym->activePlans->map(fn (GymPlan $plan) => [

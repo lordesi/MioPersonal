@@ -11,3 +11,4 @@ export type * from './progress';
 export type * from './ui';
 export type * from './seo';
 export type * from './social';
+export type * from './chat';

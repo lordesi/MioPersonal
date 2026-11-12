@@ -46,11 +46,6 @@ export default function TrainerCourses({
                             <span className="flex min-w-0 flex-1 flex-col">
                                 <span className="truncate font-semibold">
                                     {course.name}
-                                    {course.bookable && (
-                                        <span className="ml-2 text-xs font-medium text-muted-foreground">
-                                            · prenoti online
-                                        </span>
-                                    )}
                                 </span>
                                 <span className="truncate text-sm text-muted-foreground">
                                     {course.when}

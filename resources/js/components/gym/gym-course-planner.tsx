@@ -1,22 +1,24 @@
-import { Link, router, usePage } from '@inertiajs/react';
-import { Clock, MapPin, User, Users, X } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import {
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    MapPin,
+    User,
+    Users,
+    X,
+} from 'lucide-react';
 import { useState } from 'react';
 import ChoiceChips from '@/components/shared/choice-chips';
-import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { romeParts } from '@/lib/calendar';
 import { cn } from '@/lib/utils';
-import { show as eventPage } from '@/routes/events';
-import { register, start } from '@/routes/gyms/lessons';
 import type { GymCourseDay, GymCourseInfo, GymCourseLessonSlot } from '@/types';
 
 type GymCoursePlannerProps = {
     /** This week and the next one. */
     weeks: GymCourseDay[][];
     courses: GymCourseInfo[];
-    /** The gym: "Prenota il posto" for the courses with places on MioPersonal. */
-    gymSlug?: string;
 };
 
 const ALL = 'all';
@@ -24,13 +26,12 @@ const ALL = 'all';
 /**
  * "Corsi" on the public profile of a gym: the plan of the week, day by day
  * (today first), with the lessons called off marked; then the courses with
- * photo and description. The courses with "Prenotazione posto" are booked
- * here; the others at the gym.
+ * photos and description. Only to look at: the gym's members book at the
+ * gym.
  */
 export default function GymCoursePlanner({
     weeks,
     courses,
-    gymSlug,
 }: GymCoursePlannerProps) {
     const [today] = useState(() => romeParts(new Date()).date);
     const { url } = usePage();
@@ -260,13 +261,13 @@ export default function GymCoursePlanner({
                                             {lesson.room}
                                         </span>
                                     )}
-                                    {lesson.capacity && !lesson.bookable && (
-                                        <span className="flex items-center gap-1">
+                                    {lesson.capacity !== null && (
+                                        <span className="flex items-center gap-1 tabular-nums">
                                             <Users
                                                 aria-hidden="true"
                                                 className="size-3.5"
                                             />
-                                            {lesson.capacity} posti
+                                            Max {lesson.capacity} posti
                                         </span>
                                     )}
                                 </span>
@@ -276,24 +277,14 @@ export default function GymCoursePlanner({
                                     </span>
                                 )}
                             </span>
-                            {gymSlug && day && lesson.bookable && (
-                                <LessonPlace
-                                    lesson={lesson}
-                                    date={day.date}
-                                    gymSlug={gymSlug}
-                                />
-                            )}
                         </li>
                     ))}
                 </ul>
             )}
 
             <p className="text-xs text-muted-foreground">
-                {week.some((item) =>
-                    item.lessons.some((lesson) => lesson.bookable),
-                )
-                    ? 'Dove vedi “Prenota il posto” prenoti qui, confermato subito; per gli altri corsi chiedi alla palestra.'
-                    : 'Orari indicativi: per i posti chiedi alla palestra.'}
+                Orari indicativi. I corsi sono per gli iscritti alla palestra:
+                per partecipare chiedi direttamente a loro.
             </p>
 
             {courses.length > 0 && (
@@ -307,12 +298,10 @@ export default function GymCoursePlanner({
                                     'border-foreground ring-1 ring-foreground',
                             )}
                         >
-                            {course.photoUrl && (
-                                <img
-                                    src={course.photoUrl}
-                                    alt={course.name}
-                                    loading="lazy"
-                                    className="aspect-16/9 w-full object-cover"
+                            {course.photos.length > 0 && (
+                                <CoursePhotoStrip
+                                    name={course.name}
+                                    photos={course.photos}
                                 />
                             )}
                             <div className="flex flex-col gap-1.5 p-4">
@@ -323,6 +312,8 @@ export default function GymCoursePlanner({
                                     {[
                                         course.when,
                                         course.level,
+                                        course.maxPlaces !== null &&
+                                            `max ${course.maxPlaces} posti`,
                                         course.instructor &&
                                             `con ${course.instructor}`,
                                     ]
@@ -343,90 +334,57 @@ export default function GymCoursePlanner({
     );
 }
 
-/** "Prenota il posto" of a lesson: places left, the client's place, or login. */
-function LessonPlace({
-    lesson,
-    date,
-    gymSlug,
+/**
+ * The photos of a course, side by side: swipe on phones, arrows elsewhere.
+ * One photo is just the photo.
+ */
+function CoursePhotoStrip({
+    name,
+    photos,
 }: {
-    lesson: GymCourseLessonSlot;
-    date: string;
-    gymSlug: string;
+    name: string;
+    photos: string[];
 }) {
-    const { auth } = usePage().props;
-    const [busy, setBusy] = useState(false);
-    const remaining = lesson.remaining ?? 0;
-
-    if (lesson.cancelled || lesson.started) {
-        return null;
-    }
-
-    const places = (
-        <span className="flex items-center gap-1 text-[13px] text-muted-foreground tabular-nums">
-            <Users aria-hidden="true" className="size-3.5" />
-            {remaining === 0
-                ? 'Esaurita'
-                : remaining === 1
-                  ? '1 posto libero'
-                  : `${remaining} posti liberi`}
-        </span>
-    );
-
-    let action = null;
-
-    if (lesson.booked) {
-        action = (
-            <Button asChild size="sm" variant="secondary">
-                <Link
-                    href={
-                        lesson.eventSlug ? eventPage.url(lesson.eventSlug) : '#'
-                    }
-                >
-                    Prenotato ✓
-                </Link>
-            </Button>
-        );
-    } else if (remaining > 0 && !auth?.user) {
-        action = (
-            <Button asChild size="sm">
-                <Link href={start.url(gymSlug)}>Accedi per prenotare</Link>
-            </Button>
-        );
-    } else if (remaining > 0 && auth?.user?.role === 'client') {
-        action = (
-            <Button
-                type="button"
-                size="sm"
-                disabled={busy}
-                onClick={() =>
-                    router.post(
-                        register.url({
-                            slug: gymSlug,
-                            lesson: lesson.lessonId,
-                        }),
-                        { date },
-                        {
-                            preserveScroll: true,
-                            onStart: () => setBusy(true),
-                            onFinish: () => setBusy(false),
-                            onError: (errors) =>
-                                toast.error(
-                                    Object.values(errors)[0] ??
-                                        'Riprova tra poco.',
-                                ),
-                        },
-                    )
-                }
-            >
-                Prenota il posto
-            </Button>
-        );
-    }
+    const [index, setIndex] = useState(0);
+    const many = photos.length > 1;
+    const go = (step: number) =>
+        setIndex((current) => (current + step + photos.length) % photos.length);
 
     return (
-        <span className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:flex-col sm:items-end">
-            {places}
-            {action}
-        </span>
+        <div className="relative aspect-16/9 w-full overflow-hidden bg-muted">
+            <img
+                src={photos[index]}
+                alt={
+                    many
+                        ? `${name}, foto ${index + 1} di ${photos.length}`
+                        : name
+                }
+                loading="lazy"
+                className="size-full object-cover"
+            />
+            {many && (
+                <>
+                    <button
+                        type="button"
+                        aria-label="Foto precedente"
+                        onClick={() => go(-1)}
+                        className="absolute top-1/2 left-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 text-foreground shadow hover:bg-background"
+                    >
+                        <ChevronLeft aria-hidden="true" className="size-4" />
+                    </button>
+                    <button
+                        type="button"
+                        aria-label="Foto successiva"
+                        onClick={() => go(1)}
+                        className="absolute top-1/2 right-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 text-foreground shadow hover:bg-background"
+                    >
+                        <ChevronRight aria-hidden="true" className="size-4" />
+                    </button>
+                    <span className="absolute right-2 bottom-2 rounded-full bg-background/90 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
+                        {index + 1}/{photos.length}
+                    </span>
+                </>
+            )}
+        </div>
     );
 }

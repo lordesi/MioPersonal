@@ -14,8 +14,8 @@ type FeaturedTrainersProps = {
 };
 
 /**
- * "Trainer in evidenza" (HomeController): the best rated, in a carousel.
- * Also the shelves "In tendenza" and "Nuovi" (TrainerShelves).
+ * "Trainer in tendenza" (TrainerShelves), or "Trainer in evidenza"
+ * (HomeController, the best rated), in a carousel.
  */
 export default function FeaturedTrainers({
     trainers,

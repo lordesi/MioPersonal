@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Enums\GroupSessionStatus;
 use App\Enums\TrainerProfileStatus;
 use App\Models\Booking;
+use App\Models\CalendarBusyTime;
 use App\Models\GroupSession;
 use App\Models\TrainerDayOverride;
 use App\Models\TrainerProfile;
@@ -26,7 +27,9 @@ use Illuminate\Support\Collection;
  * A day in `trainer_day_overrides` ("Giorni e settimane diverse") uses its
  * own hours instead of the weekly ones; no hours = closed (holidays).
  *
- * TODO: imported calendars.
+ * "Blocca gli orari occupati": the times the trainer is busy on Google
+ * (`calendar_busy_times`) take their time like a session, break included,
+ * but don't count as sessions for "Massimo sedute al giorno".
  */
 final class TrainerSlots
 {
@@ -67,7 +70,7 @@ final class TrainerSlots
                 continue;
             }
 
-            $dayBookings = $bookings->filter(fn (array $booking) => $booking['start']->isSameDay($date));
+            $dayBookings = $bookings->filter(fn (array $booking) => ! ($booking['external'] ?? false) && $booking['start']->isSameDay($date));
             // "Massimo sedute al giorno": that day is full.
             $full = $profile->max_sessions_per_day !== null && $dayBookings->count() >= $profile->max_sessions_per_day;
 
@@ -278,9 +281,9 @@ final class TrainerSlots
      * The bookings that take time in these days, in Rome time, by start. A
      * new time proposed by the trainer ("Sposta") takes its time too, until
      * the client answers or the proposal expires. So do the events the
-     * trainer organizes.
+     * trainer organizes, and the times they're busy on Google (external).
      *
-     * @return Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable}>
+     * @return Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable, external?: bool}>
      */
     private static function activeBookings(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $until, ?int $exceptBookingId = null): Collection
     {
@@ -323,8 +326,31 @@ final class TrainerSlots
                 return $times;
             })
             ->concat($events)
+            ->concat(self::busyTimes($profile, $from, $until))
             ->sortBy(fn (array $time) => $time['start']->getTimestamp())
             ->values();
+    }
+
+    /**
+     * "Blocca gli orari occupati": the times busy on Google, with the break
+     * after them like a session (the one before is in freeMinutes).
+     *
+     * @return Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable, external: bool}>
+     */
+    private static function busyTimes(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $until): Collection
+    {
+        return CalendarBusyTime::query()
+            ->whereHas('connection', fn ($connection) => $connection
+                ->where('trainer_profile_id', $profile->id)
+                ->whereNotNull('reads_busy_at'))
+            ->where('ends_at', '>', $from->startOfDay())
+            ->where('starts_at', '<', $until)
+            ->get(['starts_at', 'ends_at'])
+            ->map(fn (CalendarBusyTime $busy) => [
+                'start' => $busy->starts_at->setTimezone(self::TIMEZONE),
+                'blockedUntil' => $busy->ends_at->setTimezone(self::TIMEZONE)->addMinutes($profile->break_minutes),
+                'external' => true,
+            ]);
     }
 
     /** Minimum notice ("Preavviso minimo") and the end of a pause. */

@@ -25,7 +25,7 @@ const kindHints: Record<SearchKind, string> = {
     trainer:
         'Personal trainer certificati: orari liberi, prezzi e recensioni, prenoti la seduta.',
     gym: 'Palestre con servizi, abbonamenti, promozioni e i trainer che ci lavorano.',
-    course: 'I corsi della settimana delle palestre: giorno, orario e livello, in alcuni prenoti il posto.',
+    course: 'I corsi della settimana delle palestre: giorno, orario, livello e posti. Per partecipare chiedi alla palestra.',
     event: 'Open day, workshop e allenamenti di gruppo: prenoti il posto in pochi secondi.',
 };
 

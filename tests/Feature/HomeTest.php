@@ -37,8 +37,8 @@ class HomeTest extends TestCase
     {
         $this->get(route('home'))
             ->assertInertia(fn (Assert $page) => $page
-                ->has('featuredTrainers', 9)
-                ->has('featuredTrainers.0', fn (Assert $trainer) => $trainer
+                ->has('trainers.items', 9)
+                ->has('trainers.items.0', fn (Assert $trainer) => $trainer
                     ->whereType('slug', 'string')
                     ->whereType('name', 'string')
                     ->whereType('href', 'string')
@@ -67,7 +67,7 @@ class HomeTest extends TestCase
         $this->actingAs($client)
             ->get(route('home'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('featuredTrainers', fn ($trainers) => collect($trainers)->where('favorite', true)->pluck('slug')->all() === [$saved->slug])
+                ->where('trainers.items', fn ($trainers) => collect($trainers)->where('favorite', true)->pluck('slug')->all() === [$saved->slug])
             );
     }
 

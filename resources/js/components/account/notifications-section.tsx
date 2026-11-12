@@ -6,13 +6,16 @@ import SettingSwitch from '@/components/account/setting-switch';
 import SettingsSection from '@/components/account/settings-section';
 import { Button } from '@/components/ui/button';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
-import { installApp, isStandalone, useCanInstall } from '@/lib/pwa';
 import type { PushState } from '@/lib/push';
+import { installApp, openAppPrompt, useInstallMethod } from '@/lib/pwa';
+import type { PushCategorySetting } from '@/types';
 
 type NotificationsSectionProps = {
+    role: 'client' | 'trainer' | 'gym';
+    /** "Promemoria prima delle sedute": clients and trainers only. */
     reminders: boolean;
-    /** Who gets the reminders: the text changes for trainers. */
-    forTrainer?: boolean;
+    /** "Cosa ricevere sul dispositivo" (App\Enums\PushCategory::forRole). */
+    push: PushCategorySetting[];
 };
 
 const pushTexts: Record<PushState, string> = {
@@ -25,30 +28,52 @@ const pushTexts: Record<PushState, string> = {
         'Questo browser non le supporta: gli avvisi li trovi nella campanella del sito.',
 };
 
+const descriptions = {
+    client: 'Conferme, cambi di orario e promemoria nella campanella del sito, e sul telefono se attivi le notifiche.',
+    trainer:
+        'Nuove richieste e promemoria nella campanella del sito, e sul telefono se attivi le notifiche.',
+    gym: 'Richieste dei trainer e inviti agli eventi nella campanella del sito, e sul telefono se attivi le notifiche.',
+};
+
+/** One switch saved at once; it goes back if the server says no. */
+function save(
+    data: { reminders: boolean } | { push: Record<string, boolean> },
+    undo: () => void,
+): void {
+    router.patch(AccountSettingsController.updateNotifications.url(), data, {
+        preserveScroll: true,
+        preserveState: true,
+        onError: undo,
+    });
+}
+
 /**
- * "Notifiche": the reminders before the sessions (saved on the account) and
- * the push notifications of this device (lib/push.ts).
+ * "Notifiche": the reminders before the sessions and the kinds of push
+ * (saved on the account), the push notifications of this device (lib/push.ts)
+ * and "Installa l'app".
  */
 export default function NotificationsSection({
+    role,
     reminders: savedReminders,
-    forTrainer = false,
+    push: savedCategories,
 }: NotificationsSectionProps) {
     const [reminders, setReminders] = useState(savedReminders);
+    const [categories, setCategories] = useState(() =>
+        Object.fromEntries(savedCategories.map((c) => [c.key, c.enabled])),
+    );
     const push = usePushNotifications();
-    const canInstall = useCanInstall();
+    const installMethod = useInstallMethod();
 
     const saveReminders = (checked: boolean) => {
-        // The switch moves at once; it goes back if the server says no.
         setReminders(checked);
-        router.patch(
-            AccountSettingsController.updateNotifications.url(),
-            { reminders: checked },
-            {
-                preserveScroll: true,
-                preserveState: true,
-                onError: () => setReminders(!checked),
-            },
-        );
+        save({ reminders: checked }, () => setReminders(!checked));
+    };
+
+    const saveCategory = (key: string, checked: boolean) => {
+        const set = (value: boolean) =>
+            setCategories((current) => ({ ...current, [key]: value }));
+        set(checked);
+        save({ push: { [key]: checked } }, () => set(!checked));
     };
 
     return (
@@ -56,23 +81,21 @@ export default function NotificationsSection({
             id="notifiche"
             title="Notifiche"
             icon={Bell}
-            description={
-                forTrainer
-                    ? 'Nuove richieste e promemoria nella campanella del sito, e sul telefono se attivi le notifiche.'
-                    : 'Conferme, cambi di orario e promemoria nella campanella del sito, e sul telefono se attivi le notifiche.'
-            }
+            description={descriptions[role]}
         >
-            <SettingSwitch
-                icon={CalendarClock}
-                label="Promemoria prima delle sedute"
-                description={
-                    forTrainer
-                        ? 'Il giorno prima di ogni seduta confermata.'
-                        : 'Il giorno prima e 2 ore prima della seduta.'
-                }
-                checked={reminders}
-                onCheckedChange={saveReminders}
-            />
+            {role !== 'gym' && (
+                <SettingSwitch
+                    icon={CalendarClock}
+                    label="Promemoria prima delle sedute"
+                    description={
+                        role === 'trainer'
+                            ? 'Il giorno prima di ogni seduta confermata.'
+                            : 'Il giorno prima e 2 ore prima della seduta.'
+                    }
+                    checked={reminders}
+                    onCheckedChange={saveReminders}
+                />
+            )}
 
             {push.state !== null && (
                 <div className="flex flex-wrap items-center gap-3.5 rounded-2xl border bg-card px-4 py-3.5">
@@ -119,11 +142,41 @@ export default function NotificationsSection({
                 </div>
             )}
 
-            {canInstall && !isStandalone() && (
+            {savedCategories.length > 0 && (
+                <div className="flex flex-col gap-2.5 pt-1">
+                    <div className="flex flex-col gap-0.5">
+                        <h3 className="text-[15px] leading-5.5 font-semibold">
+                            Cosa ricevere sul dispositivo
+                        </h3>
+                        <p className="text-[13px] leading-4.5 text-muted-foreground">
+                            Valgono su tutti i dispositivi in cui attivi le
+                            notifiche. Gli avvisi spenti restano nella
+                            campanella del sito.
+                        </p>
+                    </div>
+                    {savedCategories.map((category) => (
+                        <SettingSwitch
+                            key={category.key}
+                            label={category.label}
+                            description={category.description}
+                            checked={categories[category.key] ?? true}
+                            onCheckedChange={(checked) =>
+                                saveCategory(category.key, checked)
+                            }
+                        />
+                    ))}
+                </div>
+            )}
+
+            {installMethod !== null && (
                 <Button
                     type="button"
                     variant="outline"
-                    onClick={() => void installApp()}
+                    onClick={() =>
+                        installMethod === 'prompt'
+                            ? void installApp()
+                            : openAppPrompt()
+                    }
                     className="h-10 self-start"
                 >
                     <Download aria-hidden="true" />

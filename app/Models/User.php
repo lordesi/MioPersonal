@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PushCategory;
 use App\Enums\UserRole;
 use App\Rules\Username;
 use Carbon\CarbonInterface;
@@ -45,7 +46,7 @@ use NotificationChannels\WebPush\HasPushSubscriptions;
  * @property string|null $deletion_requested_by DELETION_BY_USER or DELETION_BY_ADMIN
  * @property Carbon|null $last_active_at when the user last used the web app (TrackLastActivity)
  * @property array{source: string, medium: string|null, campaign: string|null, landing: string}|null $acquisition where the user came from at sign-up (Stats::acquisition())
- * @property array{reminders?: bool}|null $notification_settings the switches of "Notifiche" in the settings (wantsReminders())
+ * @property array{reminders?: bool, push?: array<string, bool>}|null $notification_settings the switches of "Notifiche" in the settings (wantsReminders(), wantsPush())
  * @property string|null $two_factor_secret unused: two-factor authentication is off
  * @property string|null $two_factor_recovery_codes unused
  * @property Carbon|null $two_factor_confirmed_at unused
@@ -130,6 +131,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function wantsReminders(): bool
     {
         return ($this->notification_settings['reminders'] ?? true) === true;
+    }
+
+    /** "Cosa ricevere sul dispositivo" in the settings: on until turned off. */
+    public function wantsPush(PushCategory $category): bool
+    {
+        return ($this->notification_settings['push'][$category->value] ?? true) === true;
     }
 
     /** At least one device with "Attiva le notifiche" on (HasPushSubscriptions). */

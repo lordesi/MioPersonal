@@ -7,22 +7,29 @@ import type { GymSummary } from '@/types';
 
 type FeaturedGymsProps = {
     gyms: GymSummary[];
+    title?: string;
+    /** Unique in the page. */
+    id?: string;
 };
 
 /**
- * "Palestre in evidenza" (HomeController): gyms with a cover photo, the ones
- * with a promotion first, in the same carousel as the trainers. Hidden when
- * there are none.
+ * "Palestre in tendenza" (GymShelves), or "Palestre in evidenza"
+ * (HomeController): gyms with a cover photo, in the same carousel as the
+ * trainers. Hidden when there are none.
  */
-export default function FeaturedGyms({ gyms }: FeaturedGymsProps) {
+export default function FeaturedGyms({
+    gyms,
+    title = 'Palestre in evidenza',
+    id = 'featured-gyms',
+}: FeaturedGymsProps) {
     if (gyms.length === 0) {
         return null;
     }
 
     return (
         <CardCarousel
-            title="Palestre in evidenza"
-            titleId="featured-gyms-title"
+            title={title}
+            titleId={`${id}-title`}
             href={gymSearchUrl()}
             linkLabel="Vedi tutte"
             prevLabel="Palestre precedenti"

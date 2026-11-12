@@ -35,6 +35,9 @@ class CookieConsent extends Model
     /** The Garante asks not to show the banner again for 6 months. */
     public const COOKIE_MINUTES = 60 * 24 * 182;
 
+    /** The privacy policy promises to keep the proof of a choice this long. */
+    public const RETENTION_MONTHS = 12;
+
     /**
      * @return array<string, string>
      */

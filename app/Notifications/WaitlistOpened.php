@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\PushCategory;
 use App\Models\GroupSession;
 use App\Models\TrainerProfile;
 use App\Models\User;
@@ -23,6 +24,11 @@ use NotificationChannels\WebPush\WebPushMessage;
 class WaitlistOpened extends Notification implements ShouldQueue
 {
     use Queueable, SendsPush;
+
+    protected function pushCategory(): PushCategory
+    {
+        return PushCategory::Waitlist;
+    }
 
     /**
      * @param  string|null  $date  Y-m-d, for a trainer's day

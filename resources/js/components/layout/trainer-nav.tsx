@@ -8,6 +8,7 @@ import {
     Eye,
     House,
     Inbox,
+    MessageCircle,
     Settings,
     Share2,
     Star,
@@ -29,6 +30,7 @@ import {
     clients,
     events,
     gyms,
+    messages,
     requests,
     reviews,
     services,
@@ -43,6 +45,7 @@ export type TrainerSection =
     | 'requests'
     | 'calendar'
     | 'clients'
+    | 'messages'
     | 'availability'
     | 'services'
     | 'events'
@@ -86,6 +89,7 @@ export function trainerNavGroups(
                     }),
                     item('calendar', 'Calendario', Calendar, calendar.url()),
                     item('clients', 'Clienti', Users, clients.url()),
+                    item('messages', 'Messaggi', MessageCircle, messages.url()),
                 ],
             },
             {

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Actions\Bookings\CreateBookingSeries;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\BookingEvent;
@@ -49,6 +50,8 @@ final class TrainerBookingRequests
             ->map(fn (Booking $booking) => [
                 ...TrainerSessions::row($booking),
                 'note' => $booking->client_note,
+                // "Ripeti ogni settimana": "Ogni martedì alle 18:00", or null.
+                'repeatWeekly' => $booking->repeat_weekly ? CreateBookingSeries::label($booking->starts_at->toImmutable()) : null,
                 // "Sul cliente": what the client wrote in "Su di te", to decide.
                 'about' => ClientAbout::from($booking->client),
                 // From requestedAt to expiresAt: the bar of the time left.

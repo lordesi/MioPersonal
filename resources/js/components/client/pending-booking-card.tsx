@@ -23,7 +23,15 @@ export default function PendingBookingCard({
     const { cancelled, cancelBooking } = useCancelBooking(booking.id);
     const isGuest = booking.group?.role === 'guest';
 
-    const detail = `${formatSlot(booking.start, booking.hours)} · ${booking.serviceName}`;
+    const detail = [
+        formatSlot(booking.start, booking.hours),
+        booking.serviceName,
+        // "Ripeti ogni settimana": the trainer may accept only this session.
+        booking.repeatWeekly &&
+            `richiesta: ${booking.repeatWeekly.toLowerCase()}`,
+    ]
+        .filter(Boolean)
+        .join(' · ');
     const status =
         booking.status !== 'pending'
             ? booking.status

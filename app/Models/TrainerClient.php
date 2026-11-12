@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 /**
@@ -35,6 +36,7 @@ use Illuminate\Support\Str;
  * @property-read TrainerProfile $trainerProfile
  * @property-read User|null $user
  * @property-read Collection<int, ClientPayment> $payments
+ * @property-read Conversation|null $conversation
  */
 #[Fillable(['user_id', 'name', 'email', 'phone', 'goal', 'private_notes', 'shared_note', 'shared_note_at'])]
 class TrainerClient extends Model
@@ -100,6 +102,16 @@ class TrainerClient extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * "Messaggi": made with the first message, only with a registered client.
+     *
+     * @return HasOne<Conversation, $this>
+     */
+    public function conversation(): HasOne
+    {
+        return $this->hasOne(Conversation::class);
     }
 
     /**

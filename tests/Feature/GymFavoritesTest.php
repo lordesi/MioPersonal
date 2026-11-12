@@ -193,9 +193,9 @@ class GymFavoritesTest extends TestCase
 
         $this->get(route('home'))
             ->assertInertia(fn (Assert $page) => $page
-                ->has('featuredGyms', 2)
-                ->where('featuredGyms.0.name', 'Con promo')
-                ->where('featuredGyms.1.name', 'Senza promo')
+                ->has('gyms.items', 2)
+                ->where('gyms.items.0.name', 'Con promo')
+                ->where('gyms.items.1.name', 'Senza promo')
             );
         $this->assertNotNull($noCover);
     }
@@ -208,6 +208,6 @@ class GymFavoritesTest extends TestCase
         }
 
         $this->get(route('home'))
-            ->assertInertia(fn (Assert $page) => $page->has('featuredGyms', 9));
+            ->assertInertia(fn (Assert $page) => $page->has('gyms.items', 9));
     }
 }

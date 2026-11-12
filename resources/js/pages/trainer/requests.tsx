@@ -34,33 +34,36 @@ export default function Requests({
     const answer = (
         request: TrainerBookingRequest,
         value: 'confirmed' | 'declined',
+        weekly = false,
     ) => {
         const action = value === 'confirmed' ? accept : decline;
 
-        router.post(
-            action.url(request.id),
-            {},
-            {
-                preserveScroll: true,
-                // The request moves to "Gestite"; the badge of the menu follows.
-                only: ['requests', 'handled', 'trainerArea'],
-                onStart: () => setBusyId(request.id),
-                onFinish: () => setBusyId(null),
-                onSuccess: () =>
-                    toast.success(
-                        value === 'confirmed'
-                            ? `Confermata: ${request.clientName} riceve i tuoi contatti.`
-                            : 'Rifiutata: lo slot è di nuovo libero.',
-                    ),
-                // Expired or cancelled meanwhile: say it and show the real list.
-                onError: (errors) => {
-                    toast.error(errors.booking ?? 'Riprova tra poco.');
-                    router.reload({
-                        only: ['requests', 'handled', 'trainerArea'],
-                    });
-                },
+        router.post(action.url(request.id), weekly ? { weekly: true } : {}, {
+            preserveScroll: true,
+            // The request moves to "Gestite"; the badge of the menu follows.
+            only: ['requests', 'handled', 'trainerArea'],
+            onStart: () => setBusyId(request.id),
+            onFinish: () => setBusyId(null),
+            onSuccess: () => {
+                // "Accetta ogni settimana": the server says how many sessions are set.
+                if (weekly) {
+                    return;
+                }
+
+                toast.success(
+                    value === 'confirmed'
+                        ? `Confermata: ${request.clientName} riceve i tuoi contatti.`
+                        : 'Rifiutata: lo slot è di nuovo libero.',
+                );
             },
-        );
+            // Expired or cancelled meanwhile: say it and show the real list.
+            onError: (errors) => {
+                toast.error(errors.booking ?? 'Riprova tra poco.');
+                router.reload({
+                    only: ['requests', 'handled', 'trainerArea'],
+                });
+            },
+        });
     };
 
     return (
@@ -119,7 +122,9 @@ export default function Requests({
                                 key={request.id}
                                 request={request}
                                 busy={busyId !== null}
-                                onConfirm={() => answer(request, 'confirmed')}
+                                onConfirm={(weekly) =>
+                                    answer(request, 'confirmed', weekly)
+                                }
                                 onDecline={() => answer(request, 'declined')}
                             />
                         ))

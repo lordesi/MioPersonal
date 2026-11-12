@@ -4,14 +4,15 @@ namespace Tests\Feature;
 
 use App\Enums\GymLinkStatus;
 use App\Models\Discipline;
+use App\Models\GroupSession;
 use App\Models\GymCourse;
 use App\Models\GymCourseCancellation;
 use App\Models\GymProfile;
 use App\Models\TrainerProfile;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Database\Seeders\CatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -65,19 +66,20 @@ class GymCoursesTest extends TestCase
         $gym = $this->gym();
 
         $this->actingAs($gym->user)
-            ->post(route('gym.courses.store'), $this->course(['photo' => UploadedFile::fake()->image('pilates.jpg', 1200, 800)]))
+            ->post(route('gym.courses.store'), $this->course())
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('gym.courses'));
 
         $course = GymCourse::sole();
         $this->assertSame(2, $course->lessons()->count());
-        Storage::disk('public')->assertExists((string) $course->photo_path);
 
         $this->get(route('gyms.show', $gym->slug))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('gym.courses.0.name', 'Pilates')
                 ->where('gym.courses.0.when', 'Lun, Gio 18:30')
                 ->where('gym.courses.0.instructor', 'Giulia')
+                ->where('gym.courses.0.maxPlaces', 12)
+                ->where('gym.courses.0.photos', [])
                 // This week: Monday 19 and Thursday 22.
                 ->where('gym.courseWeeks.0.0.date', '2026-10-19')
                 ->where('gym.courseWeeks.0.0.lessons.0.room', 'Sala 2')
@@ -202,16 +204,16 @@ class GymCoursesTest extends TestCase
         $this->actingAs($other->user)->post(route('gym.courses.lessons.cancel', $course->lessons->first()), ['date' => '2026-10-26'])->assertNotFound();
     }
 
-    public function test_deleting_a_course_deletes_its_photo()
+    public function test_a_lesson_can_no_longer_be_booked_here()
     {
         $gym = $this->gym();
-        $this->actingAs($gym->user)->post(route('gym.courses.store'), $this->course(['photo' => UploadedFile::fake()->image('p.jpg', 1200, 800)]));
-        $course = GymCourse::sole();
-        $path = (string) $course->photo_path;
+        $this->actingAs($gym->user)->post(route('gym.courses.store'), $this->course());
+        $lesson = GymCourse::sole()->lessons()->first();
+        $client = User::factory()->create();
 
-        $this->actingAs($gym->user)->delete(route('gym.courses.destroy', $course))->assertRedirect(route('gym.courses'));
-
-        $this->assertSame(0, GymCourse::count());
-        Storage::disk('public')->assertMissing($path);
+        $this->actingAs($client)
+            ->post("/palestra/{$gym->slug}/lezioni/{$lesson->id}/prenota", ['date' => '2026-10-26'])
+            ->assertNotFound();
+        $this->assertSame(0, GroupSession::count());
     }
 }

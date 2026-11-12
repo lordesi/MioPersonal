@@ -9,9 +9,12 @@ use App\Actions\Trainer\RelinkServices;
 use App\Actions\Waitlist\Waitlist;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
+use App\Jobs\SyncBusyTimesJob;
 use App\Jobs\SyncCalendarJob;
 use App\Models\Booking;
 use App\Models\BookingSeries;
+use App\Models\CookieConsent;
+use App\Models\Message;
 use App\Models\TrainerCalendarConnection;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
@@ -228,6 +231,21 @@ Artisan::command('calendar:resync', function () {
 
 Schedule::command('calendar:resync')->dailyAt('04:30');
 
+// "Blocca gli orari occupati": when the trainers are busy on Google is read
+// again often, so a new commitment soon stops being bookable.
+Artisan::command('calendar:busy', function () {
+    $count = 0;
+
+    TrainerCalendarConnection::query()->whereNotNull('reads_busy_at')->whereNull('last_error')->each(function (TrainerCalendarConnection $connection) use (&$count) {
+        SyncBusyTimesJob::dispatch($connection->id);
+        $count++;
+    });
+
+    $this->info("{$count} Google calendars queued to read the busy times.");
+})->purpose('Read again when the trainers are busy on their Google calendars');
+
+Schedule::command('calendar:busy')->everyTenMinutes();
+
 // "Elimina account" and "Cancella dati" of the team: the account is deleted for
 // good User::DELETION_GRACE_DAYS later (until then it can be taken back).
 Artisan::command('users:purge-deleted', function (DeleteUser $deleteUser) {
@@ -252,6 +270,40 @@ Artisan::command('notifications:prune', function () {
 })->purpose('Delete the notifications of the bell older than 90 days');
 
 Schedule::command('notifications:prune')->dailyAt('05:00');
+
+// The privacy policy keeps the cookie choices CookieConsent::RETENTION_MONTHS.
+Artisan::command('cookie-consents:prune', function () {
+    $count = CookieConsent::query()
+        ->where('created_at', '<', now()->subMonths(CookieConsent::RETENTION_MONTHS))
+        ->delete();
+
+    $this->info("{$count} old cookie choices deleted.");
+})->purpose('Delete the cookie choices older than '.CookieConsent::RETENTION_MONTHS.' months');
+
+Schedule::command('cookie-consents:prune')->dailyAt('05:05');
+
+// "Messaggi": the photos and the PDFs last Message::ATTACHMENT_DAYS. The file
+// is deleted and the path emptied; the text, the kind and the name stay, so
+// the chat shows "Foto non più disponibile".
+Artisan::command('messages:expire-attachments', function () {
+    $count = 0;
+
+    Message::query()
+        ->whereNotNull('attachment_path')
+        ->where('created_at', '<', now()->subDays(Message::ATTACHMENT_DAYS))
+        ->chunkById(200, function ($messages) use (&$count) {
+            foreach ($messages as $message) {
+                /** @var Message $message */
+                Storage::disk(Message::DISK)->delete((string) $message->attachment_path);
+                $message->forceFill(['attachment_path' => null])->save();
+                $count++;
+            }
+        });
+
+    $this->info("{$count} attachments expired.");
+})->purpose('Delete the photos and PDFs of "Messaggi" older than '.Message::ATTACHMENT_DAYS.' days');
+
+Schedule::command('messages:expire-attachments')->dailyAt('05:15')->withoutOverlapping();
 
 // Once, for the photos uploaded before SafeImage: each one is drawn again in
 // place, without metadata (GPS position…), upright and at most 2000 px.

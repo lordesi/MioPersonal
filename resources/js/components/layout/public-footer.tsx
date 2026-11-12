@@ -4,6 +4,7 @@ import BrandLogo from '@/components/layout/brand-logo';
 import { openCookieSettings } from '@/lib/cookie-consent';
 import { courseSearchUrl } from '@/lib/course';
 import { gymSearchUrl } from '@/lib/gym';
+import { openAppPrompt, useInstallMethod } from '@/lib/pwa';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
 import { howItWorks, news } from '@/routes';
@@ -106,6 +107,7 @@ export default function PublicFooter({ className }: { className?: string }) {
     const page = usePage();
     const currentPath = page.url.split(/[?#]/)[0];
     const role = page.props.auth?.user?.role;
+    const canInstall = useInstallMethod() !== null;
 
     return (
         <footer className={cn('bg-primary text-primary-foreground', className)}>
@@ -143,6 +145,15 @@ export default function PublicFooter({ className }: { className?: string }) {
                             >
                                 Impostazioni cookie
                             </button>
+                            {canInstall && (
+                                <button
+                                    type="button"
+                                    onClick={openAppPrompt}
+                                    className={linkClassName}
+                                >
+                                    Installa l’app
+                                </button>
+                            )}
                         </LinkList>
                     </div>
                 </div>

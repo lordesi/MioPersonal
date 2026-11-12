@@ -89,6 +89,75 @@ export function isStandalone(): boolean {
     );
 }
 
+/**
+ * How this browser installs the app:
+ * - 'prompt': the browser's own dialog (Chrome, Edge, Samsung Internet);
+ * - 'ios': Safari on the iPhone/iPad, Condividi → "Aggiungi alla schermata Home";
+ * - 'mac-safari': Safari on the Mac (17+), File → "Aggiungi al Dock";
+ * - null: already installed, or a browser without it (Firefox on the computer).
+ */
+export type InstallMethod = 'prompt' | 'ios' | 'mac-safari' | null;
+
+function isMacSafari(): boolean {
+    const ua = navigator.userAgent;
+
+    return (
+        /Macintosh/.test(ua) &&
+        /Version\/(1[7-9]|[2-9]\d)\.[\d.]+ Safari/.test(ua) &&
+        !/Chrome|Chromium|CriOS|FxiOS|Firefox|Edg|OPR/.test(ua) &&
+        !isIos()
+    );
+}
+
+export function installMethod(): InstallMethod {
+    if (typeof window === 'undefined' || isStandalone()) {
+        return null;
+    }
+
+    if (installPrompt !== null) {
+        return 'prompt';
+    }
+
+    if (isIos()) {
+        return 'ios';
+    }
+
+    return isMacSafari() ? 'mac-safari' : null;
+}
+
+/** installMethod(), updated when the browser's install event arrives. */
+export function useInstallMethod(): InstallMethod {
+    return useSyncExternalStore(
+        (listener) => {
+            listeners.add(listener);
+
+            return () => listeners.delete(listener);
+        },
+        installMethod,
+        () => null,
+    );
+}
+
+/**
+ * "Installa l'app" from a menu or the settings: opens the popup of
+ * components/pwa/app-prompt.tsx, also when "Non ora" was pressed lately.
+ */
+const openListeners = new Set<() => void>();
+
+export function openAppPrompt(): void {
+    // After the menu that called it has closed: two Radix layers at once lose the focus.
+    window.setTimeout(
+        () => openListeners.forEach((listener) => listener()),
+        100,
+    );
+}
+
+export function onOpenAppPrompt(listener: () => void): () => void {
+    openListeners.add(listener);
+
+    return () => openListeners.delete(listener);
+}
+
 /** iPhone and iPad (also the iPad that says it's a Mac). */
 export function isIos(): boolean {
     if (typeof navigator === 'undefined') {

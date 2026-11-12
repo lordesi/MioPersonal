@@ -41,7 +41,7 @@ class TrainerProfileVisibilityTest extends TestCase
         $this->get(route('trainers.search', 'milano'))
             ->assertInertia(fn (Assert $page) => $page->where('total', 0));
         $this->get(route('home'))
-            ->assertInertia(fn (Assert $page) => $page->has('featuredTrainers', 0));
+            ->assertInertia(fn (Assert $page) => $page->has('trainers.items', 0));
     }
 
     public function test_an_approved_profile_shows_up_unless_hidden_by_the_trainer()

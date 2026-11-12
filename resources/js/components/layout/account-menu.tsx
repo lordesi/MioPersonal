@@ -3,8 +3,10 @@ import {
     Calendar,
     ChevronDown,
     ChevronsUpDown,
+    Bell,
     CircleHelp,
     Compass,
+    Download,
     Dumbbell,
     LayoutDashboard,
     LogOut,
@@ -30,6 +32,7 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
+import { openAppPrompt, useInstallMethod } from '@/lib/pwa';
 import { cn } from '@/lib/utils';
 import { home, logout } from '@/routes';
 import { settings } from '@/routes/account';
@@ -55,7 +58,9 @@ export type AccountMenuVariant = 'client' | 'trainer' | 'gym';
 
 type MenuItem = {
     title: string;
-    href: string;
+    /** A page; without it, `action` runs (e.g. "Installa l'app"). */
+    href?: string;
+    action?: () => void;
     icon: ComponentType<{ className?: string }>;
     /** Second line under the title, e.g. "Crea il tuo profilo, è gratis". */
     hint?: string;
@@ -78,7 +83,29 @@ type AccountMenuProps = {
  * Only the account, the same everywhere: the pages of each area are in its
  * side menu and tabs (components/layout/area-nav.tsx).
  */
-function menuGroups(variant: AccountMenuVariant): MenuItem[][] {
+function menuGroups(
+    variant: AccountMenuVariant,
+    canInstall: boolean,
+): MenuItem[][] {
+    // "Notifiche" and "Installa l'app": the same for every role.
+    const settingsUrl = {
+        client: settings.url(),
+        trainer: trainerSettings.url(),
+        gym: gymSettings.url(),
+    }[variant];
+    const app: MenuItem[] = [
+        { title: 'Notifiche', href: `${settingsUrl}#notifiche`, icon: Bell },
+    ];
+
+    if (canInstall) {
+        app.push({
+            title: 'Installa l’app',
+            action: openAppPrompt,
+            icon: Download,
+            hint: 'Sul telefono o sul computer',
+        });
+    }
+
     const help: MenuItem = {
         title: 'Centro assistenza',
         href: contactPage.url(),
@@ -109,6 +136,7 @@ function menuGroups(variant: AccountMenuVariant): MenuItem[][] {
                     icon: Settings,
                 },
             ],
+            app,
             [explore, help],
         ];
     }
@@ -132,6 +160,7 @@ function menuGroups(variant: AccountMenuVariant): MenuItem[][] {
                     icon: Settings,
                 },
             ],
+            app,
             [explore, help],
         ];
     }
@@ -159,6 +188,7 @@ function menuGroups(variant: AccountMenuVariant): MenuItem[][] {
                 icon: Settings,
             },
         ],
+        app,
         [
             help,
             {
@@ -203,7 +233,7 @@ export default function AccountMenu(props: AccountMenuProps) {
     const email = auth?.user?.email ?? '';
     // The photo of "Completa il tuo profilo"; without it, the initials.
     const avatar = auth?.user?.avatar;
-    const groups = menuGroups(variant);
+    const groups = menuGroups(variant, useInstallMethod() !== null);
     const roleLabel = {
         trainer: 'Trainer',
         gym: 'Palestra',
@@ -288,9 +318,19 @@ export default function AccountMenu(props: AccountMenuProps) {
                                     item.hint && 'py-2',
                                 )}
                             >
-                                <Link href={item.href}>
-                                    {itemContent(item)}
-                                </Link>
+                                {item.href ? (
+                                    <Link href={item.href}>
+                                        {itemContent(item)}
+                                    </Link>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={item.action}
+                                        className="w-full text-left"
+                                    >
+                                        {itemContent(item)}
+                                    </button>
+                                )}
                             </DropdownMenuItem>
                         ))}
                     </DropdownMenuGroup>
@@ -401,19 +441,35 @@ export default function AccountMenu(props: AccountMenuProps) {
                                         index === 0 ? 'mb-1.5' : 'my-1.5',
                                     )}
                                 />
-                                {group.map((item) => (
-                                    <Link
-                                        key={item.title}
-                                        href={item.href}
-                                        onClick={() => setMobileOpen(false)}
-                                        className={cn(
-                                            'flex min-h-13 items-center gap-2.5 rounded-xl px-2.5 text-[15px] leading-5 font-medium hover:bg-accent',
-                                            item.hint && 'py-2',
-                                        )}
-                                    >
-                                        {itemContent(item)}
-                                    </Link>
-                                ))}
+                                {group.map((item) => {
+                                    const className = cn(
+                                        'flex min-h-13 items-center gap-2.5 rounded-xl px-2.5 text-left text-[15px] leading-5 font-medium hover:bg-accent',
+                                        item.hint && 'py-2',
+                                    );
+
+                                    return item.href ? (
+                                        <Link
+                                            key={item.title}
+                                            href={item.href}
+                                            onClick={() => setMobileOpen(false)}
+                                            className={className}
+                                        >
+                                            {itemContent(item)}
+                                        </Link>
+                                    ) : (
+                                        <button
+                                            key={item.title}
+                                            type="button"
+                                            onClick={() => {
+                                                setMobileOpen(false);
+                                                item.action?.();
+                                            }}
+                                            className={className}
+                                        >
+                                            {itemContent(item)}
+                                        </button>
+                                    );
+                                })}
                             </Fragment>
                         ))}
                         <div

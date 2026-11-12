@@ -14,7 +14,7 @@ import PackageProgress from '@/components/trainer/package-progress';
 import { Button } from '@/components/ui/button';
 import { romeParts } from '@/lib/calendar';
 import { dateBlockParts, formatDayLong, formatTime } from '@/lib/format';
-import { calendar } from '@/routes/trainer';
+import { calendar, messages } from '@/routes/trainer';
 import type { SeriesService, TrainerClient } from '@/types';
 
 /**
@@ -109,7 +109,15 @@ export default function ClientCard({
             </div>
 
             <div className="flex flex-col gap-3.5 px-6 pt-5 pb-6">
-                <ClientContacts name={client.name} contacts={client.contacts} />
+                <ClientContacts
+                    name={client.name}
+                    contacts={client.contacts}
+                    messageHref={
+                        client.registered
+                            ? messages.url({ query: { con: client.recordId } })
+                            : undefined
+                    }
+                />
                 <div aria-hidden="true" className="h-px bg-border" />
 
                 {client.registered && (

@@ -12,9 +12,9 @@ use App\Support\CatalogOptions;
 use App\Support\CourseCard;
 use App\Support\GroupSessionCard;
 use App\Support\GymCard;
+use App\Support\GymShelves;
 use App\Support\HowItWorks;
 use App\Support\NewsFeed;
-use App\Support\PopularDisciplines;
 use App\Support\Seo;
 use App\Support\TrainerCard;
 use App\Support\TrainerShelves;
@@ -38,28 +38,32 @@ class HomeController extends Controller
     /** "Prossimi eventi". */
     private const EVENTS = 6;
 
-    /** At most two shelves under "Trainer in evidenza", in this order. */
-    private const SHELVES = ['trending', 'new'];
-
     public function __invoke(Request $request): Response
     {
         TrainerSlots::refreshStale();
 
+        $trainerFavorites = TrainerCard::favoriteIds($request->user());
+        $gymFavorites = GymCard::favoriteIds($request->user());
+        $trendingTrainers = TrainerShelves::trending($trainerFavorites);
+        $trendingGyms = GymShelves::trending($gymFavorites);
+
         return Inertia::render('public/home', [
-            'featuredTrainers' => $this->featuredTrainers(TrainerCard::favoriteIds($request->user())),
-            // "In tendenza" and "Nuovi": each one only with enough trainers.
-            'trainerShelves' => $this->shelves(TrainerCard::favoriteIds($request->user())),
-            'featuredGyms' => GymCard::many($this->featuredGyms(), GymCard::favoriteIds($request->user())),
-            // "Corsi in palestra": the bookable ones first.
+            // "Trainer in tendenza", or "in evidenza" while too few are trending.
+            'trainers' => $trendingTrainers !== null
+                ? ['key' => 'trending', 'title' => 'Trainer in tendenza', 'items' => $trendingTrainers]
+                : ['key' => 'featured', 'title' => 'Trainer in evidenza', 'items' => $this->featuredTrainers($trainerFavorites)],
+            // The same for the gyms.
+            'gyms' => $trendingGyms !== null
+                ? ['key' => 'trending', 'title' => 'Palestre in tendenza', 'items' => $trendingGyms]
+                : ['key' => 'featured', 'title' => 'Palestre in evidenza', 'items' => GymCard::many($this->featuredGyms(), $gymFavorites)],
+            // "Corsi in palestra".
             'featuredCourses' => $this->featuredCourses(),
             // "Prossimi eventi" of all of Italy.
             'events' => GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()->listed()->upcoming())->orderBy('starts_at')->limit(self::EVENTS)->get()),
-            // "Novità": the newest trainers and gyms of all of Italy.
+            // "Novità": the newest trainers, gyms and events of all of Italy.
             'news' => NewsFeed::preview(null, $request->user()),
             // Options of the search form.
-            'disciplines' => $disciplines = CatalogOptions::disciplines(),
-            // "Cosa vuoi allenare?": the most searched first.
-            'popularDisciplines' => PopularDisciplines::order($disciplines),
+            'disciplines' => CatalogOptions::disciplines(),
             // With the center of each city: "Usa la mia posizione" finds the closest one in the browser.
             'cities' => CatalogOptions::citiesWithCoordinates(),
             // "Servizi" of the gyms' search ("Trainer | Palestre").
@@ -119,23 +123,8 @@ class HomeController extends Controller
     }
 
     /**
-     * Two shelves at most: the home stays short, with gyms, courses and
-     * events in sight.
-     *
-     * @param  list<int>  $favoriteIds
-     * @return list<array<string, mixed>>
-     */
-    private function shelves(array $favoriteIds): array
-    {
-        $shelves = TrainerShelves::all($favoriteIds);
-        usort($shelves, fn (array $a, array $b) => array_search($a['key'], self::SHELVES, true) <=> array_search($b['key'], self::SHELVES, true));
-
-        return array_slice($shelves, 0, 2);
-    }
-
-    /**
      * "Corsi in palestra": active courses with lessons of the published gyms,
-     * the ones booked on MioPersonal first, then the newest.
+     * the newest first.
      *
      * @return list<array<string, mixed>>
      */
@@ -146,7 +135,6 @@ class HomeController extends Controller
             ->whereHas('lessons')
             ->whereHas('gymProfile', fn ($gym) => $gym->published())
             ->with(CourseCard::RELATIONS)
-            ->orderByDesc('bookable')
             ->latest('id')
             ->limit(self::FEATURED_COURSES)
             ->get());

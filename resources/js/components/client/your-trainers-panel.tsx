@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Heart } from 'lucide-react';
+import { Heart, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import UserAvatar from '@/components/shared/user-avatar';
 import Panel from '@/components/trainer/area/panel';
@@ -115,6 +115,15 @@ function TrainerItem({
                         className={cn('size-4.25', favorite && 'fill-current')}
                     />
                 </button>
+            )}
+            {trainer.messageHref && (
+                <Link
+                    href={trainer.messageHref}
+                    aria-label={`Scrivi a ${trainer.name}`}
+                    className="flex size-9 flex-none items-center justify-center rounded-full hover:bg-accent"
+                >
+                    <MessageCircle aria-hidden="true" className="size-4.25" />
+                </Link>
             )}
             <Link
                 href={trainer.href}

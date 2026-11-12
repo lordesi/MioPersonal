@@ -6,6 +6,8 @@ use App\Actions\Gym\DeleteGymProfile;
 use App\Actions\Trainer\DeleteTrainerProfile;
 use App\Enums\BookingActor;
 use App\Models\Booking;
+use App\Models\Conversation;
+use App\Models\TrainerClient;
 use App\Models\User;
 use App\Support\TrainerSlots;
 use Illuminate\Support\Facades\Storage;
@@ -41,6 +43,11 @@ class DeleteUser
         if ($user->gymProfile !== null) {
             $this->deleteGym->handle($user->gymProfile);
         }
+
+        // "Messaggi" with the client's trainers, with their PDFs (the trainers keep the record).
+        Conversation::purge(Conversation::query()
+            ->whereIn('trainer_client_id', TrainerClient::query()->where('user_id', $user->id)->select('id'))
+            ->get());
 
         // The bell of the site (the notifications are not tied to the user by a foreign key).
         $user->notifications()->delete();

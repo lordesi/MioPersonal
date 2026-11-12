@@ -1,7 +1,8 @@
 import { Head, router } from '@inertiajs/react';
-import { Eye, LockKeyhole, Trash2, UserRound } from 'lucide-react';
+import { Bell, Eye, LockKeyhole, Trash2, UserRound } from 'lucide-react';
 import AccessSection from '@/components/account/access-section';
 import DeleteAccountSection from '@/components/account/delete-account-section';
+import NotificationsSection from '@/components/account/notifications-section';
 import PersonalDataSection from '@/components/account/personal-data-section';
 import SettingSwitch from '@/components/account/setting-switch';
 import SettingsNav from '@/components/account/settings-nav';
@@ -20,6 +21,7 @@ type GymSettingsProps = {
 const allSections: SettingsNavSection[] = [
     { id: 'dati', title: 'Dati del referente', icon: UserRound },
     { id: 'accesso', title: 'Accesso e sicurezza', icon: LockKeyhole },
+    { id: 'notifiche', title: 'Notifiche', icon: Bell },
     { id: 'visibilita', title: 'Visibilità della palestra', icon: Eye },
     { id: 'elimina', title: 'Elimina account', icon: Trash2 },
 ];
@@ -53,6 +55,11 @@ export default function GymSettings({
                         hasPassword={account.hasPassword}
                         passwordChangedAt={account.passwordChangedAt}
                         providers={account.providers}
+                    />
+                    <NotificationsSection
+                        role="gym"
+                        reminders={account.notifications.reminders}
+                        push={account.notifications.push}
                     />
                     {visibleInSearch !== null && (
                         <SettingsSection

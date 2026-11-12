@@ -126,18 +126,6 @@ export type GymCourseLessonSlot = {
     /** Called off that day by the gym. */
     cancelled: boolean;
     cancelNote: string | null;
-    /** "Prenotazione posto": a place is taken on MioPersonal. */
-    bookable: boolean;
-    /** Places left; null when not bookable. */
-    remaining: number | null;
-    /** The viewer has a place. */
-    booked: boolean;
-    /** Already started: no more places. */
-    started: boolean;
-    /** The event of the lesson that day, once someone took a place. */
-    eventSlug: string | null;
-    /** Clients with a place (gym area). */
-    registered: number;
 };
 
 /** A day of the plan of the courses. */
@@ -163,17 +151,20 @@ export type CourseSummary = {
     instructorHref: string | null;
     /** "Lun, Gio 18:30 · Sab 10:00" */
     when: string;
-    /** "Prenota il posto" on MioPersonal. */
-    bookable: boolean;
+    /** "Max 15 posti": the most places of its lessons. */
+    maxPlaces: number | null;
     gym: { name: string; slug: string; city: string; href: string };
 };
 
-/** A course under the plan: photo, description and when. */
+/** A course under the plan: photos, description and when. */
 export type GymCourseInfo = {
     id: number;
     name: string;
     description: string | null;
-    photoUrl: string | null;
+    /** The first one is on the cards. */
+    photos: string[];
+    /** "Max 15 posti": the most places of its lessons. */
+    maxPlaces: number | null;
     level: string;
     discipline: string | null;
     instructor: string | null;

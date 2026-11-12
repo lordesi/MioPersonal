@@ -19,7 +19,7 @@ use Throwable;
  * Writes the sessions and events of a trainer on their Google calendar
  * "MioPersonal", one way: from the site to Google. A confirmed session
  * (or an event the trainer hosts) has its event; moved, it's changed;
- * cancelled, it's removed. Nothing is ever read from the trainer's calendars.
+ * cancelled, it's removed. The other way, optional, is SyncBusyTimes.
  *
  * Google failing never touches the booking: a lost access is saved on the
  * connection (the trainer sees "Ricollega"); any other failure is thrown

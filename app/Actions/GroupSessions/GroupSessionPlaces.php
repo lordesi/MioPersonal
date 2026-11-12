@@ -30,6 +30,11 @@ class GroupSessionPlaces
         $registration = DB::transaction(function () use ($session, $client) {
             $session = GroupSession::query()->whereKey($session->id)->lockForUpdate()->firstOrFail();
 
+            // The courses are only to look at: the gym's members book at the gym.
+            if ($session->isLesson()) {
+                throw ValidationException::withMessages(['place' => 'Le lezioni dei corsi si prenotano in palestra.']);
+            }
+
             if (! $session->isOpen()) {
                 throw ValidationException::withMessages(['place' => $session->isCancelled()
                     ? 'Questo evento è stato annullato.'

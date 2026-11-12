@@ -26,7 +26,7 @@ use Illuminate\Validation\ValidationException;
 class BookingController extends Controller
 {
     /** The choice of the profile page, kept in the URL across login and sign-up. */
-    private const CHOICE = ['servizio', 'durata', 'inizio', 'luogo', 'persone'];
+    private const CHOICE = ['servizio', 'durata', 'inizio', 'luogo', 'persone', 'ripeti'];
 
     /**
      * "Ti registri solo quando prenoti": guests land here, the `auth` middleware
@@ -56,6 +56,10 @@ class BookingController extends Controller
         ], ['place_id.*' => 'Scegli uno dei luoghi del trainer.']);
         $place = $request->filled('place_id') ? TrainerPlace::with(['city', 'gymProfile.city'])->find($request->integer('place_id')) : null;
 
+        // "Ripeti ogni settimana": the trainer accepts it, or only this session.
+        $request->validate(['repeat_weekly' => ['nullable', 'boolean']]);
+        $repeatWeekly = $request->boolean('repeat_weekly');
+
         // "Il tuo pacchetto": a session of a package bought from this trainer.
         if ($request->filled('client_package_id')) {
             $request->validate([
@@ -78,6 +82,7 @@ class BookingController extends Controller
                 $package,
                 CarbonImmutable::parse($request->string('start')->value()),
                 $place,
+                $repeatWeekly,
             );
 
             return to_route('client.bookings.sent', $booking);
@@ -107,6 +112,7 @@ class BookingController extends Controller
             $request->integer('minutes'),
             $place,
             $request->integer('people', 1),
+            $repeatWeekly,
         );
 
         return to_route('client.bookings.sent', $booking);
