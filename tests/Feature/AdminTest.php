@@ -21,6 +21,7 @@ class AdminTest extends TestCase
         'admin.messages' => 'admin/messages',
         'admin.bookings' => 'admin/bookings',
         'admin.users' => 'admin/users',
+        'admin.reports' => 'admin/reports',
         'admin.reviews' => 'admin/reviews',
         'admin.catalog' => 'admin/catalog',
         'admin.settings' => 'admin/settings',
@@ -70,7 +71,7 @@ class AdminTest extends TestCase
                 ->assertInertia(fn (Assert $page) => $page
                     ->component($component)
                     ->whereType('adminArea.verificationCount', 'integer')
-                    ->whereType('adminArea.flaggedReviews', 'integer')
+                    ->whereType('adminArea.openReports', 'integer')
                     ->whereType('adminArea.unreadMessages', 'integer')
                 );
         }

@@ -52,8 +52,8 @@ class AdminOverviewController extends Controller
                     ->whereIn('status', [BookingStatus::Expired, BookingStatus::Pending])
                     ->whereBetween('expires_at', [now(TrainerSlots::TIMEZONE)->startOfDay(), now()])
                     ->count(),
-                // TODO: the reporting system (Prompt 9): profiles and reviews reported by users.
-                'reportedCount' => 0,
+                // "Segnala": profiles and reviews reported and not checked yet.
+                'reportedCount' => $area['openReports'],
             ],
             'stats' => [
                 'users' => User::query()->where('role', '!=', UserRole::Admin)->count(),

@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AdminEventsController;
 use App\Http\Controllers\Admin\AdminGymVerificationController;
 use App\Http\Controllers\Admin\AdminMessagesController;
 use App\Http\Controllers\Admin\AdminOverviewController;
+use App\Http\Controllers\Admin\AdminReportsController;
 use App\Http\Controllers\Admin\AdminReviewsController;
 use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\AdminStatsController;
@@ -56,6 +57,7 @@ use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrganizerEventsController;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RobotsController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TrainerAvailabilityController;
@@ -197,6 +199,11 @@ Route::middleware(['auth', 'throttle:20,1'])
         Route::post('/', 'store')->name('store');
         Route::delete('/', 'destroy')->name('destroy');
     });
+
+// "Segnala" on profiles and reviews, for every logged-in user.
+Route::post('segnalazioni', [ReportController::class, 'store'])
+    ->middleware(['auth', 'throttle:10,1'])
+    ->name('reports.store');
 
 // The bell of the site: the latest notifications, and "segna tutte come lette".
 Route::middleware(['auth', 'throttle:60,1'])
@@ -492,6 +499,9 @@ Route::middleware(['auth', 'verified', 'admin', 'password.confirm'])->prefix('ad
         // "Chiudi il profilo" done by the team: the account stays, as a client.
         Route::delete('profilo-trainer', 'deleteTrainerProfile')->name('trainer-profile');
     });
+    // "Segnalazioni": "Rimuovi" hides a review (profiles: the team acts from "Utenti"), "Ignora" closes it.
+    Route::get('segnalazioni', AdminReportsController::class)->name('reports');
+    Route::post('segnalazioni/{report}/esito', [AdminReportsController::class, 'resolve'])->whereNumber('report')->name('reports.resolve');
     Route::get('recensioni', AdminReviewsController::class)->name('reviews');
     // "Nascondi" / "Mostra di nuovo": off the trainer's profile and average, or back.
     Route::post('recensioni/{review}/nascosta', [AdminReviewsController::class, 'hide'])->whereNumber('review')->name('reviews.hide');

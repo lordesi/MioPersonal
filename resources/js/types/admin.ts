@@ -5,7 +5,33 @@ export type AdminAreaData = {
     gymVerificationCount: number;
     /** Messages of the Contatti page not read yet. */
     unreadMessages: number;
-    flaggedReviews: number;
+    /** Contents reported with "Segnala" still to check. */
+    openReports: number;
+};
+
+/** A report sent with "Segnala", in "Admin · Segnalazioni". */
+export type AdminReport = {
+    id: number;
+    /** e.g. "Spam o pubblicità". */
+    reason: string;
+    details: string | null;
+    reporterName: string;
+    /** ISO UTC string. */
+    createdAt: string;
+    /** null while open. */
+    resolution: 'removed' | 'dismissed' | null;
+    resolvedAt: string | null;
+    subject: {
+        kind: 'trainer' | 'gym' | 'review' | 'deleted';
+        /** The name of the profile, or "Anna B. su Marco Rossi". */
+        title: string;
+        /** The text of a review. */
+        text: string | null;
+        href: string | null;
+        /** The owner's email, to find them in "Utenti". */
+        ownerEmail: string | null;
+        hidden: boolean;
+    };
 };
 
 /** A message of the Contatti page, in "Admin · Messaggi". */

@@ -23,6 +23,7 @@ import PhotoGallery from '@/components/profile/photo-gallery';
 import ProfileMobileHeader from '@/components/profile/profile-mobile-header';
 import ProfileSection from '@/components/profile/profile-section';
 import FavoriteButton from '@/components/shared/favorite-button';
+import ReportDialog from '@/components/shared/report-dialog';
 import SectionAnchors from '@/components/shared/section-anchors';
 import TrainerCard from '@/components/trainer/trainer-card';
 import {
@@ -372,6 +373,15 @@ export default function Gym({ gym, preview, similar, events, seo }: GymProps) {
                                 </p>
                             )}
                         </ProfileSection>
+
+                        {!preview && (
+                            <ReportDialog
+                                type="gym"
+                                target={gym.slug}
+                                label="Segnala questa palestra"
+                                className="self-start"
+                            />
+                        )}
                     </div>
 
                     {similar.length > 0 && (

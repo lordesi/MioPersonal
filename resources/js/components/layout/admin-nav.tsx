@@ -5,6 +5,7 @@ import {
     Calendar,
     CalendarDays,
     ChartColumn,
+    Flag,
     House,
     List,
     Mail,
@@ -23,6 +24,7 @@ import {
     events,
     messages,
     overview,
+    reports,
     reviews,
     settings,
     stats,
@@ -40,6 +42,7 @@ export type AdminSection =
     | 'messages'
     | 'bookings'
     | 'users'
+    | 'reports'
     | 'reviews'
     | 'events'
     | 'catalog'
@@ -93,11 +96,17 @@ const sections: {
     },
     { section: 'users', title: 'Utenti', icon: Users, href: users.url },
     {
+        section: 'reports',
+        title: 'Segnalazioni',
+        icon: Flag,
+        href: reports.url,
+        badge: 'openReports',
+    },
+    {
         section: 'reviews',
         title: 'Recensioni',
         icon: Star,
         href: reviews.url,
-        badge: 'flaggedReviews',
     },
     {
         section: 'events',

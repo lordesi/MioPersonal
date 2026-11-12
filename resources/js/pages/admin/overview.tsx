@@ -2,7 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import {
     bookings,
     gymVerification,
-    reviews,
+    reports,
     verification,
 } from '@/routes/admin';
 
@@ -13,7 +13,7 @@ type OverviewProps = {
         gymVerificationCount: number;
         oldestGymWaitDays: number;
         expiredToday: number;
-        /** Profiles and reviews reported by users (reporting system: to do). */
+        /** Profiles and reviews reported with "Segnala", not checked yet. */
         reportedCount: number;
     };
     stats: {
@@ -65,7 +65,7 @@ export default function Overview({ todo, stats }: OverviewProps) {
             count: todo.reportedCount,
             label: 'Profili e recensioni segnalate',
             hint: 'Segnalati dagli utenti',
-            href: reviews(),
+            href: reports(),
         },
     ];
 

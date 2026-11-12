@@ -16,7 +16,6 @@ type AdminLayoutProps = {
     section?: AdminSection;
     /** Menu badges: default to the `adminArea` prop every admin page receives. */
     verificationCount?: number;
-    flaggedReviews?: number;
 };
 
 /** Admin panel (desktop only in the design): side menu, title bar, page. */
@@ -24,7 +23,6 @@ export default function AdminLayout({
     children,
     section,
     verificationCount,
-    flaggedReviews,
 }: AdminLayoutProps) {
     const { auth, adminArea, search } = usePage<{
         adminArea?: AdminAreaData;
@@ -36,7 +34,7 @@ export default function AdminLayout({
             verificationCount ?? adminArea?.verificationCount ?? 0,
         gymVerificationCount: adminArea?.gymVerificationCount ?? 0,
         unreadMessages: adminArea?.unreadMessages ?? 0,
-        flaggedReviews: flaggedReviews ?? adminArea?.flaggedReviews ?? 0,
+        openReports: adminArea?.openReports ?? 0,
     };
     const title = adminSectionTitle(section);
 

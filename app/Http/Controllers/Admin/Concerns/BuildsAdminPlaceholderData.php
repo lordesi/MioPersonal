@@ -6,7 +6,9 @@ use App\Enums\TrainerProfileStatus;
 use App\Http\Controllers\Concerns\BuildsPlaceholderData;
 use App\Models\ContactMessage;
 use App\Models\GymProfile;
+use App\Models\Report;
 use App\Models\TrainerProfile;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Placeholder data of the admin panel, shown until the real tables exist.
@@ -17,10 +19,10 @@ trait BuildsAdminPlaceholderData
     use BuildsPlaceholderData;
 
     /**
-     * The badges of the admin menu, sent by every admin page.
-     * TODO: the profiles and reviews reported by users (Prompt 9).
+     * The badges of the admin menu, sent by every admin page. "Segnalazioni":
+     * the contents reported and not checked yet (one per content).
      *
-     * @return array{verificationCount: int, gymVerificationCount: int, unreadMessages: int, flaggedReviews: int}
+     * @return array{verificationCount: int, gymVerificationCount: int, unreadMessages: int, openReports: int}
      */
     private function adminArea(): array
     {
@@ -28,7 +30,9 @@ trait BuildsAdminPlaceholderData
             'verificationCount' => TrainerProfile::where('status', TrainerProfileStatus::Review)->count(),
             'gymVerificationCount' => GymProfile::where('status', TrainerProfileStatus::Review)->count(),
             'unreadMessages' => ContactMessage::unread()->count(),
-            'flaggedReviews' => 0,
+            'openReports' => DB::query()
+                ->fromSub(Report::open()->select(['reportable_type', 'reportable_id'])->distinct(), 'reported')
+                ->count(),
         ];
     }
 }

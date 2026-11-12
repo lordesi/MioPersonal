@@ -10,6 +10,7 @@ import ProfileMobileHeader from '@/components/profile/profile-mobile-header';
 import SectionAnchors from '@/components/shared/section-anchors';
 import ProfileSection from '@/components/profile/profile-section';
 import ReviewsSection from '@/components/profile/reviews-section';
+import ReportDialog from '@/components/shared/report-dialog';
 import ServicePicker from '@/components/profile/service-picker';
 import UpcomingEvents from '@/components/events/upcoming-events';
 import SimilarTrainers from '@/components/profile/similar-trainers';
@@ -505,6 +506,16 @@ export default function Profile({
                                     <ReviewsSection
                                         trainer={trainer}
                                         allReviews={allReviews}
+                                        canReport={!preview}
+                                    />
+                                </div>
+                            )}
+                            {!preview && (
+                                <div className="order-8">
+                                    <ReportDialog
+                                        type="trainer"
+                                        target={trainer.slug}
+                                        label="Segnala questo profilo"
                                     />
                                 </div>
                             )}

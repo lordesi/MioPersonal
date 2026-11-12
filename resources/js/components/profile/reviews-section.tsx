@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { useRef, useState } from 'react';
 import ProfileSection from '@/components/profile/profile-section';
 import RatingBreakdown from '@/components/profile/rating-breakdown';
+import ReportDialog from '@/components/shared/report-dialog';
 import ReviewCard from '@/components/trainer/review-card';
 import StarRating from '@/components/trainer/star-rating';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,8 @@ type ReviewsSectionProps = {
     >;
     /** Every review: undefined until "Mostra tutte" asks the server for them. */
     allReviews?: TrainerReview[];
+    /** "Segnala" under each review: not in the preview of a profile. */
+    canReport?: boolean;
 };
 
 /**
@@ -44,6 +47,7 @@ type ReviewsSectionProps = {
 export default function ReviewsSection({
     trainer,
     allReviews,
+    canReport = false,
 }: ReviewsSectionProps) {
     const firstName = trainer.name.split(' ')[0];
     const sectionRef = useRef<HTMLElement>(null);
@@ -193,7 +197,16 @@ export default function ReviewsSection({
                                   }
                                 : undefined
                         }
-                    />
+                    >
+                        {canReport && (
+                            <ReportDialog
+                                type="review"
+                                target={review.id}
+                                label="Segnala"
+                                className="self-end"
+                            />
+                        )}
+                    </ReviewCard>
                 ))}
             </div>
 
