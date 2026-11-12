@@ -251,6 +251,7 @@ export default function CourseSearch({
                                 {...pagination}
                                 label="Pagine dei corsi"
                                 moreLabel="Carica altri corsi"
+                                mergeProp="courses"
                                 pageUrl={(pagina) =>
                                     courseSearchUrl(
                                         { ...filters, pagina },

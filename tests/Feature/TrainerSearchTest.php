@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\TrainingGoal;
 use App\Enums\TrainingMode;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\City;
 use App\Models\Discipline;
 use App\Models\TrainerProfile;
@@ -531,5 +532,26 @@ class TrainerSearchTest extends TestCase
         // The other words: a search by name.
         $this->get(route('trainers.search', ['q' => 'giulia yoga']))
             ->assertRedirect(route('trainers.search', ['disciplina' => 'yoga', 'nome' => 'giulia']));
+    }
+
+    /** "Carica altri trainer" on phones: only the next page, merged below the current one. */
+    public function test_the_next_page_can_be_merged_below_the_current_one()
+    {
+        // TrainerSearchController::PER_PAGE.
+        TrainerProfile::factory()->approved()->count(12)->create(['visible_in_search' => true]);
+        $total = TrainerProfile::query()->published()->count();
+
+        $response = $this->withHeaders([
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => (string) app(HandleInertiaRequests::class)->version(request()),
+            'X-Inertia-Partial-Component' => 'public/search',
+            'X-Inertia-Partial-Data' => 'trainers,pagination',
+        ])->get(route('trainers.search', ['pagina' => 2]));
+
+        $response->assertOk()
+            ->assertJsonPath('mergeProps', ['trainers'])
+            ->assertJsonCount($total - 12, 'props.trainers')
+            ->assertJsonPath('props.pagination.currentPage', 2)
+            ->assertJsonMissingPath('props.disciplines');
     }
 }

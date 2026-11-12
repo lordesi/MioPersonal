@@ -76,7 +76,8 @@ class GymSearchController extends Controller
 
         return Inertia::render('public/gym-search', [
             'city' => $city === null ? null : ['slug' => $city->slug, 'name' => $city->name],
-            'gyms' => GymCard::many($page->getCollection(), $favoriteIds),
+            // Merged: "Carica altre palestre" (phones) adds the next page below.
+            'gyms' => Inertia::merge(GymCard::many($page->getCollection(), $favoriteIds)),
             'total' => $page->total(),
             'pagination' => ['currentPage' => $page->currentPage(), 'lastPage' => $page->lastPage()],
             'filters' => $filters,

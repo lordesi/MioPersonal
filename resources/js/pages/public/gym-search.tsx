@@ -429,6 +429,7 @@ export default function GymSearch({
                                 {...pagination}
                                 label="Pagine delle palestre"
                                 moreLabel="Carica altre palestre"
+                                mergeProp="gyms"
                                 pageUrl={(pagina) =>
                                     gymSearchUrl(
                                         { ...filters, pagina },

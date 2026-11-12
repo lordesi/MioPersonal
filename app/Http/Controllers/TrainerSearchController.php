@@ -131,7 +131,8 @@ class TrainerSearchController extends Controller
 
         return Inertia::render('public/search', [
             'city' => $city === null ? null : ['slug' => $city->slug, 'name' => $city->name],
-            'trainers' => $this->cards($page->getCollection(), $favoriteIds),
+            // Merged: "Carica altri trainer" (phones) adds the next page below.
+            'trainers' => Inertia::merge($this->cards($page->getCollection(), $favoriteIds)),
             'total' => $page->total(),
             'pagination' => ['currentPage' => $page->currentPage(), 'lastPage' => $page->lastPage()],
             'filters' => $filters,

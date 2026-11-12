@@ -1,6 +1,8 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
 type SearchPaginationProps = {
@@ -12,6 +14,11 @@ type SearchPaginationProps = {
     label?: string;
     /** The mobile button that opens the next page. */
     moreLabel?: string;
+    /**
+     * The list prop the server merges (Inertia::merge): on phones the next
+     * page goes below the current one. Without it the button opens the page.
+     */
+    mergeProp?: string;
 };
 
 /** Pages around the current one, with "…" for the gaps: 1 2 3 … 9 */
@@ -38,7 +45,10 @@ export default function SearchPagination({
     pageUrl,
     label = 'Pagine dei risultati',
     moreLabel = 'Carica altri trainer',
+    mergeProp,
 }: SearchPaginationProps) {
+    const [loading, setLoading] = useState(false);
+
     if (lastPage <= 1) {
         return null;
     }
@@ -120,17 +130,42 @@ export default function SearchPagination({
                 </ul>
             </nav>
 
-            {hasNext && (
-                // TODO: add the next trainers below the current ones (Inertia
-                // merge props) instead of opening the next page.
-                <Button
-                    asChild
-                    variant="outline"
-                    className="mx-4 mt-2 h-11 md:hidden"
-                >
-                    <Link href={pageUrl(currentPage + 1)}>{moreLabel}</Link>
-                </Button>
-            )}
+            {hasNext &&
+                (mergeProp ? (
+                    // The next page is added below the current one (the
+                    // server sends `mergeProp` with Inertia::merge).
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="mx-4 mt-2 h-11 md:hidden"
+                        disabled={loading}
+                        onClick={() =>
+                            router.get(
+                                pageUrl(currentPage + 1),
+                                {},
+                                {
+                                    only: [mergeProp, 'pagination'],
+                                    preserveState: true,
+                                    preserveScroll: true,
+                                    replace: true,
+                                    onStart: () => setLoading(true),
+                                    onFinish: () => setLoading(false),
+                                },
+                            )
+                        }
+                    >
+                        {loading && <Spinner />}
+                        {moreLabel}
+                    </Button>
+                ) : (
+                    <Button
+                        asChild
+                        variant="outline"
+                        className="mx-4 mt-2 h-11 md:hidden"
+                    >
+                        <Link href={pageUrl(currentPage + 1)}>{moreLabel}</Link>
+                    </Button>
+                ))}
         </>
     );
 }

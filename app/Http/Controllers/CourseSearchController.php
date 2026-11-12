@@ -71,7 +71,8 @@ class CourseSearchController extends Controller
 
         return Inertia::render('public/course-search', [
             'city' => $city === null ? null : ['slug' => $city->slug, 'name' => $city->name],
-            'courses' => CourseCard::many($page->getCollection()),
+            // Merged: "Carica altri corsi" (phones) adds the next page below.
+            'courses' => Inertia::merge(CourseCard::many($page->getCollection())),
             'total' => $page->total(),
             'pagination' => ['currentPage' => $page->currentPage(), 'lastPage' => $page->lastPage()],
             'filters' => $filters,

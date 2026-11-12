@@ -208,6 +208,7 @@ export default function Search({
                             {trainerGrid(trainers)}
                             <SearchPagination
                                 {...pagination}
+                                mergeProp="trainers"
                                 pageUrl={(pagina) =>
                                     searchUrl(
                                         { ...filters, pagina },
