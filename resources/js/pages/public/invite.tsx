@@ -11,7 +11,7 @@ import {
     formatPrice,
     formatTimeRange,
 } from '@/lib/format';
-import { home } from '@/routes/client';
+import { bookings } from '@/routes/client';
 import type { SeoData } from '@/types';
 
 type InviteState =
@@ -238,7 +238,7 @@ function Notice({ text, action = false }: { text: string; action?: boolean }) {
             <p className="text-[15px]">{text}</p>
             {action && (
                 <Button asChild variant="outline" className="h-11 px-4">
-                    <Link href={home()}>Vai alle mie prenotazioni</Link>
+                    <Link href={bookings()}>Vai alle mie prenotazioni</Link>
                 </Button>
             )}
         </div>

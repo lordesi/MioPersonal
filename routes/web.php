@@ -21,6 +21,7 @@ use App\Http\Controllers\Auth\RegistrationCheckController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BookingInviteController;
 use App\Http\Controllers\BookingSentController;
+use App\Http\Controllers\ClientBookingsController;
 use App\Http\Controllers\ClientFavoritesController;
 use App\Http\Controllers\ClientHomeController;
 use App\Http\Controllers\ClientRescheduleController;
@@ -271,10 +272,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // A wrong role is sent to its own area (see EnsureUserHasRole).
     Route::middleware('role:client')->group(function () {
-        // "Le mie prenotazioni", the first page after the login.
+        // "Panoramica", the first page after the login.
         Route::get('area-cliente', ClientHomeController::class)->name('client.home');
-        // The old address of "Le mie prenotazioni", still in the links already sent.
-        Route::get('prenotazioni', fn () => to_route('client.home'))->name('client.bookings');
+        // "Le mie prenotazioni", also the address in the links already sent.
+        Route::get('prenotazioni', ClientBookingsController::class)->name('client.bookings');
         // Public on the trainer's profile: only with a verified email.
         Route::post('prenotazioni/{booking}/recensione', [ClientReviewController::class, 'store'])
             ->whereNumber('booking')

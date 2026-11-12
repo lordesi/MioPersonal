@@ -279,7 +279,7 @@ class BookingGuestsTest extends TestCase
         $booking->guests()->create(['user_id' => $friend->id]);
 
         $this->actingAs($friend)
-            ->get(route('client.home'))
+            ->get(route('client.bookings'))
             ->assertInertia(fn (Assert $page) => $page
                 ->has('upcoming', 1)
                 ->where('upcoming.0.id', $booking->id)
@@ -300,7 +300,7 @@ class BookingGuestsTest extends TestCase
         $booking->guests()->create(['user_id' => $friend->id]);
 
         $this->actingAs($booking->client)
-            ->get(route('client.home'))
+            ->get(route('client.bookings'))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('upcoming.0.group.role', 'booker')
                 ->where('upcoming.0.group.inviteUrl', route('bookings.invite', $booking->invite_token))

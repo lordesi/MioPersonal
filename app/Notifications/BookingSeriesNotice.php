@@ -41,7 +41,7 @@ class BookingSeriesNotice extends Notification implements ShouldQueue
 
     public function toWebPush(User $notifiable): WebPushMessage
     {
-        return $this->pushMessage($this->title(), $this->body(), route('client.home'), "series-{$this->series->id}");
+        return $this->pushMessage($this->title(), $this->body(), route('client.bookings'), "series-{$this->series->id}");
     }
 
     private function title(): string

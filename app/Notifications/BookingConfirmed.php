@@ -42,7 +42,7 @@ class BookingConfirmed extends Notification implements ShouldQueue
         return $this->pushMessage(
             'Seduta confermata',
             'Con '.$booking->trainerProfile->user->name.' · '.BookingMailData::day($booking).' alle '.BookingMailData::hour($booking),
-            route('client.home'),
+            route('client.bookings'),
             "booking-{$booking->id}",
         );
     }

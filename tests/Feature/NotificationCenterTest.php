@@ -117,7 +117,7 @@ class NotificationCenterTest extends TestCase
         $saved = $client->notifications()->first();
         $this->assertNotNull($saved);
         $this->assertSame('Seduta confermata', $saved->data['title']);
-        $this->assertSame(parse_url(route('client.home'), PHP_URL_PATH), $saved->data['url']);
+        $this->assertSame(parse_url(route('client.bookings'), PHP_URL_PATH), $saved->data['url']);
         $this->assertStringStartsWith('Con ', $saved->data['body']);
         $this->assertNull($saved->read_at);
     }

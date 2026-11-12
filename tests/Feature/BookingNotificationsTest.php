@@ -104,7 +104,7 @@ class BookingNotificationsTest extends TestCase
             $this->assertSame([
                 'title' => 'Seduta confermata',
                 'body' => "Con {$booking->trainerProfile->user->name} · mar 20 ott alle 10:00",
-                'url' => parse_url(route('client.home'), PHP_URL_PATH),
+                'url' => parse_url(route('client.bookings'), PHP_URL_PATH),
             ], $notification->toArray($client));
 
             return true;

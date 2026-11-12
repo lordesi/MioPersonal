@@ -1,106 +1,70 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowRight, Plus, Sparkles } from 'lucide-react';
 import { useState } from 'react';
-import LaterSessionRow from '@/components/client/later-session-row';
-import NextSessionHero from '@/components/client/next-session-hero';
-import ProposalCard from '@/components/client/proposal-card';
-import ReviewPrompt, {
-    sessionToReview,
-} from '@/components/client/review-prompt';
-import NoUpcomingSessions from '@/components/client/no-upcoming-sessions';
+import NextSessionSummary from '@/components/client/next-session-summary';
 import PackageCarousel from '@/components/client/package-carousel';
-import PendingBookingCard from '@/components/client/pending-booking-card';
-import UpcomingEvents from '@/components/events/upcoming-events';
-import NewsStrip from '@/components/news/news-strip';
+import ActivityPanel from '@/components/client/progress/activity-panel';
 import RecommendedTrainersPanel from '@/components/client/recommended-trainers-panel';
-import SessionHistory from '@/components/client/session-history';
 import YourTrainersPanel from '@/components/client/your-trainers-panel';
+import NewsStrip from '@/components/news/news-strip';
 import PageHeading from '@/components/trainer/area/page-heading';
-import Panel from '@/components/trainer/area/panel';
 import { Button } from '@/components/ui/button';
 import { romeParts } from '@/lib/calendar';
-import { formatDayLong } from '@/lib/format';
 import { courseSearchUrl } from '@/lib/course';
+import { formatDayLong } from '@/lib/format';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { profile } from '@/routes/client';
 import { search as eventsSearch } from '@/routes/events';
 import type {
-    GroupSessionSummary,
     ClientPackage,
-    ClientPastSession,
-    ClientPendingBooking,
+    ClientProgressSummary,
     ClientTrainer,
     ClientUpcomingBooking,
     NewsPreview,
     TrainerSummary,
 } from '@/types';
 
-/** An upcoming session with a "Sposta" proposal of the trainer. */
-type ProposalBooking = ClientUpcomingBooking & {
-    proposal: NonNullable<ClientUpcomingBooking['proposal']>;
-};
-
 type HomeProps = {
     firstName: string;
-    /** Confirmed and not over yet, first one first. */
-    upcoming: ClientUpcomingBooking[];
-    pending: ClientPendingBooking[];
-    /** Sessions done, the most recent first. */
-    past: ClientPastSession[];
+    /** The next confirmed session, own or as a friend. */
+    next: ClientUpcomingBooking | null;
+    /** Bookings waiting for the client's answer. */
+    toAnswer: number;
+    progress: ClientProgressSummary;
     packages: ClientPackage[];
     trainers: ClientTrainer[];
     /** Only while `trainers` is empty. */
     recommended: TrainerSummary[];
     /** False until the client fills in "Completa il tuo profilo". */
     hasPreferences: boolean;
-    /** "I miei eventi": the places taken, still to come. */
-    events: GroupSessionSummary[];
     /** "Novità" in the client's city. */
     news: NewsPreview;
 };
 
 /**
- * "Le mie prenotazioni": the dashboard of the client area
- * (docs/design/cliente-dashboard.html), the first page after the login.
+ * "Panoramica": the first page of the client area after the login. The
+ * client's training week by week (sessions, courses and events count by
+ * themselves), the next session in short and the trainers, or a few to try.
  */
 export default function Home({
     firstName,
-    upcoming,
-    pending,
-    past,
+    next,
+    toAnswer,
+    progress,
     packages,
     trainers,
     recommended,
     hasPreferences,
-    events,
     news,
 }: HomeProps) {
     const [now] = useState(() => new Date());
     // All of Italy: the client's preferences only change the order.
     const bookUrl = searchUrl();
-    const [next, ...later] = upcoming;
-    // "Com'è andata?": read once, localStorage is only in the browser.
-    const [toReview] = useState(() =>
-        typeof window === 'undefined' ? null : sessionToReview(past, now),
-    );
-    // "Sposta": the trainer waits for an answer, on top of everything.
-    const proposals = upcoming.filter(
-        (booking): booking is ProposalBooking => booking.proposal !== null,
-    );
-    const waiting = pending.filter((booking) => booking.status !== 'cancelled');
-    const cancelledByTrainer = pending.filter(
-        (booking) => booking.status === 'cancelled',
-    );
-    // "Riprendi con …": the trainer of the last session, when nothing is booked.
-    const resumeTrainer = trainers.find((trainer) => trainer.booked) ?? null;
-    const resumeSessionsLeft = packages
-        .filter((pack) => pack.trainerHref === resumeTrainer?.href)
-        .reduce((sum, pack) => sum + pack.total - pack.booked, 0);
 
     return (
         <>
-            <Head title="Le mie prenotazioni" />
+            <Head title="Panoramica" />
 
             <PageHeading
                 eyebrow={formatDayLong(romeParts(now).date)}
@@ -143,111 +107,25 @@ export default function Home({
 
             <div className="flex flex-wrap items-start gap-5">
                 <div className="flex min-w-0 flex-[3_1_540px] flex-col gap-5">
-                    {toReview && (
-                        <ReviewPrompt key={toReview.id} session={toReview} />
-                    )}
-
-                    {proposals.length > 0 && (
-                        <Panel title="Nuovo orario proposto" className="gap-3">
-                            {proposals.map((booking) => (
-                                <ProposalCard
-                                    key={booking.id}
-                                    booking={booking}
-                                />
-                            ))}
-                        </Panel>
-                    )}
-
-                    {cancelledByTrainer.length > 0 && (
-                        <Panel title="Annullate dal trainer" className="gap-3">
-                            {cancelledByTrainer.map((booking) => (
-                                <PendingBookingCard
-                                    key={booking.id}
-                                    booking={booking}
-                                />
-                            ))}
-                        </Panel>
-                    )}
-
-                    {next ? (
-                        <NextSessionHero booking={next} now={now} />
-                    ) : (
-                        <NoUpcomingSessions
-                            bookUrl={bookUrl}
-                            trainer={resumeTrainer}
-                            packageSessionsLeft={resumeSessionsLeft}
-                        />
-                    )}
-
-                    {waiting.length > 0 && (
-                        <Panel title="In attesa di conferma" className="gap-3">
-                            {waiting.map((booking) => (
-                                <PendingBookingCard
-                                    key={booking.id}
-                                    booking={booking}
-                                />
-                            ))}
-                        </Panel>
-                    )}
-
-                    {later.length > 0 && (
-                        <Panel title="Più avanti" className="gap-3.5">
-                            <ul className="flex flex-col gap-2.5">
-                                {later.map((booking) => (
-                                    <LaterSessionRow
-                                        key={booking.id}
-                                        booking={booking}
-                                        now={now}
-                                    />
-                                ))}
-                            </ul>
-                        </Panel>
-                    )}
-
-                    {/* Places taken in the events and in the gyms' courses. */}
-                    <UpcomingEvents
-                        events={events}
-                        title="Corsi ed eventi prenotati"
-                        id="my-events-title"
-                        showAll={false}
+                    <NextSessionSummary
+                        next={next}
+                        toAnswer={toAnswer}
+                        now={now}
                     />
 
-                    <SessionHistory sessions={past} />
+                    <ActivityPanel
+                        progress={progress}
+                        empty={
+                            <p className="text-sm text-muted-foreground">
+                                Le sedute, i corsi e gli eventi che prenoti
+                                finiscono qui da soli, settimana dopo settimana.
+                            </p>
+                        }
+                    />
                 </div>
 
                 <div className="flex min-w-0 flex-[2_1_320px] flex-col gap-5">
-                    {!hasPreferences && (
-                        <section
-                            aria-labelledby="completa-profilo"
-                            className="flex flex-col gap-3 rounded-[20px] border bg-card p-5 md:p-6"
-                        >
-                            <span className="flex items-center gap-3">
-                                <span className="flex size-10 flex-none items-center justify-center rounded-full bg-secondary">
-                                    <Sparkles
-                                        aria-hidden="true"
-                                        className="size-4.5"
-                                    />
-                                </span>
-                                <h2
-                                    id="completa-profilo"
-                                    className="text-[17px] leading-6 font-semibold"
-                                >
-                                    Completa il tuo profilo
-                                </h2>
-                            </span>
-                            <span className="text-sm text-muted-foreground">
-                                Dicci come preferisci allenarti: ti consigliamo
-                                i trainer giusti per te.
-                            </span>
-                            <Button
-                                asChild
-                                variant="outline"
-                                className="h-10 self-start rounded-[10px]"
-                            >
-                                <Link href={profile()}>Completa</Link>
-                            </Button>
-                        </section>
-                    )}
+                    {!hasPreferences && <CompleteProfileCard />}
 
                     {packages.length > 0 && (
                         <PackageCarousel packages={packages} />
@@ -274,4 +152,37 @@ export default function Home({
     );
 }
 
-Home.layout = { section: 'bookings' };
+/** Until the client answers "Completa il tuo profilo". */
+function CompleteProfileCard() {
+    return (
+        <section
+            aria-labelledby="completa-profilo"
+            className="flex flex-col gap-3 rounded-[20px] border bg-card p-5 md:p-6"
+        >
+            <span className="flex items-center gap-3">
+                <span className="flex size-10 flex-none items-center justify-center rounded-full bg-secondary">
+                    <Sparkles aria-hidden="true" className="size-4.5" />
+                </span>
+                <h2
+                    id="completa-profilo"
+                    className="text-[17px] leading-6 font-semibold"
+                >
+                    Completa il tuo profilo
+                </h2>
+            </span>
+            <span className="text-sm text-muted-foreground">
+                Dicci come preferisci allenarti: ti consigliamo i trainer giusti
+                per te.
+            </span>
+            <Button
+                asChild
+                variant="outline"
+                className="h-10 self-start rounded-[10px]"
+            >
+                <Link href={profile()}>Completa</Link>
+            </Button>
+        </section>
+    );
+}
+
+Home.layout = { section: 'home' };

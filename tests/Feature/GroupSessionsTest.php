@@ -311,7 +311,7 @@ class GroupSessionsTest extends TestCase
         $client = User::factory()->create();
         $event->registrations()->create(['user_id' => $client->id, 'status' => RegistrationStatus::Registered]);
 
-        $this->actingAs($client)->get(route('client.home'))
+        $this->actingAs($client)->get(route('client.bookings'))
             ->assertInertia(fn (Assert $page) => $page->has('events', 1)->where('events.0.slug', $event->slug));
 
         $this->get(route('news'))->assertInertia(fn (Assert $page) => $page->has('events', 1));

@@ -33,7 +33,11 @@ import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { cn } from '@/lib/utils';
 import { home, logout } from '@/routes';
 import { settings } from '@/routes/account';
-import { home as clientHome, profile as clientProfile } from '@/routes/client';
+import {
+    bookings as clientBookings,
+    home as clientHome,
+    profile as clientProfile,
+} from '@/routes/client';
 import { show as contactPage } from '@/routes/contact';
 import {
     dashboard as gymDashboard,
@@ -135,8 +139,13 @@ function menuGroups(variant: AccountMenuVariant): MenuItem[][] {
     return [
         [
             {
-                title: 'Le mie prenotazioni',
+                title: 'Panoramica',
                 href: clientHome.url(),
+                icon: LayoutDashboard,
+            },
+            {
+                title: 'Le mie prenotazioni',
+                href: clientBookings.url(),
                 icon: Calendar,
             },
             {

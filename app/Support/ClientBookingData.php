@@ -28,6 +28,61 @@ final class ClientBookingData
     /** "I tuoi trainer": a short list, the search has the others. */
     private const TRAINERS_LIMIT = 5;
 
+    /**
+     * The client's own bookings (first one first) and, for "Invita un
+     * amico", the sessions of others the client joined that are still to come.
+     *
+     * @return array{bookings: Collection<int, Booking>, asGuest: Collection<int, Booking>}
+     */
+    public static function load(User $client): array
+    {
+        $bookings = $client->bookings()
+            ->with(self::RELATIONS)
+            ->orderBy('starts_at')
+            ->get()
+            ->toBase();
+
+        $asGuest = Booking::query()
+            ->withGuest($client)
+            ->where('starts_at', '>', now())
+            ->with(self::RELATIONS)
+            ->get()
+            ->toBase()
+            ->filter(fn (Booking $booking) => $booking->status === BookingStatus::Confirmed || $booking->isPending());
+
+        return ['bookings' => $bookings, 'asGuest' => $asGuest];
+    }
+
+    /**
+     * Confirmed and not over, own and as a friend, first one first.
+     *
+     * @param  Collection<int, Booking>  $bookings
+     * @param  Collection<int, Booking>  $asGuest
+     * @return Collection<int, Booking>
+     */
+    public static function upcomingOf(Collection $bookings, Collection $asGuest): Collection
+    {
+        return $bookings->concat($asGuest)
+            ->filter(self::isUpcoming(...))
+            ->sortBy('starts_at')
+            ->values();
+    }
+
+    /**
+     * Waiting, refused or cancelled by the trainer, first one first.
+     *
+     * @param  Collection<int, Booking>  $bookings
+     * @param  Collection<int, Booking>  $asGuest
+     * @return Collection<int, Booking>
+     */
+    public static function pendingOf(Collection $bookings, Collection $asGuest): Collection
+    {
+        return $bookings->concat($asGuest->filter(fn (Booking $booking) => $booking->isPending()))
+            ->filter(self::isPending(...))
+            ->sortBy('starts_at')
+            ->values();
+    }
+
     /** "Prossime": confirmed and not over yet. */
     public static function isUpcoming(Booking $booking): bool
     {

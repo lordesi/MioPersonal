@@ -107,7 +107,7 @@ class ClientPackageTest extends TestCase
 
         $this->assertNull(ClientPackage::sole()->bought_at);
         $this->actingAs($client)
-            ->get(route('client.home'))
+            ->get(route('client.bookings'))
             ->assertInertia(fn (Assert $page) => $page->has('packages', 0));
     }
 
@@ -188,7 +188,7 @@ class ClientPackageTest extends TestCase
         Booking::factory()->for($this->trainer)->for($client, 'client')->for($full)->confirmed()->at(CarbonImmutable::now()->subDay())->create();
 
         $this->actingAs($client)
-            ->get(route('client.home'))
+            ->get(route('client.bookings'))
             ->assertInertia(fn (Assert $page) => $page
                 ->has('packages', 1)
                 ->where('packages.0.id', $package->id)

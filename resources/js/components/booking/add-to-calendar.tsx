@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Toggle } from '@/components/ui/toggle';
 import { addHours } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { home as clientHome } from '@/routes/client';
+import { bookings as clientBookings } from '@/routes/client';
 import type { SentBooking } from '@/types';
 
 type CalendarId = 'google' | 'apple' | 'ics';
@@ -25,7 +25,7 @@ function calendarEvent(booking: SentBooking) {
         start: booking.start,
         end: addHours(booking.start, booking.hours),
         place: booking.placeLabel,
-        details: `${booking.serviceName}. Prenotazione e contatti del trainer: ${window.location.origin}${clientHome.url()}`,
+        details: `${booking.serviceName}. Prenotazione e contatti del trainer: ${window.location.origin}${clientBookings.url()}`,
     };
 }
 

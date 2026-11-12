@@ -72,8 +72,8 @@ class SessionReminder extends Notification implements ShouldQueue
         $place = $booking->place_label === '' ? '' : " · {$booking->place_label}";
 
         return $this->kind === self::SOON
-            ? $this->pushMessage("Tra poco ti alleni con {$trainer}", "Alle {$hour}{$place}", route('client.home'), $tag)
-            : $this->pushMessage(ucfirst($this->dayWord())." ti alleni con {$trainer}", "Alle {$hour}{$place}", route('client.home'), $tag);
+            ? $this->pushMessage("Tra poco ti alleni con {$trainer}", "Alle {$hour}{$place}", route('client.bookings'), $tag)
+            : $this->pushMessage(ucfirst($this->dayWord())." ti alleni con {$trainer}", "Alle {$hour}{$place}", route('client.bookings'), $tag);
     }
 
     private function isTrainer(User $notifiable): bool

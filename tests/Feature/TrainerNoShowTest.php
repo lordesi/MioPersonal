@@ -96,7 +96,7 @@ class TrainerNoShowTest extends TestCase
         $booking->forceFill(['no_show_at' => now()])->save();
 
         $this->actingAs($booking->client)
-            ->get(route('client.home'))
+            ->get(route('client.bookings'))
             ->assertInertia(fn (Assert $page) => $page
                 ->has('past', 1)
                 ->missing('past.0.noShow')

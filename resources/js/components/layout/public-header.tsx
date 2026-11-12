@@ -133,9 +133,7 @@ export default function PublicHeader({ className }: { className?: string }) {
                                         'hidden md:inline-flex',
                                 )}
                             >
-                                {variant === 'client'
-                                    ? 'Le mie prenotazioni'
-                                    : 'La mia area'}
+                                La mia area
                             </Link>
                             <NotificationBell
                                 tone="dark"

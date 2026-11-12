@@ -1,0 +1,189 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Enums\BookingStatus;
+use App\Models\Booking;
+use App\Models\Discipline;
+use App\Models\Review;
+use App\Models\TrainerProfile;
+use App\Models\User;
+use Carbon\CarbonImmutable;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
+
+/** "Le mie prenotazioni" in the client area. */
+class ClientBookingsTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private const UTC_ISO = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/';
+
+    public function test_guests_are_redirected_to_the_login_page()
+    {
+        $this->get(route('client.bookings'))->assertRedirect(route('login'));
+    }
+
+    public function test_trainers_are_sent_to_their_area()
+    {
+        $this->actingAs(User::factory()->trainer()->create())
+            ->get(route('client.bookings'))
+            ->assertRedirect(route('trainer.today'));
+    }
+
+    /** No sample data: a new account has nothing booked and nothing saved. */
+    public function test_a_new_account_sees_every_section_empty()
+    {
+        // Someone else's booking is never shown.
+        Booking::factory()->confirmed()->create();
+        $client = User::factory()->create(['first_name' => 'Marta']);
+
+        $this->actingAs($client)
+            ->get(route('client.bookings'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('client/bookings')
+                ->where('firstName', 'Marta')
+                ->has('upcoming', 0)
+                ->has('pending', 0)
+                ->has('past', 0)
+                ->has('packages', 0)
+                ->has('trainers', 0)
+            );
+    }
+
+    public function test_each_booking_goes_in_its_section()
+    {
+        $client = User::factory()->create();
+        $trainer = TrainerProfile::factory()->approved()->create(['free_cancellation_hours' => 24]);
+        $tomorrow = CarbonImmutable::now('Europe/Rome')->startOfDay()->addDay()->setTime(18, 0);
+        $booking = fn () => Booking::factory()->for($client, 'client')->for($trainer);
+
+        $later = $booking()->confirmed()->at($tomorrow->addDays(2))->create();
+        $next = $booking()->confirmed()->at($tomorrow)->create();
+        $booking()->at($tomorrow->addHours(2))->create();
+        $booking()->status(BookingStatus::Declined)->at($tomorrow->addDay())->create();
+        $booking()->expired()->at($tomorrow->addDays(2))->create();
+        $booking()->status(BookingStatus::Cancelled)->at($tomorrow->addDays(3))->create();
+        $done = $booking()->confirmed()->at($tomorrow->subDays(3))->create();
+        // Marked "Saltata" by the trainer: the client still sees it, but can't review it.
+        $missed = $booking()->confirmed()->at($tomorrow->subDays(4))->create(['no_show_at' => now()]);
+
+        $this->actingAs($client)
+            ->get(route('client.bookings'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('upcoming', 2)
+                ->where('upcoming.0.id', $next->id)
+                ->where('upcoming.0.status', 'confirmed')
+                ->where('upcoming.0.hours', 1)
+                ->where('upcoming.0.serviceLabel', 'Seduta singola')
+                ->where('upcoming.0.trainerName', $trainer->user->name)
+                ->where('upcoming.0.start', $tomorrow->utc()->format('Y-m-d\TH:i:s\Z'))
+                ->where('upcoming.0.freeCancellationUntil', $tomorrow->subDay()->utc()->format('Y-m-d\TH:i:s\Z'))
+                ->where('upcoming.1.id', $later->id)
+                ->has('pending', 3)
+                ->where('pending.0.status', 'pending')
+                ->where('pending.1.status', 'declined')
+                ->where('pending.2.status', 'expired')
+                ->where('pending.2.expiresAt', null)
+                // Cancelled bookings are not listed.
+                ->has('past', 2)
+                ->where('past.0.id', $done->id)
+                ->where('past.0.review', null)
+                ->where('past.0.canReview', true)
+                ->where('past.1.id', $missed->id)
+                ->where('past.1.canReview', false)
+            );
+    }
+
+    /** The page shows the last three: "Vedi tutte" needs every one. */
+    public function test_every_session_done_is_sent()
+    {
+        $client = User::factory()->create();
+        $trainer = TrainerProfile::factory()->approved()->create();
+        $yesterday = CarbonImmutable::now('Europe/Rome')->startOfDay()->subDay()->setTime(18, 0);
+        $sessions = [];
+
+        foreach (range(0, 20) as $daysBefore) {
+            $sessions[] = Booking::factory()->for($client, 'client')->for($trainer)
+                ->confirmed()->at($yesterday->subDays($daysBefore))->create();
+        }
+
+        $this->actingAs($client)
+            ->get(route('client.bookings'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('past', 21)
+                ->where('past.0.id', $sessions[0]->id)
+                ->where('past.20.id', $sessions[20]->id)
+            );
+    }
+
+    public function test_a_session_done_shows_the_review_left()
+    {
+        $client = User::factory()->create();
+        $trainer = TrainerProfile::factory()->approved()->create();
+        $done = Booking::factory()->for($client, 'client')->for($trainer)->confirmed()->at(CarbonImmutable::now()->subDays(2))->create();
+        Review::factory()->for($trainer)->create([
+            'booking_id' => $done->id,
+            'client_id' => $client->id,
+            'rating' => 4,
+            'text' => 'Molto preparato.',
+        ]);
+
+        $this->actingAs($client)
+            ->get(route('client.bookings'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('past.0.review', ['rating' => 4, 'text' => 'Molto preparato.'])
+                ->where('past.0.canReview', false)
+            );
+    }
+
+    public function test_your_trainers_are_the_booked_ones_then_the_favorites()
+    {
+        Discipline::factory()->create(['slug' => 'yoga', 'name' => 'Yoga']);
+        $client = User::factory()->create();
+        $booked = TrainerProfile::factory()->approved()->withDisciplines(['yoga'])->create();
+        $favorite = TrainerProfile::factory()->approved()->create(['next_free_slot_at' => now()->addDay()]);
+        $notApproved = TrainerProfile::factory()->create();
+        Booking::factory()->for($client, 'client')->for($booked)->confirmed()->at(CarbonImmutable::now()->subDay())->create();
+        // Booked but not done yet: it doesn't count in "sedute insieme".
+        Booking::factory()->for($client, 'client')->for($booked)->confirmed()->at(CarbonImmutable::now()->addDays(2))->create();
+        // Only a request: not one of "your" trainers yet.
+        Booking::factory()->for($client, 'client')->for(TrainerProfile::factory()->approved())->at(CarbonImmutable::now()->addDay())->create();
+        $client->favoriteTrainers()->attach($favorite, ['created_at' => now()]);
+        $client->favoriteTrainers()->attach($notApproved, ['created_at' => now()]);
+
+        $this->actingAs($client)
+            ->get(route('client.bookings'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('trainers', 2)
+                ->where('trainers.0.href', route('trainers.show', $booked->slug, false))
+                ->where('trainers.0.booked', true)
+                ->where('trainers.0.favorite', false)
+                ->where('trainers.0.discipline', 'Yoga')
+                ->where('trainers.0.firstName', $booked->user->first_name)
+                ->where('trainers.0.slug', $booked->slug)
+                ->where('trainers.0.sessionsDone', 1)
+                ->where('trainers.1.href', route('trainers.show', $favorite->slug, false))
+                ->where('trainers.1.booked', false)
+                ->where('trainers.1.favorite', true)
+                ->where('trainers.1.sessionsDone', 0)
+            );
+    }
+
+    public function test_booking_times_are_utc_iso_strings()
+    {
+        $client = User::factory()->create();
+        Booking::factory()->for($client, 'client')->create();
+
+        $this->actingAs($client)
+            ->get(route('client.bookings'))
+            ->assertInertia(function (Assert $page) {
+                $props = $page->toArray()['props'];
+
+                $this->assertMatchesRegularExpression(self::UTC_ISO, $props['pending'][0]['start']);
+                $this->assertMatchesRegularExpression(self::UTC_ISO, $props['pending'][0]['expiresAt']);
+            });
+    }
+}

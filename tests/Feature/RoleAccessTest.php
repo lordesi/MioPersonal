@@ -14,8 +14,8 @@ class RoleAccessTest extends TestCase
 
     /** @var list<string> */
     private const CLIENT_PAGES = [
-        // 'client.bookings' only leads to client.home: see ClientHomeTest.
         'client.home',
+        'client.bookings',
         'client.favorites',
         'account.settings',
         'client.complete-profile',

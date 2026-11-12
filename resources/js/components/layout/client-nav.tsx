@@ -7,6 +7,7 @@ import {
     Compass,
     Dumbbell,
     Heart,
+    LayoutDashboard,
     Search,
     Settings,
     User,
@@ -22,7 +23,7 @@ import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { home as publicHome } from '@/routes';
 import { settings } from '@/routes/account';
-import { favorites, home, profile } from '@/routes/client';
+import { bookings, favorites, home, profile } from '@/routes/client';
 import { show as contactPage } from '@/routes/contact';
 import { search as eventsSearch } from '@/routes/events';
 import { register as trainerRegister } from '@/routes/trainer';
@@ -30,6 +31,7 @@ import { register as trainerRegister } from '@/routes/trainer';
 /** 'explore': the public pages (home and searches) seen by a client. */
 export type ClientSection =
     | 'explore'
+    | 'home'
     | 'bookings'
     | 'favorites'
     | 'profile'
@@ -38,6 +40,7 @@ export type ClientSection =
 /** The sections with a tab of their own on mobile; "Profilo" opens the sheet. */
 export const CLIENT_TABS: ClientSection[] = [
     'explore',
+    'home',
     'bookings',
     'favorites',
 ];
@@ -52,7 +55,8 @@ const item = (
 ): AreaNavItem => ({ section, title, icon, href, ...extra });
 
 const mySpace = () => [
-    item('bookings', 'Le mie prenotazioni', Calendar, home.url(), {
+    item('home', 'Panoramica', LayoutDashboard, home.url()),
+    item('bookings', 'Le mie prenotazioni', Calendar, bookings.url(), {
         shortTitle: 'Prenotazioni',
     }),
     item('favorites', 'Preferiti', Heart, favorites.url()),

@@ -128,7 +128,7 @@ class BookingChanged extends Notification implements ShouldQueue
                 'details' => ['Nuovo orario' => $proposedWhen],
                 'note' => 'Se il nuovo orario non ti va bene puoi tenere quello di adesso, oppure annullare gratis.',
                 'button' => 'Rispondi',
-                'url' => route('client.home'),
+                'url' => route('client.bookings'),
                 'who' => "con {$trainer}",
             ],
             'guest-cancelled' => [
@@ -152,7 +152,7 @@ class BookingChanged extends Notification implements ShouldQueue
                 'details' => [],
                 'note' => null,
                 'button' => 'Le mie prenotazioni',
-                'url' => route('client.home'),
+                'url' => route('client.bookings'),
                 'who' => "con {$trainer}",
             ],
             'accepted' => [

@@ -37,7 +37,7 @@ class GuestJoined extends Notification implements ShouldQueue
         return $this->pushMessage(
             "{$this->guest->first_name} si allena con te",
             BookingMailData::day($this->booking).' alle '.BookingMailData::hour($this->booking).' con '.$this->booking->trainerProfile->user->name,
-            route('client.home'),
+            route('client.bookings'),
             "booking-{$this->booking->id}-guests",
         );
     }

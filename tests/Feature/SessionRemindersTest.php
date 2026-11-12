@@ -150,7 +150,7 @@ class SessionRemindersTest extends TestCase
         $this->assertSame([
             'title' => "Domani ti alleni con {$trainer->name}",
             'body' => 'Alle 09:00 · Studio · Milano',
-            'url' => parse_url(route('client.home'), PHP_URL_PATH),
+            'url' => parse_url(route('client.bookings'), PHP_URL_PATH),
         ], $reminder->toArray($client));
 
         $push = $reminder->toWebPush($trainer)->toArray();
