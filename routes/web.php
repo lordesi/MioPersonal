@@ -478,6 +478,9 @@ Route::middleware(['auth', 'verified', 'admin', 'password.confirm'])->prefix('ad
     Route::get('verifica-palestre', AdminGymVerificationController::class)->name('gym-verification');
     Route::post('verifica-palestre/{gym}/decisione', [AdminGymVerificationController::class, 'decide'])->whereNumber('gym')->name('gym-verification.decide');
     Route::get('messaggi', AdminMessagesController::class)->name('messages');
+    // "Segna come letto" / "Segna come da leggere".
+    Route::post('messaggi/{message}/letto', [AdminMessagesController::class, 'markRead'])->whereNumber('message')->name('messages.read');
+    Route::delete('messaggi/{message}/letto', [AdminMessagesController::class, 'markUnread'])->whereNumber('message')->name('messages.unread');
     Route::get('prenotazioni', AdminBookingsController::class)->name('bookings');
     Route::get('utenti', AdminUsersController::class)->name('users');
     Route::controller(AdminUserStatusController::class)->prefix('utenti/{user}')->whereNumber('user')->name('users.')->group(function () {

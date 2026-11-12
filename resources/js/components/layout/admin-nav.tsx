@@ -83,6 +83,7 @@ const sections: {
         title: 'Messaggi',
         icon: Mail,
         href: messages.url,
+        badge: 'unreadMessages',
     },
     {
         section: 'bookings',

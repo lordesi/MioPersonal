@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ContactRequest;
-use App\Mail\ContactMessage;
+use App\Mail\ContactMessage as ContactMail;
+use App\Models\ContactMessage;
 use App\Support\Seo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/** "Contatti": the form sends an email to the team (the sender sees "Messaggio inviato" on the page). */
+/** "Contatti": the form saves the message for "Admin · Messaggi" and emails the team (the sender sees "Messaggio inviato" on the page). */
 class ContactController extends Controller
 {
     public function show(Request $request): Response
@@ -37,9 +38,7 @@ class ContactController extends Controller
         ]);
     }
 
-    /**
-     * TODO: also save the message for "Admin · Messaggi" once the table exists.
-     */
+    /** Saved for "Admin · Messaggi", then sent to the team by email. */
     public function store(ContactRequest $request): RedirectResponse
     {
         // The hidden "website" field is filled in only by bots: they see "Messaggio inviato", nothing is sent.
@@ -49,6 +48,15 @@ class ContactController extends Controller
 
         $data = $request->validated();
 
+        ContactMessage::create([
+            'user_id' => $request->user()?->id,
+            'role' => $data['role'],
+            'topic' => $data['topic'],
+            'name' => trim($data['name']),
+            'email' => $data['email'],
+            'message' => trim($data['message']),
+        ]);
+
         $contact = [
             'roleLabel' => ContactRequest::ROLES[$data['role']],
             'topicLabel' => ContactRequest::TOPICS[$data['topic']],
@@ -57,7 +65,7 @@ class ContactController extends Controller
             'message' => trim($data['message']),
         ];
 
-        Mail::to(config('mail.contact_address'))->send(new ContactMessage($contact));
+        Mail::to(config('mail.contact_address'))->send(new ContactMail($contact));
 
         return to_route('contact.show')->with('status', 'contact-sent');
     }

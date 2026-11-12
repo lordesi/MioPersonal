@@ -35,6 +35,7 @@ export default function AdminLayout({
         verificationCount:
             verificationCount ?? adminArea?.verificationCount ?? 0,
         gymVerificationCount: adminArea?.gymVerificationCount ?? 0,
+        unreadMessages: adminArea?.unreadMessages ?? 0,
         flaggedReviews: flaggedReviews ?? adminArea?.flaggedReviews ?? 0,
     };
     const title = adminSectionTitle(section);

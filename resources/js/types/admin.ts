@@ -3,7 +3,26 @@ export type AdminAreaData = {
     verificationCount: number;
     /** Gyms waiting for the team. */
     gymVerificationCount: number;
+    /** Messages of the Contatti page not read yet. */
+    unreadMessages: number;
     flaggedReviews: number;
+};
+
+/** A message of the Contatti page, in "Admin · Messaggi". */
+export type AdminMessage = {
+    id: number;
+    name: string;
+    email: string;
+    /** "Cliente", "Personal trainer", "Altro". */
+    role: string;
+    /** e.g. "Una prenotazione". */
+    topic: string;
+    message: string;
+    /** ISO UTC string. */
+    createdAt: string;
+    read: boolean;
+    /** The sender was logged in when writing. */
+    registered: boolean;
 };
 
 export type TrainerReviewStatus =

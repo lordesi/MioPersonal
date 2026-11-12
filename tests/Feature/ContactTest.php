@@ -3,12 +3,17 @@
 namespace Tests\Feature;
 
 use App\Mail\ContactMessage;
+use App\Models\ContactMessage as SavedMessage;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ContactTest extends TestCase
 {
+    use RefreshDatabase;
+
     /** @return array<string, string> */
     private function validForm(array $overrides = []): array
     {
@@ -76,6 +81,20 @@ class ContactTest extends TestCase
         $this->assertStringNotContainsString('<b>team</b>', $html);
     }
 
+    public function test_the_message_is_saved_for_the_admin_area()
+    {
+        Mail::fake();
+        $user = User::factory()->trainer()->create();
+
+        $this->actingAs($user)->post(route('contact.store'), $this->validForm(['name' => '  Sofia Bassi ']));
+
+        $message = SavedMessage::sole();
+        $this->assertSame($user->id, $message->user_id);
+        $this->assertSame('Sofia Bassi', $message->name);
+        $this->assertSame('Verifica e approvazione', $message->topicLabel());
+        $this->assertNull($message->read_at);
+    }
+
     public function test_a_filled_honeypot_sends_nothing_but_looks_sent()
     {
         Mail::fake();
@@ -85,6 +104,7 @@ class ContactTest extends TestCase
             ->assertSessionHas('status', 'contact-sent');
 
         Mail::assertNothingSent();
+        $this->assertDatabaseCount('contact_messages', 0);
     }
 
     public function test_one_address_can_send_at_most_20_messages_a_day()

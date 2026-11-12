@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\ContactMessage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -70,13 +71,12 @@ class AdminTest extends TestCase
                     ->component($component)
                     ->whereType('adminArea.verificationCount', 'integer')
                     ->whereType('adminArea.flaggedReviews', 'integer')
-                    // "Messaggi" is in lavorazione: no badge.
-                    ->missing('adminArea.unreadMessages')
+                    ->whereType('adminArea.unreadMessages', 'integer')
                 );
         }
     }
 
-    public function test_settings_and_messages_have_no_content_for_now()
+    public function test_settings_has_no_content_for_now()
     {
         $this->actingAs(User::factory()->admin()->create());
 
@@ -86,12 +86,33 @@ class AdminTest extends TestCase
                 ->missing('activity')
                 ->missing('defaults')
             );
+    }
+
+    public function test_messages_of_the_contatti_page_are_listed_and_marked_as_read()
+    {
+        $this->actingAs(User::factory()->admin()->create());
+        $older = ContactMessage::create(['role' => 'client', 'topic' => 'booking', 'name' => 'Luca', 'email' => 'luca@example.com', 'message' => 'Prima']);
+        $newer = ContactMessage::create(['role' => 'other', 'topic' => 'press', 'name' => 'Anna', 'email' => 'anna@example.com', 'message' => 'Seconda']);
 
         $this->get(route('admin.messages'))
             ->assertInertia(fn (Assert $page) => $page
-                ->missing('messages')
-                ->where('contactEmail', config('mail.contact_address'))
+                ->where('adminArea.unreadMessages', 2)
+                ->has('messages', 2)
+                ->where('messages.0.id', $newer->id)
+                ->where('messages.0.role', 'Altro')
+                ->where('messages.0.topic', 'Stampa')
+                ->where('messages.0.read', false)
+                ->where('messages.0.registered', false)
             );
+
+        $this->post(route('admin.messages.read', $older))->assertRedirect();
+        $this->assertNotNull($older->fresh()->read_at);
+
+        $this->get(route('admin.messages'))
+            ->assertInertia(fn (Assert $page) => $page->where('adminArea.unreadMessages', 1));
+
+        $this->delete(route('admin.messages.unread', $older))->assertRedirect();
+        $this->assertNull($older->fresh()->read_at);
     }
 
     public function test_active_trainers_are_the_ones_active_in_the_last_24_hours()
