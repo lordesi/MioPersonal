@@ -11,6 +11,7 @@ use App\Models\City;
 use App\Models\ClientPreference;
 use App\Models\TrainerProfile;
 use App\Support\CatalogOptions;
+use App\Support\CityGuide;
 use App\Support\NewsFeed;
 use App\Support\Seo;
 use App\Support\Stats;
@@ -121,6 +122,14 @@ class TrainerSearchController extends Controller
             );
         }
 
+        $seo = $this->seo($filters, $city, $page, $disciplines);
+        $guide = $seo['index'] ? CityGuide::for($city, $this->discipline($filters, $disciplines)) : null;
+        // The questions on the first page only: the next ones are the same list.
+        $faq = $page->currentPage() === 1 ? ($guide['faq'] ?? []) : [];
+        if ($faq !== []) {
+            $seo['jsonLd'][] = Seo::faq($faq);
+        }
+
         return Inertia::render('public/search', [
             'city' => $city === null ? null : ['slug' => $city->slug, 'name' => $city->name],
             // "Novità": the newest trainers here, only above the first page.
@@ -133,66 +142,26 @@ class TrainerSearchController extends Controller
             'disciplines' => $disciplines,
             // With the center of each city, for "Usa la mia posizione".
             'cities' => CatalogOptions::citiesWithCoordinates(),
-            'seo' => $seo = $this->seo($filters, $city, $page, $disciplines),
-            // A few lines on the city for search engines (and people): only on the indexed city pages.
-            'intro' => $city !== null && $seo['index'] ? $this->intro($city, $filters['disciplina'][0] ?? null) : null,
+            'seo' => $seo,
+            // A few lines with the real numbers, for search engines, AI assistants and people: only on the indexed pages.
+            'intro' => $guide['intro'] ?? null,
+            // "Domande frequenti" under the results, with the same numbers.
+            'faq' => $faq,
         ]);
     }
 
     /**
-     * "A Milano ci sono 5 personal trainer…": the trainers working there in
-     * person (not the online-only ones shown in every city), their disciplines
-     * and the lowest price.
+     * The one discipline of the page, if any.
+     *
+     * @param  Filters  $filters
+     * @param  list<array{value: string, label: string}>  $disciplines
+     * @return array{value: string, label: string}|null
      */
-    private function intro(City $city, ?string $disciplineSlug): ?string
+    private function discipline(array $filters, array $disciplines): ?array
     {
-        $profiles = TrainerProfile::query()
-            ->published()
-            ->basedIn($city->id)
-            ->when($disciplineSlug !== null, fn (Builder $query) => $query->whereHas('disciplines', fn (Builder $discipline) => $discipline->where('slug', $disciplineSlug)))
-            ->with('disciplines:id,slug,name')
-            ->get(['id', 'price_from_cents', 'trains_online']);
-
-        if ($profiles->isEmpty()) {
-            return null;
-        }
-
-        $count = $profiles->count();
-        $there = $count === 1 ? "c'è 1 personal trainer verificato" : "ci sono {$count} personal trainer verificati";
-        $sentences = [];
-
-        if ($disciplineSlug === null) {
-            // The most common disciplines first. "Pesi e bodybuilding" has its own "e": commas only.
-            $names = $profiles->flatMap->disciplines->countBy('name')->sortDesc()->keys();
-            $list = implode(', ', $names->take(3)->map(fn (string $name) => mb_strtolower($name))->all());
-            $sentences[] = "A {$city->name} {$there} su MioPersonal"
-                .($list === '' ? '.' : ", per discipline come {$list}".($names->count() > 3 ? ' e altre.' : '.'));
-        } else {
-            $name = mb_strtolower((string) $profiles->firstOrFail()->disciplines->firstWhere('slug', $disciplineSlug)?->name);
-            $sentences[] = "A {$city->name} {$there} di {$name} su MioPersonal.";
-        }
-
-        $minPrice = $profiles->pluck('price_from_cents')->filter()->min();
-        $online = $profiles->where('trains_online', true)->count();
-        $onlineLabel = match (true) {
-            $online === 0 => null,
-            $count === 1 => 'si allena anche online',
-            $online === $count => 'tutti allenano anche online',
-            $online === 1 => '1 trainer allena anche online',
-            default => "{$online} trainer allenano anche online",
-        };
-        $details = array_filter([
-            $minPrice ? 'le sedute partono da '.Seo::euros((int) $minPrice) : null,
-            $onlineLabel,
-        ]);
-
-        if ($details !== []) {
-            $sentences[] = ucfirst(implode(' e ', $details)).'.';
-        }
-
-        $sentences[] = 'Confronta profili, prezzi e recensioni di clienti reali e chiedi la tua prima seduta.';
-
-        return implode(' ', $sentences);
+        return count($filters['disciplina']) === 1
+            ? collect($disciplines)->firstWhere('value', $filters['disciplina'][0])
+            : null;
     }
 
     /** A published trainer works in person in the city (with the discipline, if any). */
@@ -218,9 +187,7 @@ class TrainerSearchController extends Controller
      */
     private function seo(array $filters, ?City $city, LengthAwarePaginator $page, array $disciplines): array
     {
-        $discipline = count($filters['disciplina']) === 1
-            ? collect($disciplines)->firstWhere('value', $filters['disciplina'][0])
-            : null;
+        $discipline = $this->discipline($filters, $disciplines);
         $otherFilters = array_filter(Arr::except($filters, 'disciplina'), fn ($value) => $value !== null && $value !== []);
         $indexable = $page->total() > 0 && $otherFilters === [] && count($filters['disciplina']) <= 1
             // The online-only trainers show up in every city: a city page needs a trainer of its own.

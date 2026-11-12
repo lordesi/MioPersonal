@@ -8,6 +8,7 @@ use App\Enums\GroupSessionType;
 use App\Enums\GymLinkStatus;
 use App\Enums\RegistrationStatus;
 use App\Observers\GroupSessionCalendarObserver;
+use App\Observers\IndexNowObserver;
 use Carbon\CarbonImmutable;
 use Database\Factories\GroupSessionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -66,7 +67,7 @@ use Illuminate\Support\Str;
  * @property-read Collection<int, GroupSessionHost> $hosts
  * @property-read Collection<int, GroupSessionRegistration> $registrations
  */
-#[ObservedBy(GroupSessionCalendarObserver::class)]
+#[ObservedBy([GroupSessionCalendarObserver::class, IndexNowObserver::class])]
 #[Fillable([
     'series_id', 'type', 'title', 'description', 'cover_path', 'discipline_id', 'city_id', 'place',
     'gym_profile_id', 'address', 'starts_at', 'ends_at', 'capacity', 'offline_seats', 'price_cents',

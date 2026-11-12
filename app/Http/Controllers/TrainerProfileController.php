@@ -126,6 +126,29 @@ class TrainerProfileController extends Controller
         $prices = $profile->services->where('is_active', true)->where('kind', 'session')->pluck('price_cents')->filter();
         $cities = array_values(array_filter([$profile->city?->name, ...$profile->otherCities->pluck('name')->all()]));
 
+        $socials = array_column(TrainerSocials::publicLinks($profile), 'url') ?: null;
+
+        // The person behind the service: who an assistant names when asked for a trainer.
+        $person = array_filter([
+            '@type' => 'Person',
+            '@id' => $url.'#person',
+            'name' => $name,
+            'jobTitle' => 'Personal trainer',
+            'url' => $url,
+            'image' => $portrait,
+            'description' => $profile->bio ? Seo::description($profile->bio) : null,
+            'knowsAbout' => $disciplines === [] ? null : $disciplines,
+            'workLocation' => $profile->city === null ? null : ['@type' => 'City', 'name' => $profile->city->name],
+            'sameAs' => $socials,
+        ]);
+
+        // The services with their price, as on the page ("Seduta singola · 60 min · 45 €").
+        $offers = $profile->services->where('is_active', true)->filter(fn ($service) => $service->price_cents > 0)->values();
+
+        // The last real reviews, as on the page: not the hidden ones, not the demo ones.
+        $reviews = $profile->reviews()->notHidden()->whereNotNull('booking_id')->with('client')
+            ->latest()->latest('id')->limit(self::REVIEWS_PREVIEW + 2)->get();
+
         $business = array_filter([
             '@type' => 'ProfessionalService',
             '@id' => $url.'#trainer',
@@ -133,10 +156,29 @@ class TrainerProfileController extends Controller
             'url' => $url,
             'description' => $profile->headline,
             'image' => $portrait,
+            'founder' => ['@id' => $url.'#person'],
+            'address' => $profile->city === null ? null : ['@type' => 'PostalAddress', 'addressLocality' => $profile->city->name, 'addressCountry' => 'IT'],
+            'hasOfferCatalog' => $offers->isEmpty() ? null : [
+                '@type' => 'OfferCatalog',
+                'name' => 'Servizi',
+                'itemListElement' => $offers->map(fn ($service) => [
+                    '@type' => 'Offer',
+                    'itemOffered' => ['@type' => 'Service', 'name' => $service->displayName()],
+                    'price' => number_format($service->price_cents / 100, 2, '.', ''),
+                    'priceCurrency' => 'EUR',
+                ])->all(),
+            ],
+            'review' => $reviews->isEmpty() ? null : $reviews->map(fn (Review $review) => [
+                '@type' => 'Review',
+                'author' => ['@type' => 'Person', 'name' => $review->client?->publicName() ?? 'Utente anonimo'],
+                'datePublished' => $review->created_at?->toDateString(),
+                'reviewBody' => $review->text,
+                'reviewRating' => ['@type' => 'Rating', 'ratingValue' => $review->rating, 'bestRating' => 5, 'worstRating' => 1],
+            ])->all(),
             'priceRange' => $prices->isEmpty() ? null : Seo::euros((int) $prices->min()).($prices->min() === $prices->max() ? '' : ' - '.Seo::euros((int) $prices->max())),
             'areaServed' => $cities === [] ? null : array_map(fn (string $city) => ['@type' => 'City', 'name' => $city], $cities),
             'knowsAbout' => $disciplines === [] ? null : $disciplines,
-            'sameAs' => array_column(TrainerSocials::publicLinks($profile), 'url') ?: null,
+            'sameAs' => $socials,
             // Only real reviews: no rating at all for a new profile.
             'aggregateRating' => $rating === null ? null : [
                 '@type' => 'AggregateRating',
@@ -160,7 +202,7 @@ class TrainerProfileController extends Controller
             canonical: $url,
             image: $portrait,
             type: 'profile',
-            jsonLd: [$business, Seo::breadcrumbs($crumbs)],
+            jsonLd: [$business, Seo::breadcrumbs($crumbs), $person],
         );
     }
 

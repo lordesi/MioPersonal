@@ -7,6 +7,7 @@ use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use App\Support\CatalogOptions;
 use App\Support\GymCard;
+use App\Support\HowItWorks;
 use App\Support\NewsFeed;
 use App\Support\Seo;
 use App\Support\TrainerCard;
@@ -58,13 +59,25 @@ class HomeController extends Controller
             description: 'Cerca personal trainer verificati nella tua città o online: confronta discipline, prezzi e recensioni e prenota la prima seduta in pochi clic. Gratis.',
             canonical: $home,
             jsonLd: [
-                [
+                array_filter([
                     '@type' => 'Organization',
                     '@id' => $home.'#organization',
                     'name' => config('app.name'),
                     'url' => $home,
                     'logo' => asset('miopersonal-logo.jpg'),
-                ],
+                    // What an AI assistant reads when asked "cos'è MioPersonal?".
+                    'description' => HowItWorks::SUMMARY,
+                    'areaServed' => ['@type' => 'Country', 'name' => 'Italia'],
+                    'contactPoint' => [
+                        '@type' => 'ContactPoint',
+                        'contactType' => 'customer support',
+                        'email' => config('mail.contact_address'),
+                        'url' => route('contact.show'),
+                        'availableLanguage' => 'Italian',
+                    ],
+                    // The brand's social profiles (APP_SAME_AS): the same company everywhere.
+                    'sameAs' => config('app.same_as') ?: null,
+                ]),
                 [
                     '@type' => 'WebSite',
                     'name' => config('app.name'),

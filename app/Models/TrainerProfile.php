@@ -8,9 +8,11 @@ use App\Enums\PlaceType;
 use App\Enums\TrainerExperience;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
+use App\Observers\IndexNowObserver;
 use Carbon\CarbonImmutable;
 use Database\Factories\TrainerProfileFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -64,6 +66,7 @@ use Illuminate\Support\Str;
  * @property-read User $user
  * @property-read City|null $city
  */
+#[ObservedBy(IndexNowObserver::class)]
 #[Fillable([
     'headline', 'bio', 'experience', 'instagram', 'goals', 'city_id',
     'visible_in_search', 'accepts_new_clients', 'paused_until',

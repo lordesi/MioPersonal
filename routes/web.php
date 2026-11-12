@@ -45,6 +45,9 @@ use App\Http\Controllers\GymSearchController;
 use App\Http\Controllers\GymSettingsController;
 use App\Http\Controllers\GymTrainersController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\HowItWorksController;
+use App\Http\Controllers\IndexNowKeyController;
+use App\Http\Controllers\LlmsTxtController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrganizerEventsController;
@@ -87,6 +90,12 @@ Route::get('app', AppStartController::class)->name('pwa.start');
 // For search engines, together with public/robots.txt.
 Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
 Route::get('robots.txt', RobotsController::class)->name('robots');
+// For AI assistants: what MioPersonal is and where its pages are (llmstxt.org).
+Route::get('llms.txt', LlmsTxtController::class)->name('llms');
+// IndexNow (Bing, Yandex…): the key file that proves the pings are ours (App\Support\IndexNow).
+Route::get('{indexNowKey}.txt', IndexNowKeyController::class)->where('indexNowKey', '[A-Za-z0-9-]{8,128}')->name('indexnow.key');
+// "Come funziona": what MioPersonal is, the page AI assistants and search engines can quote.
+Route::get('come-funziona', HowItWorksController::class)->name('how-it-works');
 // /personal-trainer = all of Italy, /personal-trainer/roma = one city (404 if unknown).
 Route::get('personal-trainer/{city:slug?}', TrainerSearchController::class)->name('trainers.search');
 Route::get('trainer/{slug}', TrainerProfileController::class)->name('trainers.show');

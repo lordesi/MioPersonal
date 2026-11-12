@@ -27,11 +27,17 @@ class SitemapTest extends TestCase
         return array_map(fn ($url) => (string) $url->loc, iterator_to_array($xml->url, false));
     }
 
-    public function test_without_trainers_only_the_home_is_listed()
+    public function test_without_trainers_only_the_pages_on_miopersonal_are_listed()
     {
         $this->seed(CatalogSeeder::class);
 
-        $this->assertSame([route('home')], $this->locations());
+        $this->assertSame([
+            route('home'),
+            route('how-it-works'),
+            route('contact.show'),
+            route('trainer.register'),
+            route('gym.register'),
+        ], $this->locations());
     }
 
     public function test_lists_cities_disciplines_and_published_profiles()

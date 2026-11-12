@@ -35,6 +35,12 @@ return [
         ],
     ],
 
+    // IndexNow (App\Support\IndexNow): any random string of 8-128 letters, digits or dashes,
+    // e.g. `php -r "echo bin2hex(random_bytes(16));"`. Without it no ping leaves.
+    'indexnow' => [
+        'key' => env('INDEXNOW_KEY'),
+    ],
+
     // "Continua con Google" (Laravel Socialite): see "Accesso con Google" in the README.
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),

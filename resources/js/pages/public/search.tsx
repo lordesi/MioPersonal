@@ -9,6 +9,8 @@ import type {
 } from '@/components/search/filter-bar';
 import { SearchKindLinks } from '@/components/search/search-kind-toggle';
 import SearchPagination from '@/components/search/search-pagination';
+import FaqList from '@/components/seo/faq-list';
+import type { FaqItem } from '@/components/seo/faq-list';
 import TrainerCard from '@/components/trainer/trainer-card';
 import {
     Breadcrumb,
@@ -67,8 +69,10 @@ type SearchProps = {
     disciplines: SearchOption[];
     cities: SearchOption[];
     seo: SeoData;
-    /** A few lines on the city: only on the indexed city pages. */
+    /** A few lines with the real numbers: only on the indexed pages. */
     intro: string | null;
+    /** "Domande frequenti" (also the FAQPage JSON-LD): indexed pages, page 1. */
+    faq: FaqItem[];
 };
 
 /** Light links on the dark block. */
@@ -86,6 +90,7 @@ export default function Search({
     cities,
     seo,
     intro,
+    faq,
 }: SearchProps) {
     const { auth } = usePage().props;
     // The hearts changed on this page; the others come from the server.
@@ -335,6 +340,8 @@ export default function Search({
 
                     {/* "Novità": the newest trainers here, under the results of page 1. */}
                     {news && <NewsStrip news={news} className="pt-6" />}
+
+                    <FaqList items={faq} className="pt-6" />
                 </div>
             </div>
         </>

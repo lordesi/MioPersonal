@@ -49,6 +49,11 @@ class SitemapController extends Controller
         $gymUrls = $this->gymUrls();
         $urls = [['loc' => route('home'), 'lastmod' => null]];
 
+        // The pages on MioPersonal itself: what it is, how to reach us, how to join.
+        foreach (['how-it-works', 'contact.show', 'trainer.register', 'gym.register'] as $page) {
+            $urls[] = ['loc' => route($page), 'lastmod' => null];
+        }
+
         // "Novità" of all of Italy, once there is someone: the city pages are often empty, not listed.
         if ($profiles->isNotEmpty() || $gymUrls !== []) {
             $urls[] = ['loc' => route('news'), 'lastmod' => null];

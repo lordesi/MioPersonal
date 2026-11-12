@@ -15,6 +15,11 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    // The brand's own profiles (Instagram, Facebook, LinkedIn…), comma separated: the
+    // "sameAs" of the Organization JSON-LD, so search engines and AI assistants
+    // know they are the same MioPersonal.
+    'same_as' => array_values(array_filter(array_map('trim', explode(',', (string) env('APP_SAME_AS', ''))))),
+
     /*
     | The staging site (APP_ENV=staging): the user and password that close it.
     | See docs/staging.md.

@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Booking;
+use App\Models\Review;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use Database\Seeders\CatalogSeeder;
@@ -75,11 +77,87 @@ class SeoTest extends TestCase
                 ->where('intro', fn (string $intro) => str_starts_with($intro, 'A Milano ci sono 2 personal trainer verificati di pilates'))
             );
 
+        // All of Italy: every published trainer, online-only ones included.
+        $this->get(route('trainers.search'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('intro', fn (string $intro) => str_starts_with($intro, 'Su MioPersonal ci sono 9 personal trainer verificati in 5 città italiane')
+                    && str_contains($intro, 'La valutazione media è '))
+            );
+
         // Not indexed: no intro.
         $this->get(route('trainers.search', ['milano', 'prezzo' => 'fino-35']))
             ->assertInertia(fn (Assert $page) => $page->where('intro', null));
-        $this->get(route('trainers.search'))
-            ->assertInertia(fn (Assert $page) => $page->where('intro', null));
+    }
+
+    public function test_indexed_search_pages_answer_the_common_questions()
+    {
+        $this->get(route('trainers.search', 'milano'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('faq.0.question', 'Dove trovare un personal trainer a Milano?')
+                ->where('faq.0.answer', fn (string $answer) => str_starts_with($answer, 'Su MioPersonal trovi 4 personal trainer a Milano'))
+                ->where('faq.1.question', 'Quanto costa un personal trainer a Milano?')
+                // The same questions in the FAQPage, after the breadcrumbs and the list.
+                ->where('seo.jsonLd.2.@type', 'FAQPage')
+                ->where('seo.jsonLd.2.mainEntity.0.name', 'Dove trovare un personal trainer a Milano?')
+            );
+
+        $this->get(route('trainers.search', ['milano', 'disciplina' => 'pilates']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('faq.0.question', 'Dove trovare un personal trainer di pilates a Milano?')
+            );
+
+        // Not on the pages not indexed.
+        $this->get(route('trainers.search', ['milano', 'prezzo' => 'fino-35']))
+            ->assertInertia(fn (Assert $page) => $page->where('faq', []));
+    }
+
+    public function test_how_it_works_explains_miopersonal()
+    {
+        $this->get(route('how-it-works'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('public/how-it-works')
+                ->where('seo.title', 'Come funziona MioPersonal')
+                ->where('seo.index', true)
+                ->where('faq.0.question', 'Cos’è MioPersonal?')
+                ->where('seo.jsonLd.0.@type', 'FAQPage')
+            )
+            ->assertSee('<meta name="description" content="MioPersonal è la piattaforma italiana', false);
+    }
+
+    public function test_the_home_describes_the_organization()
+    {
+        config(['app.same_as' => ['https://www.instagram.com/miopersonal']]);
+
+        $this->get(route('home'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('seo.jsonLd.0.@type', 'Organization')
+                ->where('seo.jsonLd.0.description', fn (string $description) => str_starts_with($description, 'MioPersonal è la piattaforma italiana'))
+                ->where('seo.jsonLd.0.sameAs', ['https://www.instagram.com/miopersonal'])
+                ->where('seo.jsonLd.0.contactPoint.email', config('mail.contact_address'))
+            );
+    }
+
+    public function test_llms_txt_lists_the_cities_with_trainers()
+    {
+        $this->get(route('llms'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'text/markdown; charset=UTF-8')
+            ->assertSee('# '.config('app.name'))
+            ->assertSee('- [Personal trainer a Milano]('.route('trainers.search', 'milano').'): 4 personal trainer verificati', false)
+            ->assertSee('### Cos’è MioPersonal?');
+    }
+
+    public function test_robots_txt_welcomes_the_ai_crawlers_with_the_same_rules()
+    {
+        $robots = $this->get(route('robots'))->assertOk()->getContent();
+
+        foreach (['OAI-SearchBot', 'GPTBot', 'ClaudeBot', 'Claude-SearchBot', 'PerplexityBot', 'Google-Extended'] as $crawler) {
+            $this->assertStringContainsString("User-agent: {$crawler}\n", $robots);
+        }
+        // Their group has the private paths too: a crawler with its own group ignores "*".
+        $this->assertSame(2, substr_count($robots, "Disallow: /area-cliente\n"));
+        $this->assertStringContainsString('Sitemap: '.route('sitemap'), $robots);
     }
 
     public function test_pages_without_a_photo_share_the_default_image()
@@ -143,8 +221,29 @@ class SeoTest extends TestCase
                 ->where('seo.jsonLd.0.aggregateRating.reviewCount', $profile->rating_count)
                 ->where('seo.jsonLd.0.aggregateRating.ratingValue', $profile->rating())
                 ->where('seo.jsonLd.1.@type', 'BreadcrumbList')
+                ->where('seo.jsonLd.2.@type', 'Person')
+                ->where('seo.jsonLd.2.name', 'Marco Bianchi')
+                ->where('seo.jsonLd.0.founder.@id', route('trainers.show', 'marco-bianchi').'#person')
+                ->where('seo.jsonLd.0.hasOfferCatalog.itemListElement.0.priceCurrency', 'EUR')
             )
             ->assertSee('<meta property="og:type" content="profile">', false);
+    }
+
+    public function test_the_json_ld_has_the_last_real_reviews()
+    {
+        $profile = TrainerProfile::where('slug', 'marco-bianchi')->firstOrFail();
+        $booking = Booking::factory()->create(['trainer_profile_id' => $profile->id]);
+        Review::factory()->for($profile, 'trainerProfile')->create(['booking_id' => $booking->id, 'client_id' => $booking->client_id, 'text' => 'Seduta ottima, molto preparato.']);
+        $hidden = Booking::factory()->create(['trainer_profile_id' => $profile->id]);
+        Review::factory()->for($profile, 'trainerProfile')->hidden()->rating(1)->create(['booking_id' => $hidden->id, 'client_id' => $hidden->client_id]);
+
+        $this->get(route('trainers.show', 'marco-bianchi'))
+            ->assertInertia(fn (Assert $page) => $page
+                // The demo reviews (no booking) and the hidden one are left out.
+                ->has('seo.jsonLd.0.review', 1)
+                ->where('seo.jsonLd.0.review.0.reviewBody', 'Seduta ottima, molto preparato.')
+                ->where('seo.jsonLd.0.review.0.reviewRating.ratingValue', 5)
+            );
     }
 
     public function test_the_json_ld_in_the_html_is_valid_and_safe()

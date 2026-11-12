@@ -91,6 +91,24 @@ final class Seo
         ];
     }
 
+    /**
+     * The FAQPage of the "Domande frequenti" the page shows, with the same words.
+     *
+     * @param  list<array{question: string, answer: string}>  $items
+     * @return array<string, mixed>
+     */
+    public static function faq(array $items): array
+    {
+        return [
+            '@type' => 'FAQPage',
+            'mainEntity' => array_map(fn (array $item) => [
+                '@type' => 'Question',
+                'name' => $item['question'],
+                'acceptedAnswer' => ['@type' => 'Answer', 'text' => $item['answer']],
+            ], $items),
+        ];
+    }
+
     /** "35 €", "35,50 €": prices are whole cents. */
     public static function euros(int $cents): string
     {
