@@ -31,7 +31,8 @@ class SaveGymProfile
             $profile->user_id = $user->id;
 
             $this->fillDetails($profile, $data);
-            $profile->slug ??= GymProfile::uniqueSlug($profile->name, $profile->city->name);
+            // The link of the page is the username, chosen once.
+            $profile->slug ??= $user->username;
             $profile->forceFill([
                 'status' => TrainerProfileStatus::Review,
                 'status_changed_at' => now(),

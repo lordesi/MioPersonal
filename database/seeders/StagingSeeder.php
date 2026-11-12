@@ -28,6 +28,8 @@ class StagingSeeder extends Seeder
                 'role' => $role,
                 'email_verified_at' => now(),
                 'terms_accepted_at' => now(),
+                // Demo accounts: no "Scegli il tuo username" (EnsureUsernameChosen).
+                'username_chosen_at' => $user->username_chosen_at ?? now(),
             ])->save();
         }
     }

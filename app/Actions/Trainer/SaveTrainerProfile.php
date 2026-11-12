@@ -47,7 +47,8 @@ class SaveTrainerProfile
         return $this->withFileCleanup(function (array &$newFiles) use ($user, $data) {
             $profile = $user->trainerProfile ?? new TrainerProfile;
             $profile->user_id = $user->id;
-            $profile->slug ??= TrainerProfile::uniqueSlug($user->name);
+            // The link of the page is the username, chosen once.
+            $profile->slug ??= $user->username;
 
             $profile->fill(TrainerAvailability::attributes($data));
             $profile->forceFill([

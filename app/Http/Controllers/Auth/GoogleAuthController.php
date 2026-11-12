@@ -7,6 +7,7 @@ use App\Concerns\ProfileValidationRules;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Providers\FortifyServiceProvider;
+use App\Rules\Username;
 use App\Support\EndSessions;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -150,6 +151,7 @@ class GoogleAuthController extends Controller
             'email' => $data['email'],
             'firstName' => $data['first_name'],
             'lastName' => $data['last_name'],
+            'suggestedUsername' => Username::suggest($data['first_name'], $data['last_name']),
         ]);
     }
 
@@ -162,9 +164,11 @@ class GoogleAuthController extends Controller
             return to_route('register');
         }
 
+        $request->merge(['username' => Username::normalize($request->input('username'))]);
         $request->validate([
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
+            'username' => ['required', 'string', new Username],
             'phone' => $this->phoneNumberRules(),
             'terms' => ['accepted'],
         ]);
@@ -185,6 +189,8 @@ class GoogleAuthController extends Controller
             'terms_accepted_at' => now(),
         ]);
         $user->forceFill([
+            'username' => $request->string('username')->value(),
+            'username_chosen_at' => now(),
             'google_id' => $data['google_id'],
             'email_verified_at' => now(),
         ])->save();

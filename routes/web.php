@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\AdminVerificationController;
 use App\Http\Controllers\AppStartController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\RegistrationCheckController;
+use App\Http\Controllers\Auth\UsernameController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BookingInviteController;
 use App\Http\Controllers\BookingSentController;
@@ -104,14 +105,15 @@ Route::get('{indexNowKey}.txt', IndexNowKeyController::class)->where('indexNowKe
 Route::get('come-funziona', HowItWorksController::class)->name('how-it-works');
 // /personal-trainer = all of Italy, /personal-trainer/roma = one city (404 if unknown).
 Route::get('personal-trainer/{city:slug?}', TrainerSearchController::class)->name('trainers.search');
-Route::get('trainer/{slug}', TrainerProfileController::class)->name('trainers.show');
+// An old link (before the usernames) goes to the current one: see RedirectLegacySlug.
+Route::get('trainer/{slug}', TrainerProfileController::class)->middleware('legacy-slug:trainer')->name('trainers.show');
 // /palestre = all of Italy, /palestre/milano = one city (404 if unknown).
 Route::get('palestre/{city:slug?}', GymSearchController::class)->name('gyms.search');
-Route::get('palestra/{slug}', GymProfileController::class)->name('gyms.show');
+Route::get('palestra/{slug}', GymProfileController::class)->middleware('legacy-slug:gym')->name('gyms.show');
 // /corsi = the courses of the gyms in all of Italy, /corsi/torino = one city (404 if unknown).
 Route::get('corsi/{city:slug?}', CourseSearchController::class)->name('courses.search');
 // "Prenota questo slot" for guests: login or sign-up, then back to the profile.
-Route::get('trainer/{slug}/prenota', [BookingController::class, 'start'])->middleware('auth')->name('trainers.book.start');
+Route::get('trainer/{slug}/prenota', [BookingController::class, 'start'])->middleware(['auth', 'legacy-slug:trainer'])->name('trainers.book.start');
 // "Novità": new trainers and gyms, in Italy or in a city (404 if unknown).
 Route::get('novita/{city:slug?}', NewsController::class)->name('news');
 // "Invita un amico": the link the booker shares; guests sign in, then come back.
@@ -122,7 +124,7 @@ Route::get('eventi/{city:slug?}', EventSearchController::class)->name('events.se
 Route::get('evento/{slug}', [EventController::class, 'show'])->name('events.show');
 Route::get('evento/{slug}/accedi', [EventController::class, 'start'])->middleware('auth')->name('events.start');
 // "Prenota il posto" of a lesson, for guests: login or sign-up, then back to the gym.
-Route::get('palestra/{slug}/lezioni/accedi', [EventController::class, 'startLesson'])->middleware('auth')->name('gyms.lessons.start');
+Route::get('palestra/{slug}/lezioni/accedi', [EventController::class, 'startLesson'])->middleware(['auth', 'legacy-slug:gym'])->name('gyms.lessons.start');
 
 // Legal pages: drafts to be checked by a lawyer before the launch.
 Route::inertia('privacy', 'public/privacy', [
@@ -149,6 +151,15 @@ Route::middleware('guest')->controller(GoogleAuthController::class)->group(funct
 Route::post('registrazione/verifica', RegistrationCheckController::class)
     ->middleware(['guest', 'throttle:20,1'])
     ->name('register.check');
+// The username: checked while typing (sign-up and "Scegli il tuo username"), and
+// confirmed once by the accounts from before the usernames (EnsureUsernameChosen).
+Route::post('username/verifica', [UsernameController::class, 'check'])
+    ->middleware('throttle:30,1')
+    ->name('username.check');
+Route::middleware('auth')->controller(UsernameController::class)->group(function () {
+    Route::get('scegli-username', 'show')->name('username.show');
+    Route::post('scegli-username', 'store')->middleware('throttle:10,1')->name('username.store');
+});
 
 // Also for logged-in users: "Collega" in the settings comes back here (the address saved on Google).
 Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');

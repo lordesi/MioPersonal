@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Rules\Username;
 use Carbon\CarbonInterface;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -26,6 +27,8 @@ use NotificationChannels\WebPush\HasPushSubscriptions;
  * @property string $first_name
  * @property string $last_name
  * @property string $name "Nome Cognome", computed from first_name and last_name
+ * @property string $username chosen at sign-up, never changed; the link of the trainer/gym page
+ * @property Carbon|null $username_chosen_at null: given automatically, the user confirms it once (EnsureUsernameChosen)
  * @property string $email
  * @property string|null $google_id set by "Continua con Google"
  * @property string|null $phone
@@ -81,6 +84,25 @@ class User extends Authenticatable implements MustVerifyEmail
     ];
 
     /**
+     * Accounts made without the sign-up forms (seeders, the team) get a free
+     * username: the user confirms it at the next visit.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (User $user) {
+            if (blank($user->username)) {
+                $user->username = Username::suggest((string) $user->first_name, (string) $user->last_name);
+            }
+        });
+    }
+
+    /** Chosen at sign-up or confirmed afterwards: it can't be changed any more. */
+    public function hasChosenUsername(): bool
+    {
+        return $this->username_chosen_at !== null;
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -91,6 +113,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'username_chosen_at' => 'datetime',
             'terms_accepted_at' => 'datetime',
             'marketing_opt_in_at' => 'datetime',
             'password_changed_at' => 'datetime',

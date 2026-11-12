@@ -4,6 +4,7 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
+use App\Rules\Username;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -27,10 +28,12 @@ class CreateNewUser implements CreatesNewUsers
     {
         // "Mario@Esempio.it " and "mario@esempio.it" are the same account.
         $input['email'] = self::normalizeEmail($input['email'] ?? null);
+        // "@Giulia_Fit" and "giulia_fit" are the same username.
+        $input['username'] = Username::normalize($input['username'] ?? null);
 
         Validator::make($input, $this->rules())->validate();
 
-        return User::create([
+        $user = new User([
             'first_name' => trim($input['first_name']),
             'last_name' => trim($input['last_name']),
             'email' => $input['email'],
@@ -39,6 +42,16 @@ class CreateNewUser implements CreatesNewUsers
             // When the consent was given, as the GDPR asks.
             'terms_accepted_at' => now(),
         ]);
+
+        return self::withUsername($user, $input['username']);
+    }
+
+    /** Not fillable on purpose: it is set here once and never changed. */
+    public static function withUsername(User $user, string $username): User
+    {
+        $user->forceFill(['username' => $username, 'username_chosen_at' => now()])->save();
+
+        return $user;
     }
 
     /**
@@ -51,6 +64,8 @@ class CreateNewUser implements CreatesNewUsers
         return [
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
+            // Lowercase and without "@": see Username::normalize().
+            'username' => ['required', 'string', new Username],
             'email' => $this->emailRules(),
             // Only the number ("333 000 0000"): the prefix is always +39.
             'phone' => $this->phoneNumberRules(),

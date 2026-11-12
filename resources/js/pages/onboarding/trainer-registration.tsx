@@ -79,6 +79,8 @@ type TrainerRegistrationProps = {
     changeRequest: { reasons: string[]; message: string | null } | null;
     /** The trainer's own profile, for "Vedi l'anteprima del profilo". */
     previewHref: string | null;
+    /** "miopersonal.it/trainer/": the public link, shown under the username. */
+    usernameLinkPrefix: string;
 };
 
 export default function TrainerRegistration({
@@ -91,6 +93,7 @@ export default function TrainerRegistration({
     draft: savedDraft,
     changeRequest,
     previewHref,
+    usernameLinkPrefix,
 }: TrainerRegistrationProps) {
     const authUser = usePage().props.auth?.user;
     // The draft of "Salva e continua dopo" is kept per account in this browser.
@@ -100,6 +103,7 @@ export default function TrainerRegistration({
     const form = useForm({
         first_name: '',
         last_name: '',
+        username: '',
         email: '',
         phone: '',
         password: '',
@@ -194,6 +198,7 @@ export default function TrainerRegistration({
             ? form.data.terms
             : form.data.first_name.trim() !== '' &&
               form.data.last_name.trim() !== '' &&
+              form.data.username.trim() !== '' &&
               form.data.email.trim() !== '' &&
               form.data.phone.trim() !== '' &&
               meetsPasswordRequirements(form.data.password) &&
@@ -389,6 +394,7 @@ export default function TrainerRegistration({
                                 bind,
                                 onAccountExists: (field, value) =>
                                     setExisting({ field, value }),
+                                usernameLinkPrefix,
                             }}
                             termsAccepted={form.data.terms}
                             onTermsChange={(accepted) =>

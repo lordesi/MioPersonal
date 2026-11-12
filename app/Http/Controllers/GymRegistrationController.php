@@ -8,6 +8,7 @@ use App\Enums\GymAmenity;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\TrainerReviewDecision;
 use App\Enums\UserRole;
+use App\Http\Controllers\Auth\UsernameController;
 use App\Http\Requests\GymProfileRequest;
 use App\Http\Requests\GymRegistrationStepRequest;
 use App\Models\GymProfile;
@@ -57,6 +58,8 @@ class GymRegistrationController extends Controller
             'draft' => $profile === null ? null : GymDraft::fromProfile($profile),
             'changeRequest' => $profile === null ? null : $this->changeRequest($profile),
             'previewHref' => $profile === null ? null : route('gyms.show', $profile->slug, false),
+            // Under the username of a guest: the link the page will have.
+            'usernameLinkPrefix' => UsernameController::linkPrefix(UserRole::Gym),
             'seo' => Seo::page(
                 title: 'Registra la tua palestra',
                 description: 'Hai una palestra? Crea gratis il profilo su MioPersonal: foto, servizi, orari, abbonamenti, promozioni e i personal trainer che allenano da te.',
@@ -79,7 +82,7 @@ class GymRegistrationController extends Controller
 
         if ($user === null) {
             $user = DB::transaction(function () use ($request, $creator, $saver, $data) {
-                $user = $creator->create($request->only(['first_name', 'last_name', 'email', 'phone', 'password', 'terms']));
+                $user = $creator->create($request->only(['first_name', 'last_name', 'username', 'email', 'phone', 'password', 'terms']));
                 $this->makeGym($user);
                 $saver->handle($user, $data);
 

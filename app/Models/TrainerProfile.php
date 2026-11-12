@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Str;
 
 /**
  * The public profile of a trainer: one per trainer user. It shows up in the
@@ -28,7 +27,8 @@ use Illuminate\Support\Str;
  *
  * @property int $id
  * @property int $user_id
- * @property string $slug
+ * @property string $slug the username of the owner: /trainer/{slug}
+ * @property string|null $legacy_slug the link from before the usernames, redirected to the current one
  * @property string $headline
  * @property string $bio
  * @property TrainerExperience $experience
@@ -442,16 +442,12 @@ class TrainerProfile extends Model
         ])->save();
     }
 
-    /** "giulia-rossi", then "giulia-rossi-2"… if it is taken. */
-    public static function uniqueSlug(string $name): string
+    /**
+     * The link of today for a link from before the usernames ("giulia-rossi-2"
+     * → "giuliafit"), so the QR codes already shared still open the page.
+     */
+    public static function currentSlug(string $legacySlug): ?string
     {
-        $base = Str::slug($name) ?: 'trainer';
-        $slug = $base;
-
-        for ($number = 2; self::where('slug', $slug)->exists(); $number++) {
-            $slug = "{$base}-{$number}";
-        }
-
-        return $slug;
+        return self::query()->where('legacy_slug', $legacySlug)->value('slug');
     }
 }

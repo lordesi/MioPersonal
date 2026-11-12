@@ -7,6 +7,7 @@ use App\Actions\Trainer\SaveTrainerProfile;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\TrainerReviewDecision;
 use App\Enums\UserRole;
+use App\Http\Controllers\Auth\UsernameController;
 use App\Http\Requests\TrainerProfileRequest;
 use App\Http\Requests\TrainerRegistrationStepRequest;
 use App\Models\TrainerProfile;
@@ -59,6 +60,8 @@ class TrainerRegistrationController extends Controller
             'draft' => $profile === null ? null : TrainerDraft::fromProfile($profile),
             'changeRequest' => $profile === null ? null : $this->changeRequest($profile),
             'previewHref' => $profile === null ? null : route('trainers.show', $profile->slug, false),
+            // Under the username of a guest: the link the page will have.
+            'usernameLinkPrefix' => UsernameController::linkPrefix(UserRole::Trainer),
             // "Collega Instagram / TikTok / ...": optional, see TrainerSocialController.
             'socials' => TrainerSocials::props($request),
             // The page that brings new trainers: indexed as guests see it.
@@ -85,7 +88,7 @@ class TrainerRegistrationController extends Controller
         if ($user === null) {
             $user = DB::transaction(function () use ($request, $creator, $saver, $data) {
                 // Same rules as the client sign-up.
-                $user = $creator->create($request->only(['first_name', 'last_name', 'email', 'phone', 'password', 'terms']));
+                $user = $creator->create($request->only(['first_name', 'last_name', 'username', 'email', 'phone', 'password', 'terms']));
                 $this->makeTrainer($user);
                 TrainerSocials::attachPending($request, $saver->handle($user, $data));
 

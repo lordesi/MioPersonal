@@ -2,6 +2,7 @@ import { Form, Head, Link } from '@inertiajs/react';
 import { PhoneFields } from '@/components/auth/account-fields';
 import ConsentCheckbox from '@/components/auth/consent-checkbox';
 import FormField from '@/components/auth/form-field';
+import UsernameField from '@/components/auth/username-field';
 import MinimalHeader from '@/components/layout/minimal-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,8 @@ type Props = {
     email: string;
     firstName: string;
     lastName: string;
+    /** A free username from the name: the user can change it before "Crea account". */
+    suggestedUsername: string;
 };
 
 const TERMS_HREF = terms.url();
@@ -26,7 +29,12 @@ const inputClass = 'h-11 text-base md:text-base';
  * accepts the Terms (as in the normal sign-up) and adds the phone (required).
  * See App\Http\Controllers\Auth\GoogleAuthController.
  */
-export default function GoogleSignUp({ email, firstName, lastName }: Props) {
+export default function GoogleSignUp({
+    email,
+    firstName,
+    lastName,
+    suggestedUsername,
+}: Props) {
     return (
         <div className="flex min-h-screen flex-col bg-secondary">
             <Head title="Completa la registrazione" />
@@ -101,6 +109,11 @@ export default function GoogleSignUp({ email, firstName, lastName }: Props) {
                                     )}
                                 </FormField>
                             </div>
+
+                            <UsernameField
+                                error={errors.username}
+                                defaultValue={suggestedUsername}
+                            />
 
                             <FormField label="Email">
                                 {({ id }) => (

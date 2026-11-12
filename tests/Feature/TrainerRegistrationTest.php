@@ -97,6 +97,7 @@ class TrainerRegistrationTest extends TestCase
         $this->post(route('trainer.register.store'), [
             'first_name' => 'Giulia',
             'last_name' => 'Rossi',
+            'username' => 'giulia-rossi',
             'email' => 'giulia@example.com',
             'phone' => '347 521 8846',
             'password' => 'Password1',
@@ -200,6 +201,7 @@ class TrainerRegistrationTest extends TestCase
         $this->post(route('trainer.register.store'), [
             'first_name' => 'Giulia',
             'last_name' => 'Rossi',
+            'username' => 'giulia-rossi',
             'email' => 'giulia@example.com',
             'phone' => '347 521 8846',
             'password' => 'Password1',
@@ -726,6 +728,7 @@ class TrainerRegistrationTest extends TestCase
         $this->post(route('trainer.register.check', 1), [
             'first_name' => 'Giulia',
             'last_name' => 'Rossi',
+            'username' => 'giulia-rossi',
             'email' => 'giulia@example.com',
             'phone' => '347 521 8846',
             'password' => 'Password1',

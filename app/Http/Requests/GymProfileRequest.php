@@ -7,6 +7,7 @@ use App\Enums\GymAmenity;
 use App\Enums\UserRole;
 use App\Models\City;
 use App\Models\GymProfile;
+use App\Rules\Username;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -42,6 +43,11 @@ class GymProfileRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $changes = [];
+
+        // The account of a guest: "@FitLab" is "fitlab".
+        if ($this->has('username')) {
+            $changes['username'] = Username::normalize($this->input('username'));
+        }
 
         if ($this->has('instagram')) {
             $value = trim((string) $this->input('instagram'));

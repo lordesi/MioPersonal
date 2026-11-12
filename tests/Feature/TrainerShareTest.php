@@ -75,6 +75,7 @@ class TrainerShareTest extends TestCase
         $this->post(route('register.store'), [
             'first_name' => 'Anna',
             'last_name' => 'Bianchi',
+            'username' => 'anna-bianchi',
             'email' => 'anna@example.com',
             'phone' => '347 521 8846',
             'password' => 'Una-password-sicura-1',

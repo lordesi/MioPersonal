@@ -6,6 +6,9 @@ import PasswordRequirements, {
     PASSWORD_PATTERN,
     PASSWORD_PATTERN_MESSAGE,
 } from '@/components/auth/password-requirements';
+import UsernameField, {
+    usernameFromName,
+} from '@/components/auth/username-field';
 import { Input } from '@/components/ui/input';
 import { useAccountCheck } from '@/hooks/use-account-check';
 import type { CheckedField } from '@/hooks/use-account-check';
@@ -13,6 +16,7 @@ import type { CheckedField } from '@/hooks/use-account-check';
 export type AccountField =
     | 'first_name'
     | 'last_name'
+    | 'username'
     | 'email'
     | 'phone'
     | 'password';
@@ -38,6 +42,8 @@ type AccountFieldsProps = {
      * runs when they already belong to an account (to open the login pop-up).
      */
     onAccountExists?: (field: CheckedField, value: string) => void;
+    /** Trainers and gyms: "miopersonal.it/trainer/", their public link under the username. */
+    usernameLinkPrefix?: string | null;
 };
 
 const inputClass = 'h-11 text-base md:text-base';
@@ -46,14 +52,19 @@ const inputClass = 'h-11 text-base md:text-base';
 const EMAIL_PATTERN = '[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}';
 const EMAIL_MESSAGE = 'Inserisci un’email valida, es. nome@esempio.it.';
 
-/** Name, surname, email, phone and password (all required): the account part of both sign-ups. */
+/** Name, surname, username, email, phone and password (all required): the account part of the sign-ups. */
 export default function AccountFields({
     errors,
     emailHint,
     phoneHint,
     bind,
     onAccountExists,
+    usernameLinkPrefix,
 }: AccountFieldsProps) {
+    // Inside a <Form> the names are not in React state: the username example needs them.
+    const [typedNames, setTypedNames] = useState({ first: '', last: '' });
+    const firstName = bind?.('first_name').value ?? typedNames.first;
+    const lastName = bind?.('last_name').value ?? typedNames.last;
     // Inside a <Form> the password is not in React state: the criteria list
     // needs it, so it is copied here as you type.
     const [typedPassword, setTypedPassword] = useState('');
@@ -82,6 +93,13 @@ export default function AccountFields({
                             autoComplete="given-name"
                             className={inputClass}
                             {...bind?.('first_name')}
+                            onChange={(event) => {
+                                bind?.('first_name').onChange(event);
+                                setTypedNames((names) => ({
+                                    ...names,
+                                    first: event.target.value,
+                                }));
+                            }}
                         />
                     )}
                 </FormField>
@@ -97,10 +115,24 @@ export default function AccountFields({
                             autoComplete="family-name"
                             className={inputClass}
                             {...bind?.('last_name')}
+                            onChange={(event) => {
+                                bind?.('last_name').onChange(event);
+                                setTypedNames((names) => ({
+                                    ...names,
+                                    last: event.target.value,
+                                }));
+                            }}
                         />
                     )}
                 </FormField>
             </div>
+
+            <UsernameField
+                error={errors.username}
+                linkPrefix={usernameLinkPrefix}
+                suggestion={usernameFromName(firstName, lastName)}
+                bind={bind?.('username')}
+            />
 
             <FormField label="Email" hint={emailHint} error={emailError}>
                 {({ id, describedBy }) => (

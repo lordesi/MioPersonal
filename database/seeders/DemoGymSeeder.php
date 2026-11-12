@@ -13,6 +13,7 @@ use App\Models\GymProfile;
 use App\Models\GymTrainerLink;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Rules\Username;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -60,6 +61,8 @@ class DemoGymSeeder extends Seeder
     private function gym(string $name, string $city, string $address, array $amenities, TrainerProfileStatus $status): GymProfile
     {
         $user = User::firstOrNew(['email' => Str::slug($name).'@demo.miopersonal.test']);
+        // The username is the link of the gym page: "fitlab-milano".
+        $user->username ??= Username::freeFrom(str_contains(Str::slug($name), $city) ? $name : "{$name} {$city}");
         $user->forceFill([
             'first_name' => 'Referente',
             'last_name' => $name,
@@ -67,6 +70,8 @@ class DemoGymSeeder extends Seeder
             'role' => UserRole::Gym,
             'email_verified_at' => now(),
             'terms_accepted_at' => now(),
+            // Demo accounts: no "Scegli il tuo username" (EnsureUsernameChosen).
+            'username_chosen_at' => $user->username_chosen_at ?? now(),
         ])->save();
 
         $cityModel = City::where('slug', $city)->firstOrFail();
@@ -82,7 +87,7 @@ class DemoGymSeeder extends Seeder
             'phone' => '02 1234567',
             'email' => 'info@'.Str::slug($name).'.example',
         ]);
-        $gym->slug ??= GymProfile::uniqueSlug($name, $cityModel->name);
+        $gym->slug ??= $user->username;
         $gym->forceFill([
             'status' => $status,
             'status_changed_at' => now(),

@@ -2,6 +2,8 @@
 export type User = {
     id: number;
     name: string;
+    /** Chosen at sign-up, never changed (shown in the settings). */
+    username: string;
     email: string;
     /** URL of the photo (Completa profilo); null shows the initials. */
     avatar?: string | null;

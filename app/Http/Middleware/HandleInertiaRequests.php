@@ -94,7 +94,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 // Only what the pages use (types/auth.ts): not the whole model, which
                 // also holds the phone, acquisition data and the activity times.
-                'user' => $request->user()?->only(['id', 'name', 'email', 'avatar', 'email_verified_at', 'role']),
+                'user' => $request->user()?->only(['id', 'name', 'username', 'email', 'avatar', 'email_verified_at', 'role']),
                 // The number on the bell (components/layout/notification-bell.tsx).
                 'unreadNotifications' => fn () => $request->user()?->unreadNotifications()->count() ?? 0,
                 // The number on "Preferiti" in the account menu (the same trainers and gyms as the page).

@@ -140,6 +140,7 @@ class GoogleAuthTest extends TestCase
         $this->post(route('google.register.store'), [
             'first_name' => 'Giulia',
             'last_name' => 'Rossi',
+            'username' => 'giulia-rossi',
             'phone' => '347 521 8846',
             'terms' => '1',
         ])->assertRedirect(route('client.complete-profile', absolute: false));
@@ -164,6 +165,7 @@ class GoogleAuthTest extends TestCase
         $this->post(route('google.register.store'), [
             'first_name' => 'Giulia',
             'last_name' => 'Rossi',
+            'username' => 'giulia-rossi',
             'phone' => '347 521 8846',
             'terms' => '1',
         ])->assertRedirect(url('/trainer/giulia-rossi/prenota'));
@@ -177,6 +179,7 @@ class GoogleAuthTest extends TestCase
         $this->post(route('google.register.store'), [
             'first_name' => 'Giulia',
             'last_name' => 'Rossi',
+            'username' => 'giulia-rossi',
         ])->assertSessionHasErrors('terms');
 
         $this->assertGuest();

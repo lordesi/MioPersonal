@@ -14,6 +14,7 @@ use App\Models\Discipline;
 use App\Models\GymProfile;
 use App\Models\Service;
 use App\Models\TrainerProfile;
+use App\Rules\Username;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -72,6 +73,11 @@ class TrainerProfileRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        // The account of a guest: "@Giulia_Fit" is "giulia_fit".
+        if ($this->has('username')) {
+            $this->merge(['username' => Username::normalize($this->input('username'))]);
+        }
+
         if (! $this->has('instagram')) {
             return;
         }

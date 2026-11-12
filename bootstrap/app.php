@@ -3,8 +3,10 @@
 use App\Http\Middleware\EnsureAccountActive;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\EnsureUsernameChosen;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ProtectStaging;
+use App\Http\Middleware\RedirectLegacySlug;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\ThrottleSignups;
 use App\Http\Middleware\TrackLastActivity;
@@ -40,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
             'role' => EnsureUserHasRole::class,
+            'legacy-slug' => RedirectLegacySlug::class,
         ]);
 
         $middleware->web(append: [
@@ -48,6 +51,8 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             // After Inertia: its redirects become 303 for PUT/PATCH/DELETE.
             EnsureAccountActive::class,
+            // Accounts from before the usernames confirm theirs once.
+            EnsureUsernameChosen::class,
             AddLinkHeadersForPreloadedAssets::class,
             TrackLastActivity::class,
             TrackVisit::class,

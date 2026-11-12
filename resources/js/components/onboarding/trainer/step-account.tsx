@@ -32,7 +32,7 @@ type StepAccountProps = {
     /** The account fields of a guest (see AccountFields). */
     fields: Pick<
         ComponentProps<typeof AccountFields>,
-        'errors' | 'bind' | 'onAccountExists'
+        'errors' | 'bind' | 'onAccountExists' | 'usernameLinkPrefix'
     >;
     termsAccepted: boolean;
     onTermsChange: (accepted: boolean) => void;

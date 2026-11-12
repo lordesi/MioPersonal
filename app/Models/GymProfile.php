@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Str;
 
 /**
  * The public profile of a gym: one per gym user. Like the trainers', it shows
@@ -28,7 +27,8 @@ use Illuminate\Support\Str;
  *
  * @property int $id
  * @property int $user_id
- * @property string $slug
+ * @property string $slug the username of the owner: /palestra/{slug}
+ * @property string|null $legacy_slug the link from before the usernames, redirected to the current one
  * @property string $name
  * @property string $description
  * @property int $city_id
@@ -304,19 +304,12 @@ class GymProfile extends Model
         $this->forceFill(['monthly_from_cents' => $cheapest])->save();
     }
 
-    /** "fitlab-milano", then "fitlab-milano-2"… if it is taken. */
-    public static function uniqueSlug(string $name, ?string $city = null): string
+    /**
+     * The link of today for a link from before the usernames ("fitlab-milano"
+     * → "fitlab"), so the QR codes already shared still open the page.
+     */
+    public static function currentSlug(string $legacySlug): ?string
     {
-        // "FitLab" in Milano → "fitlab-milano"; "Iron Box Torino" stays "iron-box-torino".
-        $citySlug = Str::slug($city ?? '');
-        $nameSlug = Str::slug($name);
-        $base = ($citySlug === '' || str_contains("-{$nameSlug}-", "-{$citySlug}-") ? $nameSlug : "{$nameSlug}-{$citySlug}") ?: 'palestra';
-        $slug = $base;
-
-        for ($number = 2; self::where('slug', $slug)->exists(); $number++) {
-            $slug = "{$base}-{$number}";
-        }
-
-        return $slug;
+        return self::query()->where('legacy_slug', $legacySlug)->value('slug');
     }
 }

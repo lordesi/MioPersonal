@@ -147,6 +147,7 @@ class RegistrationTest extends TestCase
         return [
             'first_name' => 'Luca',
             'last_name' => 'Moretti',
+            'username' => 'luca-moretti',
             'email' => 'test@example.com',
             'phone' => '347 521 8846',
             'password' => 'Password1',

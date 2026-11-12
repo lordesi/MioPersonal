@@ -28,6 +28,8 @@ class UserFactory extends Factory
         return [
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
+            // The username itself is given by User::creating, free and from the name.
+            'username_chosen_at' => now(),
             'email' => fake()->unique()->safeEmail(),
             // Required for everyone, as saved by the sign-up: "+39" + a 10-digit mobile.
             'phone' => '+39'.fake()->randomElement(['320', '333', '347', '351', '380', '393']).fake()->numerify('#######'),
@@ -47,6 +49,16 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * An account from before the usernames: it must confirm the one it was given.
+     */
+    public function withoutChosenUsername(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'username_chosen_at' => null,
         ]);
     }
 

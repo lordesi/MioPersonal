@@ -160,6 +160,7 @@ class StatsTest extends TestCase
         $this->post(route('register.store'), [
             'first_name' => 'Anna',
             'last_name' => 'Neri',
+            'username' => 'anna-neri',
             'email' => 'anna.neri@example.com',
             'phone' => '347 521 8846',
             'password' => 'Password1',

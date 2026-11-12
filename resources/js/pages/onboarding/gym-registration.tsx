@@ -75,6 +75,8 @@ type GymRegistrationProps = {
     draft: Omit<GymDraft, 'cover' | 'gallery'> | null;
     changeRequest: { reasons: string[]; message: string | null } | null;
     previewHref: string | null;
+    /** "miopersonal.it/palestra/": the public link, shown under the username. */
+    usernameLinkPrefix: string;
 };
 
 /** "Registra la tua palestra": 5 steps, then the team checks the profile. */
@@ -87,12 +89,14 @@ export default function GymRegistration({
     draft: savedDraft,
     changeRequest,
     previewHref,
+    usernameLinkPrefix,
 }: GymRegistrationProps) {
     const authUser = usePage().props.auth?.user;
     const firstStep = editing ? 2 : 1;
     const form = useForm({
         first_name: '',
         last_name: '',
+        username: '',
         email: '',
         phone: '',
         password: '',
@@ -241,6 +245,7 @@ export default function GymRegistration({
         1:
             form.data.first_name.trim() !== '' &&
             form.data.last_name.trim() !== '' &&
+            form.data.username.trim() !== '' &&
             form.data.email.trim() !== '' &&
             form.data.phone.trim() !== '' &&
             meetsPasswordRequirements(form.data.password) &&
@@ -365,6 +370,7 @@ export default function GymRegistration({
                                         onAccountExists={(field, value) =>
                                             setExisting({ field, value })
                                         }
+                                        usernameLinkPrefix={usernameLinkPrefix}
                                         emailHint="Qui ricevi le richieste dei trainer e le comunicazioni del team."
                                         phoneHint="Solo per il nostro team: non è pubblico."
                                     />

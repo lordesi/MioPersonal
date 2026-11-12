@@ -69,6 +69,7 @@ class GymRegistrationTest extends TestCase
         return [
             'first_name' => 'Paola',
             'last_name' => 'Verdi',
+            'username' => 'fitlab-centro-milano',
             'email' => 'paola@fitlab.it',
             'phone' => '347 521 8846',
             'password' => 'Password-sicura-1',

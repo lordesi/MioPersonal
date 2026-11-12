@@ -1,5 +1,5 @@
-import { Form } from '@inertiajs/react';
-import { UserRound } from 'lucide-react';
+import { Form, usePage } from '@inertiajs/react';
+import { Lock, UserRound } from 'lucide-react';
 import AccountSettingsController from '@/actions/App/Http/Controllers/AccountSettingsController';
 import SectionFooter from '@/components/account/section-footer';
 import SettingsSection from '@/components/account/settings-section';
@@ -17,7 +17,7 @@ type PersonalDataSectionProps = {
     phoneHint?: string;
 };
 
-/** Name, surname and phone, all required, saved on the server. */
+/** Name, surname and phone, all required, saved on the server. The username is only shown. */
 export default function PersonalDataSection({
     firstName,
     lastName,
@@ -25,6 +25,8 @@ export default function PersonalDataSection({
     description,
     phoneHint,
 }: PersonalDataSectionProps) {
+    const username = usePage().props.auth?.user?.username;
+
     return (
         <SettingsSection
             id="dati"
@@ -71,6 +73,34 @@ export default function PersonalDataSection({
                                 )}
                             </FormField>
                         </div>
+                        {username && (
+                            <div className="max-w-115">
+                                <FormField
+                                    label="Username"
+                                    hint={
+                                        <span className="flex items-center gap-1">
+                                            <Lock
+                                                className="size-3.5 shrink-0"
+                                                aria-hidden
+                                            />
+                                            Non modificabile: l’hai scelto alla
+                                            registrazione.
+                                        </span>
+                                    }
+                                >
+                                    {({ id, describedBy }) => (
+                                        // Disabled: it can't be changed and it isn't sent.
+                                        <Input
+                                            id={id}
+                                            value={`@${username}`}
+                                            disabled
+                                            aria-describedby={describedBy}
+                                            className="h-12 rounded-xl text-[15px] md:text-[15px]"
+                                        />
+                                    )}
+                                </FormField>
+                            </div>
+                        )}
                         <div className="max-w-115">
                             <PhoneFields
                                 errors={errors}
