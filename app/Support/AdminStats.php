@@ -6,11 +6,13 @@ use App\Enums\BookingStatus;
 use App\Enums\GymLinkStatus;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
+use App\Models\ActivityLog;
 use App\Models\Booking;
 use App\Models\BookingSeries;
 use App\Models\City;
 use App\Models\GymProfile;
 use App\Models\Review;
+use App\Models\TrainerClient;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -78,6 +80,7 @@ final class AdminStats
             'channels' => $this->channels(),
             'funnel' => $this->funnel(),
             'journey' => $this->journey(),
+            'overview' => $this->overview(),
             'cohorts' => $this->cohorts(),
             'churn' => $this->churn(),
             'marketplace' => $this->marketplace(),
@@ -394,6 +397,45 @@ final class AdminStats
             'rebooked' => $rebooked,
             'rate' => $eligible === 0 ? null : round($rebooked / $eligible, 3),
             'withSeries' => $withSeries,
+        ];
+    }
+
+    /**
+     * The client's "Panoramica", last 30 days: who logs trainings (with and
+     * without a trainer: if the ones without stay low, no more tracking),
+     * who shares their progress, the trainers' notes, and whether clients
+     * who share book again more than the others.
+     *
+     * @return array<string, mixed>
+     */
+    private function overview(): array
+    {
+        $active = $this->activeIds($this->from, $this->now->endOfDay(), role: UserRole::Client->value);
+        $withTrainer = Booking::query()->where('status', BookingStatus::Confirmed)->whereNotNull('client_id')
+            ->distinct()->pluck('client_id');
+        $loggers = ActivityLog::query()->where('created_at', '>=', $this->from->utc())->distinct()->pluck('user_id');
+        $sharers = TrainerClient::query()->whereNotNull('progress_shared_at')->whereNotNull('user_id')
+            ->distinct()->pluck('user_id');
+
+        $share = function (Collection $among, Collection $doing): array {
+            $count = $among->intersect($doing)->count();
+
+            return ['count' => $count, 'base' => $among->count(), 'rate' => $among->isEmpty() ? null : round($count / $among->count(), 3)];
+        };
+
+        // Clients with a session done before the 30 days: did they book again in them?
+        $before = Booking::query()->where('status', BookingStatus::Confirmed)->whereNotNull('client_id')
+            ->where('ends_at', '<', $this->from->utc())->distinct()->pluck('client_id');
+        $booked = Booking::query()->where('status', BookingStatus::Confirmed)->whereNotNull('client_id')
+            ->where('created_at', '>=', $this->from->utc())->distinct()->pluck('client_id');
+
+        return [
+            'loggingWithTrainer' => $share($active->intersect($withTrainer)->values(), $loggers),
+            'loggingWithoutTrainer' => $share($active->diff($withTrainer)->values(), $loggers),
+            'sharing' => $share($withTrainer, $sharers),
+            'notes' => TrainerClient::query()->where('shared_note_at', '>=', $this->from->utc())->count(),
+            'rebookSharing' => $share($before->intersect($sharers)->values(), $booked),
+            'rebookOthers' => $share($before->diff($sharers)->values(), $booked),
         ];
     }
 

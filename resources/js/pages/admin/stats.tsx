@@ -19,6 +19,9 @@ type Count = { source: string; count: number };
 type Step = { label: string; count: number };
 
 /** The props of App\Support\AdminStats::all(). */
+/** `count` of `base` do something; `rate` is null without a base. */
+type Share = { count: number; base: number; rate: number | null };
+
 type Stats = {
     /** First day of the visits history (Y-m-d), null before any visit. */
     since: string | null;
@@ -64,6 +67,15 @@ type Stats = {
         noShowRate: number | null;
         seriesShare: number | null;
         seriesActive: number;
+    };
+    /** The client's "Panoramica", last 30 days. */
+    overview: {
+        loggingWithTrainer: Share;
+        loggingWithoutTrainer: Share;
+        sharing: Share;
+        notes: number;
+        rebookSharing: Share;
+        rebookOthers: Share;
     };
     cohorts: { month: string; size: number; retention: (number | null)[] }[];
     churn: {
@@ -349,6 +361,65 @@ export default function AdminStats({ stats }: { stats: Stats }) {
             </div>
 
             <h2 className="mt-3 text-lg font-bold tracking-tight">
+                Panoramica dei clienti
+            </h2>
+            <section
+                aria-label="Indicatori della Panoramica dei clienti"
+                className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+            >
+                <KpiTile
+                    label="Segnano allenamenti, con un trainer"
+                    value={formatPercent(
+                        stats.overview.loggingWithTrainer.rate,
+                    )}
+                    detail={
+                        <ShareDetail
+                            share={stats.overview.loggingWithTrainer}
+                            of="clienti attivi con una seduta"
+                        />
+                    }
+                />
+                <KpiTile
+                    label="Segnano allenamenti, senza trainer"
+                    value={formatPercent(
+                        stats.overview.loggingWithoutTrainer.rate,
+                    )}
+                    detail={
+                        <ShareDetail
+                            share={stats.overview.loggingWithoutTrainer}
+                            of="clienti attivi senza sedute"
+                        />
+                    }
+                />
+                <KpiTile
+                    label="Condividono i progressi"
+                    value={formatPercent(stats.overview.sharing.rate)}
+                    detail={
+                        <span className="text-xs text-muted-foreground">
+                            {formatNumber(stats.overview.sharing.count)} su{' '}
+                            {formatNumber(stats.overview.sharing.base)} con una
+                            seduta · {formatNumber(stats.overview.notes)}{' '}
+                            {stats.overview.notes === 1
+                                ? 'nota dei trainer'
+                                : 'note dei trainer'}
+                        </span>
+                    }
+                />
+                <KpiTile
+                    label="Riprenotano: chi condivide e gli altri"
+                    value={`${formatPercent(stats.overview.rebookSharing.rate)} · ${formatPercent(stats.overview.rebookOthers.rate)}`}
+                    detail={
+                        <span className="text-xs text-muted-foreground">
+                            Con una seduta prima dei 30 giorni, prenotano di
+                            nuovo nei 30 giorni (
+                            {formatNumber(stats.overview.rebookSharing.base)} e{' '}
+                            {formatNumber(stats.overview.rebookOthers.base)}{' '}
+                            clienti)
+                        </span>
+                    }
+                />
+            </section>
+            <h2 className="mt-3 text-lg font-bold tracking-tight">
                 Conversione e fidelizzazione
             </h2>
             <div className="grid gap-3 lg:grid-cols-2">
@@ -526,6 +597,16 @@ export default function AdminStats({ stats }: { stats: Stats }) {
 }
 
 /** Of the users active the month before, the share that didn't come back. */
+/** "12 su 40 clienti attivi con una seduta, ultimi 30 giorni". */
+function ShareDetail({ share, of }: { share: Share; of: string }) {
+    return (
+        <span className="text-xs text-muted-foreground">
+            {formatNumber(share.count)} su {formatNumber(share.base)} {of},
+            ultimi 30 giorni
+        </span>
+    );
+}
+
 function ChurnTable({ rows }: { rows: Stats['churn'] }) {
     return (
         <div className="flex flex-col gap-2">

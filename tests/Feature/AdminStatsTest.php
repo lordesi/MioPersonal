@@ -83,6 +83,36 @@ class AdminStatsTest extends TestCase
         $this->assertSame(1, $kpis['publishedGyms']['value']);
     }
 
+    /** "Panoramica dei clienti": who logs trainings, with and without a trainer, and who shares. */
+    public function test_the_client_overview_numbers()
+    {
+        $trainer = TrainerProfile::factory()->approved()->create();
+        $withTrainer = User::factory()->create();
+        $alsoWithTrainer = User::factory()->create();
+        $withoutTrainer = User::factory()->create();
+        foreach ([$withTrainer, $alsoWithTrainer] as $client) {
+            Booking::factory()->for($trainer)->for($client, 'client')->confirmed()->at(now()->subDays(40))->create(['created_at' => now()->subDays(45)]);
+        }
+        foreach ([$withTrainer, $alsoWithTrainer, $withoutTrainer] as $client) {
+            $this->activity($client, '2026-11-19');
+        }
+        $withTrainer->activityLogs()->create(['done_on' => '2026-11-18', 'kind' => 'running']);
+        $withoutTrainer->activityLogs()->create(['done_on' => '2026-11-18', 'kind' => 'walking']);
+        $trainer->clientRecords()->create(['user_id' => $withTrainer->id, 'name' => 'A'])
+            ->forceFill(['progress_shared_at' => now(), 'shared_note' => 'Brava!', 'shared_note_at' => now()])->save();
+        // The client who shares books again; the other doesn't.
+        Booking::factory()->for($trainer)->for($withTrainer, 'client')->confirmed()->at(now()->addDay())->create();
+
+        $overview = (new AdminStats)->all()['overview'];
+
+        $this->assertSame(['count' => 1, 'base' => 2, 'rate' => 0.5], $overview['loggingWithTrainer']);
+        $this->assertSame(['count' => 1, 'base' => 1, 'rate' => 1.0], $overview['loggingWithoutTrainer']);
+        $this->assertSame(['count' => 1, 'base' => 2, 'rate' => 0.5], $overview['sharing']);
+        $this->assertSame(1, $overview['notes']);
+        $this->assertSame(1.0, $overview['rebookSharing']['rate']);
+        $this->assertSame(0.0, $overview['rebookOthers']['rate']);
+    }
+
     public function test_kpis_compare_the_last_30_days_with_the_30_before()
     {
         User::factory()->count(3)->create(['created_at' => now()->subDays(3)]);
