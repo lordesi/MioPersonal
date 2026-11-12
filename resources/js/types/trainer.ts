@@ -1,4 +1,5 @@
 import type { TrainingGoal } from '@/lib/goals';
+import type { ClientProgressSummary, WeightPoint } from './progress';
 import type { TrainerGym } from './gym';
 import type { SocialLink } from './social';
 
@@ -368,6 +369,12 @@ export type TrainerClient = {
     about: ClientAbout | null;
     /** The account's contacts; for who has none, the ones the trainer wrote (may be empty). */
     contacts: { email: string; phone: string | null };
+    /** "Progressi": only while the client shares them with this trainer. */
+    progress: TrainerClientProgress | null;
+    /** "Nota per il cliente": the client reads it in "Panoramica". */
+    sharedNote: string | null;
+    /** ISO UTC. */
+    sharedNoteAt: string | null;
     /** The trainer's own goal and private notes: never shown to the client. */
     goal: string | null;
     notes: string | null;
@@ -430,4 +437,10 @@ export type TrainerAreaReview = {
     date: string;
     text: string;
     reply: string | null;
+};
+
+/** A client's "Panoramica" as the trainer sees it, once shared. */
+export type TrainerClientProgress = ClientProgressSummary & {
+    /** Null without the client's consent to body data. */
+    weights: WeightPoint[] | null;
 };

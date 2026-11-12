@@ -6,6 +6,7 @@ use App\Models\ClientPayment;
 use App\Models\TrainerClient;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Notifications\TrainerNoteShared;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -66,7 +67,10 @@ class TrainerClientRecordsController extends Controller
         return back();
     }
 
-    /** Notes, goal and, for who has no account yet, name and contacts. */
+    /**
+     * Notes, goal and, for who has no account yet, name and contacts. With an
+     * account, also "Nota per il cliente": the client reads it in "Panoramica".
+     */
     public function update(Request $request, TrainerClient $client): RedirectResponse
     {
         $this->authorizeRecord($request, $client);
@@ -74,14 +78,20 @@ class TrainerClientRecordsController extends Controller
         $data = $request->validate([
             'notes' => ['nullable', 'string', 'max:'.TrainerClient::NOTES_MAX],
             'goal' => ['nullable', 'string', 'max:200'],
+            'shared_note' => $client->isRegistered() ? ['sometimes', 'nullable', 'string', 'max:'.TrainerClient::SHARED_NOTE_MAX] : ['prohibited'],
             'name' => $client->isRegistered() ? ['prohibited'] : ['sometimes', 'required', 'string', 'max:'.TrainerClient::NAME_MAX],
             'email' => $client->isRegistered() ? ['prohibited'] : ['sometimes', 'nullable', 'email:rfc', 'max:255'],
             'phone' => $client->isRegistered() ? ['prohibited'] : ['sometimes', 'nullable', 'string', 'max:40', 'regex:/^[0-9+().\s-]*$/'],
         ], [
             'name.prohibited' => 'Il nome lo sceglie il cliente nel suo account.',
+            'shared_note.prohibited' => 'La nota per il cliente si può lasciare solo a chi ha un account.',
+            'shared_note.max' => 'La nota per il cliente può avere al massimo '.TrainerClient::SHARED_NOTE_MAX.' caratteri.',
             'email.email' => 'Scrivi un’email valida.',
             'phone.regex' => 'Il telefono può avere solo numeri, spazi e +.',
         ]);
+
+        $sharedNote = array_key_exists('shared_note', $data) ? $this->clean($data['shared_note']) : false;
+        $noteChanged = $sharedNote !== false && $sharedNote !== $client->shared_note;
 
         $client->update(array_filter([
             'private_notes' => array_key_exists('notes', $data) ? $this->clean($data['notes']) : false,
@@ -90,6 +100,14 @@ class TrainerClientRecordsController extends Controller
             'email' => array_key_exists('email', $data) ? $this->clean($data['email']) : false,
             'phone' => array_key_exists('phone', $data) ? $this->clean($data['phone']) : false,
         ], fn ($value) => $value !== false));
+
+        if ($noteChanged) {
+            $client->forceFill(['shared_note' => $sharedNote, 'shared_note_at' => $sharedNote === null ? null : now()])->save();
+
+            if ($sharedNote !== null) {
+                $client->user?->notify(new TrainerNoteShared($client));
+            }
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Scheda salvata.']);
 

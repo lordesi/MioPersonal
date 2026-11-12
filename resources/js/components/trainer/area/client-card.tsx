@@ -4,6 +4,10 @@ import { useId } from 'react';
 import UserAvatar from '@/components/shared/user-avatar';
 import ClientAbout from '@/components/trainer/area/client-about';
 import ClientContacts from '@/components/trainer/area/client-contacts';
+import {
+    ClientProgress,
+    SharedNote,
+} from '@/components/trainer/area/client-progress';
 import ClientRecord from '@/components/trainer/area/client-record';
 import ClientSeries from '@/components/trainer/area/client-series';
 import PackageProgress from '@/components/trainer/package-progress';
@@ -107,6 +111,15 @@ export default function ClientCard({
             <div className="flex flex-col gap-3.5 px-6 pt-5 pb-6">
                 <ClientContacts name={client.name} contacts={client.contacts} />
                 <div aria-hidden="true" className="h-px bg-border" />
+
+                {client.registered && (
+                    <>
+                        <ClientProgress client={client} />
+                        <div aria-hidden="true" className="h-px bg-border" />
+                        <SharedNote client={client} />
+                        <div aria-hidden="true" className="h-px bg-border" />
+                    </>
+                )}
 
                 <ClientRecord client={client} />
                 <div aria-hidden="true" className="h-px bg-border" />

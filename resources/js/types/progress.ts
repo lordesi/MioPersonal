@@ -46,3 +46,21 @@ export type ActivityKindOption = {
     value: string;
     label: string;
 };
+
+/** "Condividi i miei progressi con Marco": one switch per trainer. */
+export type ProgressSharing = {
+    recordId: number;
+    trainerName: string;
+    trainerFirstName: string;
+    shared: boolean;
+};
+
+/** "Nota per il cliente", on top of "Panoramica". */
+export type TrainerNote = {
+    id: number;
+    trainerName: string;
+    trainerHref: string;
+    note: string;
+    /** ISO UTC. */
+    at: string;
+};

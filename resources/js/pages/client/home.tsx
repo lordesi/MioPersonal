@@ -6,6 +6,8 @@ import PackageCarousel from '@/components/client/package-carousel';
 import ActivityPanel from '@/components/client/progress/activity-panel';
 import GoalCard from '@/components/client/progress/goal-card';
 import LogActivityDialog from '@/components/client/progress/log-activity-dialog';
+import SharingPanel from '@/components/client/progress/sharing-panel';
+import TrainerNotes from '@/components/client/progress/trainer-notes';
 import WeightPanel from '@/components/client/progress/weight-panel';
 import RecommendedTrainersPanel from '@/components/client/recommended-trainers-panel';
 import YourTrainersPanel from '@/components/client/your-trainers-panel';
@@ -26,6 +28,8 @@ import type {
     ClientTrainer,
     ClientUpcomingBooking,
     NewsPreview,
+    ProgressSharing,
+    TrainerNote,
     TrainerSummary,
     WeightPoint,
 } from '@/types';
@@ -44,6 +48,10 @@ type HomeProps = {
     today: string;
     /** How many days back a training can be added. */
     daysBack: number;
+    /** One switch per trainer the client trained with. */
+    sharing: ProgressSharing[];
+    /** The trainers' notes, the most recent first. */
+    notes: TrainerNote[];
     packages: ClientPackage[];
     trainers: ClientTrainer[];
     /** Only while `trainers` is empty. */
@@ -68,6 +76,8 @@ export default function Home({
     activityKinds,
     today,
     daysBack,
+    sharing,
+    notes,
     packages,
     trainers,
     recommended,
@@ -138,6 +148,8 @@ export default function Home({
                 ))}
             </nav>
 
+            {notes.length > 0 && <TrainerNotes notes={notes} now={now} />}
+
             <div className="flex flex-wrap items-start gap-5">
                 <div className="flex min-w-0 flex-[3_1_540px] flex-col gap-5">
                     <NextSessionSummary
@@ -169,6 +181,13 @@ export default function Home({
 
                     {weights !== null && (
                         <WeightPanel weights={weights} today={today} />
+                    )}
+
+                    {sharing.length > 0 && (
+                        <SharingPanel
+                            sharing={sharing}
+                            sharesWeight={weights !== null}
+                        />
                     )}
 
                     {!hasPreferences && <CompleteProfileCard />}

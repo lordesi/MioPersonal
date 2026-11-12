@@ -14,7 +14,9 @@ use Illuminate\Support\Str;
 /**
  * A client in the list of a trainer: someone who booked on the site, or
  * someone the trainer added by hand. The notes, the goal and the payments
- * are the trainer's own and are never shown to the client.
+ * are the trainer's own and are never shown to the client; the shared note
+ * is for the client ("Panoramica"). The client's progress reaches the
+ * trainer only while `progress_shared_at` is set, by the client.
  *
  * @property int $id
  * @property int $trainer_profile_id
@@ -25,18 +27,41 @@ use Illuminate\Support\Str;
  * @property string|null $goal
  * @property string|null $private_notes
  * @property string $invite_token
+ * @property CarbonImmutable|null $progress_shared_at
+ * @property string|null $shared_note
+ * @property CarbonImmutable|null $shared_note_at
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property-read TrainerProfile $trainerProfile
  * @property-read User|null $user
  * @property-read Collection<int, ClientPayment> $payments
  */
-#[Fillable(['user_id', 'name', 'email', 'phone', 'goal', 'private_notes'])]
+#[Fillable(['user_id', 'name', 'email', 'phone', 'goal', 'private_notes', 'shared_note', 'shared_note_at'])]
 class TrainerClient extends Model
 {
     public const NAME_MAX = 100;
 
     public const NOTES_MAX = 2000;
+
+    /** "Nota per il cliente". */
+    public const SHARED_NOTE_MAX = 500;
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'progress_shared_at' => 'datetime',
+            'shared_note_at' => 'datetime',
+        ];
+    }
+
+    /** The client shares "Panoramica" with this trainer. */
+    public function sharesProgress(): bool
+    {
+        return $this->user_id !== null && $this->progress_shared_at !== null;
+    }
 
     protected static function booted(): void
     {

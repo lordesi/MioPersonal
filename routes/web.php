@@ -27,6 +27,7 @@ use App\Http\Controllers\ClientHomeController;
 use App\Http\Controllers\ClientProgressController;
 use App\Http\Controllers\ClientRescheduleController;
 use App\Http\Controllers\ClientReviewController;
+use App\Http\Controllers\ClientSharingController;
 use App\Http\Controllers\CompleteProfileController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CookieConsentController;
@@ -285,6 +286,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('peso', 'storeWeight')->name('client.weight.store');
             Route::delete('peso/{measurement}', 'destroyWeight')->whereNumber('measurement')->name('client.weight.destroy');
         });
+        // "Condividi i miei progressi con Marco".
+        Route::patch('condivisione/{record}', [ClientSharingController::class, 'update'])
+            ->whereNumber('record')
+            ->middleware('throttle:30,1')
+            ->name('client.sharing.update');
         // Public on the trainer's profile: only with a verified email.
         Route::post('prenotazioni/{booking}/recensione', [ClientReviewController::class, 'store'])
             ->whereNumber('booking')

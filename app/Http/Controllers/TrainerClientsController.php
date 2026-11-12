@@ -15,6 +15,7 @@ use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\ClientAbout;
 use App\Support\ClientAttendance;
+use App\Support\ClientProgress;
 use App\Support\TrainerSessions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -207,6 +208,14 @@ class TrainerClientsController extends Controller
                 'email' => $user->email ?? $record->email ?? '',
                 'phone' => $user->phone ?? $record->phone,
             ],
+            // "Progressi": only while the client shares them with this trainer.
+            'progress' => $user !== null && $record->sharesProgress() ? [
+                ...ClientProgress::for($user)->summary($profile->id),
+                'weights' => ClientProgress::weights($user, 12),
+            ] : null,
+            // "Nota per il cliente": the client reads it in "Panoramica".
+            'sharedNote' => $record->shared_note,
+            'sharedNoteAt' => $record->shared_note_at === null ? null : $this->iso($record->shared_note_at),
             // The trainer's own: never shown to the client.
             'goal' => $record->goal,
             'notes' => $record->private_notes,

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\ActivityKind;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
+use App\Models\TrainerClient;
 use App\Models\User;
 use App\Support\ClientBookingData;
 use App\Support\ClientProgress;
@@ -57,6 +58,28 @@ class ClientHomeController extends Controller
             'activityKinds' => array_map(fn (ActivityKind $kind) => ['value' => $kind->value, 'label' => $kind->label()], ActivityKind::cases()),
             'today' => now(ClientProgress::TIMEZONE)->format('Y-m-d'),
             'daysBack' => ClientProgressController::DAYS_BACK,
+            // "Condividi i miei progressi", one switch per trainer.
+            'sharing' => ClientSharingController::records($client)
+                ->map(fn (TrainerClient $record) => [
+                    'recordId' => $record->id,
+                    'trainerName' => $record->trainerProfile->user->name,
+                    'trainerFirstName' => $record->trainerProfile->user->first_name,
+                    'shared' => $record->progress_shared_at !== null,
+                ])->values()->all(),
+            // The trainers' notes for the client, the most recent first.
+            'notes' => TrainerClient::query()
+                ->where('user_id', $client->id)
+                ->whereNotNull('shared_note')
+                ->with('trainerProfile.user')
+                ->latest('shared_note_at')
+                ->get()
+                ->map(fn (TrainerClient $record) => [
+                    'id' => $record->id,
+                    'trainerName' => $record->trainerProfile->user->name,
+                    'trainerHref' => route('trainers.show', $record->trainerProfile->slug, false),
+                    'note' => $record->shared_note,
+                    'at' => ClientBookingData::iso($record->shared_note_at ?? $record->updated_at ?? now()),
+                ])->all(),
             'packages' => ClientBookingData::packages($client),
             'trainers' => $trainers,
             // Only for a client without trainers yet: one query less for the others.

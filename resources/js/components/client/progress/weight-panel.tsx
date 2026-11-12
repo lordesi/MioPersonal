@@ -66,7 +66,7 @@ export default function WeightPanel({ weights, today }: WeightPanelProps) {
             ) : (
                 <p className="text-sm text-muted-foreground">
                     Segna il peso quando vuoi: vedi l'andamento nel tempo. Lo
-                    vedi solo tu.
+                    vedono solo i trainer con cui condividi i progressi.
                 </p>
             )}
 

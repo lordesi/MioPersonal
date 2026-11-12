@@ -168,11 +168,12 @@ final class ClientProgress
     }
 
     /**
-     * ClientProgressSummary, for the frontend.
+     * ClientProgressSummary, for the frontend. For a trainer the client shares
+     * it with (`$viewer`), the sessions with other trainers lose the name.
      *
      * @return array<string, mixed>
      */
-    public function summary(): array
+    public function summary(?int $viewer = null): array
     {
         return [
             'thisWeek' => $this->thisWeek(),
@@ -186,9 +187,11 @@ final class ClientProgress
                 ->map(fn (array $entry) => [
                     'date' => $entry['date'],
                     'source' => $entry['source'],
-                    'label' => $entry['label'],
-                    // Only the diary's ones can be deleted.
-                    'logId' => $entry['logId'],
+                    'label' => $viewer !== null && $entry['source'] === 'session' && $entry['trainerProfileId'] !== $viewer
+                        ? 'Seduta con un altro trainer'
+                        : $entry['label'],
+                    // Only the diary's ones can be deleted, by the client.
+                    'logId' => $viewer === null ? $entry['logId'] : null,
                 ])->all()),
         ];
     }
