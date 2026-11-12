@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
-/** The home shelves "In tendenza", "Liberi oggi" and "Nuovi": hidden when too few trainers. */
+/** The home shelves "In tendenza" and "Nuovi": hidden when too few trainers. */
 class TrainerShelvesTest extends TestCase
 {
     use RefreshDatabase;
@@ -72,17 +72,6 @@ class TrainerShelvesTest extends TestCase
         $this->visit($this->trainer(), 5);
 
         $this->assertSame(['trending'], array_column(TrainerShelves::all(), 'key'));
-    }
-
-    public function test_available_today_needs_a_free_slot_in_the_next_24_hours()
-    {
-        $soon = $this->trainer(['next_free_slot_at' => $this->now->addHours(3)]);
-        $tomorrowEvening = $this->trainer(['next_free_slot_at' => $this->now->addHours(30)]);
-        $none = $this->trainer(['next_free_slot_at' => null]);
-
-        $this->assertSame([$soon->id], TrainerShelves::availableTodayIds($this->now));
-        $this->assertNotContains($tomorrowEvening->id, TrainerShelves::availableTodayIds($this->now));
-        $this->assertNotContains($none->id, TrainerShelves::availableTodayIds($this->now));
     }
 
     public function test_new_trainers_are_the_ones_approved_in_the_last_month()

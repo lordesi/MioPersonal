@@ -38,7 +38,7 @@ class HomeController extends Controller
     private const EVENTS = 6;
 
     /** At most two shelves under "Trainer in evidenza", in this order. */
-    private const SHELVES = ['available-today', 'trending', 'new'];
+    private const SHELVES = ['trending', 'new'];
 
     public function __invoke(Request $request): Response
     {
@@ -46,7 +46,7 @@ class HomeController extends Controller
 
         return Inertia::render('public/home', [
             'featuredTrainers' => $this->featuredTrainers(TrainerCard::favoriteIds($request->user())),
-            // Two of "Liberi oggi", "In tendenza", "Nuovi": each one only with enough trainers.
+            // "In tendenza" and "Nuovi": each one only with enough trainers.
             'trainerShelves' => $this->shelves(TrainerCard::favoriteIds($request->user())),
             'featuredGyms' => GymCard::many($this->featuredGyms(), GymCard::favoriteIds($request->user())),
             // "Corsi in palestra": the bookable ones first.

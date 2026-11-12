@@ -25,7 +25,7 @@ use Illuminate\Support\Str;
 
 /**
  * Everything the newer features need to be tried by hand: the home shelves
- * (in tendenza, nuovi, liberi oggi), gym courses, events (one open, one sold
+ * (in tendenza, nuovi), gym courses, events (one open, one sold
  * out with someone in the waitlist, an online one, a gym open day), a "seduta
  * fissa", the client records of Giulia Rossi and weeks of past sessions for
  * the journey in "Admin · Statistiche".

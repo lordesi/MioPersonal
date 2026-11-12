@@ -69,7 +69,8 @@ const trackClassName = cn(
 );
 const itemClassName = cn(
     modeItemClassName,
-    'inline-flex h-10 shrink-0 items-center justify-center gap-2 px-3.5 text-sm sm:px-4 [&_svg]:size-4',
+    // min-w-max: ToggleGroupItem sets min-w-0, which squeezed "Personal trainer".
+    'inline-flex h-10 min-w-max shrink-0 items-center justify-center gap-2 px-3.5 text-sm sm:px-4 [&_svg]:size-4',
 );
 
 type ToggleProps = {

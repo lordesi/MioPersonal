@@ -20,7 +20,7 @@ import type {
 
 type HomeProps = {
     featuredTrainers: TrainerSummary[];
-    /** Two of "Liberi oggi", "In tendenza", "Nuovi": only with enough trainers. */
+    /** "In tendenza" and "Nuovi": only with enough trainers. */
     trainerShelves: {
         key: string;
         title: string;

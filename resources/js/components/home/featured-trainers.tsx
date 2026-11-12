@@ -15,7 +15,7 @@ type FeaturedTrainersProps = {
 
 /**
  * "Trainer in evidenza" (HomeController): the best rated, in a carousel.
- * Also the shelves "In tendenza", "Liberi oggi" and "Nuovi" (TrainerShelves).
+ * Also the shelves "In tendenza" and "Nuovi" (TrainerShelves).
  */
 export default function FeaturedTrainers({
     trainers,

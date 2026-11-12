@@ -8,7 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The extra shelves of the home: "In tendenza", "Nuovi" and "Liberi oggi".
+ * The extra shelves of the home: "In tendenza" and "Nuovi".
  *
  * A shelf with fewer than MIN_TRAINERS trainers is not shown at all: three
  * trainers fill one page of the carousel, fewer would look empty or made up.
@@ -40,7 +40,6 @@ final class TrainerShelves
 
         $shelves = [
             ['key' => 'trending', 'title' => 'Trainer in tendenza', 'ids' => self::trendingIds($now)],
-            ['key' => 'available-today', 'title' => 'Liberi oggi', 'ids' => self::availableTodayIds($now)],
             ['key' => 'new', 'title' => 'Nuovi su MioPersonal', 'ids' => self::newIds($now)],
         ];
 
@@ -109,25 +108,6 @@ final class TrainerShelves
         arsort($scores);
 
         return array_map('intval', array_slice(array_keys($scores), 0, self::LIMIT));
-    }
-
-    /**
-     * A free slot in the next 24 hours, the soonest first.
-     *
-     * @return list<int>
-     */
-    public static function availableTodayIds(CarbonImmutable $now): array
-    {
-        return array_values(TrainerProfile::query()
-            ->published()
-            ->whereNotNull('next_free_slot_at')
-            ->where('next_free_slot_at', '>=', $now)
-            ->where('next_free_slot_at', '<=', $now->addDay())
-            ->orderBy('next_free_slot_at')
-            ->limit(self::LIMIT)
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all());
     }
 
     /**
