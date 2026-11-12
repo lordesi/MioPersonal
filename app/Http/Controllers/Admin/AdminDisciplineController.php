@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\DisciplineRequest;
+use App\Models\AdminActivity;
 use App\Models\Discipline;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ use Inertia\Inertia;
 /**
  * Disciplines in Admin · Discipline e città: add, edit (name, hidden or
  * visible) and order. They are never deleted: trainers may use them.
- * TODO: record these actions in admin_activity_log (step 7 of docs/database/analisi.md).
+ * Every change goes in the "Registro attività".
  */
 class AdminDisciplineController extends Controller
 {
@@ -22,7 +23,7 @@ class AdminDisciplineController extends Controller
     {
         $name = trim($request->string('name')->value());
 
-        Discipline::create([
+        $discipline = Discipline::create([
             'name' => $name,
             // Fixed from now on: it is in the search URLs (?disciplina=…).
             'slug' => Str::slug($name),
@@ -30,6 +31,7 @@ class AdminDisciplineController extends Controller
             'sort' => (int) Discipline::max('sort') + 10,
         ]);
 
+        AdminActivity::log('discipline.created', $discipline, "Disciplina «{$name}» aggiunta");
         Inertia::flash('toast', ['type' => 'success', 'message' => "«{$name}» aggiunta."]);
 
         return back();
@@ -43,6 +45,7 @@ class AdminDisciplineController extends Controller
             'is_active' => $request->boolean('is_active', $discipline->is_active),
         ]);
 
+        AdminActivity::log('discipline.updated', $discipline, "Disciplina «{$discipline->name}» modificata".($discipline->is_active ? '' : ' (nascosta)'));
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Modifiche salvate.']);
 
         return back();

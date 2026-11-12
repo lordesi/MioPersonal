@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\BookingActor;
 use App\Enums\BookingStatus;
-use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
+use App\Http\Controllers\Admin\Concerns\BuildsAdminArea;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use Illuminate\Http\Request;
@@ -17,7 +17,7 @@ use Inertia\Response;
  */
 class AdminBookingsController extends Controller
 {
-    use BuildsAdminPlaceholderData;
+    use BuildsAdminArea;
 
     /** Enough for the beta: older ones are found by number. */
     private const LIMIT = 200;

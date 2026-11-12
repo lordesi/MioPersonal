@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
+use App\Http\Controllers\Admin\Concerns\BuildsAdminArea;
 use App\Http\Controllers\Controller;
+use App\Models\AdminActivity;
 use App\Models\GroupSession;
 use App\Support\GroupSessionCard;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +18,7 @@ use Inertia\Response;
  */
 class AdminEventsController extends Controller
 {
-    use BuildsAdminPlaceholderData;
+    use BuildsAdminArea;
 
     private const LIMIT = 200;
 
@@ -43,6 +44,7 @@ class AdminEventsController extends Controller
     public function hide(GroupSession $event): RedirectResponse
     {
         $event->update(['hidden_at' => now()]);
+        AdminActivity::log('event.hidden', $event, "Evento «{$event->title}» nascosto");
 
         return back();
     }
@@ -50,6 +52,7 @@ class AdminEventsController extends Controller
     public function show(GroupSession $event): RedirectResponse
     {
         $event->update(['hidden_at' => null]);
+        AdminActivity::log('event.shown', $event, "Evento «{$event->title}» di nuovo visibile");
 
         return back();
     }

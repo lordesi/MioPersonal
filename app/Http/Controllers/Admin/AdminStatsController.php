@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
+use App\Http\Controllers\Admin\Concerns\BuildsAdminArea;
 use App\Http\Controllers\Controller;
 use App\Support\AdminStats;
 use Inertia\Inertia;
@@ -14,7 +14,7 @@ use Inertia\Response;
  */
 class AdminStatsController extends Controller
 {
-    use BuildsAdminPlaceholderData;
+    use BuildsAdminArea;
 
     public function __invoke(): Response
     {

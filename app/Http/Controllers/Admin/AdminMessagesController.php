@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
+use App\Http\Controllers\Admin\Concerns\BuildsAdminArea;
 use App\Http\Controllers\Controller;
 use App\Models\ContactMessage;
 use Illuminate\Http\RedirectResponse;
@@ -15,7 +15,7 @@ use Inertia\Response;
  */
 class AdminMessagesController extends Controller
 {
-    use BuildsAdminPlaceholderData;
+    use BuildsAdminArea;
 
     /** Enough for the beta. */
     private const LIMIT = 200;

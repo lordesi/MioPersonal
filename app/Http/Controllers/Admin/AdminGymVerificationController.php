@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\GymAmenity;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\TrainerReviewDecision;
-use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
+use App\Http\Controllers\Admin\Concerns\BuildsAdminArea;
 use App\Http\Controllers\Controller;
+use App\Models\AdminActivity;
 use App\Models\GymAmenityDetail;
 use App\Models\GymPhoto;
 use App\Models\GymProfile;
@@ -27,7 +28,7 @@ use Inertia\Response;
  */
 class AdminGymVerificationController extends Controller
 {
-    use BuildsAdminPlaceholderData;
+    use BuildsAdminArea;
 
     /** How long a decided profile stays in the list. */
     private const DECIDED_HOURS = 24;
@@ -94,6 +95,8 @@ class AdminGymVerificationController extends Controller
         if ($decision !== TrainerReviewDecision::Undone) {
             $gym->user->notify(new GymProfileDecided($review, route('gyms.show', $gym->slug)));
         }
+
+        AdminActivity::log("gym.{$decision->value}", $gym, "Palestra {$gym->name} {$decision->logLabel()}");
 
         return back();
     }

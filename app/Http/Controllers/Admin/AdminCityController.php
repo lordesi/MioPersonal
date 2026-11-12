@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CityRequest;
+use App\Models\AdminActivity;
 use App\Models\City;
 use Database\Seeders\CitySeeder;
 use Illuminate\Http\RedirectResponse;
@@ -12,7 +13,7 @@ use Inertia\Inertia;
 /**
  * Cities in Admin · Discipline e città: add a missing one, edit or hide it.
  * A hidden city disappears from the menus and its search page gives 404.
- * TODO: record these actions in admin_activity_log (step 7 of docs/database/analisi.md).
+ * Every change goes in the "Registro attività".
  */
 class AdminCityController extends Controller
 {
@@ -20,13 +21,14 @@ class AdminCityController extends Controller
     {
         $name = trim($request->string('name')->value());
 
-        City::create([
+        $city = City::create([
             'name' => $name,
             // Fixed from now on: it is in the search URL (/personal-trainer/{slug}).
             'slug' => CitySeeder::slug($name),
             ...$this->fields($request),
         ]);
 
+        AdminActivity::log('city.created', $city, "Città «{$name}» aggiunta");
         Inertia::flash('toast', ['type' => 'success', 'message' => "«{$name}» aggiunta."]);
 
         return back();
@@ -41,6 +43,7 @@ class AdminCityController extends Controller
             ...$this->fields($request),
         ]);
 
+        AdminActivity::log('city.updated', $city, "Città «{$city->name}» modificata".($city->is_active ? '' : ' (nascosta)'));
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Modifiche salvate.']);
 
         return back();

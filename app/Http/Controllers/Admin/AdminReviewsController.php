@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
+use App\Http\Controllers\Admin\Concerns\BuildsAdminArea;
 use App\Http\Controllers\Controller;
+use App\Models\AdminActivity;
 use App\Models\Review;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,12 +15,11 @@ use Inertia\Response;
  * "Recensioni": the reviews of the platform, the newest first, with a warning
  * when the text has contacts in it. "Nascondi" takes a review off the profile
  * and the average; "Mostra di nuovo" puts it back.
- *
- * TODO: record hide and show in admin_activity_log (step 7 of docs/database/analisi.md).
+ * Both go in the "Registro attività".
  */
 class AdminReviewsController extends Controller
 {
-    use BuildsAdminPlaceholderData;
+    use BuildsAdminArea;
 
     /** Enough for the beta. */
     private const LIMIT = 200;
@@ -51,6 +51,7 @@ class AdminReviewsController extends Controller
     {
         $review->forceFill(['hidden_at' => now(), 'hidden_by' => $request->user()?->id])->save();
         $review->trainerProfile->refreshRating();
+        AdminActivity::log('review.hidden', $review, "Recensione su {$review->trainerProfile->user->name} nascosta");
 
         return back();
     }
@@ -59,6 +60,7 @@ class AdminReviewsController extends Controller
     {
         $review->forceFill(['hidden_at' => null, 'hidden_by' => null])->save();
         $review->trainerProfile->refreshRating();
+        AdminActivity::log('review.shown', $review, "Recensione su {$review->trainerProfile->user->name} di nuovo visibile");
 
         return back();
     }

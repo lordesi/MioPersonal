@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\TrainerProfileStatus;
-use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
+use App\Http\Controllers\Admin\Concerns\BuildsAdminArea;
 use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\Discipline;
@@ -17,7 +17,7 @@ use Inertia\Response;
  */
 class AdminCatalogController extends Controller
 {
-    use BuildsAdminPlaceholderData;
+    use BuildsAdminArea;
 
     public function __invoke(): Response
     {

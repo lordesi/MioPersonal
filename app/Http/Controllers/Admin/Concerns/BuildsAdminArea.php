@@ -11,10 +11,10 @@ use App\Models\TrainerProfile;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Placeholder data of the admin panel, shown until the real tables exist.
- * TODO: delete once every admin page reads from the database.
+ * What every admin page sends: the menu badges. With the date helpers of
+ * BuildsPlaceholderData, still used by some admin pages.
  */
-trait BuildsAdminPlaceholderData
+trait BuildsAdminArea
 {
     use BuildsPlaceholderData;
 

@@ -6,6 +6,7 @@ use App\Actions\Account\ScheduleUserDeletion;
 use App\Actions\Trainer\DeleteTrainerProfile;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\AdminActivity;
 use App\Models\User;
 use App\Support\TrainerSlots;
 use Illuminate\Http\RedirectResponse;
@@ -27,7 +28,7 @@ class AdminUserStatusController extends Controller
         $user->forceFill(['suspended_at' => now()])->save();
         $this->refreshSlots($user);
 
-        return $this->done("Account sospeso: {$user->name}");
+        return $this->done('user.suspended', $user, "Account sospeso: {$user->name}");
     }
 
     public function reactivate(User $user): RedirectResponse
@@ -35,7 +36,7 @@ class AdminUserStatusController extends Controller
         $user->forceFill(['suspended_at' => null])->save();
         $this->refreshSlots($user);
 
-        return $this->done("Account riattivato: {$user->name}");
+        return $this->done('user.reactivated', $user, "Account riattivato: {$user->name}");
     }
 
     /** Deleted after User::DELETION_GRACE_DAYS (`users:purge-deleted`). */
@@ -45,7 +46,7 @@ class AdminUserStatusController extends Controller
 
         $scheduleDeletion->handle($user, User::DELETION_BY_ADMIN);
 
-        return $this->done("Dati di {$user->name} in cancellazione: spariscono tra ".User::DELETION_GRACE_DAYS.' giorni.');
+        return $this->done('user.deletion_scheduled', $user, "Dati di {$user->name} in cancellazione: spariscono tra ".User::DELETION_GRACE_DAYS.' giorni.');
     }
 
     /** Also a deletion the user asked for: they asked the team to keep the account. */
@@ -54,7 +55,7 @@ class AdminUserStatusController extends Controller
         $user->forceFill(['deletion_scheduled_at' => null, 'deletion_requested_by' => null])->save();
         $this->refreshSlots($user);
 
-        return $this->done("Cancellazione annullata: {$user->name}");
+        return $this->done('user.deletion_cancelled', $user, "Cancellazione annullata: {$user->name}");
     }
 
     /**
@@ -76,7 +77,7 @@ class AdminUserStatusController extends Controller
             $user->save();
         });
 
-        return $this->done("Profilo trainer di {$user->name} eliminato: resta iscritto come cliente.");
+        return $this->done('trainer.deleted', $user, "Profilo trainer di {$user->name} eliminato: resta iscritto come cliente.");
     }
 
     private function ensureNotAdmin(User $user): void
@@ -92,8 +93,11 @@ class AdminUserStatusController extends Controller
         }
     }
 
-    private function done(string $message): RedirectResponse
+    /** The toast for the team, and the same words in the "Registro attività". */
+    private function done(string $action, User $user, string $message): RedirectResponse
     {
+        AdminActivity::log($action, $user, $message);
+
         Inertia::flash('toast', ['type' => 'success', 'message' => $message]);
 
         return back();

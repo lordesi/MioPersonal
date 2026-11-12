@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\UserRole;
-use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
+use App\Http\Controllers\Admin\Concerns\BuildsAdminArea;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,7 +20,7 @@ use Inertia\Response;
  */
 class AdminUsersController extends Controller
 {
-    use BuildsAdminPlaceholderData;
+    use BuildsAdminArea;
 
     /** Enough for the beta: the search box finds the others. */
     private const LIMIT = 200;

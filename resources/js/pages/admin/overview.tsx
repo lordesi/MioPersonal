@@ -1,10 +1,13 @@
 import { Head, Link } from '@inertiajs/react';
+import ActivityList from '@/components/admin/activity-list';
 import {
     bookings,
     gymVerification,
     reports,
+    settings,
     verification,
 } from '@/routes/admin';
+import type { AdminActivityRow } from '@/types';
 
 type OverviewProps = {
     todo: {
@@ -29,6 +32,8 @@ type OverviewProps = {
         expiredRate: number;
         declinedRate: number;
     };
+    /** The latest lines of the "Registro attività". */
+    activity: AdminActivityRow[];
 };
 
 /** (1, 'giorno', 'giorni') → "1 giorno"; (3, …) → "3 giorni" */
@@ -41,7 +46,7 @@ function percent(ratio: number): string {
     return `${Math.round(ratio * 100)}%`;
 }
 
-export default function Overview({ todo, stats }: OverviewProps) {
+export default function Overview({ todo, stats, activity }: OverviewProps) {
     const todoCards = [
         {
             count: todo.verificationCount,
@@ -156,6 +161,24 @@ export default function Overview({ todo, stats }: OverviewProps) {
                         </span>
                     </div>
                 ))}
+            </section>
+
+            <section
+                aria-labelledby="activity-title"
+                className="flex flex-col gap-3"
+            >
+                <div className="flex flex-wrap items-end justify-between gap-2">
+                    <h2 id="activity-title" className="text-lg font-semibold">
+                        Ultime azioni del team
+                    </h2>
+                    <Link
+                        href={settings()}
+                        className="text-[13px] font-semibold underline"
+                    >
+                        Tutto il registro
+                    </Link>
+                </div>
+                <ActivityList activity={activity} />
             </section>
         </>
     );

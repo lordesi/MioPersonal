@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\BookingStatus;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
-use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
+use App\Http\Controllers\Admin\Concerns\BuildsAdminArea;
 use App\Http\Controllers\Controller;
+use App\Models\AdminActivity;
 use App\Models\Booking;
 use App\Models\GymProfile;
 use App\Models\TrainerProfile;
@@ -19,13 +20,16 @@ use Inertia\Response;
 /** "Panoramica": what to do today and the main numbers of the platform. */
 class AdminOverviewController extends Controller
 {
-    use BuildsAdminPlaceholderData;
+    use BuildsAdminArea;
 
     /** "Trainer attivi": trainers who used the web app in this many hours. */
     public const ACTIVE_HOURS = 24;
 
     /** "Prenotazioni confermate": the requests of this many days. */
     private const RATE_DAYS = 30;
+
+    /** "Ultime azioni del team". */
+    private const ACTIVITY_LINES = 8;
 
     public function __invoke(): Response
     {
@@ -69,6 +73,13 @@ class AdminOverviewController extends Controller
                 'bookingsLastWeek' => Booking::query()->whereBetween('created_at', [now()->subDays(14), $weekAgo])->count(),
                 ...self::answerRates(),
             ],
+            'activity' => AdminActivity::query()
+                ->with('admin')
+                ->latest('id')
+                ->limit(self::ACTIVITY_LINES)
+                ->get()
+                ->map(fn (AdminActivity $activity) => $activity->toRow())
+                ->all(),
         ]);
     }
 

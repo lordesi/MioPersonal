@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
+use App\Http\Controllers\Admin\Concerns\BuildsAdminArea;
 use App\Http\Controllers\Controller;
+use App\Models\AdminActivity;
 use App\Models\GymProfile;
 use App\Models\Report;
 use App\Models\Review;
@@ -23,7 +24,7 @@ use Inertia\Response;
  */
 class AdminReportsController extends Controller
 {
-    use BuildsAdminPlaceholderData;
+    use BuildsAdminArea;
 
     /** The closed reports still listed under the open ones. */
     private const CLOSED_LIMIT = 50;
@@ -68,6 +69,15 @@ class AdminReportsController extends Controller
                 'resolved_by' => $request->user()?->id,
                 'resolution' => $data['resolution'],
             ]);
+
+        $title = $this->subject($reportable)['title'];
+        AdminActivity::log(
+            $data['resolution'] === Report::REMOVED ? 'report.removed' : 'report.dismissed',
+            $report,
+            $data['resolution'] === Report::REMOVED
+                ? ($reportable instanceof Review ? "Segnalazione chiusa, recensione nascosta: {$title}" : "Segnalazione gestita: {$title}")
+                : "Segnalazione ignorata: {$title}",
+        );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => $data['resolution'] === Report::REMOVED ? 'Segnalazione chiusa.' : 'Segnalazione ignorata.']);
 

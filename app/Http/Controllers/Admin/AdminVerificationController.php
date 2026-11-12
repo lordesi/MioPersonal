@@ -7,8 +7,9 @@ use App\Enums\GymLinkStatus;
 use App\Enums\PlaceType;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\TrainerReviewDecision;
-use App\Http\Controllers\Admin\Concerns\BuildsAdminPlaceholderData;
+use App\Http\Controllers\Admin\Concerns\BuildsAdminArea;
 use App\Http\Controllers\Controller;
+use App\Models\AdminActivity;
 use App\Models\TrainerDocument;
 use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
@@ -29,13 +30,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * "Verifica trainer": the profiles waiting for the team, oldest first. The
  * ones decided in the last 24 hours stay in the list, so "Annulla decisione"
- * works after a reload too.
- *
- * TODO: record the decisions in admin_activity_log (step 7 of docs/database/analisi.md).
+ * works after a reload too. Every decision goes in the "Registro attività".
  */
 class AdminVerificationController extends Controller
 {
-    use BuildsAdminPlaceholderData;
+    use BuildsAdminArea;
 
     /** How long a decided profile stays in the list. */
     private const DECIDED_HOURS = 24;
@@ -118,6 +117,8 @@ class AdminVerificationController extends Controller
         if ($decision !== TrainerReviewDecision::Undone) {
             $profile->user->notify(new TrainerProfileDecided($review, route('trainers.show', $profile->slug)));
         }
+
+        AdminActivity::log("trainer.{$decision->value}", $profile, "Profilo trainer di {$profile->user->name} {$decision->logLabel()}");
 
         return back();
     }

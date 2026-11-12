@@ -77,14 +77,17 @@ class AdminTest extends TestCase
         }
     }
 
-    public function test_settings_has_no_content_for_now()
+    public function test_settings_list_the_team_and_the_activity_log()
     {
-        $this->actingAs(User::factory()->admin()->create());
+        $admin = User::factory()->admin()->create(['name' => 'Giulia Team']);
+        User::factory()->trainer()->create();
 
-        $this->get(route('admin.settings'))
+        $this->actingAs($admin)
+            ->get(route('admin.settings'))
             ->assertInertia(fn (Assert $page) => $page
-                ->missing('team')
-                ->missing('activity')
+                ->has('team', 1)
+                ->where('team.0.name', 'Giulia Team')
+                ->has('activity', 0)
                 ->missing('defaults')
             );
     }
@@ -132,7 +135,7 @@ class AdminTest extends TestCase
                 ->where('todo.reportedCount', 0)
                 ->missing('todo.unreadMessages')
                 ->missing('bookingsPerDay')
-                ->missing('activity')
+                ->has('activity', 0)
             );
     }
 

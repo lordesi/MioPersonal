@@ -9,6 +9,18 @@ export type AdminAreaData = {
     openReports: number;
 };
 
+/** A line of the "Registro attività". */
+export type AdminActivityRow = {
+    id: number;
+    adminName: string;
+    /** e.g. "trainer.approved". */
+    action: string;
+    /** e.g. "Profilo trainer di Marco Rossi approvato". */
+    description: string;
+    /** ISO UTC string. */
+    createdAt: string;
+};
+
 /** A report sent with "Segnala", in "Admin · Segnalazioni". */
 export type AdminReport = {
     id: number;

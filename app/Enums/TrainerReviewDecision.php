@@ -11,6 +11,17 @@ enum TrainerReviewDecision: string
     /** "Annulla decisione": the profile goes back to "In revisione". */
     case Undone = 'undone';
 
+    /** For the "Registro attività": "Profilo di Marco Rossi approvato". */
+    public function logLabel(): string
+    {
+        return match ($this) {
+            self::Approved => 'approvato',
+            self::Changes => 'da modificare: modifiche richieste',
+            self::Rejected => 'rifiutato',
+            self::Undone => 'di nuovo in revisione: decisione annullata',
+        };
+    }
+
     /** The profile status after this decision. */
     public function status(): TrainerProfileStatus
     {
