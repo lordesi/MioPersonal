@@ -9,9 +9,15 @@ import { cn } from '@/lib/utils';
 import { howItWorks, news } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
 import { search as eventsSearch } from '@/routes/events';
-import { register as gymRegister } from '@/routes/gym';
+import {
+    dashboard as gymDashboard,
+    register as gymRegister,
+} from '@/routes/gym';
 import { cookies, privacy, terms } from '@/routes/legal';
-import { register as trainerRegister } from '@/routes/trainer';
+import {
+    register as trainerRegister,
+    today as trainerToday,
+} from '@/routes/trainer';
 
 const exploreLinks = [
     { title: 'Personal trainer', href: searchUrl() },
@@ -21,11 +27,21 @@ const exploreLinks = [
     { title: 'Novità', href: news.url() },
 ];
 
-const proLinks = [
-    { title: 'Sei un personal trainer?', href: trainerRegister.url() },
-    { title: 'Hai una palestra?', href: gymRegister.url() },
-    { title: 'Come funziona', href: howItWorks.url() },
-];
+/** A trainer or a gym finds its own area where the sign-up of its kind was. */
+function proLinks(role?: string) {
+    return [
+        role === 'trainer'
+            ? { title: 'La tua area trainer', href: trainerToday.url() }
+            : {
+                  title: 'Sei un personal trainer?',
+                  href: trainerRegister.url(),
+              },
+        role === 'gym'
+            ? { title: 'La tua area palestra', href: gymDashboard.url() }
+            : { title: 'Hai una palestra?', href: gymRegister.url() },
+        { title: 'Come funziona', href: howItWorks.url() },
+    ];
+}
 
 const legalLinks = [
     { title: 'Contatti', href: contactPage.url() },
@@ -87,7 +103,9 @@ function LinkList({
 
 /** Black footer of the public pages (docs/design/Footer · nero). */
 export default function PublicFooter({ className }: { className?: string }) {
-    const currentPath = usePage().url.split(/[?#]/)[0];
+    const page = usePage();
+    const currentPath = page.url.split(/[?#]/)[0];
+    const role = page.props.auth?.user?.role;
 
     return (
         <footer className={cn('bg-primary text-primary-foreground', className)}>
@@ -109,7 +127,7 @@ export default function PublicFooter({ className }: { className?: string }) {
                         <LinkList
                             id="footer-pro"
                             title="Per i professionisti"
-                            links={proLinks}
+                            links={proLinks(role)}
                             currentPath={currentPath}
                         />
                         <LinkList
