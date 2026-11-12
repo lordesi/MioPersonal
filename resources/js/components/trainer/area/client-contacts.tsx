@@ -2,6 +2,7 @@ import { Mail, MessageCircle, Phone } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useId } from 'react';
 import { Button } from '@/components/ui/button';
+import { whatsAppUrl } from '@/lib/whatsapp';
 import type { TrainerClient } from '@/types';
 
 type ClientContactsProps = {
@@ -61,9 +62,8 @@ export default function ClientContacts({
                     asChild
                     className="h-12 gap-2.5 rounded-xl text-[15px] font-semibold"
                 >
-                    {/* wa.me wants the number with the prefix, digits only. */}
                     <a
-                        href={`https://wa.me/${phone.replace(/\D/g, '')}`}
+                        href={whatsAppUrl(phone)}
                         target="_blank"
                         rel="noreferrer"
                         aria-label={`Scrivi a ${name} su WhatsApp`}

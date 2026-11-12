@@ -435,13 +435,13 @@ In locale le email restano nel log. Online servono davvero: le consegna [Brevo](
 
 Il piano gratuito di Brevo permette circa 300 email al giorno, quindi **le email sono poche e solo quelle che la persona deve leggere anche senza aprire il sito**. Tutto il resto è una notifica: la **campanella** dentro il sito (tabella `notifications`, `GET /notifiche`) e, con un dispositivo attivo, la push. Le email ancora inviate, tutte con il layout `resources/views/mail/layouts/base.blade.php`:
 
-| Email | A chi |
-|---|---|
-| Conferma la tua email, Reimposta la password | chi si registra / chi la chiede |
-| Esito della verifica del profilo (online, da sistemare, non approvato) | trainer e palestre |
-| Seduta annullata dal trainer, nuovo orario proposto | cliente (e amici invitati) |
-| Evento annullato, spostato, iscrizione tolta | iscritti all'evento |
-| Messaggio dalla pagina Contatti | team (nessuna copia a chi scrive) |
+| Email                                                                  | A chi                             |
+| ---------------------------------------------------------------------- | --------------------------------- |
+| Conferma la tua email, Reimposta la password                           | chi si registra / chi la chiede   |
+| Esito della verifica del profilo (online, da sistemare, non approvato) | trainer e palestre                |
+| Seduta annullata dal trainer, nuovo orario proposto                    | cliente (e amici invitati)        |
+| Evento annullato, spostato, iscrizione tolta                           | iscritti all'evento               |
+| Messaggio dalla pagina Contatti                                        | team (nessuna copia a chi scrive) |
 
 Solo campanella + push (nessuna email): nuova richiesta o prenotazione, seduta confermata, risposte del cliente a un nuovo orario, promemoria (il giorno prima; 2 ore prima solo push), amico che partecipa, sedute fisse, iscrizione e promemoria degli eventi, evento che si farà, invito a organizzare, lista d'attesa, collegamenti trainer-palestra. I canali di ogni notifica sono nel suo `via()` (`app/Notifications`, helper in `Concerns/SendsPush`): per aggiungere una mail a una notifica basta usare `mailAndPush()` invece di `inAppAndPush()` e scrivere `toMail()`. Le notifiche più vecchie di 90 giorni le cancella `notifications:prune` (scheduler).
 

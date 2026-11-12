@@ -25,10 +25,7 @@ export default function CookieBanner({
             aria-labelledby="cookie-banner-title"
             className="fixed inset-x-3 bottom-3 z-50 mx-auto max-w-4xl rounded-2xl border bg-card p-6 text-card-foreground shadow-lg md:inset-x-6 md:bottom-6"
         >
-            <h2
-                id="cookie-banner-title"
-                className="mb-3 text-xl font-semibold"
-            >
+            <h2 id="cookie-banner-title" className="mb-3 text-xl font-semibold">
                 Migliora la tua esperienza
             </h2>
             <p className="text-[15px] leading-6">

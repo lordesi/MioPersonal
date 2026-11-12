@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { formatDateMedium, formatPrice } from '@/lib/format';
+import { whatsAppUrl } from '@/lib/whatsapp';
 import type { TrainerClient } from '@/types';
 
 const NOTES_MAX = 2000;
@@ -191,14 +192,6 @@ function PersonalLink({ client }: { client: TrainerClient }) {
     const [copied, copy] = useClipboard();
     const link = client.inviteLink ?? '';
     const firstName = client.name.split(' ')[0];
-    const digits = (client.contacts.phone ?? '').replace(/D/g, '');
-    // Italian numbers without the prefix: wa.me wants the country code.
-    const to =
-        digits !== '' &&
-        !client.contacts.phone?.trim().startsWith('+') &&
-        digits.length <= 10
-            ? `39${digits}`
-            : digits;
     const message = `Ciao ${firstName}! Da ora puoi prenotare le nostre sedute qui, vedi subito gli orari liberi: ${link}`;
 
     return (
@@ -211,7 +204,7 @@ function PersonalLink({ client }: { client: TrainerClient }) {
             <div className="flex flex-wrap gap-2">
                 <Button asChild className="h-10 font-semibold">
                     <a
-                        href={`https://wa.me/${(client.contacts.phone ?? '').replace(/\D/g, '')}?text=${encodeURIComponent(message)}`}
+                        href={whatsAppUrl(client.contacts.phone ?? '', message)}
                         target="_blank"
                         rel="noopener noreferrer"
                     >

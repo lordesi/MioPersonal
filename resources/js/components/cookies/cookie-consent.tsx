@@ -52,7 +52,8 @@ export default function CookieConsent({
     }
 
     // Only necessary cookies exist for now: every button saves "nothing optional".
-    const saveNecessaryOnly = () => save({ analytics: false, marketing: false });
+    const saveNecessaryOnly = () =>
+        save({ analytics: false, marketing: false });
 
     return (
         <>
