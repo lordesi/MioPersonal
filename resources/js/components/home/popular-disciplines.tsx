@@ -8,10 +8,7 @@ import type { CatalogOption } from '@/types';
 const SHOWN = 7;
 
 type PopularDisciplinesProps = {
-    /**
-     * From the catalog, in the team's order.
-     * TODO: show the most searched ones once searches are counted.
-     */
+    /** The most searched in the last 30 days first (App\Support\PopularDisciplines). */
     disciplines: CatalogOption[];
 };
 

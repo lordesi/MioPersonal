@@ -33,6 +33,8 @@ type HomeProps = {
     /** "Prossimi eventi": hidden when empty. */
     events: GroupSessionSummary[];
     disciplines: CatalogOption[];
+    /** "Cosa vuoi allenare?": the same disciplines, the most searched first. */
+    popularDisciplines: CatalogOption[];
     /** With their center, for "Usa la mia posizione". */
     cities: CityWithCoordinates[];
     /** "Servizi" of the gyms' search. */
@@ -56,6 +58,7 @@ export default function Home({
     events,
     news,
     disciplines,
+    popularDisciplines,
     cities,
     amenities,
     eventTypes,
@@ -70,7 +73,7 @@ export default function Home({
                 amenities={amenities}
                 eventTypes={eventTypes}
             />
-            <PopularDisciplines disciplines={disciplines} />
+            <PopularDisciplines disciplines={popularDisciplines} />
             <FeaturedTrainers trainers={featuredTrainers} />
             {trainerShelves.map((shelf) => (
                 <FeaturedTrainers

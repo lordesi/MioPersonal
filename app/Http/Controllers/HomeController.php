@@ -14,6 +14,7 @@ use App\Support\GroupSessionCard;
 use App\Support\GymCard;
 use App\Support\HowItWorks;
 use App\Support\NewsFeed;
+use App\Support\PopularDisciplines;
 use App\Support\Seo;
 use App\Support\TrainerCard;
 use App\Support\TrainerShelves;
@@ -56,7 +57,9 @@ class HomeController extends Controller
             // "Novità": the newest trainers and gyms of all of Italy.
             'news' => NewsFeed::preview(null, $request->user()),
             // Options of the search form.
-            'disciplines' => CatalogOptions::disciplines(),
+            'disciplines' => $disciplines = CatalogOptions::disciplines(),
+            // "Cosa vuoi allenare?": the most searched first.
+            'popularDisciplines' => PopularDisciplines::order($disciplines),
             // With the center of each city: "Usa la mia posizione" finds the closest one in the browser.
             'cities' => CatalogOptions::citiesWithCoordinates(),
             // "Servizi" of the gyms' search ("Trainer | Palestre").
