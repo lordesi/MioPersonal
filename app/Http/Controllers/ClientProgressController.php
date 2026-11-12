@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Achievement;
 use App\Enums\ActivityKind;
 use App\Http\Requests\ClientPreferencesRequest;
 use App\Models\ActivityLog;
 use App\Models\BodyMeasurement;
 use App\Models\User;
+use App\Support\Achievements;
 use App\Support\ClientProgress;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -50,8 +52,11 @@ class ClientProgressController extends Controller
         ]);
 
         $client->activityLogs()->create($data);
+        $new = Achievements::sync($client, ClientProgress::for($client));
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Allenamento segnato.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $new === []
+            ? 'Allenamento segnato.'
+            : 'Allenamento segnato. Nuovo traguardo: '.implode(', ', array_map(fn (Achievement $achievement) => $achievement->title(), $new)).'!']);
 
         return back();
     }

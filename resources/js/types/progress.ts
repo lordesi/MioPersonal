@@ -64,3 +64,30 @@ export type TrainerNote = {
     /** ISO UTC. */
     at: string;
 };
+
+/** A "Traguardo" reached (App\Enums\Achievement). */
+export type EarnedAchievement = {
+    key: string;
+    title: string;
+    description: string;
+    /** ISO UTC. */
+    earnedAt: string;
+    /** Named on the image for the stories, while the profile is published. */
+    trainer: { name: string; link: string } | null;
+};
+
+/** App\Support\Achievements::summary(). */
+export type ClientAchievements = {
+    /** The most recent first. */
+    earned: EarnedAchievement[];
+    /** The closest one still to reach, null when none is left. */
+    next: {
+        key: string;
+        title: string;
+        description: string;
+        current: number;
+        target: number;
+    } | null;
+    /** Where the image leads without a trainer. */
+    siteLink: string;
+};

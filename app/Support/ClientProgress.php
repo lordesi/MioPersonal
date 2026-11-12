@@ -150,6 +150,47 @@ final class ClientProgress
         return $streak;
     }
 
+    /** The longest row of weeks with the goal reached, ever ("Traguardi"). */
+    public function longestStreak(): int
+    {
+        $counts = $this->countsByWeek();
+
+        if ($counts->isEmpty()) {
+            return 0;
+        }
+
+        $target = max(1, $this->goal ?? 1);
+        $week = CarbonImmutable::parse((string) $counts->keys()->min(), self::TIMEZONE);
+        $last = $this->today->startOfWeek(CarbonInterface::MONDAY);
+        $longest = 0;
+        $row = 0;
+
+        while ($week <= $last) {
+            $row = $counts->get($week->format('Y-m-d'), 0) >= $target ? $row + 1 : 0;
+            $longest = max($longest, $row);
+            $week = $week->addWeek();
+        }
+
+        return $longest;
+    }
+
+    /** How many different ways of training: disciplines of the sessions and events, kinds of the diary. */
+    public function disciplines(): int
+    {
+        return $this->entries->pluck('discipline')->unique()->count();
+    }
+
+    /**
+     * The trainer the client trained with the most, null without sessions.
+     */
+    public function mainTrainerId(): ?int
+    {
+        /** @var int|string|null $id */
+        $id = $this->entries->whereNotNull('trainerProfileId')->countBy('trainerProfileId')->sortDesc()->keys()->first();
+
+        return $id === null ? null : (int) $id;
+    }
+
     /**
      * The trainings of the last weeks, the current one last.
      *

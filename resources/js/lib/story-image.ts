@@ -239,6 +239,138 @@ export async function drawStory(
     context.fillText('Inquadra il codice', 490, cardTop + 336);
 }
 
+/** A "Traguardo" for the stories (Achievements::summary). */
+export type AchievementStory = {
+    title: string;
+    description: string;
+    /** "12 novembre 2026". */
+    date: string;
+    /** The trainer it was reached with, while the profile is published. */
+    trainerName: string | null;
+    /** Where the QR code leads: the trainer's profile, or the site. */
+    link: string;
+};
+
+/**
+ * Draws a "Traguardo" on `canvas` (1080 × 1920), black and white as the
+ * profile story: logo, a ring with a check, the title and, at the bottom,
+ * the white card with the QR code to the trainer (or to the site).
+ */
+export async function drawAchievementStory(
+    canvas: HTMLCanvasElement,
+    story: AchievementStory,
+): Promise<void> {
+    canvas.width = STORY_WIDTH;
+    canvas.height = STORY_HEIGHT;
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+        return;
+    }
+
+    await Promise.all([
+        document.fonts.load(`700 96px ${FONT}`),
+        document.fonts.load(`500 40px ${FONT}`),
+    ]).catch(() => undefined);
+
+    const qr = await qrDataUrl(story.link, 400).then(loadImage);
+    const center = STORY_WIDTH / 2;
+
+    context.fillStyle = INK;
+    context.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
+    context.textAlign = 'center';
+    context.textBaseline = 'alphabetic';
+
+    // The logo, as on the profile story.
+    context.save();
+    context.translate(center - 63, 120);
+    context.scale(0.3, 0.3);
+    context.fillStyle = WHITE;
+    context.fill(new Path2D(MARK_PATH));
+    context.restore();
+    context.fillStyle = WHITE;
+    context.font = `600 40px ${FONT}`;
+    context.fillText('MioPersonal', center, 250);
+
+    // A full ring with a check: reached.
+    const ringY = 560;
+    context.strokeStyle = WHITE;
+    context.lineWidth = 28;
+    context.beginPath();
+    context.arc(center, ringY, 190, 0, Math.PI * 2);
+    context.stroke();
+    context.lineWidth = 32;
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.beginPath();
+    context.moveTo(center - 85, ringY + 5);
+    context.lineTo(center - 20, ringY + 70);
+    context.lineTo(center + 95, ringY - 60);
+    context.stroke();
+
+    let y = 900;
+    context.fillStyle = MUTED;
+    context.font = `600 40px ${FONT}`;
+    context.fillText('TRAGUARDO RAGGIUNTO', center, y);
+
+    y += 120;
+    context.fillStyle = WHITE;
+    context.font = `700 96px ${FONT}`;
+
+    for (const line of lines(context, story.title, 940, 2)) {
+        context.fillText(line, center, y);
+        y += 108;
+    }
+
+    context.fillStyle = MUTED;
+    context.font = `500 40px ${FONT}`;
+    y += 10;
+
+    for (const line of lines(context, story.description, 900, 2)) {
+        context.fillText(line, center, y);
+        y += 54;
+    }
+
+    context.fillStyle = WHITE;
+    context.font = `500 36px ${FONT}`;
+    context.fillText(
+        story.trainerName
+            ? `${story.date} · con ${story.trainerName}`
+            : story.date,
+        center,
+        y + 30,
+    );
+
+    // The white card: QR code and where it leads.
+    const cardTop = 1430;
+    context.fillStyle = WHITE;
+    context.beginPath();
+    context.roundRect(80, cardTop, STORY_WIDTH - 160, 400, 40);
+    context.fill();
+    context.drawImage(qr, 120, cardTop + 40, 320, 320);
+
+    context.textAlign = 'left';
+    context.fillStyle = INK;
+    context.font = `700 52px ${FONT}`;
+    const call = story.trainerName
+        ? [
+              'Allenati',
+              `con ${story.trainerName.split(' ')[0]}`,
+              'su MioPersonal',
+          ]
+        : ['Trova il tuo', 'trainer su', 'MioPersonal'];
+    call.forEach((text, index) =>
+        context.fillText(
+            lines(context, text, 480, 1)[0] ?? text,
+            490,
+            cardTop + 150 + index * 62,
+        ),
+    );
+    context.fillStyle = '#737373';
+    context.font = `500 32px ${FONT}`;
+    context.fillText('Inquadra il codice', 490, cardTop + 336);
+}
+
 /** The canvas as a PNG file, to download or share. */
 export function canvasFile(
     canvas: HTMLCanvasElement,

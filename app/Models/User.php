@@ -243,6 +243,16 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * "Traguardi" reached.
+     *
+     * @return HasMany<ClientAchievement, $this>
+     */
+    public function achievements(): HasMany
+    {
+        return $this->hasMany(ClientAchievement::class);
+    }
+
+    /**
      * The weight over time, only with the consent to body data.
      *
      * @return HasMany<BodyMeasurement, $this>

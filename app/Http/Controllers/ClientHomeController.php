@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Achievement;
 use App\Enums\ActivityKind;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\TrainerClient;
 use App\Models\User;
+use App\Support\Achievements;
 use App\Support\ClientBookingData;
 use App\Support\ClientProgress;
 use App\Support\NewsFeed;
@@ -46,12 +48,18 @@ class ClientHomeController extends Controller
                 ->filter(fn (Booking $booking) => $booking->status === BookingStatus::Cancelled)
                 ->count();
         $next = $upcoming->first();
+        $progress = ClientProgress::for($client);
+        // A session just done or an event attended can bring a new one.
+        $justEarned = Achievements::sync($client, $progress);
 
         return Inertia::render('client/home', [
             'firstName' => $client->first_name,
             'next' => $next === null ? null : ClientBookingData::upcoming($next),
             'toAnswer' => $toAnswer,
-            'progress' => ClientProgress::for($client)->summary(),
+            'progress' => $progress->summary(),
+            'achievements' => Achievements::summary($client, $progress),
+            // Shown once, with a toast.
+            'justEarned' => array_map(fn (Achievement $achievement) => $achievement->title(), $justEarned),
             // Null without the consent to body data: the panel is not shown.
             'weights' => ClientProgress::weights($client),
             // "Segna un allenamento".

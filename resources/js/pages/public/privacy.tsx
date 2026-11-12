@@ -36,7 +36,9 @@ const sections: LegalSection[] = [
                         'Se usi «Continua con Google»: l’identificativo del tuo account Google, nome, cognome ed email. Non riceviamo la tua password Google né la tua foto.',
                         'Profilo cliente, se lo completi: foto, città in cui ti alleni, obiettivo, discipline, orari preferiti, budget indicativo e trainer salvati nei preferiti.',
                         '«Su di te», se lo compili: anno di nascita, sesso, livello, da quanto ti alleni, quanto ti muovi, quante volte a settimana vorresti allenarti, sport praticati e una nota per il trainer.',
-                        'Altezza e peso, solo se scegli di indicarli dando il consenso apposito.',
+                        'Altezza e peso, solo se scegli di indicarli dando il consenso apposito; con lo stesso consenso, il peso che segni nel tempo nella tua «Panoramica».',
+                        'Il diario della «Panoramica», se lo usi: gli allenamenti che segni (tipo, giorno e, se li scrivi, minuti, fatica e una nota), il tuo obiettivo settimanale e i traguardi raggiunti, calcolati anche dalle sedute, dai corsi e dagli eventi prenotati qui.',
+                        'Con chi condividi i progressi (trainer per trainer, se lo attivi) e le note che i tuoi trainer scrivono per te.',
                         'Profilo trainer: foto e galleria, presentazione, anni di esperienza, discipline, obiettivi con cui lavori, zone, nome e indirizzo dei luoghi in cui alleni, indicazioni per arrivare, servizi, pacchetti e prezzi, orari di lavoro, certificazioni e relativi attestati.',
                         'Social del trainer, se li colleghi (Instagram, TikTok, Facebook, YouTube): l’identificativo dell’account, il nome utente (su Facebook il nome) e il link al profilo. Non conserviamo le chiavi di accesso che il social ci dà, né leggiamo post, messaggi o follower. Se scrivi a mano il tuo nome Instagram, salviamo solo quello.',
                         'Prenotazioni: trainer scelto, servizio, data, orario, luogo, stato della prenotazione con la sua storia (richiesta, conferma, annullamento) e i pacchetti di sedute con le sedute usate.',
@@ -53,10 +55,11 @@ const sections: LegalSection[] = [
                 <LegalNote>
                     Altezza e peso possono dire qualcosa sulla tua salute: li
                     salviamo solo con il tuo consenso esplicito e puoi
-                    cancellarli quando vuoi da «Modifica profilo». Non chiediamo
-                    altri dati sulla salute (malattie, infortuni, farmaci): ti
-                    chiediamo di non inserirli nei messaggi, nelle note o nelle
-                    recensioni.
+                    cancellarli quando vuoi da «Modifica profilo»; togliendo il
+                    consenso cancelliamo anche il peso segnato nel tempo. Non
+                    chiediamo altri dati sulla salute (malattie, infortuni,
+                    farmaci): ti chiediamo di non inserirli nei messaggi, nelle
+                    note o nelle recensioni.
                 </LegalNote>
             </>
         ),
@@ -72,6 +75,8 @@ const sections: LegalSection[] = [
                     'Inviarti email di servizio, per esempio la conferma di una prenotazione (art. 6.1.b).',
                     'Mostrare ai trainer a cui chiedi una seduta la tua percentuale di presenza, calcolata sulle sedute svolte con tutti i trainer e su quelle segnate come saltate: legittimo interesse dei trainer a organizzare il proprio lavoro (art. 6.1.f). Puoi opporti scrivendoci.',
                     'Mostrare ai trainer a cui chiedi una seduta quello che scrivi in «Su di te», perché possano prepararla su misura: esecuzione del servizio (art. 6.1.b). Altezza e peso solo con il tuo consenso esplicito (art. 9.2.a GDPR), che puoi revocare togliendo la spunta: li cancelliamo subito.',
+                    'Mostrarti nella «Panoramica» i tuoi allenamenti, l’obiettivo e i traguardi: esecuzione del servizio (art. 6.1.b). Il peso nel tempo solo con il consenso esplicito (art. 9.2.a).',
+                    'Mostrare i tuoi progressi a un trainer solo se attivi la condivisione con lui: il tuo consenso (art. 6.1.a, e 9.2.a per il peso), che revochi spegnendo l’interruttore.',
                     'Oggi non inviamo newsletter né novità promozionali. Se lo faremo, sarà solo con il tuo consenso, revocabile in ogni momento (art. 6.1.a).',
                     'Proteggere la piattaforma da abusi e accessi non autorizzati: legittimo interesse (art. 6.1.f).',
                     'Statistiche interne per migliorare il servizio (quanti utenti sono attivi, cosa si cerca e non si trova): legittimo interesse (art. 6.1.f). Le ricerche e le visite ai profili sono anonime; i giorni di attività si cancellano con l’account.',
@@ -88,6 +93,8 @@ const sections: LegalSection[] = [
                 <LegalList
                     items={[
                         'Il trainer a cui chiedi una seduta vede nome e cognome, servizio, data e orario, la tua percentuale di presenza e quello che hai scritto in «Su di te» (con altezza e peso solo se li hai indicati); email e telefono solo dopo che ha confermato una tua prenotazione.',
+                        'Un trainer con cui ti sei allenato vede i tuoi progressi (allenamenti, settimane di fila, obiettivo e, con il consenso, il peso) solo se attivi la condivisione con lui; le note del diario restano tue e le sedute con altri trainer compaiono senza il loro nome.',
+                        'Se condividi un traguardo, l’immagine la crei tu sul tuo dispositivo e decidi tu dove pubblicarla.',
                         'Sul profilo pubblico del trainer, visibile a tutti, compaiono nome e cognome, foto, presentazione, servizi e prezzi, certificazioni (titolo ed ente, non l’attestato), il nome e l’indirizzo degli studi in cui allena, i social collegati (con il link al profilo) e le recensioni.',
                         'Se colleghi un social, quella piattaforma (Meta per Instagram e Facebook, TikTok, Google per YouTube) sa che hai autorizzato MioPersonal: per quella parte è un titolare autonomo, con la sua informativa.',
                         'Nelle recensioni compaiono il tuo nome e l’iniziale del cognome, per esempio «Anna B.».',

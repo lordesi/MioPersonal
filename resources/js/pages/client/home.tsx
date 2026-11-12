@@ -1,8 +1,10 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowRight, Check, Plus, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import NextSessionSummary from '@/components/client/next-session-summary';
 import PackageCarousel from '@/components/client/package-carousel';
+import AchievementsPanel from '@/components/client/progress/achievements-panel';
 import ActivityPanel from '@/components/client/progress/activity-panel';
 import GoalCard from '@/components/client/progress/goal-card';
 import LogActivityDialog from '@/components/client/progress/log-activity-dialog';
@@ -23,6 +25,7 @@ import { profile } from '@/routes/client';
 import { search as eventsSearch } from '@/routes/events';
 import type {
     ActivityKindOption,
+    ClientAchievements,
     ClientPackage,
     ClientProgressSummary,
     ClientTrainer,
@@ -41,6 +44,9 @@ type HomeProps = {
     /** Bookings waiting for the client's answer. */
     toAnswer: number;
     progress: ClientProgressSummary;
+    achievements: ClientAchievements;
+    /** The titles of the ones reached just now: a toast, once. */
+    justEarned: string[];
     /** Null without the consent to body data. */
     weights: WeightPoint[] | null;
     activityKinds: ActivityKindOption[];
@@ -72,6 +78,8 @@ export default function Home({
     next,
     toAnswer,
     progress,
+    achievements,
+    justEarned,
     weights,
     activityKinds,
     today,
@@ -87,6 +95,12 @@ export default function Home({
     const [now] = useState(() => new Date());
     // All of Italy: the client's preferences only change the order.
     const bookUrl = searchUrl();
+
+    useEffect(() => {
+        if (justEarned.length > 0) {
+            toast.success(`Nuovo traguardo: ${justEarned.join(', ')}`);
+        }
+    }, [justEarned]);
 
     return (
         <>
@@ -170,6 +184,8 @@ export default function Home({
                             </p>
                         }
                     />
+
+                    <AchievementsPanel achievements={achievements} />
                 </div>
 
                 <div className="flex min-w-0 flex-[2_1_320px] flex-col gap-5">
