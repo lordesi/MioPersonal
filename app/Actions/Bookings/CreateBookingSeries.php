@@ -49,7 +49,7 @@ class CreateBookingSeries
             'service_name' => $name,
             'price_cents' => $price,
             'minutes' => $minutes,
-            'place_label' => $first?->place_label ?? app(CreateBooking::class)->placeLabel($profile, $online),
+            'place_label' => $first->place_label ?? app(CreateBooking::class)->placeLabel($profile, $online),
             'weekday' => (int) $data['weekday'],
             'start_time' => $data['start_time'],
             'starts_on' => $data['starts_on'],

@@ -97,6 +97,11 @@ final class ClientBookingData
      */
     public static function isPending(Booking $booking): bool
     {
+        // "Aggiungi seduta" of the trainer: only while the client can answer.
+        if ($booking->requested_by === BookingActor::Trainer && $booking->status !== BookingStatus::Confirmed) {
+            return $booking->isTrainerProposal();
+        }
+
         return $booking->starts_at->isFuture()
             && (in_array($booking->status, [BookingStatus::Pending, BookingStatus::Declined, BookingStatus::Expired], true)
                 || ($booking->status === BookingStatus::Cancelled && $booking->cancelled_by === BookingActor::Trainer));
@@ -164,6 +169,9 @@ final class ClientBookingData
                 default => 'pending',
             },
             'expiresAt' => $booking->isPending() && $booking->expires_at !== null ? self::iso($booking->expires_at) : null,
+            // "Aggiungi seduta": the trainer proposes it, the client accepts or declines.
+            'fromTrainer' => $booking->requested_by === BookingActor::Trainer,
+            'placeLabel' => $booking->place_label,
             // The trainer's message when cancelling.
             'cancelNote' => $booking->status === BookingStatus::Cancelled ? $booking->cancel_note : null,
         ];

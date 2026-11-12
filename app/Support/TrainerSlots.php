@@ -154,7 +154,7 @@ final class TrainerSlots
 
     /**
      * @param  list<int>  $hours  start hours of that day
-     * @param  Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable}>  $bookings
+     * @param  Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable, external?: bool}>  $bookings
      * @return array{start: string, maxMinutes: int}|null
      */
     private static function slot(TrainerProfile $profile, CarbonImmutable $date, int $hour, array $hours, CarbonImmutable $earliest, Collection $bookings): ?array
@@ -195,7 +195,7 @@ final class TrainerSlots
      * half (e.g. a 30-minute session at 18:00), so 18:30 is free for another
      * 30-minute session, and only for that (maxMinutes is always 30).
      *
-     * @param  Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable}>  $bookings
+     * @param  Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable, external?: bool}>  $bookings
      * @return array{start: string, maxMinutes: int}|null
      */
     private static function halfHourSlot(TrainerProfile $profile, CarbonImmutable $date, int $hour, CarbonImmutable $earliest, Collection $bookings): ?array
@@ -224,7 +224,7 @@ final class TrainerSlots
     /**
      * The minutes from `$start` to `$end`, or to a break before the next booking.
      *
-     * @param  Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable}>  $bookings
+     * @param  Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable, external?: bool}>  $bookings
      */
     private static function freeMinutes(TrainerProfile $profile, CarbonImmutable $start, CarbonImmutable $end, Collection $bookings): int
     {
@@ -335,7 +335,7 @@ final class TrainerSlots
      * "Blocca gli orari occupati": the times busy on Google, with the break
      * after them like a session (the one before is in freeMinutes).
      *
-     * @return Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable, external: bool}>
+     * @return Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable, external: true}>
      */
     private static function busyTimes(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $until): Collection
     {

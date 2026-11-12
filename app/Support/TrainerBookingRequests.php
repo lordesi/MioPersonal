@@ -29,7 +29,7 @@ final class TrainerBookingRequests
     public static function query(TrainerProfile $profile): HasMany
     {
         return $profile->bookings()
-            ->awaitingAnswer()
+            ->awaitingAnswer()->fromClient()
             ->with(TrainerSessions::WITH)
             ->orderBy('expires_at');
     }
@@ -81,7 +81,7 @@ final class TrainerBookingRequests
                 ->orWhere('type', 'expired'))
             ->where('created_at', '>=', now()->subDays(self::HANDLED_DAYS))
             ->whereHas('booking', fn (Builder $booking) => $booking
-                ->where('trainer_profile_id', $profile->id)
+                ->where('trainer_profile_id', $profile->id)->fromClient()
                 ->whereIn('status', [BookingStatus::Confirmed, BookingStatus::Declined, BookingStatus::Expired]))
             ->with(['booking' => fn ($booking) => $booking->with(TrainerSessions::WITH)])
             ->latest()

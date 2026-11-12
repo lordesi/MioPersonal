@@ -10,6 +10,7 @@ import ReviewPrompt, {
 import NoUpcomingSessions from '@/components/client/no-upcoming-sessions';
 import PackageCarousel from '@/components/client/package-carousel';
 import PendingBookingCard from '@/components/client/pending-booking-card';
+import TrainerProposalCard from '@/components/client/trainer-proposal-card';
 import UpcomingEvents from '@/components/events/upcoming-events';
 import SessionHistory from '@/components/client/session-history';
 import YourTrainersPanel from '@/components/client/your-trainers-panel';
@@ -75,7 +76,11 @@ export default function Bookings({
     const proposals = upcoming.filter(
         (booking): booking is ProposalBooking => booking.proposal !== null,
     );
-    const waiting = pending.filter((booking) => booking.status !== 'cancelled');
+    // "Aggiungi seduta" of the trainer: the client answers.
+    const trainerProposals = pending.filter((booking) => booking.fromTrainer);
+    const waiting = pending.filter(
+        (booking) => booking.status !== 'cancelled' && !booking.fromTrainer,
+    );
     const cancelledByTrainer = pending.filter(
         (booking) => booking.status === 'cancelled',
     );
@@ -132,6 +137,17 @@ export default function Bookings({
                 <div className="flex min-w-0 flex-[3_1_540px] flex-col gap-5">
                     {toReview && (
                         <ReviewPrompt key={toReview.id} session={toReview} />
+                    )}
+
+                    {trainerProposals.length > 0 && (
+                        <Panel title="Sedute proposte" className="gap-3">
+                            {trainerProposals.map((booking) => (
+                                <TrainerProposalCard
+                                    key={booking.id}
+                                    booking={booking}
+                                />
+                            ))}
+                        </Panel>
                     )}
 
                     {proposals.length > 0 && (

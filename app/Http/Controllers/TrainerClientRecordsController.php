@@ -123,6 +123,11 @@ class TrainerClientRecordsController extends Controller
             throw ValidationException::withMessages(['client' => 'Questo cliente ha un account: non si può rimuovere.']);
         }
 
+        // "Aggiungi seduta": the sessions still to come go first, from the calendar.
+        if ($client->bookings()->active()->where('starts_at', '>', now())->exists()) {
+            throw ValidationException::withMessages(['client' => 'Questo cliente ha sedute in calendario: toglile prima di rimuoverlo.']);
+        }
+
         $client->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Cliente rimosso.']);

@@ -86,7 +86,7 @@ final class TrainerPastSessions
             'id' => $booking->id,
             // For the link to the client's profile; null once the account is deleted.
             'clientId' => $booking->client_id,
-            'clientName' => $booking->client->name ?? 'Account eliminato',
+            'clientName' => $booking->clientName(),
             // UTC: the browser shows it in Europe/Rome.
             'start' => $booking->starts_at->utc()->format('Y-m-d\TH:i:s\Z'),
             'hours' => $booking->starts_at->diffInMinutes($booking->ends_at) / 60,

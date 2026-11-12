@@ -122,6 +122,11 @@ export type CalendarItem = {
     canChange: boolean;
     /** ISO UTC string of the time proposed to the client, if any. */
     proposedStart: string | null;
+    /** "Aggiungi seduta": put in by the trainer; pending = waiting for the client. */
+    fromTrainer: boolean;
+    /** With someone without an account. */
+    offApp: boolean;
+    inviteLink: string | null;
 };
 
 /** The bookings of the server as calendar items, in Rome time. */
@@ -146,6 +151,9 @@ export function calendarItems(events: CalendarEvent[]): CalendarItem[] {
             end: event.end,
             canChange: event.canChange,
             proposedStart: event.proposedStart,
+            fromTrainer: event.fromTrainer,
+            offApp: event.offApp,
+            inviteLink: event.inviteLink,
         };
     });
 }

@@ -29,6 +29,7 @@ use App\Http\Controllers\ClientHomeController;
 use App\Http\Controllers\ClientProgressController;
 use App\Http\Controllers\ClientRescheduleController;
 use App\Http\Controllers\ClientReviewController;
+use App\Http\Controllers\ClientSessionProposalController;
 use App\Http\Controllers\ClientSharingController;
 use App\Http\Controllers\CompleteProfileController;
 use App\Http\Controllers\ContactController;
@@ -71,6 +72,7 @@ use App\Http\Controllers\TrainerClientsController;
 use App\Http\Controllers\TrainerDashboardController;
 use App\Http\Controllers\TrainerGoogleCalendarController;
 use App\Http\Controllers\TrainerGymsController;
+use App\Http\Controllers\TrainerManualSessionController;
 use App\Http\Controllers\TrainerNoShowController;
 use App\Http\Controllers\TrainerPastSessionsController;
 use App\Http\Controllers\TrainerPhotoController;
@@ -260,6 +262,11 @@ Route::middleware(['auth', 'role:client'])->group(function () {
         Route::post('/', 'accept')->name('client.bookings.reschedule.accept');
         Route::delete('/', 'decline')->name('client.bookings.reschedule.decline');
     });
+    // The answer to a session the trainer put in the calendar ("Aggiungi seduta").
+    Route::controller(ClientSessionProposalController::class)->prefix('prenotazioni/{booking}/proposta')->whereNumber('booking')->group(function () {
+        Route::post('/', 'accept')->name('client.bookings.proposal.accept');
+        Route::delete('/', 'decline')->name('client.bookings.proposal.decline');
+    });
 
     // "Eventi": a place confirmed at once while there are places left, given back until the start.
     Route::post('evento/{slug}/iscrizione', [EventController::class, 'register'])->middleware('throttle:10,1')->name('events.register');
@@ -367,6 +374,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('sposta', 'withdraw')->name('sessions.reschedule.withdraw');
         });
         Route::get('calendario', TrainerCalendarController::class)->name('calendar');
+        // "Aggiungi seduta": with someone of the list, also without an account.
+        Route::controller(TrainerManualSessionController::class)->group(function () {
+            Route::post('calendario/sedute', 'store')->middleware('throttle:30,1')->name('calendar.sessions.store');
+            Route::delete('calendario/sedute/{booking}', 'destroy')->whereNumber('booking')->name('calendar.sessions.destroy');
+            Route::post('clienti/{client}/invito-nascosto', 'dismissInvitePrompt')->whereNumber('client')->name('clients.invite-prompt.dismiss');
+        });
         // "Messaggi" with the clients who have an account.
         Route::get('messaggi', [MessagesController::class, 'index'])->name('messages');
         Route::get('clienti', TrainerClientsController::class)->name('clients');

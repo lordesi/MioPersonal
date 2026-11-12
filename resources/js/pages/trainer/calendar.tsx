@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Clock } from 'lucide-react';
+import { Clock, Plus } from 'lucide-react';
 import { useState } from 'react';
+import AddSessionDialog from '@/components/trainer/area/add-session-dialog';
 import type { CalendarView } from '@/components/trainer/area/calendar-nav';
 import CalendarNav from '@/components/trainer/area/calendar-nav';
 import {
@@ -25,7 +26,7 @@ import {
 } from '@/lib/calendar';
 import { formatDayLong, formatDayRange } from '@/lib/format';
 import { availability, calendar } from '@/routes/trainer';
-import type { CalendarEvent } from '@/types';
+import type { CalendarEvent, SessionOptions } from '@/types';
 
 type CalendarProps = {
     view: CalendarView;
@@ -36,6 +37,8 @@ type CalendarProps = {
     maxDate: string;
     /** The bookings of the week (day and week) or of the weeks of the month, confirmed or waiting. */
     events: CalendarEvent[];
+    /** "Aggiungi seduta": null until the trainer has a profile. */
+    sessionOptions: SessionOptions | null;
 };
 
 /** The words of ?vista= in the URL. */
@@ -51,6 +54,7 @@ export default function Calendar({
     minDate,
     maxDate,
     events,
+    sessionOptions,
 }: CalendarProps) {
     const today = romeParts(new Date()).date;
     const items = calendarItems(events);
@@ -60,6 +64,8 @@ export default function Calendar({
     const [selectedDay, setSelectedDay] = useState(focus);
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [shownFocus, setShownFocus] = useState(focus);
+    // "Aggiungi seduta".
+    const [adding, setAdding] = useState(false);
 
     if (focus !== shownFocus) {
         setShownFocus(focus);
@@ -133,15 +139,41 @@ export default function Calendar({
             <PageHeading
                 title="Calendario"
                 action={
-                    <Link
-                        href={availability()}
-                        className="inline-flex h-11 items-center gap-2 rounded-xl bg-foreground px-4.5 text-sm font-semibold text-background hover:bg-foreground/90"
-                    >
-                        <Clock aria-hidden="true" className="size-4" />
-                        Gestisci disponibilità
-                    </Link>
+                    <div className="flex flex-wrap gap-2">
+                        {sessionOptions && (
+                            <button
+                                type="button"
+                                onClick={() => setAdding(true)}
+                                className="inline-flex h-11 items-center gap-2 rounded-xl bg-foreground px-4.5 text-sm font-semibold text-background hover:bg-foreground/90"
+                            >
+                                <Plus
+                                    aria-hidden="true"
+                                    className="size-4"
+                                    strokeWidth={2.5}
+                                />
+                                Aggiungi seduta
+                            </button>
+                        )}
+                        <Link
+                            href={availability()}
+                            className="inline-flex h-11 items-center gap-2 rounded-xl border bg-card px-4.5 text-sm font-semibold hover:bg-accent"
+                        >
+                            <Clock aria-hidden="true" className="size-4" />
+                            Gestisci disponibilità
+                        </Link>
+                    </div>
                 }
             />
+
+            {sessionOptions && (
+                <AddSessionDialog
+                    open={adding}
+                    onOpenChange={setAdding}
+                    options={sessionOptions}
+                    date={selectedDay}
+                    today={today}
+                />
+            )}
 
             <CalendarNav
                 view={view}

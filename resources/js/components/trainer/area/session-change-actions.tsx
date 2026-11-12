@@ -39,6 +39,8 @@ type SessionChangeActionsProps = {
     clientName: string;
     /** ISO UTC string: the time already proposed to the client, if any. */
     proposedStart: string | null;
+    /** "Aggiungi seduta" with someone without an account: nobody to tell, it moves at once. */
+    offApp?: boolean;
 };
 
 /**
@@ -53,6 +55,7 @@ export default function SessionChangeActions({
     end,
     clientName,
     proposedStart,
+    offApp = false,
 }: SessionChangeActionsProps) {
     const [moving, setMoving] = useState(false);
     const [cancelling, setCancelling] = useState(false);
@@ -111,12 +114,14 @@ export default function SessionChangeActions({
                     start={start}
                     minutes={minutes}
                     clientName={clientName}
+                    offApp={offApp}
                     onClose={() => setMoving(false)}
                 />
             )}
             <CancelSessionDialog
                 id={id}
                 clientName={clientName}
+                offApp={offApp}
                 open={cancelling}
                 onOpenChange={setCancelling}
             />
@@ -128,11 +133,13 @@ export default function SessionChangeActions({
 function CancelSessionDialog({
     id,
     clientName,
+    offApp,
     open,
     onOpenChange,
 }: {
     id: number;
     clientName: string;
+    offApp: boolean;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
@@ -161,11 +168,14 @@ function CancelSessionDialog({
                 <DialogHeader>
                     <DialogTitle>Annullare la seduta?</DialogTitle>
                     <DialogDescription>
-                        Avvisiamo {clientName} via email. Se la seduta fa parte
-                        di un pacchetto, torna disponibile.
+                        {offApp
+                            ? `${clientName} non è su Miopersonal: la seduta viene solo tolta dal calendario, avvisalo tu.`
+                            : `Avvisiamo ${clientName} via email. Se la seduta fa parte di un pacchetto, torna disponibile.`}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="flex flex-col gap-1.5">
+                <div
+                    className={cn('flex flex-col gap-1.5', offApp && 'hidden')}
+                >
                     <label htmlFor={noteId} className="text-sm font-semibold">
                         Messaggio per {clientName}{' '}
                         <span className="font-normal text-muted-foreground">
@@ -215,12 +225,14 @@ function RescheduleDialog({
     start,
     minutes,
     clientName,
+    offApp,
     onClose,
 }: {
     id: number;
     start: string;
     minutes: number;
     clientName: string;
+    offApp: boolean;
     onClose: () => void;
 }) {
     const slots = usePage<{ rescheduleSlots?: AvailabilityDay[] | null }>()
@@ -273,11 +285,16 @@ function RescheduleDialog({
         <Dialog open onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="max-h-[92vh] grid-cols-[minmax(0,1fr)] overflow-y-auto sm:max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>Proponi un nuovo orario</DialogTitle>
+                    <DialogTitle>
+                        {offApp
+                            ? 'Sposta la seduta'
+                            : 'Proponi un nuovo orario'}
+                    </DialogTitle>
                     <DialogDescription>
                         Ora è {formatDateMedium(start)}, {formatTime(start)}.{' '}
-                        {clientName} riceve la proposta via email: la seduta si
-                        sposta solo se accetta, altrimenti resta com’è.
+                        {offApp
+                            ? `${clientName} non è su Miopersonal: la seduta si sposta subito, avvisalo tu.`
+                            : `${clientName} riceve la proposta via email: la seduta si sposta solo se accetta, altrimenti resta com’è.`}
                     </DialogDescription>
                 </DialogHeader>
 

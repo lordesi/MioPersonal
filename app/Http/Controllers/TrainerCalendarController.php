@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\BookingActor;
 use App\Enums\BookingStatus;
+use App\Enums\PlaceType;
 use App\Http\Controllers\Concerns\BuildsPlaceholderData;
 use App\Models\Booking;
+use App\Models\Service;
+use App\Models\TrainerClient;
+use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\BookingLabels;
@@ -58,6 +63,9 @@ class TrainerCalendarController extends Controller
             ? $focus->endOfMonth()->startOfWeek(CarbonInterface::MONDAY)->addWeek()
             : $from->addWeek();
 
+        // The personal links open the public profile: only once it can be booked.
+        $published = $profile !== null && TrainerProfile::query()->published()->whereKey($profile->id)->exists();
+
         return Inertia::render('trainer/calendar', [
             'trainerArea' => $this->trainerArea(),
             'view' => $view,
@@ -75,16 +83,23 @@ class TrainerCalendarController extends Controller
                     'end' => $this->iso($booking->ends_at),
                     // For the link to the client's profile; null once the account is deleted.
                     'clientId' => $booking->client_id,
-                    'clientName' => $booking->client->name ?? 'Account eliminato',
+                    'clientName' => $booking->clientName(),
                     // "Pacchetto 10 sedute · seduta 2 di 10" for the sessions of a package.
                     'serviceName' => BookingLabels::serviceForTrainer($booking),
                     // "Invita un amico": who comes with the client.
                     'guestNames' => BookingLabels::guestNames($booking),
                     'placeLabel' => $booking->place_label,
                     'kind' => $booking->status === BookingStatus::Confirmed ? 'confirmed' : 'pending',
+                    // "Aggiungi seduta": waiting for the client, not for the trainer.
+                    'fromTrainer' => $booking->requested_by === BookingActor::Trainer,
+                    // Someone without an account: only in this calendar, with their personal link.
+                    'offApp' => $booking->isOffApp(),
+                    'inviteLink' => $booking->isOffApp() && $published ? $booking->trainerClient?->inviteLink($profile) : null,
                     ...TrainerSessions::change($booking),
                 ])
                 ->all(),
+            // "Aggiungi seduta": who, what and where.
+            'sessionOptions' => $profile === null ? null : $this->sessionOptions($profile),
             // "Sposta": the free times, only when the dialog asks for them.
             'rescheduleSlots' => Inertia::optional(fn () => TrainerSessions::rescheduleSlots($profile, $request->integer('sposta'))),
         ]);
@@ -104,6 +119,42 @@ class TrainerCalendarController extends Controller
                 ->orWhere(fn (Builder $query) => $query->awaitingAnswer()))
             ->where('starts_at', '>=', $from->utc())
             ->where('starts_at', '<', $to->utc());
+    }
+
+    /**
+     * "Aggiungi seduta": the trainer's clients (with an account first), the
+     * single sessions they offer and their places (not "Online": that comes
+     * with the online services).
+     *
+     * @return array{clients: list<array{id: int, name: string, registered: bool}>, services: list<array{id: int, name: string, minutes: int, priceCents: int}>, places: list<array{id: int, label: string}>}
+     */
+    private function sessionOptions(TrainerProfile $profile): array
+    {
+        return [
+            'clients' => array_values($profile->clientRecords()->with('user')->get()
+                ->map(fn (TrainerClient $record) => [
+                    'id' => $record->id,
+                    'name' => $record->user->name ?? $record->name,
+                    'registered' => $record->isRegistered(),
+                ])
+                ->sortBy(fn (array $client) => mb_strtolower($client['name']))
+                ->values()
+                ->all()),
+            'services' => array_values($profile->services()
+                ->where('is_active', true)->where('kind', 'session')
+                ->get()
+                ->map(fn (Service $service) => [
+                    'id' => $service->id,
+                    'name' => $service->displayName(),
+                    'minutes' => $service->minutes,
+                    'priceCents' => $service->price_cents,
+                ])
+                ->all()),
+            'places' => array_values($profile->places()->with(['city', 'gymProfile.city'])->get()
+                ->reject(fn (TrainerPlace $place) => $place->type === PlaceType::Online)
+                ->map(fn (TrainerPlace $place) => ['id' => $place->id, 'label' => $place->label()])
+                ->all()),
+        ];
     }
 
     /** The day in `?giorno=2026-11-01`; today when it is missing or not a real day. */

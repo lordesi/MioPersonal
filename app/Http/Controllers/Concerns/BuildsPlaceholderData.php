@@ -52,7 +52,7 @@ trait BuildsPlaceholderData
             : null;
 
         return [
-            'pendingCount' => $profile === null ? 0 : $profile->bookings()->awaitingAnswer()->count(),
+            'pendingCount' => $profile === null ? 0 : $profile->bookings()->awaitingAnswer()->fromClient()->count(),
             'publicProfileHref' => $profile === null ? null : route('trainers.show', $profile->slug, false),
             'profile' => [
                 // 'missing': the registration was never sent (e.g. made trainer by the team).

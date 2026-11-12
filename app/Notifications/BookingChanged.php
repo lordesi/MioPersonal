@@ -21,7 +21,9 @@ use NotificationChannels\WebPush\WebPushMessage;
  * - 'proposed'             → the client: the trainer proposes another time;
  * - 'accepted' / 'declined' → the trainer: the client's answer to the proposal;
  * - 'guest-cancelled' → the friends invited ("Invita un amico"): the session won't take place;
- * - 'guest-moved'     → the friends invited: the booker accepted another time.
+ * - 'guest-moved'     → the friends invited: the booker accepted another time;
+ * - 'trainer-proposed' → the client: the trainer put a session in the calendar ("Aggiungi seduta");
+ * - 'proposal-accepted' / 'proposal-declined' → the trainer: the client's answer to it.
  *
  * Queued, and sent only once the change is saved (afterCommit).
  */
@@ -54,7 +56,7 @@ class BookingChanged extends Notification implements ShouldQueue
      */
     private function sendsMail(): bool
     {
-        return in_array($this->kind, ['cancelled-by-trainer', 'proposed', 'guest-cancelled', 'guest-moved'], true);
+        return in_array($this->kind, ['cancelled-by-trainer', 'proposed', 'trainer-proposed', 'guest-cancelled', 'guest-moved'], true);
     }
 
     /** The title of the email, and its time: "Luca Moretti ha annullato la seduta" · "mer 28 ott alle 18:00". */
@@ -82,7 +84,7 @@ class BookingChanged extends Notification implements ShouldQueue
                 'card' => BookingMailData::card($this->booking, $text['who']),
                 'cancelled' => str_starts_with($this->kind, 'cancelled') || $this->kind === 'guest-cancelled',
                 'day' => BookingMailData::day($this->booking),
-                'toTrainer' => in_array($this->kind, ['cancelled-by-client', 'accepted', 'declined'], true),
+                'toTrainer' => in_array($this->kind, ['cancelled-by-client', 'accepted', 'declined', 'proposal-accepted', 'proposal-declined'], true),
             ]);
     }
 
@@ -160,6 +162,31 @@ class BookingChanged extends Notification implements ShouldQueue
                 'button' => 'Le mie prenotazioni',
                 'url' => route('client.bookings'),
                 'who' => "con {$trainer}",
+            ],
+            'trainer-proposed' => [
+                'subject' => "{$trainer} ti propone una seduta: {$day}, {$hour}",
+                'label' => 'Seduta proposta',
+                'title' => "{$trainer} ti propone una seduta",
+                'intro' => "{$trainer} ha messo in calendario una seduta con te per {$day} alle {$hour}. Accettala per confermarla.",
+                'details' => [],
+                'note' => 'Se l’orario non ti va bene puoi rifiutarla: avviseremo il trainer.',
+                'button' => 'Rispondi',
+                'url' => route('client.bookings'),
+                'who' => "con {$trainer}",
+            ],
+            'proposal-accepted' => [
+                ...$forTrainer,
+                'subject' => "{$client} ha accettato la seduta di {$day}, {$hour}",
+                'label' => 'Confermata',
+                'title' => "{$client} ha accettato la seduta",
+                'intro' => 'La seduta che hai proposto è confermata.',
+            ],
+            'proposal-declined' => [
+                ...$forTrainer,
+                'subject' => "{$client} ha rifiutato la seduta di {$day}, {$hour}",
+                'label' => 'Rifiutata',
+                'title' => "{$client} ha rifiutato la seduta",
+                'intro' => 'Lo slot è di nuovo libero: puoi proporre un altro orario dal calendario.',
             ],
             'accepted' => [
                 ...$forTrainer,

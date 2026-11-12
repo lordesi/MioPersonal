@@ -1,5 +1,14 @@
-import { Link } from '@inertiajs/react';
-import { ArrowRight, Check, ChevronRight, MapPin, X } from 'lucide-react';
+import { Link, router } from '@inertiajs/react';
+import {
+    ArrowRight,
+    Check,
+    ChevronRight,
+    Copy,
+    MapPin,
+    MessageCircle,
+    X,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import UserAvatar from '@/components/shared/user-avatar';
 import SessionChangeActions from '@/components/trainer/area/session-change-actions';
 import { totalHours } from '@/components/trainer/area/day-view';
@@ -12,8 +21,57 @@ import {
     formatDayRange,
     formatWeekdayShort,
 } from '@/lib/format';
+import { useClipboard } from '@/hooks/use-clipboard';
 import { cn } from '@/lib/utils';
+import { whatsAppUrl } from '@/lib/whatsapp';
 import { availability, clients, requests } from '@/routes/trainer';
+import { destroy } from '@/routes/trainer/calendar/sessions';
+
+/**
+ * Someone without an account: their personal link, so the sessions become
+ * theirs when they sign up.
+ */
+function OffAppInvite({ name, link }: { name: string; link: string }) {
+    const [copied, copy] = useClipboard();
+    const firstName = name.split(' ')[0];
+    const message = `Ciao ${firstName}! Ho messo in calendario le nostre sedute su Miopersonal: iscriviti da qui per vederle, ricevere i promemoria e prenotare da solo/a. ${link}`;
+
+    return (
+        <div className="flex flex-col gap-2.5 rounded-[14px] border border-dashed border-sidebar-foreground/30 p-3.5">
+            <span className="text-[13px] leading-4.5 text-sidebar-muted-foreground">
+                Invita {firstName} su Miopersonal: quando si iscrive con il suo
+                link, le sedute diventano sue.
+            </span>
+            <div className="flex flex-wrap gap-2">
+                <a
+                    href={whatsAppUrl('', message)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-10 items-center gap-1.5 rounded-[10px] bg-sidebar-primary px-3.5 text-sm font-semibold text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
+                >
+                    <MessageCircle aria-hidden="true" className="size-4" />
+                    WhatsApp
+                </a>
+                <button
+                    type="button"
+                    onClick={async () => {
+                        if (await copy(link)) {
+                            toast.success('Link copiato');
+                        }
+                    }}
+                    className="inline-flex h-10 items-center gap-1.5 rounded-[10px] border border-sidebar-foreground/25 px-3.5 text-sm font-semibold hover:bg-sidebar-accent"
+                >
+                    {copied === link ? (
+                        <Check aria-hidden="true" className="size-4" />
+                    ) : (
+                        <Copy aria-hidden="true" className="size-4" />
+                    )}
+                    {copied === link ? 'Copiato' : 'Copia link'}
+                </button>
+            </div>
+        </div>
+    );
+}
 
 /** "13:00 – 14:00" */
 function timeRange(item: CalendarItem): string {
@@ -53,8 +111,15 @@ export function SessionDetails({
                             strokeWidth={3}
                         />
                     )}
-                    {kindLabels[item.kind]}
+                    {!confirmed && item.fromTrainer
+                        ? 'In attesa del cliente'
+                        : kindLabels[item.kind]}
                 </span>
+                {item.offApp && (
+                    <span className="mr-auto inline-flex h-6.5 items-center rounded-full bg-sidebar-accent px-2.5 text-xs font-semibold">
+                        Non su Miopersonal
+                    </span>
+                )}
                 <button
                     type="button"
                     aria-label="Chiudi dettagli"
@@ -107,9 +172,14 @@ export function SessionDetails({
 
             {!confirmed && (
                 <span className="text-[13px] leading-4.5 text-sidebar-muted-foreground">
-                    Il cliente aspetta la tua risposta: accetta o rifiuta da
-                    Richieste.
+                    {item.fromTrainer
+                        ? `Hai proposto questa seduta: aspetti che ${item.title} accetti. L’orario resta occupato fino ad allora.`
+                        : 'Il cliente aspetta la tua risposta: accetta o rifiuta da Richieste.'}
                 </span>
+            )}
+
+            {item.offApp && item.inviteLink && (
+                <OffAppInvite name={item.title} link={item.inviteLink} />
             )}
 
             {confirmed && item.clientId !== null && (
@@ -128,15 +198,30 @@ export function SessionDetails({
                     end={item.end}
                     clientName={item.title}
                     proposedStart={item.proposedStart}
+                    offApp={item.offApp}
                 />
             )}
-            {!confirmed && (
+            {!confirmed && !item.fromTrainer && (
                 <Link
                     href={requests()}
                     className="inline-flex h-11 items-center justify-center rounded-[10px] bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
                 >
                     Vai alle richieste
                 </Link>
+            )}
+            {!confirmed && item.fromTrainer && (
+                <button
+                    type="button"
+                    onClick={() =>
+                        router.delete(destroy.url(item.id), {
+                            preserveScroll: true,
+                            onSuccess: onClose,
+                        })
+                    }
+                    className="inline-flex h-11 items-center justify-center rounded-[10px] border border-sidebar-foreground/25 text-sm font-semibold hover:bg-sidebar-accent"
+                >
+                    Ritira proposta
+                </button>
             )}
         </section>
     );

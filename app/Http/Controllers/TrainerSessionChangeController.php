@@ -38,7 +38,9 @@ class TrainerSessionChangeController extends Controller
         $booking->client?->notify(new BookingChanged($booking, 'cancelled-by-trainer'));
         // "Invita un amico": the friends who joined.
         $booking->notifyGuests(new BookingChanged($booking, 'guest-cancelled'));
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Seduta annullata: abbiamo avvisato il cliente.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $booking->client_id === null
+            ? 'Seduta annullata.'
+            : 'Seduta annullata: abbiamo avvisato il cliente.']);
 
         return back();
     }
@@ -61,6 +63,18 @@ class TrainerSessionChangeController extends Controller
                 throw ValidationException::withMessages(['start' => 'Questo orario non è libero: scegline un altro.']);
             }
 
+            // Someone without an account: nobody to ask, the session moves at once.
+            if ($booking->isOffApp()) {
+                $booking->forceFill([
+                    'starts_at' => $start,
+                    'ends_at' => $start->addMinutes($minutes),
+                    'blocked_until' => $start->addSeconds((int) $booking->starts_at->diffInSeconds($booking->blocked_until)),
+                ])->save();
+                $booking->record('rescheduled', $profile->user);
+
+                return;
+            }
+
             $booking->forceFill([
                 'proposed_starts_at' => $start,
                 // 48 hours, but never after the session (old or new) starts.
@@ -70,6 +84,13 @@ class TrainerSessionChangeController extends Controller
         });
 
         TrainerSlots::refresh($profile);
+
+        if ($booking->isOffApp()) {
+            Inertia::flash('toast', ['type' => 'success', 'message' => 'Seduta spostata.']);
+
+            return back();
+        }
+
         $booking->client?->notify(new BookingChanged($booking, 'proposed'));
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Proposta inviata: la seduta si sposta se il cliente accetta.']);
 

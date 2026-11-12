@@ -14,7 +14,7 @@ use App\Models\TrainerProfile;
 final class TrainerSessions
 {
     /** The relations row() reads. */
-    public const WITH = ['client', 'clientPackage.bookings', 'guests.user'];
+    public const WITH = ['client', 'trainerClient', 'clientPackage.bookings', 'guests.user'];
 
     /**
      * @return array{id: int, clientId: int|null, clientName: string, start: string, end: string, hours: float, serviceName: string, placeLabel: string, noShow: bool, kind: string, people: int, guestNames: list<string>, canChange: bool, proposedStart: string|null}
@@ -27,7 +27,7 @@ final class TrainerSessions
             // For the link to the client's profile; null once the account is deleted.
             'clientId' => $booking->client_id,
             // Clients are told the trainer sees their first and last name.
-            'clientName' => $booking->client->name ?? 'Account eliminato',
+            'clientName' => $booking->clientName(),
             // UTC: the browser shows them in Europe/Rome.
             'start' => ClientBookingData::iso($booking->starts_at),
             'end' => ClientBookingData::iso($booking->ends_at),

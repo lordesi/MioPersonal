@@ -104,11 +104,12 @@ class TrainerClientsController extends Controller
         $bookings = $profile->bookings()
             ->where('status', BookingStatus::Confirmed)
             // Deleted accounts: the past sessions stay, but there is nobody to show.
-            ->whereNotNull('client_id')
+            // "Aggiungi seduta" with someone without an account: by their row of the list.
+            ->where(fn ($query) => $query->whereNotNull('client_id')->orWhereNotNull('trainer_client_id'))
             ->with(TrainerSessions::WITH)
             ->orderBy('starts_at')
             ->get()
-            ->groupBy('client_id');
+            ->groupBy(fn (Booking $booking) => $booking->client_id ?? 'record-'.$booking->trainer_client_id);
         $attendance = ClientAttendance::forClients($records->pluck('user_id'), $profile);
         $packages = $this->packages($profile);
         // "Sedute fisse" still going, with how many sessions are in the calendar.
@@ -124,7 +125,7 @@ class TrainerClientsController extends Controller
         return $records
             ->map(fn (TrainerClient $record) => $this->client(
                 $record,
-                $bookings->get($record->user_id, new Collection),
+                $bookings->get($record->user_id ?? 'record-'.$record->id, new Collection),
                 $now,
                 $record->user_id === null ? null : $attendance[$record->user_id],
                 $record->user_id === null ? null : $packages->get($record->user_id),
@@ -227,14 +228,7 @@ class TrainerClientsController extends Controller
             ])->all(),
             'paidCents' => $record->payments->sum('amount_cents'),
             // The personal link, until the person signs up with it.
-            'inviteLink' => $invite === null || $record->isRegistered() ? null : route('trainers.show', [
-                'slug' => $profile->slug,
-                'invito' => 1,
-                'c' => $record->invite_token,
-                'utm_source' => 'trainer',
-                'utm_medium' => 'invito',
-                'utm_campaign' => $profile->slug,
-            ]),
+            'inviteLink' => $invite === null || $record->isRegistered() ? null : $record->inviteLink($profile),
             // "Sedute fisse" going on, and the open package they could use up.
             'series' => $series->map(fn (BookingSeries $item) => [
                 'id' => $item->id,

@@ -92,6 +92,9 @@ export type ClientPendingBooking = {
     expiresAt: string | null;
     /** The trainer's message when cancelling. */
     cancelNote: string | null;
+    /** "Aggiungi seduta": the trainer proposes it, the client accepts or declines. */
+    fromTrainer: boolean;
+    placeLabel: string;
     group: BookingGroup | null;
 };
 

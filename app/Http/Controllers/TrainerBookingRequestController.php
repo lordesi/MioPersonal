@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Bookings\CreateBookingSeries;
+use App\Enums\BookingActor;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\User;
@@ -81,6 +82,8 @@ class TrainerBookingRequestController extends Controller
         $trainer = $request->user();
 
         abort_unless($booking->trainer_profile_id === $trainer->trainerProfile?->id, 404);
+        // "Aggiungi seduta": the client answers, not the trainer (ClientSessionProposalController).
+        abort_if($booking->requested_by === BookingActor::Trainer, 404);
 
         if ($booking->isPending()) {
             return;

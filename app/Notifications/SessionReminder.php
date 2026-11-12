@@ -58,7 +58,7 @@ class SessionReminder extends Notification implements ShouldQueue
         $tag = "reminder-{$booking->id}";
 
         if ($this->isTrainer($notifiable)) {
-            $client = $booking->client?->publicName() ?? 'un cliente';
+            $client = $booking->client?->publicName() ?? $booking->trainerClient->name ?? 'un cliente';
 
             return $this->pushMessage(
                 ucfirst($this->dayWord()).": seduta con {$client}",

@@ -311,6 +311,33 @@ export type CalendarEvent = SessionChange & {
     kind: 'confirmed' | 'pending';
     /** "Invita un amico": the friends who joined the client. */
     guestNames: string[];
+    /** "Aggiungi seduta": put in by the trainer; pending = waiting for the client. */
+    fromTrainer: boolean;
+    /** With someone without an account: only in this calendar. */
+    offApp: boolean;
+    /** Their personal link, to invite them (null once the profile isn't public). */
+    inviteLink: string | null;
+};
+
+/** "Aggiungi seduta": who, what and where. */
+export type SessionOptions = {
+    clients: { id: number; name: string; registered: boolean }[];
+    services: {
+        id: number;
+        name: string;
+        minutes: number;
+        priceCents: number;
+    }[];
+    places: { id: number; label: string }[];
+};
+
+/** After a session with someone without an account: "Invita Marco su Miopersonal". */
+export type InvitePrompt = {
+    recordId: number;
+    name: string;
+    link: string;
+    phone: string | null;
+    email: string | null;
 };
 
 /** A payment the trainer wrote down by hand. */

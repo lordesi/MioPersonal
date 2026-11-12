@@ -28,7 +28,9 @@ use Illuminate\Support\Str;
  * service don't touch it.
  *
  * @property int $id
- * @property int|null $client_id null once the client deleted the account
+ * @property int|null $client_id null once the client deleted the account, or for someone without an account (`trainer_client_id`)
+ * @property int|null $trainer_client_id "Aggiungi seduta": the person of the trainer's list ("Clienti")
+ * @property BookingActor $requested_by who asked: the client ("Prenota") or the trainer ("Aggiungi seduta")
  * @property int $trainer_profile_id
  * @property int|null $service_id
  * @property int|null $client_package_id the package this session buys or uses
@@ -57,13 +59,14 @@ use Illuminate\Support\Str;
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property-read User|null $client
+ * @property-read TrainerClient|null $trainerClient
  * @property-read TrainerProfile $trainerProfile
  * @property-read ClientPackage|null $clientPackage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, BookingGuest> $guests
  */
 #[ObservedBy([BookingCalendarObserver::class, BookingWaitlistObserver::class])]
 #[Fillable([
-    'client_id', 'trainer_profile_id', 'service_id', 'client_package_id', 'booking_series_id', 'repeat_weekly',
+    'client_id', 'trainer_client_id', 'requested_by', 'trainer_profile_id', 'service_id', 'client_package_id', 'booking_series_id', 'repeat_weekly',
     'starts_at', 'ends_at', 'blocked_until',
     'service_name', 'price_cents', 'people', 'invite_token', 'place_label',
     'status', 'expires_at', 'confirmed_at', 'client_note',
@@ -74,7 +77,7 @@ class Booking extends Model
     use HasFactory;
 
     /** @var array<string, mixed> */
-    protected $attributes = ['repeat_weekly' => false];
+    protected $attributes = ['repeat_weekly' => false, 'requested_by' => 'client'];
 
     /** Days after the end in which the trainer can mark (or unmark) a session as missed. */
     public const NO_SHOW_DAYS = 7;
@@ -92,6 +95,7 @@ class Booking extends Model
             'people' => 'integer',
             'repeat_weekly' => 'boolean',
             'status' => BookingStatus::class,
+            'requested_by' => BookingActor::class,
             'expires_at' => 'datetime',
             'confirmed_at' => 'datetime',
             'cancelled_at' => 'datetime',
@@ -121,6 +125,37 @@ class Booking extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'client_id');
+    }
+
+    /**
+     * "Aggiungi seduta": the person of the trainer's list, with or without an account.
+     *
+     * @return BelongsTo<TrainerClient, $this>
+     */
+    public function trainerClient(): BelongsTo
+    {
+        return $this->belongsTo(TrainerClient::class);
+    }
+
+    /**
+     * The name the trainer sees: the account's, or the one the trainer wrote
+     * for someone without an account.
+     */
+    public function clientName(): string
+    {
+        return $this->client->name ?? $this->trainerClient->name ?? 'Account eliminato';
+    }
+
+    /** "Aggiungi seduta" with someone without an account: only in the trainer's calendar. */
+    public function isOffApp(): bool
+    {
+        return $this->client_id === null && $this->trainer_client_id !== null;
+    }
+
+    /** Asked by the trainer and waiting for the client: accept or decline. */
+    public function isTrainerProposal(): bool
+    {
+        return $this->requested_by === BookingActor::Trainer && $this->isPending();
     }
 
     /**
@@ -260,6 +295,16 @@ class Booking extends Model
     }
 
     /**
+     * Asked by the client: the requests of "Richieste", not the trainer's proposals.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeFromClient(Builder $query): void
+    {
+        $query->where('requested_by', BookingActor::Client);
+    }
+
+    /**
      * Pending, but the time to answer is over: still to be marked as expired.
      *
      * @param  Builder<self>  $query
@@ -378,7 +423,10 @@ class Booking extends Model
             ClientPackage::whereKey($this->client_package_id)->whereNull('bought_at')->update(['bought_at' => now()]);
         }
 
-        $this->client?->notify(new BookingConfirmed($this));
+        // Not to the client who just accepted the trainer's proposal: they said yes themselves.
+        if ($actor === null || $actor->id !== $this->client_id) {
+            $this->client?->notify(new BookingConfirmed($this));
+        }
         $this->notifyGuests(new BookingConfirmed($this));
     }
 

@@ -3,6 +3,7 @@
 namespace App\Actions\Trainer;
 
 use App\Enums\BookingStatus;
+use App\Models\Booking;
 use App\Models\TrainerClient;
 use App\Models\TrainerProfile;
 use App\Models\User;
@@ -41,6 +42,7 @@ class LinkClient
 
         if ($manual !== null) {
             $manual->forceFill(['user_id' => $user->id])->save();
+            $this->moveSessions($manual, $user);
 
             return $manual;
         }
@@ -65,11 +67,13 @@ class LinkClient
 
         if ($mine === null) {
             $record->forceFill(['user_id' => $user->id])->save();
+            $this->moveSessions($record, $user);
 
             return;
         }
 
-        DB::transaction(function () use ($record, $mine) {
+        DB::transaction(function () use ($record, $mine, $user) {
+            $this->moveSessions($record, $user, $mine);
             $mine->forceFill([
                 'goal' => $mine->goal ?: $record->goal,
                 'private_notes' => collect([$mine->private_notes, $record->private_notes])->filter()->implode("\n\n") ?: null,
@@ -77,6 +81,20 @@ class LinkClient
             $record->payments()->update(['trainer_client_id' => $mine->id]);
             $record->delete();
         });
+    }
+
+    /**
+     * "Aggiungi seduta" before the person had an account: the sessions
+     * become theirs, already confirmed ("Le mie prenotazioni"). With `$into`
+     * the record is merged into the one the account already has.
+     */
+    private function moveSessions(TrainerClient $record, User $user, ?TrainerClient $into = null): void
+    {
+        Booking::query()->where('trainer_client_id', $record->id)->whereNull('client_id')->update(['client_id' => $user->id]);
+
+        if ($into !== null) {
+            Booking::query()->where('trainer_client_id', $record->id)->update(['trainer_client_id' => $into->id]);
+        }
     }
 
     /**

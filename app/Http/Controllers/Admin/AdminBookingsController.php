@@ -27,7 +27,7 @@ class AdminBookingsController extends Controller
         $id = $request->integer('cerca');
 
         $bookings = Booking::query()
-            ->with(['client', 'trainerProfile.user'])
+            ->with(['client', 'trainerClient', 'trainerProfile.user'])
             ->when($id > 0, fn ($query) => $query->whereKey($id))
             ->latest('id')
             ->limit(self::LIMIT)
@@ -39,7 +39,7 @@ class AdminBookingsController extends Controller
             'bookings' => $bookings->map(fn (Booking $booking) => [
                 'id' => $booking->id,
                 // Deleted accounts leave their past bookings without the client.
-                'clientName' => $booking->client->name ?? 'Account eliminato',
+                'clientName' => $booking->clientName(),
                 'trainerName' => $booking->trainerProfile->user->name,
                 'start' => $booking->starts_at->toIso8601ZuluString(),
                 'hours' => round($booking->starts_at->diffInMinutes($booking->ends_at) / 60, 1),

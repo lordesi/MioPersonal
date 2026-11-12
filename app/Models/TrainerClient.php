@@ -31,6 +31,7 @@ use Illuminate\Support\Str;
  * @property CarbonImmutable|null $progress_shared_at
  * @property string|null $shared_note
  * @property CarbonImmutable|null $shared_note_at
+ * @property CarbonImmutable|null $invite_prompt_dismissed_at "Non chiedermelo più": no "Invita su Miopersonal" after adding a session
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property-read TrainerProfile $trainerProfile
@@ -56,6 +57,7 @@ class TrainerClient extends Model
         return [
             'progress_shared_at' => 'datetime',
             'shared_note_at' => 'datetime',
+            'invite_prompt_dismissed_at' => 'datetime',
         ];
     }
 
@@ -112,6 +114,32 @@ class TrainerClient extends Model
     public function conversation(): HasOne
     {
         return $this->hasOne(Conversation::class);
+    }
+
+    /**
+     * "Aggiungi seduta": the sessions the trainer put in the calendar with this person.
+     *
+     * @return HasMany<Booking, $this>
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * The personal link ("Marco ti ha invitato"): who signs up with it
+     * becomes this client, with the sessions already in the calendar.
+     */
+    public function inviteLink(TrainerProfile $profile): string
+    {
+        return route('trainers.show', [
+            'slug' => $profile->slug,
+            'invito' => 1,
+            'c' => $this->invite_token,
+            'utm_source' => 'trainer',
+            'utm_medium' => 'invito',
+            'utm_campaign' => $profile->slug,
+        ]);
     }
 
     /**
