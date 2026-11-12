@@ -528,6 +528,7 @@ export default function Profile({
                             minutes={minutes}
                             selectedStart={start}
                             confirmLabel={trainer.confirmLabel}
+                            responseTimeLabel={trainer.responseTimeLabel}
                             onBook={bookSlot}
                             booking={booking}
                             placePicker={placePicker('dark')}

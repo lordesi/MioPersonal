@@ -16,6 +16,7 @@ use App\Models\TrainerCalendarConnection;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\ResponseTimes;
 use App\Support\SafeImage;
 use App\Support\Staging;
 use App\Support\Stats;
@@ -94,6 +95,13 @@ Artisan::command('services:relink {--force : Write the changes; without it only 
         $this->comment('Dry run: nothing saved. Run again with --force to write.');
     }
 })->purpose('Link bookings, series and packages back to their service');
+
+// "Risponde in genere entro 1 ora" on the profiles (App\Support\ResponseTimes).
+Artisan::command('trainers:response-times', function () {
+    ResponseTimes::refreshAll();
+})->purpose('Compute how fast each trainer answers the booking requests');
+
+Schedule::command('trainers:response-times')->dailyAt('04:00');
 
 Artisan::command('stats:reset', function () {
     if (! $this->confirm('Delete all the visits, page views, searches, profile views and activity days collected so far?')) {

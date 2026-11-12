@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Models\WaitlistEntry;
 use App\Support\CourseCard;
 use App\Support\GroupSessionCard;
+use App\Support\ResponseTimes;
 use App\Support\Seo;
 use App\Support\SimilarTrainers;
 use App\Support\Stats;
@@ -235,8 +236,8 @@ class TrainerProfileController extends Controller
             'experienceLabel' => $profile->experience->profileLabel(),
             // Public on purpose: the socials the trainer linked (and an Instagram typed by hand).
             'socials' => TrainerSocials::publicLinks($profile),
-            // TODO (step 5): computed from the answers to the bookings.
-            'responseTimeLabel' => null,
+            // From the trainer's answers of the last 90 days (App\Support\ResponseTimes); never with "Conferma immediata".
+            'responseTimeLabel' => $profile->auto_confirm ? null : ResponseTimes::label($profile->response_minutes),
             'cancellationLabel' => "Cancellazione gratuita fino a {$profile->free_cancellation_hours} ore prima",
             // Under the booking button: how soon the client gets an answer.
             'confirmLabel' => $profile->auto_confirm ? 'Conferma immediata' : "Conferma entro {$profile->confirm_hours} ore",

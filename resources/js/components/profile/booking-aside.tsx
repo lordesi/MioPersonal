@@ -1,4 +1,4 @@
-import { Clock, CreditCard } from 'lucide-react';
+import { Clock, CreditCard, MessageCircle } from 'lucide-react';
 import type { ReactNode } from 'react';
 import ServicePicker from '@/components/profile/service-picker';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ type BookingAsideProps = {
     selectedStart: string | null;
     /** "Conferma entro 24 ore" or "Conferma immediata". */
     confirmLabel: string;
+    /** "Risponde in genere entro 1 ora": hidden with too few answers. */
+    responseTimeLabel?: string | null;
     /** "Prenota il tuo slot", once a slot is chosen. */
     onBook: () => void;
     /** The request is being sent. */
@@ -35,6 +37,7 @@ export default function BookingAside({
     minutes,
     selectedStart,
     confirmLabel,
+    responseTimeLabel,
     onBook,
     booking,
     placePicker,
@@ -96,6 +99,15 @@ export default function BookingAside({
                     <Clock aria-hidden="true" className="size-4 shrink-0" />
                     {confirmLabel}
                 </li>
+                {responseTimeLabel && (
+                    <li className="flex gap-2.5">
+                        <MessageCircle
+                            aria-hidden="true"
+                            className="size-4 shrink-0"
+                        />
+                        {responseTimeLabel}
+                    </li>
+                )}
                 <li className="flex gap-2.5">
                     <CreditCard
                         aria-hidden="true"
