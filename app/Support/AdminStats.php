@@ -314,7 +314,7 @@ final class AdminStats
         }
 
         $recent = array_slice($weeks, -self::CITY_WEEKS);
-        $cities = $rows
+        $cities = array_values($rows
             ->whereIn('week', array_column($recent, 'week'))
             ->groupBy('city')
             ->map(fn (Collection $items, string $city) => [
@@ -324,8 +324,7 @@ final class AdminStats
             ])
             ->sortByDesc('total')
             ->take(self::TOP)
-            ->values()
-            ->all();
+            ->all());
 
         return [$weeks, $cities];
     }

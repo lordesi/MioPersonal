@@ -58,7 +58,7 @@ class WaitlistOpened extends Notification implements ShouldQueue
             return "{$this->subject->title}, ".BookingMailData::when($this->subject->starts_at).": c’è un posto libero. Hai {$hold} ore di precedenza.";
         }
 
-        $day = CarbonImmutable::parse((string) $this->date, TrainerSlots::TIMEZONE)->locale('it')->isoFormat('dddd D MMMM');
+        $day = CarbonImmutable::parse((string) $this->date, TrainerSlots::TIMEZONE)->settings(['locale' => 'it'])->isoFormat('dddd D MMMM');
 
         return "{$this->subject->user->name} ha uno slot libero {$day}. Hai {$hold} ore di precedenza.";
     }

@@ -47,7 +47,7 @@ class DemoFeaturesSeeder extends Seeder
             ->get();
 
         if ($clients->count() < 6 || ! $this->trainer('giulia-rossi')) {
-            $this->command?->warn('Run DemoTrainerSeeder first.');
+            $this->command->warn('Run DemoTrainerSeeder first.');
 
             return;
         }
@@ -226,7 +226,11 @@ class DemoFeaturesSeeder extends Seeder
         }
     }
 
-    /** Client records, a "seduta fissa" and weeks of past sessions. */
+    /**
+     * Client records, a "seduta fissa" and weeks of past sessions.
+     *
+     * @param  Collection<int, User>  $clients  the demo clients
+     */
     private function giulia(GenerateSeries $generator, LinkClient $linker, Collection $clients): void
     {
         $profile = $this->trainer('giulia-rossi');

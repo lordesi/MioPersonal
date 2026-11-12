@@ -166,6 +166,7 @@ class TrainerClientsController extends Controller
      * @param  Collection<int, Booking>  $bookings  of one client, in order; none for who was just added
      * @param  array<string, mixed>|null  $attendance  from ClientAttendance
      * @param  array{link: string, signups: int}|null  $invite
+     * @param  Collection<int, BookingSeries>  $series  the client's "sedute fisse" going on
      * @return array<string, mixed>
      */
     private function client(TrainerClient $record, Collection $bookings, CarbonImmutable $now, ?array $attendance, ?ClientPackage $package, ?array $invite, TrainerProfile $profile, Collection $series): array
@@ -189,7 +190,7 @@ class TrainerClientsController extends Controller
             'lastSession' => $last === null ? null : $this->iso($last->starts_at),
             'nextSession' => $next === null ? null : $this->iso($next->starts_at),
             // Under the name: what they book, from the most recent session.
-            'lastService' => ($last ?? $first)?->service_name ?? '',
+            'lastService' => ($last ?? $first)->service_name ?? '',
             'upcomingCount' => $upcoming->count(),
             'done' => $past->whereNull('no_show_at')->count(),
             'missed' => $past->whereNotNull('no_show_at')->count(),
@@ -204,7 +205,7 @@ class TrainerClientsController extends Controller
             // With an account: the account's contacts. Otherwise the ones the trainer wrote.
             'contacts' => [
                 'email' => $user->email ?? $record->email ?? '',
-                'phone' => $user?->phone ?? $record->phone,
+                'phone' => $user->phone ?? $record->phone,
             ],
             // The trainer's own: never shown to the client.
             'goal' => $record->goal,

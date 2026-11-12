@@ -104,7 +104,7 @@ class TrainerSeriesController extends Controller
 
         $skipped = $result['skipped'] === []
             ? ''
-            : ' Saltate perché occupate o chiuse: '.collect($result['skipped'])->map(fn (string $date) => CarbonImmutable::parse($date)->locale('it')->isoFormat('D MMM'))->implode(', ').'.';
+            : ' Saltate perché occupate o chiuse: '.collect($result['skipped'])->map(fn (string $date) => CarbonImmutable::parse($date)->settings(['locale' => 'it'])->isoFormat('D MMM'))->implode(', ').'.';
 
         Inertia::flash('toast', ['type' => 'success', 'message' => ($result['created'] === 1 ? '1 seduta fissata.' : "{$result['created']} sedute fissate.").$skipped]);
 
@@ -166,7 +166,8 @@ class TrainerSeriesController extends Controller
                 ->withSessionCounts()
                 ->where('trainer_profile_id', $profile->id)
                 ->where('client_id', $client->id)
-                ->find($data['client_package_id']);
+                ->whereKey($data['client_package_id'])
+                ->first();
 
             if ($package === null || $package->remaining() < 1) {
                 throw ValidationException::withMessages(['client_package_id' => 'Questo pacchetto non ha più sedute da prenotare.']);
@@ -177,7 +178,7 @@ class TrainerSeriesController extends Controller
             return [$package->name, 0, $package->minutes, $package->service_id, $package->id, (bool) $online];
         }
 
-        $service = $profile->services()->where('is_active', true)->find($data['service_id']);
+        $service = $profile->services()->where('is_active', true)->whereKey($data['service_id'])->first();
 
         // The "Prima seduta" and the packages are not sessions to repeat every week.
         if ($service === null || $service->kind !== 'session' || $service->isFirstSession()) {

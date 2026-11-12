@@ -60,13 +60,13 @@ final class TrainerShelves
         return array_map(fn (array $shelf) => [
             'key' => $shelf['key'],
             'title' => $shelf['title'],
-            'trainers' => array_values(array_map(
+            'trainers' => array_map(
                 fn (int $id) => [
                     ...TrainerCard::from($profiles[$id]),
                     'favorite' => in_array($id, $favoriteIds, true),
                 ],
                 array_values(array_filter($shelf['ids'], fn (int $id) => $profiles->has($id))),
-            )),
+            ),
         ], $shelves);
     }
 
@@ -118,7 +118,7 @@ final class TrainerShelves
      */
     public static function availableTodayIds(CarbonImmutable $now): array
     {
-        return TrainerProfile::query()
+        return array_values(TrainerProfile::query()
             ->published()
             ->whereNotNull('next_free_slot_at')
             ->where('next_free_slot_at', '>=', $now)
@@ -127,7 +127,7 @@ final class TrainerShelves
             ->limit(self::LIMIT)
             ->pluck('id')
             ->map(fn ($id) => (int) $id)
-            ->all();
+            ->all());
     }
 
     /**
@@ -135,13 +135,13 @@ final class TrainerShelves
      */
     public static function newIds(CarbonImmutable $now): array
     {
-        return TrainerProfile::query()
+        return array_values(TrainerProfile::query()
             ->published()
             ->where('approved_at', '>=', $now->subDays(self::NEW_DAYS))
             ->latest('approved_at')
             ->limit(self::LIMIT)
             ->pluck('id')
             ->map(fn ($id) => (int) $id)
-            ->all();
+            ->all());
     }
 }

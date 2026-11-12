@@ -246,18 +246,16 @@ final class Stats
      */
     public static function visitorId(Request $request): string
     {
-        $valid = fn (mixed $id) => is_string($id) && preg_match('/^[A-Za-z0-9]{40}$/', $id) === 1;
-
         $id = $request->cookie(self::VISITOR_COOKIE);
 
-        if ($valid($id)) {
+        if (self::isVisitorId($id)) {
             return $id;
         }
 
         $session = $request->hasSession() ? $request->session() : null;
         $id = $session?->get(self::VISITOR_COOKIE);
 
-        if (! $valid($id)) {
+        if (! self::isVisitorId($id)) {
             $id = Str::random(40);
             $session?->put(self::VISITOR_COOKIE, $id);
         }
@@ -265,6 +263,16 @@ final class Stats
         $request->attributes->set(self::NEW_VISITOR_ATTRIBUTE, $id);
 
         return $id;
+    }
+
+    /**
+     * A code made by visitorId(): 40 letters and digits.
+     *
+     * @phpstan-assert-if-true string $id
+     */
+    private static function isVisitorId(mixed $id): bool
+    {
+        return is_string($id) && preg_match('/^[A-Za-z0-9]{40}$/', $id) === 1;
     }
 
     /**

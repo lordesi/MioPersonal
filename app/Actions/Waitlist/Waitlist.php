@@ -214,7 +214,7 @@ class Waitlist
         $today = CarbonImmutable::now(TrainerSlots::TIMEZONE)->startOfDay();
         $day = CarbonImmutable::createFromFormat('Y-m-d', $date, TrainerSlots::TIMEZONE);
 
-        if ($day === false || ! $profile->isApproved() || $day->startOfDay()->lt($today)) {
+        if ($day === null || ! $profile->isApproved() || $day->startOfDay()->lt($today)) {
             return null;
         }
 

@@ -187,7 +187,7 @@ class SyncCalendar
     private function bookingEvent(Booking $booking): array
     {
         $guests = $booking->people > 1 ? " ({$booking->people} persone)" : '';
-        $client = $booking->client?->name ?? 'Cliente';
+        $client = $booking->client->name ?? 'Cliente';
 
         return [
             'summary' => "{$booking->service_name} · {$client}{$guests}",

@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\User as OAuthTwoUser;
 use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirect;
 use Throwable;
 
@@ -50,8 +51,14 @@ class TrainerGoogleCalendarController extends Controller
             return $this->done('error', 'Collegamento con Google non riuscito. Riprova.');
         }
 
+        // An OAuth 2 account: the only kind with the tokens to keep.
+        if (! $account instanceof OAuthTwoUser) {
+            return $this->done('error', 'Collegamento con Google non riuscito. Riprova.');
+        }
+
         // The permission to write is its own checkbox on the Google screen: it can be left off.
-        $scopes = (array) ($account->approvedScopes ?? []);
+        // Socialite says array, but it is unset when Google sends no scopes.
+        $scopes = (array) ($account->approvedScopes ?: []);
 
         if ($scopes !== [] && ! in_array(GoogleCalendarProvider::SCOPE, $scopes, true)) {
             return $this->done('error', 'Per collegare il calendario devi consentire a MioPersonal di gestire il suo calendario.');
@@ -72,7 +79,8 @@ class TrainerGoogleCalendarController extends Controller
             'google_email' => (string) $account->getEmail(),
             'access_token' => $account->token,
             'refresh_token' => $refresh,
-            'token_expires_at' => now()->addSeconds((int) ($account->expiresIn ?? 3600)),
+            // Socialite says int, but it is null when Google sends no "expires_in".
+            'token_expires_at' => now()->addSeconds((int) ($account->expiresIn ?: 3600)),
             'calendar_id' => $sameAccount ? $existing->calendar_id : null,
             'last_error' => null,
             'connected_at' => now(),
