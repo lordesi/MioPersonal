@@ -12,6 +12,7 @@ use App\Models\BookingSeries;
 use App\Models\City;
 use App\Models\GymProfile;
 use App\Models\Review;
+use App\Models\Service;
 use App\Models\TrainerClient;
 use App\Models\TrainerProfile;
 use App\Models\User;
@@ -587,7 +588,27 @@ final class AdminStats
             'emptyRate' => $searches->isEmpty() ? null : round($empty->count() / $searches->count(), 3),
             'empty' => $this->top($empty->countBy($label)),
             'cities' => $this->top($searches->countBy($place)),
+            'services' => $this->bookedServices(),
         ];
+    }
+
+    /**
+     * "Servizi più prenotati": the sessions confirmed in the last 30 days by
+     * kind and duration of all the trainers ("Seduta singola · 60 min").
+     *
+     * @return list<array{source: string, count: int}>
+     */
+    private function bookedServices(): array
+    {
+        $counts = ServiceBookings::counts(null, 30);
+        $byLabel = [];
+
+        foreach (Service::query()->whereKey(array_keys($counts))->get() as $service) {
+            $label = "{$service->displayName()} · {$service->minutes} min";
+            $byLabel[$label] = ($byLabel[$label] ?? 0) + $counts[$service->id];
+        }
+
+        return $this->top(collect($byLabel));
     }
 
     /**

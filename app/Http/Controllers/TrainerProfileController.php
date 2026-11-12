@@ -19,6 +19,7 @@ use App\Support\CourseCard;
 use App\Support\GroupSessionCard;
 use App\Support\ResponseTimes;
 use App\Support\Seo;
+use App\Support\ServiceBookings;
 use App\Support\SimilarTrainers;
 use App\Support\Stats;
 use App\Support\TrainerCard;
@@ -348,7 +349,7 @@ class TrainerProfileController extends Controller
      * A client with a package of this trainer finds it first, "Il tuo
      * pacchetto": its sessions are already paid.
      *
-     * @return list<array{id: int, packageId: int|null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>}>
+     * @return list<array{id: int, packageId: int|null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool}>
      */
     private function services(TrainerProfile $profile, ?User $viewer): array
     {
@@ -359,7 +360,7 @@ class TrainerProfileController extends Controller
      * The viewer's bought packages with sessions still to book. The id is
      * negative, so it never matches the id of a service.
      *
-     * @return list<array{id: int, packageId: int, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>}>
+     * @return list<array{id: int, packageId: int, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool}>
      */
     private function packages(TrainerProfile $profile, ?User $viewer): array
     {
@@ -385,12 +386,13 @@ class TrainerProfileController extends Controller
                     'note' => $package->name,
                     'priceCents' => 0,
                     'options' => [['serviceId' => -$package->id, 'minutes' => $package->minutes, 'priceCents' => 0, 'groupPrices' => []]],
+                    'mostBooked' => false,
                 ];
             })->all());
     }
 
     /**
-     * @return list<array{id: int, packageId: null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>}>
+     * @return list<array{id: int, packageId: null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool}>
      */
     private function bookableServices(TrainerProfile $profile, ?User $viewer): array
     {
@@ -408,7 +410,16 @@ class TrainerProfileController extends Controller
             $groups[$key][] = $service;
         }
 
-        return array_values(array_map(function (array $rows) {
+        // "Il più prenotato": the group with the most confirmed sessions, from the threshold up.
+        $counts = ServiceBookings::counts($profile->id);
+        $totals = array_map(fn (array $rows) => array_sum(array_map(fn (Service $service) => $counts[$service->id] ?? 0, $rows)), $groups);
+        $top = $totals === [] ? 0 : max($totals);
+        $mostBooked = $top >= ServiceBookings::MOST_BOOKED_MIN && count(array_keys($totals, $top, true)) === 1
+            ? array_search($top, $totals, true)
+            : null;
+
+        // With two arrays array_map() returns a list.
+        return array_map(function (array $rows, string $key) use ($mostBooked) {
             // Shortest first: the first row gives name and note, the last the longest duration.
             usort($rows, fn (Service $a, Service $b) => $a->minutes <=> $b->minutes);
             $first = $rows[0];
@@ -430,8 +441,9 @@ class TrainerProfileController extends Controller
                 // The lowest price: "da 25 €" when the price depends on the duration.
                 'priceCents' => min($first->price_cents, ...array_column($options, 'priceCents')),
                 'options' => $options,
+                'mostBooked' => $key === $mostBooked,
             ];
-        }, $groups));
+        }, $groups, array_keys($groups));
     }
 
     /**

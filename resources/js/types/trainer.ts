@@ -52,6 +52,8 @@ export type TrainerService = {
     priceCents: number;
     /** Shortest first. */
     options: ServiceOption[];
+    /** "Il più prenotato": the most confirmed sessions of the last 90 days. */
+    mostBooked?: boolean;
 };
 
 export type TrainingPlace = {

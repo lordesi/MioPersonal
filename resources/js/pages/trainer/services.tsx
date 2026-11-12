@@ -27,15 +27,45 @@ type ServicesProps = {
     pricing: Pricing | null;
     /** Trains both online and in person: online may have its own prices. */
     asksOnlinePrice: boolean;
+    /** Confirmed sessions of the last 90 days by service, the most booked first. */
+    booked: { label: string; count: number }[];
 };
 
-export default function Services({ pricing, asksOnlinePrice }: ServicesProps) {
+export default function Services({
+    pricing,
+    asksOnlinePrice,
+    booked,
+}: ServicesProps) {
     return (
         <>
             <Head title="Servizi e prezzi" />
 
             <PageHeading title="Servizi e prezzi" />
             <SeeAlso current="services" />
+
+            {booked.length > 0 && (
+                <section
+                    aria-labelledby="booked-title"
+                    className="flex flex-col gap-2.5 rounded-2xl border bg-card p-4"
+                >
+                    <h2 id="booked-title" className="text-sm font-semibold">
+                        Prenotazioni degli ultimi 90 giorni
+                    </h2>
+                    <ul className="flex flex-col gap-1.5 text-sm">
+                        {booked.map((row) => (
+                            <li
+                                key={row.label}
+                                className="flex justify-between gap-3"
+                            >
+                                <span>{row.label}</span>
+                                <span className="font-semibold tabular-nums">
+                                    {row.count}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
 
             {pricing === null ? (
                 <p className="text-sm text-muted-foreground">

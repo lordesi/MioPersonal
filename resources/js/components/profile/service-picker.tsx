@@ -111,6 +111,18 @@ export default function ServicePicker({
                                 )}
                             >
                                 {service.name}
+                                {service.mostBooked && (
+                                    <span
+                                        className={cn(
+                                            'ml-2 inline-flex h-5 items-center rounded-full px-2 align-middle text-[11px] font-semibold',
+                                            dark && !checked
+                                                ? 'bg-primary-foreground text-primary'
+                                                : 'bg-primary text-primary-foreground',
+                                        )}
+                                    >
+                                        Il più prenotato
+                                    </span>
+                                )}
                             </span>
                             <span
                                 className={cn(

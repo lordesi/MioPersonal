@@ -99,6 +99,8 @@ type Stats = {
         emptyRate: number | null;
         empty: Count[];
         cities: Count[];
+        /** Sessions confirmed in the last 30 days, by kind and duration. */
+        services: Count[];
     };
     gyms: {
         supply: Step[];
@@ -517,6 +519,15 @@ export default function AdminStats({ stats }: { stats: Stats }) {
                 </AdminPanel>
                 <AdminPanel title="Città più cercate" aside="Ultimi 30 giorni">
                     <BarList rows={stats.demand.cities} />
+                </AdminPanel>
+                <AdminPanel
+                    title="Servizi più prenotati"
+                    aside="Sedute confermate, ultimi 30 giorni"
+                >
+                    <BarList
+                        rows={stats.demand.services}
+                        empty="Nessuna seduta confermata negli ultimi 30 giorni."
+                    />
                 </AdminPanel>
             </div>
 
