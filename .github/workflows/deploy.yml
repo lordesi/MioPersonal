@@ -1,0 +1,68 @@
+name: deploy
+
+# Production deploy: after the tests pass on main, or by hand (Actions → deploy → Run workflow).
+# Runs scripts/deploy.sh on the server over SSH. Guide: docs/deploy.md.
+
+on:
+  workflow_run:
+    workflows: [tests]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time; a newer one waits instead of cancelling a deploy halfway.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.SHA }}
+          persist-credentials: false
+
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Deploy
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 \
+            "ploi@${DEPLOY_HOST}" "bash -s -- ${SHA}" < scripts/deploy.sh
+
+      - name: Check the site answers
+        run: |
+          sleep 5
+          curl --fail --silent --show-error --max-time 20 https://miopersonal.it/up > /dev/null
+          echo "https://miopersonal.it/up answers"
+
+      - name: Remove the key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
