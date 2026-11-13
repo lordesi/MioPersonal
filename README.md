@@ -522,9 +522,9 @@ browser: l'elenco è in `app/Http/Middleware/HandleInertiaRequests.php` (`$witho
 
 - **In locale** non serve fare niente: con `composer dev` ci pensa Vite.
 - **Sul server (Ploi)**:
-    1. Nello **script di deploy** sostituisci `npm run build` con `npm run build:ssr`, e aggiungi in fondo
-       `php artisan inertia:stop-ssr` (ferma il vecchio processo: il daemon lo riavvia col codice nuovo).
-    2. In **Daemons** aggiungi `php artisan inertia:start-ssr` (cartella del sito, utente `ploi`).
+    1. Il deploy ([`docs/deploy.md`](docs/deploy.md)) fa già `npm run build:ssr` e `inertia:stop-ssr`
+       (ferma il vecchio processo: il daemon lo riavvia col codice nuovo).
+    2. In **Daemons** c'è `php8.4 artisan inertia:start-ssr` (cartella del sito, utente `ploi`).
     3. Controlla: `curl -s https://miopersonal.it/personal-trainer | grep data-server-rendered` deve
        trovare una riga.
 

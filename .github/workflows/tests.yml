@@ -1,10 +1,10 @@
 name: tests
 
+# Every push on every branch; a green run on main starts the deploy (deploy.yml).
 on:
   push:
     branches:
-      - main
-  pull_request:
+      - '**'
 
 permissions:
   contents: read
@@ -38,6 +38,10 @@ jobs:
 
       - name: Run CI Checks
         run: composer ci:check
+
+      # The server builds with build:ssr: a broken SSR bundle must stop main before the deploy.
+      - name: Build SSR bundle
+        run: npx vp build --ssr
 
       # Known vulnerabilities in the libraries (dev-only npm tools excluded).
       - name: Audit dependencies
