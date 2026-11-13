@@ -20,13 +20,26 @@ Il codice protegge già da solo la copia di prova (basta `APP_ENV=staging`):
 
 ## Una volta sola, su Ploi
 
-1. **DNS**: aggiungi un record `A` per `staging` che punta allo stesso server di `miopersonal.it`.
+1. **DNS (Cloudflare)**: nel dominio `miopersonal.it` su Cloudflare aggiungi un record `A`, nome `staging`,
+   valore lo stesso IP del server Hetzner di `miopersonal.it`. Lascialo **DNS only (nuvola grigia)**: così Ploi
+   può ottenere il certificato Let's Encrypt. Se poi vuoi il proxy (nuvola arancione), in Cloudflare
+   _SSL/TLS_ deve essere **Full (strict)**, altrimenti il sito va in loop di redirect.
 2. **Sito**: crea il sito `staging.miopersonal.it` (stesso server, stessa versione di PHP della produzione),
-   repository `main`, e attiva **SSL** (Let's Encrypt).
+   repository `main`, e attiva **SSL** (Let's Encrypt). Creare il sito, il database, il worker e il cron
+   **non** consuma deploy; l'installazione del repository sì potrebbe (piano Free: 5 al mese). Se vuoi
+   risparmiarlo, installa a mano dal terminale SSH del server (utente `ploi`):
+    ```
+    cd /home/ploi/staging.miopersonal.it
+    git clone git@github.com:lordesi/MioPersonal.git .   # solo se la cartella è vuota
+    composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+    npm ci && npm run build
+    php8.4 artisan storage:link
+    ```
 3. **Database**: crea un database **nuovo** con un utente suo (es. `miopersonal_staging`). Mai lo stesso
    della produzione: `staging:reset` lo svuota.
 4. **`.env`**: parti da [`.env.staging.example`](../.env.staging.example). Cambia `APP_KEY` (`php artisan key:generate`),
-   la password del database e `STAGING_PASSWORD`.
+   la password del database e `STAGING_PASSWORD`. `STAGING_USER` e `STAGING_PASSWORD` sono il nome utente e la
+   password che il browser chiede prima di aprire il sito: decideteli voi due e non dateli a nessun altro.
 5. **Script di deploy**: lo stesso della produzione. Per ora non serve l'SSR su staging: lascia
    `npm run build`.
 6. **Primo avvio** (nel terminale del sito):
