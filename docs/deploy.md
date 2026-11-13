@@ -88,11 +88,11 @@ GitHub fa girare i test. Il sito non cambia.
 
 ## Come funziona
 
-| Pezzo | Cosa fa |
-|---|---|
-| [`.github/workflows/tests.yml`](../.github/workflows/tests.yml) | Test, stile, tipi e build SSR su ogni push di ogni branch |
+| Pezzo                                                             | Cosa fa                                                                                                            |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| [`.github/workflows/tests.yml`](../.github/workflows/tests.yml)   | Test, stile, tipi e build SSR su ogni push di ogni branch                                                          |
 | [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) | Dopo i test verdi su `main` entra nel server via SSH e lancia lo script; poi controlla `/up`. Un deploy alla volta |
-| [`scripts/deploy.sh`](../scripts/deploy.sh) | Lo script che gira sul server (sotto) |
+| [`scripts/deploy.sh`](../scripts/deploy.sh)                       | Lo script che gira sul server (sotto)                                                                              |
 
 Lo script, sul server come utente `ploi`, nella cartella `/home/ploi/miopersonal.it`:
 
@@ -111,14 +111,14 @@ Per vedere gli ultimi deploy: `tail /home/ploi/deploys.log`.
 
 ### Sul server e su GitHub (fatto il 13/11/2026)
 
-| Cosa | Dove |
-|---|---|
-| Chiave di GitHub Actions per entrare nel server | Ploi → server → SSH keys → **GitHub Actions deploy**. Per revocarla: eliminatela lì |
-| Secret `DEPLOY_HOST`, `DEPLOY_KNOWN_HOSTS`, `DEPLOY_SSH_KEY` | GitHub → Settings → Environments → **production** (usabile solo da `main`) |
-| Chiave del server per scaricare il codice (sola lettura) | GitHub → Settings → Deploy keys → **Server produzione**; sul server `~/.ssh/github_deploy` |
-| Worker della coda | Ploi → server → Queue (`queue:work database`) |
-| Scheduler (`schedule:run` ogni minuto) | Ploi → server → Cronjobs |
-| Server SSR (`php8.4 artisan inertia:start-ssr`) | Ploi → Daemons, cartella del sito, utente `ploi` |
+| Cosa                                                         | Dove                                                                                       |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Chiave di GitHub Actions per entrare nel server              | Ploi → server → SSH keys → **GitHub Actions deploy**. Per revocarla: eliminatela lì        |
+| Secret `DEPLOY_HOST`, `DEPLOY_KNOWN_HOSTS`, `DEPLOY_SSH_KEY` | GitHub → Settings → Environments → **production** (usabile solo da `main`)                 |
+| Chiave del server per scaricare il codice (sola lettura)     | GitHub → Settings → Deploy keys → **Server produzione**; sul server `~/.ssh/github_deploy` |
+| Worker della coda                                            | Ploi → server → Queue (`queue:work database`)                                              |
+| Scheduler (`schedule:run` ogni minuto)                       | Ploi → server → Cronjobs                                                                   |
+| Server SSR (`php8.4 artisan inertia:start-ssr`)              | Ploi → Daemons, cartella del sito, utente `ploi`                                           |
 
 `DEPLOY_KNOWN_HOSTS` è l'impronta del server: se un giorno il server viene reinstallato cambia, e il deploy
 si rifiuta di collegarsi. Si rigenera dal server con:
