@@ -1,9 +1,18 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { CalendarDays, MapPin, Users } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import BookingInviteController from '@/actions/App/Http/Controllers/BookingInviteController';
-import { Button } from '@/components/ui/button';
+import {
+    IconBadge,
+    brandFilledClassName,
+    brandOutlineClassName,
+    darkCardClassName,
+    pageColumnClassName,
+    pageTitleClassName,
+} from '@/components/mp/page-bits';
+import { Spinner } from '@/components/ui/spinner';
 import { perPersonLabel } from '@/lib/booking';
 import {
     formatDateLong,
@@ -11,6 +20,7 @@ import {
     formatPrice,
     formatTimeRange,
 } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { bookings } from '@/routes/client';
 import type { SeoData } from '@/types';
 
@@ -46,8 +56,9 @@ type InviteProps = {
 };
 
 /**
- * "Invita un amico": the page of the link the booker shares. The friend
- * sees the session and the share, signs in and joins with "Partecipo".
+ * "Invita un amico": the page of the link the booker shares, in the dark
+ * design. The friend sees the session and the share, signs in and joins
+ * with "Partecipo".
  */
 export default function Invite({ seo, token, invite, state }: InviteProps) {
     const [joining, setJoining] = useState(false);
@@ -66,74 +77,67 @@ export default function Invite({ seo, token, invite, state }: InviteProps) {
         );
 
     return (
-        <div className="mx-auto flex w-full max-w-160 flex-col gap-5 px-4 pt-6 pb-12 md:px-8 md:pt-12">
+        <div
+            className={cn(
+                pageColumnClassName,
+                'max-w-176 gap-6 pb-16 md:gap-8 md:pb-24',
+            )}
+        >
             <Head title={seo.title} />
 
             <section
                 aria-labelledby="invite-title"
-                className="flex flex-col gap-5 rounded-3xl bg-primary p-5.5 text-primary-foreground md:p-8"
+                className="flex flex-col gap-6 md:gap-8"
             >
-                <div className="flex flex-col gap-2">
-                    <span className="text-xs font-semibold tracking-[0.08em] text-primary-foreground/60 uppercase">
+                <div className="flex flex-col gap-3">
+                    <span className="text-[13px] font-semibold tracking-[0.08em] text-brand uppercase">
                         Invito a una seduta
                     </span>
-                    <h1
-                        id="invite-title"
-                        className="text-[28px] leading-8.5 font-bold tracking-[-0.03em] md:text-4xl md:leading-11"
-                    >
+                    <h1 id="invite-title" className={pageTitleClassName}>
                         {invite.bookerFirstName} ti invita ad allenarvi insieme
                     </h1>
-                    <p className="text-primary-foreground/80">
+                    <p className="text-[17px] text-muted-foreground md:text-xl">
                         {invite.serviceName} con{' '}
                         <Link
                             href={invite.trainerHref}
-                            className="font-semibold underline underline-offset-4"
+                            className="font-semibold text-brand hover:underline"
                         >
                             {invite.trainerName}
                         </Link>
                     </p>
                 </div>
 
-                <ul className="flex flex-col gap-3 text-[15px]">
-                    <li className="flex gap-3">
-                        <CalendarDays
-                            aria-hidden="true"
-                            className="size-5 flex-none"
-                        />
+                <ul
+                    className={cn(
+                        darkCardClassName,
+                        'flex flex-col gap-4 p-5 md:gap-5 md:p-7',
+                    )}
+                >
+                    <Row icon={CalendarDays}>
                         <span className="tabular-nums">
                             {formatDateLong(invite.start)},{' '}
                             {formatTimeRange(invite.start, invite.hours)} (
                             {formatHours(invite.hours)})
-                            <span className="block text-sm text-primary-foreground/60">
-                                {invite.confirmed
-                                    ? 'Confermata dal trainer'
-                                    : 'In attesa della conferma del trainer'}
-                            </span>
                         </span>
-                    </li>
+                        <span className="text-[13px] font-normal text-muted-foreground md:text-[15px]">
+                            {invite.confirmed
+                                ? 'Confermata dal trainer'
+                                : 'In attesa della conferma del trainer'}
+                        </span>
+                    </Row>
                     {invite.placeLabel && (
-                        <li className="flex gap-3">
-                            <MapPin
-                                aria-hidden="true"
-                                className="size-5 flex-none"
-                            />
-                            {invite.placeLabel}
-                        </li>
+                        <Row icon={MapPin}>{invite.placeLabel}</Row>
                     )}
-                    <li className="flex gap-3">
-                        <Users
-                            aria-hidden="true"
-                            className="size-5 flex-none"
-                        />
+                    <Row icon={Users}>
                         <span className="tabular-nums">
                             {invite.people} persone ·{' '}
                             {perPersonLabel(invite.priceCents, invite.people)}
-                            <span className="block text-sm text-primary-foreground/60">
-                                Totale {formatPrice(invite.priceCents)}, da
-                                pagare al trainer. Nessun pagamento online.
-                            </span>
                         </span>
-                    </li>
+                        <span className="text-[13px] font-normal text-muted-foreground md:text-[15px]">
+                            Totale {formatPrice(invite.priceCents)}, da pagare
+                            al trainer. Nessun pagamento online.
+                        </span>
+                    </Row>
                 </ul>
             </section>
 
@@ -148,6 +152,33 @@ export default function Invite({ seo, token, invite, state }: InviteProps) {
         </div>
     );
 }
+
+function Row({
+    icon,
+    children,
+}: {
+    icon: typeof CalendarDays;
+    children: ReactNode;
+}) {
+    return (
+        <li className="flex items-center gap-3 md:gap-4">
+            <IconBadge icon={icon} />
+            <span className="flex min-w-0 flex-col gap-0.5 text-[15px] font-semibold md:text-[17px]">
+                {children}
+            </span>
+        </li>
+    );
+}
+
+/** Full width on phones, as wide as the text on desktop. */
+const mainButton = cn(
+    brandFilledClassName,
+    'w-full gap-2 md:w-auto md:self-start',
+);
+
+/** The line under the button: centered on phones, on the left on desktop. */
+const hintClassName =
+    'text-center text-[13px] text-muted-foreground md:text-left md:text-[15px]';
 
 function InviteAction({
     state,
@@ -170,32 +201,31 @@ function InviteAction({
     switch (state) {
         case 'can-join':
             return (
-                <div className="flex flex-col gap-2">
-                    <Button
+                <div className="flex flex-col gap-2.5">
+                    <button
                         type="button"
-                        className="h-12.5 rounded-[14px] text-base font-semibold"
+                        className={mainButton}
                         disabled={joining}
                         onClick={onJoin}
                     >
+                        {joining && <Spinner />}
                         Partecipo
-                    </Button>
-                    <p className="text-center text-sm text-muted-foreground">
+                    </button>
+                    <p className={hintClassName}>
                         {seats}. Riceverai conferma e promemoria della seduta.
                     </p>
                 </div>
             );
         case 'login':
             return (
-                <div className="flex flex-col gap-2">
-                    <Button
-                        asChild
-                        className="h-12.5 rounded-[14px] text-base font-semibold"
+                <div className="flex flex-col gap-2.5">
+                    <Link
+                        href={BookingInviteController.start.url(token)}
+                        className={mainButton}
                     >
-                        <Link href={BookingInviteController.start.url(token)}>
-                            Accedi o registrati per partecipare
-                        </Link>
-                    </Button>
-                    <p className="text-center text-sm text-muted-foreground">
+                        Accedi o registrati per partecipare
+                    </Link>
+                    <p className={hintClassName}>
                         {seats}. Ci vuole un minuto, ed è gratis.
                     </p>
                 </div>
@@ -233,13 +263,16 @@ function Notice({ text, action = false }: { text: string; action?: boolean }) {
     return (
         <div
             role="status"
-            className="flex flex-col items-start gap-3 rounded-2xl border bg-card p-4.5"
+            className="flex flex-col items-stretch gap-4 rounded-[20px] p-5 shadow-[inset_0_0_0_1px_var(--brand)] md:flex-row md:items-center md:justify-between md:p-6"
         >
-            <p className="text-[15px]">{text}</p>
+            <p className="text-[15px] md:text-[17px]">{text}</p>
             {action && (
-                <Button asChild variant="outline" className="h-11 px-4">
-                    <Link href={bookings()}>Vai alle mie prenotazioni</Link>
-                </Button>
+                <Link
+                    href={bookings()}
+                    className={cn(brandOutlineClassName, 'shrink-0')}
+                >
+                    Vai alle mie prenotazioni
+                </Link>
             )}
         </div>
     );

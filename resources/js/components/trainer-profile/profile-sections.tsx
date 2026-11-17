@@ -8,13 +8,16 @@ import type { TrainerProfile, TrainingPlace } from '@/types';
 /** A section of the profile: 22px title on phones, 28px on desktop. */
 export function ProfileBlock({
     id,
+    anchor,
     title,
     description,
     children,
     className,
 }: {
-    /** The title's id; the section gets `${id}-section` for the links. */
+    /** The title's id. */
     id: string;
+    /** The section's id, for the links: "#abbonamenti". */
+    anchor?: string;
     title: string;
     description?: string;
     children: ReactNode;
@@ -22,6 +25,7 @@ export function ProfileBlock({
 }) {
     return (
         <section
+            id={anchor}
             aria-labelledby={id}
             className={cn(
                 'flex scroll-mt-6 flex-col gap-3 md:gap-4',

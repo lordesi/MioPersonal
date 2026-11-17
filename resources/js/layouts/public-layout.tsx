@@ -37,6 +37,11 @@ const DARK_PAGES = [
     'public/privacy',
     'public/cookies',
     'public/terms',
+    'public/gym',
+    'public/event',
+    'public/invite',
+    'public/not-found',
+    'public/error',
 ];
 
 type PublicLayoutProps = {

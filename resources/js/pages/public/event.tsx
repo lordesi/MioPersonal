@@ -1,5 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
+    ArrowRight,
+    ArrowUpRight,
     Building2,
     CalendarDays,
     Clock,
@@ -8,26 +10,26 @@ import {
     User,
     Users,
 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import ConfirmDialog from '@/components/shared/confirm-dialog';
-import {
-    EventGrid,
-    eventWhen,
-    placesLabel,
-} from '@/components/events/event-card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import ProfileMobileHeader from '@/components/profile/profile-mobile-header';
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { home } from '@/routes';
+import { eventWhen, placesLabel } from '@/components/events/event-card';
+import HomeShelf from '@/components/home/home-shelf';
+import { eventCard } from '@/components/mp/cards';
+import DarkDialog, {
+    darkSecondaryButtonClassName,
+} from '@/components/mp/dark-dialog';
+import ProfileCard from '@/components/mp/profile-card';
+import PhotoHero, {
+    IconPlaceholder,
+    heroChipClassName,
+    heroFactsClassName,
+    heroTitleClassName,
+} from '@/components/trainer-profile/photo-hero';
+import { ProfileBlock } from '@/components/trainer-profile/profile-sections';
+import { Spinner } from '@/components/ui/spinner';
+import { useShare } from '@/hooks/use-share';
+import { cn } from '@/lib/utils';
 import { cancel, register, search, start } from '@/routes/events';
 import { join, leave } from '@/routes/events/waitlist';
 import type { GroupSessionSummary, SeoData } from '@/types';
@@ -73,10 +75,17 @@ type EventProps = {
     organizerHref: string | null;
 };
 
+/** The main button of the box: turquoise outline, full width. */
+const mainButton = 'btn-brand h-12.5 w-full text-[17px]';
+
+/** A grey note in the box: "Ci sei!", "I posti sono finiti.". */
+const boxNote = 'rounded-[14px] bg-card px-3.5 py-3 text-[15px]';
+
 /**
- * The page of an event: when, where, the price (paid at the place), the
- * organizers and "Prenota il posto", confirmed at once while there are
- * places left.
+ * The page of an event, in the dark design of the trainer profile: the
+ * photo with the title, what it is and who organizes it; on the right
+ * (desktop, below on phones) when, where, the price (paid at the place)
+ * and "Prenota il posto", confirmed at once while there are places left.
  */
 export default function Event({
     seo,
@@ -92,6 +101,7 @@ export default function Event({
     const { auth } = usePage().props;
     const [busy, setBusy] = useState(false);
     const [confirmCancel, setConfirmCancel] = useState(false);
+    const share = useShare(event.title);
     // A course lesson: only the places already taken; the gym books the others.
     const closed = event.cancelled || event.started || event.lesson;
 
@@ -121,104 +131,85 @@ export default function Event({
             onSuccess: () => setConfirmCancel(false),
         });
 
-    const backHref = course
-        ? course.href
-        : search.url(city ? { city: city.slug } : undefined);
+    const citySearch = search.url(city ? { city: city.slug } : undefined);
+    const backHref = course ? course.href : citySearch;
 
     return (
         <>
             <Head title={seo.title} />
-            <ProfileMobileHeader
+
+            <PhotoHero
+                titleId="event-title"
+                photosLabel={`Foto di ${event.title}`}
+                slides={
+                    event.coverUrl
+                        ? [{ caption: event.title, url: event.coverUrl }]
+                        : []
+                }
+                placeholder={
+                    <IconPlaceholder
+                        icon={CalendarDays}
+                        label={`Nessuna foto di ${event.title}`}
+                    />
+                }
                 backHref={backHref}
                 backLabel={course ? 'Torna al corso' : 'Torna agli eventi'}
-            />
-            <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pt-5 pb-28 md:px-8 md:pt-8 md:pb-20">
-                <Breadcrumb aria-label="Percorso" className="hidden md:block">
-                    <BreadcrumbList className="text-[13px]">
-                        <BreadcrumbItem>
-                            <BreadcrumbLink asChild>
-                                <Link href={home()}>Home</Link>
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>
-                        <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                        {course ? (
-                            <>
-                                <BreadcrumbItem>
-                                    <BreadcrumbLink asChild>
-                                        <Link href={course.gymHref}>
-                                            {course.gymName}
-                                        </Link>
-                                    </BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                                <BreadcrumbItem>
-                                    <BreadcrumbLink asChild>
-                                        <Link href={course.href}>
-                                            {course.name}
-                                        </Link>
-                                    </BreadcrumbLink>
-                                </BreadcrumbItem>
-                            </>
-                        ) : (
-                            <BreadcrumbItem>
-                                <BreadcrumbLink asChild>
-                                    <Link href={backHref}>
-                                        {city
-                                            ? `Eventi a ${city.name}`
-                                            : 'Eventi'}
-                                    </Link>
-                                </BreadcrumbLink>
-                            </BreadcrumbItem>
-                        )}
-                        <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                        <BreadcrumbItem>
-                            <BreadcrumbPage>{event.title}</BreadcrumbPage>
-                        </BreadcrumbItem>
-                    </BreadcrumbList>
-                </Breadcrumb>
-
-                <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_340px] md:gap-8">
-                    <div className="flex min-w-0 flex-col gap-5">
-                        <div className="relative flex aspect-16/9 items-center justify-center overflow-hidden rounded-3xl bg-primary text-primary-foreground">
-                            {event.coverUrl ? (
-                                <img
-                                    src={event.coverUrl}
-                                    alt=""
-                                    className="size-full object-cover"
-                                />
-                            ) : (
-                                <CalendarDays
-                                    aria-hidden="true"
-                                    className="size-12"
-                                />
+                backText={
+                    course
+                        ? course.name
+                        : city
+                          ? `Eventi a ${city.name}`
+                          : 'Eventi'
+                }
+                onShare={share}
+                shareLabel="Condividi l’evento"
+                favorite={null}
+            >
+                <ul className="flex flex-wrap gap-1 md:gap-2">
+                    <li className={heroChipClassName}>{event.typeLabel}</li>
+                    {event.discipline && (
+                        <li className={heroChipClassName}>
+                            {event.discipline}
+                        </li>
+                    )}
+                    {event.cancelled && (
+                        <li
+                            className={cn(
+                                heroChipClassName,
+                                'border-destructive text-destructive',
                             )}
-                        </div>
+                        >
+                            Annullato
+                        </li>
+                    )}
+                </ul>
 
-                        <div className="flex flex-col gap-2">
-                            <div className="flex flex-wrap gap-1.5">
-                                <Badge variant="secondary">
-                                    {event.typeLabel}
-                                </Badge>
-                                {event.discipline && (
-                                    <Badge variant="outline">
-                                        {event.discipline}
-                                    </Badge>
-                                )}
-                                {event.cancelled && (
-                                    <Badge variant="destructive">
-                                        Annullato
-                                    </Badge>
-                                )}
-                            </div>
-                            <h1 className="text-[30px] leading-9 font-bold tracking-tighter md:text-[40px] md:leading-12">
-                                {event.title}
-                            </h1>
-                        </div>
+                <h1
+                    id="event-title"
+                    className={cn(heroTitleClassName, 'md:font-bold')}
+                >
+                    {event.title}
+                </h1>
 
+                <div className={heroFactsClassName}>
+                    <span className="flex items-center gap-1 md:gap-1.5">
+                        <Clock aria-hidden="true" className="size-4.5" />
+                        {eventWhen(event)}
+                    </span>
+                    <span className="flex items-center gap-1 md:gap-1.5">
+                        <MapPin aria-hidden="true" className="size-4.5" />
+                        {event.place}
+                    </span>
+                </div>
+            </PhotoHero>
+
+            <div className="mx-auto flex w-full max-w-300 flex-col gap-6 px-4 pt-10 md:px-8">
+                <div className="flex flex-col gap-10 md:grid md:grid-cols-[minmax(0,1fr)_380px] md:items-start md:gap-18">
+                    <div className="flex min-w-0 flex-col gap-10 md:gap-14">
                         {event.cancelled && (
                             <p
                                 role="status"
-                                className="rounded-2xl bg-muted px-4 py-3 text-sm"
+                                className="rounded-[20px] px-4 py-3.5 text-[15px] shadow-[inset_0_0_0_1px_var(--destructive)]"
                             >
                                 L’organizzatore ha annullato questo evento.
                                 {event.cancelNote && ` “${event.cancelNote}”`}
@@ -226,83 +217,74 @@ export default function Event({
                         )}
 
                         {event.description && (
-                            <section
-                                aria-labelledby="about-title"
-                                className="flex flex-col gap-2"
+                            <ProfileBlock
+                                id="about-title"
+                                title="Di cosa si tratta"
                             >
-                                <h2
-                                    id="about-title"
-                                    className="text-lg font-semibold"
-                                >
-                                    Di cosa si tratta
-                                </h2>
-                                <p className="text-[15px] leading-6.5 whitespace-pre-line text-muted-foreground">
+                                <p className="max-w-160 text-[17px] leading-6 break-words whitespace-pre-line md:leading-6.5">
                                     {event.description}
                                 </p>
-                            </section>
+                            </ProfileBlock>
                         )}
 
                         {event.hosts.length > 0 && (
-                            <section
-                                aria-labelledby="hosts-title"
-                                className="flex flex-col gap-3"
-                            >
-                                <h2
-                                    id="hosts-title"
-                                    className="text-lg font-semibold"
-                                >
-                                    {event.hosts.length === 1
+                            <ProfileBlock
+                                id="hosts-title"
+                                title={
+                                    event.hosts.length === 1
                                         ? 'Organizzato da'
-                                        : 'Organizzato insieme da'}
-                                </h2>
-                                <ul className="flex flex-col gap-2">
+                                        : 'Organizzato insieme da'
+                                }
+                            >
+                                <ul className="flex flex-col gap-2 md:gap-3">
                                     {event.hosts.map((host) => (
                                         <li key={`${host.kind}-${host.name}`}>
                                             <HostRow host={host} />
                                         </li>
                                     ))}
                                 </ul>
-                            </section>
+                            </ProfileBlock>
                         )}
                     </div>
 
                     <aside
                         id="prenota"
-                        className="flex scroll-mt-4 flex-col gap-4 md:sticky md:top-24 md:self-start"
+                        aria-label="Prenota il posto"
+                        className="flex scroll-mt-6 flex-col gap-5 rounded-[26px] bg-background p-5 shadow-[inset_0_0_0_1px_var(--border),0_24px_64px_-12px_rgba(0,0,0,0.8)] md:sticky md:top-6 md:p-6"
                     >
-                        <div className="flex flex-col gap-4 rounded-3xl border bg-card p-5">
-                            <dl className="flex flex-col gap-3 text-sm">
-                                <Fact icon={Clock} label="Quando">
-                                    {eventWhen(event)}
-                                </Fact>
-                                <Fact icon={MapPin} label="Dove">
-                                    {event.place}
-                                    {event.mapsUrl && (
-                                        <>
-                                            {' · '}
-                                            <a
-                                                href={event.mapsUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="font-medium underline underline-offset-4"
-                                            >
-                                                Mappa
-                                            </a>
-                                        </>
-                                    )}
-                                </Fact>
-                                <Fact icon={Euro} label="Prezzo">
-                                    {event.price === 'Gratis'
-                                        ? 'Gratis'
-                                        : `${event.price}, da pagare sul posto`}
-                                </Fact>
-                                {!event.cancelled && (
-                                    <Fact icon={Users} label="Posti">
-                                        {placesLabel(event)} su {event.capacity}
-                                    </Fact>
+                        <dl className="flex flex-col gap-3.5">
+                            <Fact icon={Clock} label="Quando">
+                                {eventWhen(event)}
+                            </Fact>
+                            <Fact icon={MapPin} label="Dove">
+                                {event.place}
+                                {event.mapsUrl && (
+                                    <>
+                                        {' · '}
+                                        <a
+                                            href={event.mapsUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="font-semibold text-brand hover:underline"
+                                        >
+                                            Mappa
+                                        </a>
+                                    </>
                                 )}
-                            </dl>
+                            </Fact>
+                            <Fact icon={Euro} label="Prezzo">
+                                {event.price === 'Gratis'
+                                    ? 'Gratis'
+                                    : `${event.price}, da pagare sul posto`}
+                            </Fact>
+                            {!event.cancelled && (
+                                <Fact icon={Users} label="Posti">
+                                    {placesLabel(event)} su {event.capacity}
+                                </Fact>
+                            )}
+                        </dl>
 
+                        <div className="border-t border-border pt-5">
                             <Action
                                 state={state}
                                 guest={!auth?.user}
@@ -319,87 +301,111 @@ export default function Event({
                                 onCancel={() => setConfirmCancel(true)}
                             />
                         </div>
+
                         {event.gymHref && (
-                            <Button asChild variant="outline" className="h-11">
-                                <Link href={event.gymHref}>
-                                    <Building2 aria-hidden="true" />
-                                    Vedi la palestra
-                                </Link>
-                            </Button>
+                            <Link
+                                href={event.gymHref}
+                                className="flex min-h-11 items-center justify-center gap-2 text-[15px] font-semibold text-brand outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                            >
+                                <Building2
+                                    aria-hidden="true"
+                                    className="size-4.5"
+                                />
+                                Vedi la palestra
+                            </Link>
                         )}
                     </aside>
                 </div>
-
-                {otherDates.length > 0 && (
-                    <section
-                        aria-labelledby="dates-title"
-                        className="flex flex-col gap-4"
-                    >
-                        <h2
-                            id="dates-title"
-                            className="text-2xl font-semibold tracking-tight"
-                        >
-                            Altre date
-                        </h2>
-                        <EventGrid events={otherDates} />
-                    </section>
-                )}
-
-                <ConfirmDialog
-                    open={confirmCancel}
-                    onOpenChange={setConfirmCancel}
-                    title="Annullare l’iscrizione?"
-                    description="Il posto torna libero per altri. Potrai iscriverti di nuovo se ci sono ancora posti."
-                    confirmLabel="Annulla iscrizione"
-                    cancelLabel="Tengo il posto"
-                    destructive
-                    onConfirm={giveBack}
-                />
-
-                {nearby.length > 0 && city && (
-                    <section
-                        aria-labelledby="nearby-title"
-                        className="flex flex-col gap-4"
-                    >
-                        <div className="flex flex-wrap items-end justify-between gap-3">
-                            <h2
-                                id="nearby-title"
-                                className="text-2xl font-semibold tracking-tight"
-                            >
-                                Altri eventi a {city.name}
-                            </h2>
-                            <Link
-                                href={search.url({ city: city.slug })}
-                                className="inline-flex min-h-11 items-center text-sm font-medium underline md:min-h-0"
-                            >
-                                Tutti gli eventi a {city.name}
-                            </Link>
-                        </div>
-                        <EventGrid events={nearby} />
-                    </section>
-                )}
             </div>
 
-            {/* Phones: the box with "Prenota il posto" is below the description. */}
+            <HomeShelf
+                id="dates-title"
+                title="Altre date"
+                link={{ label: 'Tutti gli eventi', href: citySearch }}
+                items={otherDates}
+                itemKey={(other) => other.slug}
+            >
+                {(other) => <ProfileCard {...eventCard(other)} />}
+            </HomeShelf>
+            {city && (
+                <HomeShelf
+                    id="nearby-title"
+                    title={`Altri eventi a ${city.name}`}
+                    link={{
+                        label: 'Vedi tutti',
+                        href: search.url({ city: city.slug }),
+                    }}
+                    items={nearby}
+                    itemKey={(other) => other.slug}
+                >
+                    {(other) => <ProfileCard {...eventCard(other)} />}
+                </HomeShelf>
+            )}
+
+            {/* Room for the bar on phones. */}
+            <div className="pb-32 md:pb-14" />
+
+            <DarkDialog
+                open={confirmCancel}
+                onOpenChange={setConfirmCancel}
+                title="Annullare l’iscrizione?"
+                description="Il posto torna libero per altri. Potrai iscriverti di nuovo se ci sono ancora posti."
+            >
+                <div className="flex flex-col gap-2 md:flex-row-reverse md:items-center md:gap-4">
+                    <button
+                        type="button"
+                        disabled={busy}
+                        onClick={giveBack}
+                        className="flex h-12.5 w-full items-center justify-center gap-2 rounded-full text-[17px] font-semibold text-destructive shadow-[inset_0_0_0_1.5px_var(--destructive)] outline-none hover:bg-destructive/10 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-60 md:w-auto md:flex-1"
+                    >
+                        {busy && <Spinner />}
+                        Annulla iscrizione
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setConfirmCancel(false)}
+                        className={darkSecondaryButtonClassName}
+                    >
+                        Tengo il posto
+                    </button>
+                </div>
+            </DarkDialog>
+
+            {/* Phones (as the bar of the trainer profile): the box with "Prenota il posto" is below the description. */}
             {!closed && state !== 'organizer' && (
-                <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t bg-background px-4 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
-                    <span className="flex min-w-0 flex-1 flex-col text-sm">
-                        <strong className="truncate">{event.price}</strong>
-                        <span className="truncate text-muted-foreground">
+                <div className="fixed inset-x-3 bottom-4 z-40 flex items-center gap-3 rounded-[26px] bg-background p-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] shadow-[inset_0_0_0_1px_var(--border),0_16px_48px_-8px_rgba(0,0,0,0.75)] md:hidden">
+                    <span
+                        aria-hidden="true"
+                        className="flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-card text-brand"
+                    >
+                        <CalendarDays className="size-5" />
+                    </span>
+                    <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate text-[17px] leading-5.5 font-bold tabular-nums">
+                            {event.price}
+                        </span>
+                        <span className="truncate text-[13px] text-muted-foreground">
                             {state === 'registered'
                                 ? 'Hai il tuo posto'
                                 : placesLabel(event)}
                         </span>
                     </span>
-                    <Button asChild className="h-12 px-5 font-semibold">
-                        <a href="#prenota">
-                            {state === 'registered'
-                                ? 'Vedi la prenotazione'
-                                : event.remaining === 0
-                                  ? 'Lista d’attesa'
-                                  : 'Prenota il posto'}
-                        </a>
-                    </Button>
+                    <a
+                        href="#prenota"
+                        className="flex h-11 shrink-0 items-center gap-3 rounded-full bg-[linear-gradient(180deg,#6fe4e6_0%,#42d7d9_52%,#2fc4c6_100%)] pr-1.5 pl-5 text-[17px] font-semibold text-primary-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),0_8px_24px_0_rgba(66,215,217,0.28)] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    >
+                        {state === 'registered'
+                            ? 'Il tuo posto'
+                            : event.remaining === 0
+                              ? 'Lista d’attesa'
+                              : 'Prenota'}
+                        <span className="flex size-8 items-center justify-center rounded-full bg-background text-brand">
+                            <ArrowUpRight
+                                aria-hidden="true"
+                                className="size-4"
+                            />
+                        </span>
+                    </a>
                 </div>
             )}
         </>
@@ -413,28 +419,31 @@ function Fact({
 }: {
     icon: typeof Clock;
     label: string;
-    children: React.ReactNode;
+    children: ReactNode;
 }) {
     return (
         <div className="flex gap-3">
-            <Icon
+            <span
                 aria-hidden="true"
-                className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-            />
-            <div className="flex flex-col gap-0.5">
-                <dt className="text-xs font-semibold text-muted-foreground">
-                    {label}
-                </dt>
-                <dd className="tabular-nums">{children}</dd>
+                className="flex size-9 shrink-0 items-center justify-center rounded-[12px] bg-card text-brand"
+            >
+                <Icon className="size-4.5" />
+            </span>
+            <div className="flex min-w-0 flex-col gap-0.5">
+                <dt className="text-[13px] text-muted-foreground">{label}</dt>
+                <dd className="text-[15px] break-words tabular-nums">
+                    {children}
+                </dd>
             </div>
         </div>
     );
 }
 
+/** An organizer: a dark card with the photo, to their profile. */
 function HostRow({ host }: { host: EventHost }) {
     const content = (
         <>
-            <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
+            <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-brand">
                 {host.photoUrl ? (
                     <img
                         src={host.photoUrl}
@@ -447,26 +456,34 @@ function HostRow({ host }: { host: EventHost }) {
                     <User aria-hidden="true" className="size-5" />
                 )}
             </span>
-            <span className="flex flex-col">
-                <span className="font-semibold">{host.name}</span>
-                <span className="text-sm text-muted-foreground">
+            <span className="flex min-w-0 flex-1 flex-col">
+                <span className="text-[17px] font-semibold">{host.name}</span>
+                <span className="text-[13px] text-muted-foreground">
                     {host.kind === 'gym' ? 'Palestra' : 'Personal trainer'}
                 </span>
             </span>
         </>
     );
 
+    const card =
+        'flex items-center gap-3 rounded-[20px] bg-card px-4 py-3.5 md:gap-4 md:p-5';
+
     return host.href ? (
         <Link
             href={host.href}
-            className="flex items-center gap-3 rounded-2xl border bg-card p-3 hover:bg-muted"
+            className={cn(
+                card,
+                'outline-none hover:bg-[#232323] focus-visible:ring-[3px] focus-visible:ring-ring/50',
+            )}
         >
             {content}
+            <ArrowRight
+                aria-hidden="true"
+                className="size-5 shrink-0 text-brand"
+            />
         </Link>
     ) : (
-        <div className="flex items-center gap-3 rounded-2xl border bg-card p-3">
-            {content}
-        </div>
+        <div className={card}>{content}</div>
     );
 }
 
@@ -499,13 +516,11 @@ function Action({
     onBook: () => void;
     onCancel: () => void;
 }) {
-    const button = 'h-12 rounded-[14px] text-base font-semibold';
-
     if (state === 'organizer') {
         return (
-            <Button asChild className={button}>
-                <Link href={organizerHref ?? '#'}>Gestisci l’evento</Link>
-            </Button>
+            <Link href={organizerHref ?? '#'} className={mainButton}>
+                Gestisci l’evento
+            </Link>
         );
     }
 
@@ -514,20 +529,22 @@ function Action({
             <div className="flex flex-col gap-2">
                 <p
                     role="status"
-                    className="rounded-xl bg-muted px-3 py-2.5 text-sm font-medium"
+                    className="rounded-[14px] px-3.5 py-3 text-[15px] font-semibold text-brand shadow-[inset_0_0_0_1px_var(--brand)]"
                 >
                     Ci sei! Il tuo posto è confermato.
                 </p>
                 {!started && (
-                    <Button
+                    <button
                         type="button"
-                        variant="outline"
-                        className="h-11"
+                        className={cn(
+                            darkSecondaryButtonClassName,
+                            'md:w-full',
+                        )}
                         disabled={busy}
                         onClick={onCancel}
                     >
                         Annulla iscrizione
-                    </Button>
+                    </button>
                 )}
             </div>
         );
@@ -535,7 +552,7 @@ function Action({
 
     if (closed) {
         return (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-[15px] text-muted-foreground">
                 Le iscrizioni sono chiuse.
             </p>
         );
@@ -543,7 +560,7 @@ function Action({
 
     if (state === 'not-client') {
         return (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-[15px] text-muted-foreground">
                 Solo i clienti possono prenotare un posto.
             </p>
         );
@@ -552,46 +569,46 @@ function Action({
     if (soldOut) {
         return (
             <div className="flex flex-col gap-2">
-                <p className="rounded-xl bg-muted px-3 py-2.5 text-sm font-medium">
+                <p className={cn(boxNote, 'font-semibold')}>
                     I posti sono finiti.
                 </p>
                 {guest ? (
-                    <Button asChild variant="outline" className="h-11">
-                        <Link href={start.url(slug)}>
-                            Accedi per essere avvisato
-                        </Link>
-                    </Button>
+                    <Link href={start.url(slug)} className={mainButton}>
+                        Accedi per essere avvisato
+                    </Link>
                 ) : waitlist.joined ? (
                     <>
                         <p
                             role="status"
-                            className="rounded-xl border px-3 py-2.5 text-sm"
+                            className="rounded-[14px] px-3.5 py-3 text-[15px] shadow-[inset_0_0_0_1px_var(--brand)]"
                         >
                             Ti avvisiamo se si libera un posto.
                         </p>
-                        <Button
+                        <button
                             type="button"
-                            variant="ghost"
-                            className="h-11"
+                            className={cn(
+                                darkSecondaryButtonClassName,
+                                'md:w-full',
+                            )}
                             disabled={busy}
                             onClick={onStopWaiting}
                         >
                             Non avvisarmi più
-                        </Button>
+                        </button>
                     </>
                 ) : (
-                    <Button
+                    <button
                         type="button"
-                        variant="outline"
-                        className="h-11 font-semibold"
+                        className={mainButton}
                         disabled={busy}
                         onClick={onWait}
                     >
+                        {busy && <Spinner />}
                         Avvisami se si libera un posto
-                    </Button>
+                    </button>
                 )}
                 {waitlist.count > 0 && (
-                    <p className="text-center text-xs text-muted-foreground">
+                    <p className="text-center text-[13px] text-muted-foreground">
                         {waitlist.count === 1
                             ? '1 persona è in lista.'
                             : `${waitlist.count} persone sono in lista.`}{' '}
@@ -605,10 +622,10 @@ function Action({
     if (guest) {
         return (
             <div className="flex flex-col gap-2">
-                <Button asChild className={button}>
-                    <Link href={start.url(slug)}>Accedi per prenotare</Link>
-                </Button>
-                <p className="text-center text-xs text-muted-foreground">
+                <Link href={start.url(slug)} className={mainButton}>
+                    Accedi per prenotare
+                </Link>
+                <p className="text-center text-[13px] text-muted-foreground">
                     Ci vuole un minuto, ed è gratis.
                 </p>
             </div>
@@ -617,15 +634,16 @@ function Action({
 
     return (
         <div className="flex flex-col gap-2">
-            <Button
+            <button
                 type="button"
-                className={button}
+                className={mainButton}
                 disabled={busy}
                 onClick={onBook}
             >
+                {busy && <Spinner />}
                 Prenota il posto
-            </Button>
-            <p className="text-center text-xs text-muted-foreground">
+            </button>
+            <p className="text-center text-[13px] text-muted-foreground">
                 Posto confermato subito. Riceverai conferma e promemoria.
             </p>
         </div>

@@ -31,6 +31,14 @@ export const brandFilledClassName =
 export const brandOutlineClassName =
     'inline-flex h-12.5 items-center justify-center rounded-full border border-brand px-7 text-[17px] font-semibold text-foreground outline-none hover:bg-brand/10 focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
+/** The big number of the error pages: "404", "500"; turquoise and light on desktop. */
+export const errorNumberClassName =
+    'text-[120px] leading-26 font-bold tracking-[-0.06em] text-brand tabular-nums md:text-[220px] md:leading-45 md:font-light';
+
+/** The small turquoise line over a title: "Errore 404". */
+export const eyebrowClassName =
+    'text-[13px] font-semibold tracking-[0.08em] text-brand uppercase';
+
 /** A dark card: #1c1c1c, round corners of 26px. */
 export const darkCardClassName = 'rounded-[26px] bg-card';
 

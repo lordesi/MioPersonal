@@ -1,6 +1,13 @@
 import { Head, Link } from '@inertiajs/react';
-import SectionLabel from '@/components/shared/section-label';
-import { Button } from '@/components/ui/button';
+import {
+    brandFilledClassName,
+    brandOutlineClassName,
+    errorNumberClassName,
+    eyebrowClassName,
+    pageColumnClassName,
+    pageTitleClassName,
+} from '@/components/mp/page-bits';
+import { cn } from '@/lib/utils';
 import { dashboard, home } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
 
@@ -38,51 +45,48 @@ export default function ErrorPage({ status }: { status: ErrorStatus }) {
         <>
             <Head title={`Errore ${status}`} />
 
-            <div className="mx-auto flex w-full max-w-300 flex-1 flex-col justify-center gap-5 px-4 pt-8 pb-10 md:gap-6 md:px-8 md:pt-18 md:pb-24">
-                <div
-                    aria-hidden="true"
-                    className="text-[120px] leading-26 font-extrabold tracking-[-0.06em] tabular-nums md:text-[220px] md:leading-45"
-                >
+            <div
+                className={cn(
+                    pageColumnClassName,
+                    'flex-1 justify-center gap-5 pb-16 md:gap-6 md:pb-24',
+                )}
+            >
+                <div aria-hidden="true" className={errorNumberClassName}>
                     {status}
                 </div>
-                <div className="flex max-w-2xl flex-col gap-2.5">
-                    <SectionLabel as="p">Errore {status}</SectionLabel>
-                    <h1 className="text-[28px] leading-8.5 font-bold tracking-tight md:text-[40px] md:leading-11">
-                        {title}
-                    </h1>
-                    <p className="text-base text-muted-foreground md:text-lg md:leading-7">
+                <div className="flex max-w-2xl flex-col gap-3">
+                    <p className={eyebrowClassName}>Errore {status}</p>
+                    <h1 className={pageTitleClassName}>{title}</h1>
+                    <p className="text-[17px] text-muted-foreground md:text-xl md:leading-7">
                         {text}
                     </p>
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="flex flex-col gap-2.5 pt-2 sm:flex-row">
                     {status === 419 ? (
-                        <Button
+                        <button
                             type="button"
-                            className="h-12 rounded-lg px-5.5 text-[15px] font-semibold"
+                            className={brandFilledClassName}
                             onClick={() => window.location.reload()}
                         >
                             Ricarica la pagina
-                        </Button>
+                        </button>
                     ) : (
-                        <Button
-                            asChild
-                            className="h-12 rounded-lg px-5.5 text-[15px] font-semibold"
+                        // Logged in: the area of the role; guests: login, then the area.
+                        <Link
+                            href={status === 403 ? dashboard() : home()}
+                            className={brandFilledClassName}
                         >
-                            {/* Logged in: the area of the role; guests: login, then the area. */}
-                            <Link href={status === 403 ? dashboard() : home()}>
-                                {status === 403
-                                    ? 'Vai alla tua area'
-                                    : 'Torna alla home'}
-                            </Link>
-                        </Button>
+                            {status === 403
+                                ? 'Vai alla tua area'
+                                : 'Torna alla home'}
+                        </Link>
                     )}
-                    <Button
-                        asChild
-                        variant="outline"
-                        className="h-12 rounded-lg px-5.5 text-[15px] font-semibold"
+                    <Link
+                        href={contactPage()}
+                        className={brandOutlineClassName}
                     >
-                        <Link href={contactPage()}>Centro assistenza</Link>
-                    </Button>
+                        Centro assistenza
+                    </Link>
                 </div>
             </div>
         </>

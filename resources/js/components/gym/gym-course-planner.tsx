@@ -9,8 +9,7 @@ import {
     X,
 } from 'lucide-react';
 import { useState } from 'react';
-import ChoiceChips from '@/components/shared/choice-chips';
-import { Badge } from '@/components/ui/badge';
+import { Chip } from '@/components/mp/filter-chips';
 import { romeParts } from '@/lib/calendar';
 import { cn } from '@/lib/utils';
 import type { GymCourseDay, GymCourseInfo, GymCourseLessonSlot } from '@/types';
@@ -99,7 +98,7 @@ export default function GymCoursePlanner({
             {focused && (
                 <p
                     role="status"
-                    className="flex flex-wrap items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground"
+                    className="flex flex-wrap items-center gap-2 rounded-[20px] px-4 py-3 text-[15px] shadow-[inset_0_0_0_1px_var(--brand)]"
                 >
                     <span className="flex-1">
                         Stai vedendo solo <strong>{focused.name}</strong>
@@ -109,7 +108,7 @@ export default function GymCoursePlanner({
                     <button
                         type="button"
                         onClick={() => setCourseId(null)}
-                        className="inline-flex h-8 items-center gap-1 rounded-full bg-primary-foreground/15 px-3 font-semibold hover:bg-primary-foreground/25"
+                        className="inline-flex h-9 items-center gap-1 rounded-full px-3.5 font-semibold text-brand shadow-[inset_0_0_0_1px_var(--brand)] hover:bg-brand/10"
                     >
                         <X aria-hidden="true" className="size-3.5" />
                         Tutti i corsi
@@ -117,29 +116,37 @@ export default function GymCoursePlanner({
                 </p>
             )}
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <ChoiceChips
+                <div
+                    role="group"
                     aria-label="Settimana"
-                    options={[
-                        { value: '0', label: 'Questa settimana' },
-                        { value: '1', label: 'La prossima' },
-                    ]}
-                    value={String(weekIndex)}
-                    onChange={(value) => changeWeek(Number(value))}
-                />
+                    className="flex flex-wrap gap-2"
+                >
+                    {['Questa settimana', 'La prossima'].map((label, index) => (
+                        <Chip
+                            key={label}
+                            pressed={weekIndex === index}
+                            onClick={() => changeWeek(index)}
+                        >
+                            {label}
+                        </Chip>
+                    ))}
+                </div>
                 {disciplines.length > 1 && (
-                    <ChoiceChips
+                    <div
+                        role="group"
                         aria-label="Disciplina"
-                        className="gap-1.5"
-                        options={[
-                            { value: ALL, label: 'Tutti' },
-                            ...disciplines.map((name) => ({
-                                value: name,
-                                label: name,
-                            })),
-                        ]}
-                        value={discipline}
-                        onChange={setDiscipline}
-                    />
+                        className="flex flex-wrap gap-2"
+                    >
+                        {[ALL, ...disciplines].map((name) => (
+                            <Chip
+                                key={name}
+                                pressed={discipline === name}
+                                onClick={() => setDiscipline(name)}
+                            >
+                                {name === ALL ? 'Tutti' : name}
+                            </Chip>
+                        ))}
+                    </div>
                 )}
             </div>
 
@@ -147,7 +154,7 @@ export default function GymCoursePlanner({
             <div
                 role="tablist"
                 aria-label="Giorno"
-                className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1"
+                className="-mx-1 flex [scrollbar-width:none] gap-1.5 overflow-x-auto px-1 pb-1 [&::-webkit-scrollbar]:hidden"
             >
                 {week.map((item) => {
                     const selected = item.date === day?.date;
@@ -167,10 +174,10 @@ export default function GymCoursePlanner({
                             aria-selected={selected}
                             onClick={() => setDate(item.date)}
                             className={cn(
-                                'flex min-w-17 flex-none flex-col items-center gap-0.5 rounded-xl border px-2.5 py-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-primary/30',
+                                'flex min-w-17 flex-none flex-col items-center gap-0.5 rounded-[14px] px-2.5 py-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
                                 selected
-                                    ? 'border-primary bg-primary text-primary-foreground'
-                                    : 'bg-background hover:border-foreground/40',
+                                    ? 'text-brand shadow-[inset_0_0_0_1.5px_var(--brand)]'
+                                    : 'shadow-[inset_0_0_0_1px_var(--field)] hover:bg-foreground/5',
                             )}
                         >
                             <span className="font-semibold">
@@ -181,7 +188,7 @@ export default function GymCoursePlanner({
                                 className={cn(
                                     'text-xs tabular-nums',
                                     selected
-                                        ? 'text-primary-foreground/70'
+                                        ? 'text-brand/80'
                                         : 'text-muted-foreground',
                                 )}
                             >
@@ -194,7 +201,7 @@ export default function GymCoursePlanner({
             </div>
 
             {lessons.length === 0 ? (
-                <p className="rounded-2xl bg-muted px-4 py-3 text-sm text-muted-foreground">
+                <p className="rounded-[20px] bg-card px-4 py-3 text-[15px] text-muted-foreground">
                     Nessun corso {day ? `di ${day.label.toLowerCase()}` : ''}.
                 </p>
             ) : (
@@ -203,14 +210,14 @@ export default function GymCoursePlanner({
                         <li
                             key={lesson.lessonId}
                             className={cn(
-                                'flex flex-wrap items-start gap-x-4 gap-y-1.5 rounded-2xl border bg-card p-3.5',
+                                'flex flex-wrap items-start gap-x-4 gap-y-1.5 rounded-[20px] bg-card p-4',
                                 lesson.cancelled && 'opacity-60',
                             )}
                         >
                             <span className="flex w-24 flex-none items-center gap-1.5 text-[15px] font-bold tabular-nums">
                                 <Clock
                                     aria-hidden="true"
-                                    className="size-4 text-muted-foreground"
+                                    className="size-4 text-brand"
                                 />
                                 {lesson.start}–{lesson.end}
                             </span>
@@ -224,13 +231,13 @@ export default function GymCoursePlanner({
                                     >
                                         {lesson.name}
                                     </span>
-                                    <Badge variant="secondary">
+                                    <span className="flex h-5.5 items-center rounded-full border border-field px-2 text-[11px] font-semibold">
                                         {lesson.level}
-                                    </Badge>
+                                    </span>
                                     {lesson.cancelled && (
-                                        <Badge variant="outline">
+                                        <span className="flex h-5.5 items-center rounded-full border border-destructive px-2 text-[11px] font-semibold text-destructive">
                                             Annullata
-                                        </Badge>
+                                        </span>
                                     )}
                                 </span>
                                 <span className="flex flex-wrap gap-x-3 gap-y-1 text-[13px] text-muted-foreground">
@@ -282,20 +289,20 @@ export default function GymCoursePlanner({
                 </ul>
             )}
 
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
                 Orari indicativi. I corsi sono per gli iscritti alla palestra:
                 per partecipare chiedi direttamente a loro.
             </p>
 
             {courses.length > 0 && (
-                <ul className="grid gap-3 md:grid-cols-2">
+                <ul className="grid gap-2 md:grid-cols-2 md:gap-4">
                     {courses.map((course) => (
                         <li
                             key={course.id}
                             className={cn(
-                                'flex flex-col overflow-hidden rounded-2xl border bg-card',
+                                'flex flex-col overflow-hidden rounded-[26px] bg-card',
                                 course.id === courseId &&
-                                    'border-foreground ring-1 ring-foreground',
+                                    'ring-[1.5px] ring-brand',
                             )}
                         >
                             {course.photos.length > 0 && (
@@ -304,8 +311,8 @@ export default function GymCoursePlanner({
                                     photos={course.photos}
                                 />
                             )}
-                            <div className="flex flex-col gap-1.5 p-4">
-                                <h3 className="text-base font-semibold">
+                            <div className="flex flex-col gap-1.5 p-5">
+                                <h3 className="text-[17px] font-semibold">
                                     {course.name}
                                 </h3>
                                 <p className="text-[13px] text-muted-foreground">
@@ -321,7 +328,7 @@ export default function GymCoursePlanner({
                                         .join(' · ')}
                                 </p>
                                 {course.description && (
-                                    <p className="text-sm leading-5.5 break-words whitespace-pre-line text-foreground/80">
+                                    <p className="text-[15px] leading-5.5 break-words whitespace-pre-line text-muted-foreground">
                                         {course.description}
                                     </p>
                                 )}
@@ -368,7 +375,7 @@ function CoursePhotoStrip({
                         type="button"
                         aria-label="Foto precedente"
                         onClick={() => go(-1)}
-                        className="absolute top-1/2 left-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 text-foreground shadow hover:bg-background"
+                        className="absolute top-1/2 left-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/70 text-foreground shadow-[inset_0_0_0_1px_var(--field)] hover:bg-background/90"
                     >
                         <ChevronLeft aria-hidden="true" className="size-4" />
                     </button>
@@ -376,11 +383,11 @@ function CoursePhotoStrip({
                         type="button"
                         aria-label="Foto successiva"
                         onClick={() => go(1)}
-                        className="absolute top-1/2 right-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 text-foreground shadow hover:bg-background"
+                        className="absolute top-1/2 right-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/70 text-foreground shadow-[inset_0_0_0_1px_var(--field)] hover:bg-background/90"
                     >
                         <ChevronRight aria-hidden="true" className="size-4" />
                     </button>
-                    <span className="absolute right-2 bottom-2 rounded-full bg-background/90 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
+                    <span className="absolute right-2 bottom-2 rounded-full bg-background/70 px-2 py-0.5 text-[11px] font-semibold tabular-nums">
                         {index + 1}/{photos.length}
                     </span>
                 </>
