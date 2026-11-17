@@ -45,8 +45,11 @@ class TrainerProfileTest extends TestCase
                     ->where('services.1.durationLabel', 'da 1 ora a 2 ore')
                     ->where('services.1.priceCents', 4500)
                     ->where('services.1.options', fn ($options) => $options->pluck('priceCents', 'minutes')->all() === [60 => 4500, 90 => 6000, 120 => 8000])
+                    ->where('services.1.sessions', null)
                     ->where('services.2.name', 'Seduta singola (online)')
                     ->where('services.3.durationLabel', '10 × 1 ora')
+                    // A package to buy says how many sessions it holds: "Pacchetto 10 sedute".
+                    ->where('services.3.sessions', 10)
                     ->has('availability', 21)
                     ->etc()
                 )

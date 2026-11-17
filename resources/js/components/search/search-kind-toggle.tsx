@@ -1,10 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { Building2, CalendarDays, CalendarHeart, Dumbbell } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import {
-    modeItemClassName,
-    modeTrackClassName,
-} from '@/components/search/filter-bar';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { courseSearchUrl } from '@/lib/course';
 import { gymSearchUrl } from '@/lib/gym';
@@ -61,6 +57,12 @@ export function searchKindUrl(kind: SearchKind, city?: string | null): string {
             return eventsSearch.url(city ? { city } : undefined);
     }
 }
+
+/** The round track on a dark background, white when chosen. */
+const modeTrackClassName =
+    'w-full gap-1 rounded-full border border-primary-foreground/15 bg-primary-foreground/10 p-1';
+const modeItemClassName =
+    'flex-1 rounded-full whitespace-nowrap text-primary-foreground/80 first:rounded-full last:rounded-full hover:bg-primary-foreground/10 hover:text-primary-foreground focus-visible:ring-primary-foreground/50 data-[state=on]:bg-primary-foreground data-[state=on]:font-semibold data-[state=on]:text-primary data-[state=on]:shadow-sm data-[state=on]:hover:bg-primary-foreground data-[state=on]:hover:text-primary';
 
 // Scrolls sideways on narrow phones instead of wrapping.
 const trackClassName = cn(

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { redirect as googleRedirect } from '@/routes/google';
 
 type SocialSignInProps = {
@@ -7,6 +8,10 @@ type SocialSignInProps = {
     verb: string;
     /** False until GOOGLE_CLIENT_ID is in the .env: then nothing is shown. */
     googleEnabled: boolean;
+    /** The dark pages: a taller, round button. */
+    className?: string;
+    /** The line under the button. */
+    dividerLabel?: string;
 };
 
 /**
@@ -17,6 +22,8 @@ type SocialSignInProps = {
 export default function SocialSignIn({
     verb,
     googleEnabled,
+    className,
+    dividerLabel = 'oppure con email e password',
 }: SocialSignInProps) {
     if (!googleEnabled) {
         return null;
@@ -24,13 +31,13 @@ export default function SocialSignIn({
 
     return (
         <>
-            <Button asChild variant="outline" className="h-11">
+            <Button asChild variant="outline" className={cn('h-11', className)}>
                 <a href={googleRedirect.url()}>
                     <GoogleIcon />
                     {verb} Google
                 </a>
             </Button>
-            <TextDivider>oppure con email e password</TextDivider>
+            <TextDivider>{dividerLabel}</TextDivider>
         </>
     );
 }

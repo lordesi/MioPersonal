@@ -59,56 +59,21 @@ class SeoTest extends TestCase
             );
     }
 
-    public function test_indexed_city_pages_have_an_intro()
+    public function test_search_pages_have_no_intro_or_common_questions()
     {
-        // Giulia, Marco, Andrea and Elena (Monza, also Milano): not Sara, online only.
-        $this->get(route('trainers.search', 'milano'))
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('intro', fn (string $intro) => str_starts_with($intro, 'A Milano ci sono 4 personal trainer verificati su MioPersonal, per discipline come '))
-            );
-
-        $this->get(route('trainers.search', 'bergamo'))
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('intro', fn (string $intro) => str_starts_with($intro, "A Bergamo c'è 1 personal trainer verificato"))
-            );
-
-        $this->get(route('trainers.search', ['milano', 'disciplina' => 'pilates']))
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('intro', fn (string $intro) => str_starts_with($intro, 'A Milano ci sono 2 personal trainer verificati di pilates'))
-            );
-
-        // All of Italy: every published trainer, online-only ones included.
-        $this->get(route('trainers.search'))
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('intro', fn (string $intro) => str_starts_with($intro, 'Su MioPersonal ci sono 9 personal trainer verificati in 5 città italiane')
-                    && str_contains($intro, 'La valutazione media è '))
-            );
-
-        // Not indexed: no intro.
-        $this->get(route('trainers.search', ['milano', 'prezzo' => 'fino-35']))
-            ->assertInertia(fn (Assert $page) => $page->where('intro', null));
-    }
-
-    public function test_indexed_search_pages_answer_the_common_questions()
-    {
-        $this->get(route('trainers.search', 'milano'))
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('faq.0.question', 'Dove trovare un personal trainer a Milano?')
-                ->where('faq.0.answer', fn (string $answer) => str_starts_with($answer, 'Su MioPersonal trovi 4 personal trainer a Milano'))
-                ->where('faq.1.question', 'Quanto costa un personal trainer a Milano?')
-                // The same questions in the FAQPage, after the breadcrumbs and the list.
-                ->where('seo.jsonLd.2.@type', 'FAQPage')
-                ->where('seo.jsonLd.2.mainEntity.0.name', 'Dove trovare un personal trainer a Milano?')
-            );
-
-        $this->get(route('trainers.search', ['milano', 'disciplina' => 'pilates']))
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('faq.0.question', 'Dove trovare un personal trainer di pilates a Milano?')
-            );
-
-        // Not on the pages not indexed.
-        $this->get(route('trainers.search', ['milano', 'prezzo' => 'fino-35']))
-            ->assertInertia(fn (Assert $page) => $page->where('faq', []));
+        foreach ([
+            route('trainers.search'),
+            route('trainers.search', 'milano'),
+            route('trainers.search', ['milano', 'disciplina' => 'pilates']),
+        ] as $url) {
+            // Only the breadcrumbs and the list: no text about the trainers, no FAQPage.
+            $this->get($url)
+                ->assertInertia(fn (Assert $page) => $page
+                    ->missing('intro')
+                    ->missing('faq')
+                    ->has('seo.jsonLd', 2)
+                );
+        }
     }
 
     public function test_how_it_works_explains_miopersonal()

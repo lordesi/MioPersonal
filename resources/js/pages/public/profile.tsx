@@ -1,64 +1,37 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { useState } from 'react';
-import { toast } from 'sonner';
-import BookingAside from '@/components/profile/booking-aside';
-import BookingBar from '@/components/profile/booking-bar';
-import Certifications from '@/components/profile/certifications';
-import PhotoGallery from '@/components/profile/photo-gallery';
-import ProfileIntro from '@/components/profile/profile-intro';
-import ProfileMobileHeader from '@/components/profile/profile-mobile-header';
-import SectionAnchors from '@/components/shared/section-anchors';
-import ProfileSection from '@/components/profile/profile-section';
-import ReviewsSection from '@/components/profile/reviews-section';
+import HomeShelf from '@/components/home/home-shelf';
+import { courseCard, eventCard, trainerCard } from '@/components/mp/cards';
+import ProfileCard from '@/components/mp/profile-card';
+import SaveableCard from '@/components/mp/saveable-card';
 import ReportDialog from '@/components/shared/report-dialog';
-import ServicePicker from '@/components/profile/service-picker';
-import UpcomingEvents from '@/components/events/upcoming-events';
-import SimilarTrainers from '@/components/profile/similar-trainers';
-import SlotPicker from '@/components/profile/slot-picker';
-import PeoplePicker from '@/components/profile/people-picker';
-import PlacePicker from '@/components/profile/place-picker';
-import RepeatWeeklyToggle from '@/components/profile/repeat-weekly-toggle';
-import TrainerCourses from '@/components/profile/trainer-courses';
-import TrainerGyms from '@/components/profile/trainer-gyms';
-import TrainingPlaces from '@/components/profile/training-places';
 import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
+    BookingAside,
+    BookingBar,
+} from '@/components/trainer-profile/booking-panel';
+import ProfileHero from '@/components/trainer-profile/profile-hero';
+import {
+    CertificationsList,
+    PlacesGrid,
+    ProfileBlock,
+} from '@/components/trainer-profile/profile-sections';
+import ReviewsBlock from '@/components/trainer-profile/reviews-block';
+import ServicesSheet from '@/components/trainer-profile/services-sheet';
+import SlotSheet from '@/components/trainer-profile/slot-sheet';
 import { useFavorite } from '@/hooks/use-favorite';
 import { useShare } from '@/hooks/use-share';
-import {
-    freeStarts,
-    maxPeople,
-    serviceDurations,
-    serviceOption,
-    toWeeks,
-    totalPriceCents,
-} from '@/lib/booking';
+import { useTrainerBooking } from '@/hooks/use-trainer-booking';
+import { courseSearchUrl } from '@/lib/course';
+import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
-import { home } from '@/routes';
 import { search as eventsSearch } from '@/routes/events';
-import { book } from '@/routes/trainers';
-import { start as startBooking } from '@/routes/trainers/book';
-import {
-    join as joinWaitlist,
-    leave as leaveWaitlist,
-} from '@/routes/trainers/waitlist';
 import type {
     CourseSummary,
     GroupSessionSummary,
     SeoData,
     TrainerProfile,
     TrainerReview,
-    TrainerService,
 } from '@/types';
-
-/** Light links on the dark block, as in the search. */
-const crumbLink = 'text-primary-foreground/60 hover:text-primary-foreground';
 
 type ProfileProps = {
     trainer: TrainerProfile;
@@ -75,6 +48,13 @@ type ProfileProps = {
     seo: SeoData;
 };
 
+/**
+ * The public profile of a trainer, in the dark design (designs "Ibrido 2",
+ * "Barra 5" and "Desktop · Profilo trainer"): the photos and the name, who
+ * they are, where they train, certifications and reviews; on the right
+ * (desktop) or in the bar at the bottom (phones) the booking, which opens
+ * "Servizi" and "Scegli data e ora".
+ */
 export default function Profile({
     trainer,
     preview,
@@ -84,587 +64,207 @@ export default function Profile({
     courses,
     seo,
 }: ProfileProps) {
-    const page = usePage();
-    const user = page.props.auth?.user;
     const firstName = trainer.name.split(' ')[0];
-    const weeks = toWeeks(trainer.availability);
-
-    /** First day of a week with at least one free slot of `minutes`. */
-    const firstFreeDate = (weekIndex: number, minutes: number) => {
-        const week = weeks[weekIndex] ?? [];
-
-        return (
-            week.find((day) => freeStarts(day, minutes).length > 0)?.date ??
-            week[0]?.date ??
-            null
-        );
-    };
-
     const favorite = useFavorite(trainer.slug, trainer.favorite);
-    /** 1 hour when the service offers it, otherwise the shortest duration. */
-    const defaultMinutes = (item: TrainerService) => {
-        const durations = serviceDurations(item);
-
-        return durations.includes(60) ? 60 : (durations[0] ?? 60);
-    };
-
-    // Back from login or sign-up: the slot chosen before is still chosen.
-    const [choice] = useState(() => savedChoice(page.url, trainer, weeks));
-    const [serviceId, setServiceId] = useState(choice.service.id);
-    const [minutes, setMinutes] = useState(
-        () => choice.minutes ?? defaultMinutes(choice.service),
-    );
-    const [weekIndex, setWeekIndex] = useState(choice.weekIndex);
-    const [date, setDate] = useState(
-        () => choice.date ?? firstFreeDate(0, minutes),
-    );
-    const [start, setStart] = useState<string | null>(choice.start);
-    const [booking, setBooking] = useState(false);
-
-    /** "Avvisami se si libera": a guest goes through login and comes back here. */
-    const toggleWaitlist = (day: string, waiting: boolean) => {
-        if (!user) {
-            router.visit(startBooking.url(trainer.slug));
-
-            return;
-        }
-
-        const options = {
-            preserveScroll: true,
-            only: ['trainer'],
-            onError: (errors: Record<string, string>) =>
-                toast.error(errors.waitlist ?? 'Riprova tra poco.'),
-        };
-
-        if (waiting) {
-            router.delete(leaveWaitlist.url(trainer.slug), {
-                ...options,
-                data: { date: day },
-            });
-        } else {
-            router.post(joinWaitlist.url(trainer.slug), { date: day }, options);
-        }
-    };
-    // "Dove": only with more than one place in person (a gym, a studio…).
-    const inPersonPlaces = trainer.places.filter(
-        (place) => place.type !== 'online',
-    );
-    const [placeId, setPlaceId] = useState<number | null>(() => {
-        const wanted = Number(
-            new URLSearchParams(page.url.split('?')[1] ?? '').get('luogo'),
-        );
-
-        return inPersonPlaces.some((place) => place.id === wanted)
-            ? wanted
-            : null;
-    });
-    // With one place the server copies it; online services ignore it.
-    const placePicker = (variant: 'light' | 'dark') =>
-        inPersonPlaces.length > 1 ? (
-            <PlacePicker
-                places={inPersonPlaces}
-                value={placeId}
-                onChange={setPlaceId}
-                variant={variant}
-            />
-        ) : null;
-
-    const service =
-        trainer.services.find((item) => item.id === serviceId) ??
-        trainer.services[0];
-
-    // "Invita un amico": up to the most people of the chosen duration.
-    const [wantedPeople, setPeople] = useState(choice.people);
-    const peopleMax = maxPeople(service, minutes);
-    const people = Math.min(wantedPeople, peopleMax);
-    const peoplePicker = (variant: 'light' | 'dark') =>
-        peopleMax > 1 ? (
-            <PeoplePicker
-                max={peopleMax}
-                value={people}
-                onChange={setPeople}
-                totalCents={totalPriceCents(service, minutes, people)}
-                variant={variant}
-            />
-        ) : null;
-
-    // "Ripeti ogni settimana": alone (not with friends), for a session or a package.
-    const [wantsRepeat, setRepeat] = useState(choice.repeat);
-    const canRepeat = service.repeatable === true && people === 1;
-    const repeatWeekly = canRepeat && wantsRepeat;
-    const repeatToggle = (variant: 'light' | 'dark') =>
-        canRepeat && start ? (
-            <RepeatWeeklyToggle
-                start={start}
-                checked={wantsRepeat}
-                onChange={setRepeat}
-                variant={variant}
-            />
-        ) : null;
-
-    const changeMinutes = (newMinutes: number) => {
-        setMinutes(newMinutes);
-        setStart(null);
-
-        const day = weeks[weekIndex]?.find((item) => item.date === date);
-
-        if (!day || freeStarts(day, newMinutes).length === 0) {
-            setDate(firstFreeDate(weekIndex, newMinutes));
-        }
-    };
-
-    const changeService = (id: number) => {
-        setServiceId(id);
-
-        const next = trainer.services.find((item) => item.id === id);
-
-        if (next && !serviceDurations(next).includes(minutes)) {
-            changeMinutes(defaultMinutes(next));
-        }
-    };
-
-    const changeWeek = (index: number) => {
-        setWeekIndex(index);
-        setDate(firstFreeDate(index, minutes));
-        setStart(null);
-    };
-
-    const changeDate = (newDate: string) => {
-        setDate(newDate);
-        setStart(null);
-    };
-
-    /**
-     * "Prenota questo slot". Guests go through login or sign-up and come back
-     * here with the same choice; clients send the request.
-     */
-    const bookSlot = () => {
-        if (!start) {
-            return;
-        }
-
-        // Each duration of a service is a row of its own: the one booked.
-        const serviceId = serviceOption(service, minutes).serviceId;
-
-        if (!user) {
-            router.visit(
-                startBooking.url(trainer.slug, {
-                    query: {
-                        servizio: serviceId,
-                        durata: minutes,
-                        inizio: start,
-                        luogo: placeId,
-                        persone: people > 1 ? people : null,
-                        ripeti: repeatWeekly ? 1 : null,
-                    },
-                }),
-            );
-
-            return;
-        }
-
-        if (user.role !== 'client') {
-            toast.error('Per prenotare serve un account cliente.');
-
-            return;
-        }
-
-        router.post(
-            book.url(trainer.slug),
-            // "Il tuo pacchetto": the package says service and duration.
-            service.packageId !== null
-                ? {
-                      client_package_id: service.packageId,
-                      start,
-                      place_id: placeId,
-                      repeat_weekly: repeatWeekly,
-                  }
-                : {
-                      service_id: serviceId,
-                      start,
-                      minutes,
-                      place_id: placeId,
-                      people,
-                      repeat_weekly: repeatWeekly,
-                  },
-            {
-                preserveScroll: true,
-                onStart: () => setBooking(true),
-                onFinish: () => setBooking(false),
-                onError: (errors) => {
-                    toast.error(
-                        errors.start ??
-                            errors.place_id ??
-                            errors.client_package_id ??
-                            errors.minutes ??
-                            errors.people ??
-                            errors.repeat_weekly ??
-                            errors.service_id ??
-                            'Riprova tra poco.',
-                    );
-
-                    // «Slot appena preso»: show the free slots as they are now.
-                    if (errors.start) {
-                        setStart(null);
-                        router.reload({ only: ['trainer'] });
-                    }
-                },
-            },
-        );
-    };
-
     const share = useShare(trainer.name);
+    const booking = useTrainerBooking(trainer);
+    // Back from the login with a time: "Scegli data e ora" opens on it.
+    const [sheet, setSheet] = useState<'services' | 'slot' | null>(
+        booking.restored ? 'slot' : null,
+    );
 
+    const city = trainer.city?.slug ?? null;
     // Back to the trainers of the same city.
-    const citySearchHref = searchUrl({}, trainer.city?.slug);
-
-    // The bar under the dark block: only the sections on the page, in page order.
-    const anchors = [
-        trainer.bio.length > 0 && { id: 'chi-sono', label: 'Chi sono' },
-        weeks[weekIndex] && { id: 'prenota', label: 'Orari liberi' },
-        trainer.places.length > 0 && { id: 'dove', label: 'Dove allena' },
-        trainer.gyms.length > 0 && { id: 'palestre', label: 'Palestre' },
-        courses.length > 0 && { id: 'corsi', label: 'Corsi' },
-        trainer.rating !== null && { id: 'recensioni', label: 'Recensioni' },
-    ].filter((section): section is { id: string; label: string } => !!section);
+    const citySearchHref = searchUrl({}, city);
 
     return (
         <>
             <Head title={seo.title} />
-            <ProfileMobileHeader
+
+            <ProfileHero
+                trainer={trainer}
                 backHref={citySearchHref}
-                backLabel="Torna ai risultati"
+                favorite={
+                    favorite.canSave
+                        ? {
+                              pressed: favorite.pressed,
+                              onChange: favorite.change,
+                          }
+                        : null
+                }
                 onShare={share}
-                shareLabel="Condividi il profilo"
             />
 
-            {/* The dark block, like the header: breadcrumb, photos and name. */}
-            <div className="bg-primary text-primary-foreground">
-                <div className="mx-auto flex w-full max-w-7xl flex-col gap-6.5 px-4 pt-5.5 pb-10 md:px-8">
-                    {invited && !preview && (
-                        <p
-                            role="status"
-                            className="rounded-xl bg-primary-foreground px-4 py-3.5 text-sm text-primary"
-                        >
-                            <strong>
-                                {trainer.name.split(' ')[0]} ti ha invitato su
-                                MioPersonal.
-                            </strong>{' '}
-                            Da qui prenoti le sedute in pochi secondi, vedi gli
-                            orari liberi e trovi tutto nella tua area.
-                        </p>
-                    )}
-                    {preview && (
-                        <p
-                            role="status"
-                            className="rounded-xl border border-primary-foreground/40 px-3.5 py-3 text-sm"
-                        >
-                            <strong>Anteprima:</strong> il profilo non è ancora
-                            pubblico. Lo vedi solo tu (e il nostro team) finché
-                            non viene approvato.
-                        </p>
-                    )}
-                    <Breadcrumb
-                        aria-label="Percorso"
-                        className="hidden md:block"
+            <div className="mx-auto flex w-full max-w-300 flex-col gap-6 px-4 pt-10 md:px-8">
+                {invited && !preview && (
+                    <p
+                        role="status"
+                        className="rounded-[20px] px-4 py-3.5 text-[15px] shadow-[inset_0_0_0_1px_var(--brand)]"
                     >
-                        <BreadcrumbList className="gap-2 text-[13px] leading-[18px] text-primary-foreground/60 sm:gap-2">
-                            <BreadcrumbItem>
-                                <BreadcrumbLink asChild className={crumbLink}>
-                                    <Link href={home()}>Home</Link>
-                                </BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                            <BreadcrumbItem>
-                                <BreadcrumbLink asChild className={crumbLink}>
-                                    <Link href={citySearchHref}>
-                                        {trainer.city
-                                            ? `Personal trainer a ${trainer.city.name}`
-                                            : 'Personal trainer'}
-                                    </Link>
-                                </BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator>/</BreadcrumbSeparator>
-                            <BreadcrumbItem>
-                                <BreadcrumbPage className="text-primary-foreground">
-                                    {trainer.name}
-                                </BreadcrumbPage>
-                            </BreadcrumbItem>
-                        </BreadcrumbList>
-                    </Breadcrumb>
+                        <strong>
+                            {firstName} ti ha invitato su MioPersonal.
+                        </strong>{' '}
+                        Da qui prenoti le sedute in pochi secondi, vedi gli
+                        orari liberi e trovi tutto nella tua area.
+                    </p>
+                )}
+                {preview && (
+                    <p
+                        role="status"
+                        className="rounded-[20px] px-4 py-3.5 text-[15px] shadow-[inset_0_0_0_1px_var(--field)]"
+                    >
+                        <strong>Anteprima:</strong> il profilo non è ancora
+                        pubblico. Lo vedi solo tu (e il nostro team) finché non
+                        viene approvato.
+                    </p>
+                )}
 
-                    {/* Only the gallery: the profile photo is next to the name. */}
-                    {trainer.photos.length > 0 && (
-                        <PhotoGallery
-                            trainerName={trainer.name}
-                            photos={trainer.photos}
-                        />
-                    )}
+                <div className="md:grid md:grid-cols-[minmax(0,1fr)_380px] md:items-start md:gap-18">
+                    <div className="flex min-w-0 flex-col gap-10 md:gap-14">
+                        {trainer.bio.length > 0 && (
+                            <ProfileBlock id="bio-title" title="Chi sono">
+                                {trainer.bio.map((paragraph) => (
+                                    <p
+                                        key={paragraph}
+                                        // break-words: a very long word wraps instead of going under the prices.
+                                        className="max-w-160 text-[17px] leading-6 break-words md:leading-6.5"
+                                    >
+                                        {paragraph}
+                                    </p>
+                                ))}
+                            </ProfileBlock>
+                        )}
 
-                    <ProfileIntro
-                        trainer={trainer}
-                        favorite={favorite.canSave ? favorite.pressed : null}
-                        onFavoriteChange={favorite.change}
-                        onShare={share}
-                    />
-                </div>
-            </div>
+                        {trainer.places.length > 0 && (
+                            <PlacesGrid
+                                places={trainer.places}
+                                online={trainer.online}
+                                trainerFirstName={firstName}
+                            />
+                        )}
 
-            <SectionAnchors sections={anchors} />
+                        {trainer.certifications.length > 0 && (
+                            <CertificationsList
+                                certifications={trainer.certifications}
+                            />
+                        )}
 
-            <div className="flex-1 bg-muted">
-                <div className="mx-auto flex w-full max-w-7xl flex-col gap-7 px-4 pt-7 pb-10 md:px-8 md:pb-14">
-                    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(340px,2fr)]">
-                        <div className="flex min-w-0 flex-col gap-4.5">
-                            {trainer.bio.length > 0 && (
-                                <ProfileSection
-                                    id="chi-sono"
-                                    titleId="bio-title"
-                                    title="Chi sono"
-                                    className="order-1"
-                                >
-                                    {trainer.bio.map((paragraph) => (
-                                        <p
-                                            key={paragraph}
-                                            // break-words: a very long word wraps instead of going under the prices.
-                                            className="text-base leading-[26px] break-words text-foreground/80"
-                                        >
-                                            {paragraph}
-                                        </p>
-                                    ))}
-                                </ProfileSection>
-                            )}
-
-                            {/* Below lg the booking box is replaced by this section and the bottom bar. */}
-                            <ProfileSection
-                                titleId="services-title"
-                                title="Servizi e prezzi"
-                                className="order-2 lg:hidden"
-                            >
-                                <ServicePicker
-                                    variant="detailed"
-                                    legend="Tocca un servizio per sceglierlo, poi giorno e orario qui sotto"
-                                    services={trainer.services}
-                                    value={service.id}
-                                    onChange={changeService}
-                                />
-                                {peoplePicker('light')}
-                                {placePicker('light')}
-                                <p className="text-xs font-medium text-muted-foreground">
-                                    Prezzi indicativi. Il pagamento si concorda
-                                    con il trainer.
-                                </p>
-                            </ProfileSection>
-
-                            {weeks[weekIndex] && (
-                                <div className="order-4 lg:order-3">
-                                    <SlotPicker
-                                        serviceName={service.name}
-                                        week={weeks[weekIndex]}
-                                        weekIndex={weekIndex}
-                                        weekCount={weeks.length}
-                                        onWeekChange={changeWeek}
-                                        durations={serviceDurations(service)}
-                                        minutes={minutes}
-                                        onMinutesChange={changeMinutes}
-                                        selectedDate={date}
-                                        onDateChange={changeDate}
-                                        selectedStart={start}
-                                        onStartChange={setStart}
-                                        waitlistDays={trainer.waitlistDays}
-                                        onWaitlistToggle={toggleWaitlist}
-                                    />
-                                    {/* Phones: under the slots; from lg it is in the booking box. */}
-                                    {repeatToggle('light') && (
-                                        <div className="mt-3 lg:hidden">
-                                            {repeatToggle('light')}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Sections without content are left out, title included. */}
-                            {trainer.places.length > 0 && (
-                                <div
-                                    id="dove"
-                                    className="order-3 scroll-mt-16 lg:order-4"
-                                >
-                                    <TrainingPlaces
-                                        places={trainer.places}
-                                        online={trainer.online}
-                                        trainerFirstName={firstName}
-                                    />
-                                </div>
-                            )}
-                            {trainer.gyms.length > 0 && (
-                                <div
-                                    id="palestre"
-                                    className="order-3 scroll-mt-16 lg:order-4"
-                                >
-                                    <TrainerGyms
-                                        gyms={trainer.gyms}
-                                        trainerFirstName={firstName}
-                                    />
-                                </div>
-                            )}
-                            {courses.length > 0 && (
-                                <div
-                                    id="corsi"
-                                    className="order-3 scroll-mt-16 lg:order-4"
-                                >
-                                    <TrainerCourses
-                                        courses={courses}
-                                        trainerFirstName={firstName}
-                                    />
-                                </div>
-                            )}
-                            {trainer.certifications.length > 0 && (
-                                <div className="order-5">
-                                    <Certifications
-                                        certifications={trainer.certifications}
-                                    />
-                                </div>
-                            )}
-                            {/* Without reviews ReviewsSection is empty. */}
-                            {trainer.rating !== null && (
-                                <div className="order-7">
-                                    <ReviewsSection
-                                        trainer={trainer}
-                                        allReviews={allReviews}
-                                        canReport={!preview}
-                                    />
-                                </div>
-                            )}
-                            {!preview && (
-                                <div className="order-8">
-                                    <ReportDialog
-                                        type="trainer"
-                                        target={trainer.slug}
-                                        label="Segnala questo profilo"
-                                    />
-                                </div>
-                            )}
-                        </div>
-
-                        <BookingAside
-                            services={trainer.services}
-                            service={service}
-                            onServiceChange={changeService}
-                            minutes={minutes}
-                            selectedStart={start}
-                            confirmLabel={trainer.confirmLabel}
-                            responseTimeLabel={trainer.responseTimeLabel}
-                            onBook={bookSlot}
-                            booking={booking}
-                            placePicker={placePicker('dark')}
-                            people={people}
-                            peoplePicker={peoplePicker('dark')}
-                            repeatToggle={repeatToggle('dark')}
+                        <ReviewsBlock
+                            trainer={trainer}
+                            allReviews={allReviews}
+                            canReport={!preview}
                         />
                     </div>
 
-                    <UpcomingEvents
-                        events={events}
-                        allHref={eventsSearch.url(
-                            trainer.city
-                                ? { city: trainer.city.slug }
-                                : undefined,
-                        )}
-                    />
-
-                    <SimilarTrainers
-                        trainers={trainer.similarTrainers}
-                        searchHref={citySearchHref}
+                    <BookingAside
+                        services={trainer.services}
+                        booking={booking}
+                        onShowServices={() => setSheet('services')}
+                        onChooseTime={() => setSheet('slot')}
+                        notes={[
+                            trainer.confirmLabel,
+                            trainer.responseTimeLabel,
+                        ]}
+                        trainerFirstName={firstName}
                     />
                 </div>
             </div>
 
+            {/* Where else to find the trainer: only the rows with something in them. */}
+            <HomeShelf
+                id="gyms-title"
+                title={`Palestre dove allena ${firstName}`}
+                link={{ label: 'Vedi tutte', href: gymSearchUrl({}, city) }}
+                items={trainer.gyms}
+                itemKey={(gym) => gym.slug}
+            >
+                {(gym) => (
+                    <ProfileCard
+                        kind="gym"
+                        name={gym.name}
+                        href={gym.href}
+                        image={gym.coverUrl}
+                        location={[gym.address, gym.city]
+                            .filter(Boolean)
+                            .join(', ')}
+                        cta="Scopri"
+                    />
+                )}
+            </HomeShelf>
+            <HomeShelf
+                id="courses-title"
+                title={`Corsi che tiene ${firstName}`}
+                link={{ label: 'Vedi tutti', href: courseSearchUrl({}, city) }}
+                items={courses}
+                itemKey={(course) => String(course.id)}
+            >
+                {(course) => <ProfileCard {...courseCard(course)} />}
+            </HomeShelf>
+            <HomeShelf
+                id="events-title"
+                title="Prossimi eventi"
+                link={{
+                    label: 'Tutti gli eventi',
+                    href: eventsSearch.url(city ? { city } : undefined),
+                }}
+                items={events}
+                itemKey={(event) => event.slug}
+            >
+                {(event) => <ProfileCard {...eventCard(event)} />}
+            </HomeShelf>
+            <HomeShelf
+                id="similar-title"
+                title="Trainer simili"
+                link={{ label: 'Vedi tutti', href: citySearchHref }}
+                items={trainer.similarTrainers}
+                itemKey={(item) => item.slug}
+            >
+                {(item) => (
+                    <SaveableCard
+                        {...trainerCard(item)}
+                        slug={item.slug}
+                        favoriteKind="trainer"
+                        saved={item.favorite ?? false}
+                    />
+                )}
+            </HomeShelf>
+
+            {/* In the design it is in the footer: here, just above it. Room for the bar on phones. */}
+            <div className="mx-auto w-full max-w-300 px-4 pt-10 pb-32 md:px-8 md:pt-14 md:pb-6">
+                {!preview && (
+                    <ReportDialog
+                        type="trainer"
+                        target={trainer.slug}
+                        label="Segnala questo profilo"
+                        contentClassName="theme-dark"
+                    />
+                )}
+            </div>
+
             <BookingBar
-                service={service}
-                minutes={minutes}
-                selectedStart={start}
-                onBook={bookSlot}
+                services={trainer.services}
                 booking={booking}
-                people={people}
+                onShowServices={() => setSheet('services')}
+                onChooseTime={() => setSheet('slot')}
+            />
+
+            <ServicesSheet
+                open={sheet === 'services'}
+                onOpenChange={(open) => setSheet(open ? 'services' : null)}
+                services={trainer.services}
+                booking={booking}
+                onChooseTime={() => setSheet('slot')}
+            />
+            <SlotSheet
+                open={sheet === 'slot'}
+                onOpenChange={(open) => setSheet(open ? 'slot' : null)}
+                booking={booking}
+                availability={trainer.availability}
+                waitlistDays={trainer.waitlistDays}
+                onBack={() => setSheet('services')}
             />
         </>
     );
-}
-
-/**
- * The choice kept in the URL by BookingController::start (?servizio=…&durata=…
- * &inizio=…), checked against the current offer: anything no longer valid is
- * left out, and the page starts from its defaults. `servizio` is the booked
- * row: the service that has it among its options.
- */
-function savedChoice(
-    url: string,
-    trainer: TrainerProfile,
-    weeks: ReturnType<typeof toWeeks>,
-): {
-    service: TrainerService;
-    minutes: number | null;
-    weekIndex: number;
-    date: string | null;
-    start: string | null;
-    /** "Invita un amico": the page keeps it under the most people of the duration. */
-    people: number;
-    /** "Ripeti ogni settimana", ticked before login. */
-    repeat: boolean;
-} {
-    const query = new URLSearchParams(url.split('?')[1] ?? '');
-    const service =
-        trainer.services.find((item) =>
-            item.options.some(
-                (option) => option.serviceId === Number(query.get('servizio')),
-            ),
-        ) ?? trainer.services[0];
-    const minutes = Number(query.get('durata'));
-    const start = query.get('inizio');
-    const people = Math.max(1, Number(query.get('persone')) || 1);
-    const repeat = query.get('ripeti') === '1';
-
-    if (!serviceDurations(service).includes(minutes)) {
-        return {
-            service,
-            minutes: null,
-            weekIndex: 0,
-            date: null,
-            start: null,
-            people,
-            repeat,
-        };
-    }
-
-    const weekIndex = weeks.findIndex((week) =>
-        week.some((day) => start && freeStarts(day, minutes).includes(start)),
-    );
-
-    if (weekIndex === -1) {
-        return {
-            service,
-            minutes,
-            weekIndex: 0,
-            date: null,
-            start: null,
-            people,
-            repeat,
-        };
-    }
-
-    const day = weeks[weekIndex].find(
-        (item) => start && freeStarts(item, minutes).includes(start),
-    );
-
-    return {
-        service,
-        minutes,
-        weekIndex,
-        date: day?.date ?? null,
-        start,
-        people,
-        repeat,
-    };
 }
 
 Profile.layout = { hideHeaderOnMobile: true };

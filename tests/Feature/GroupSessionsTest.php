@@ -315,7 +315,7 @@ class GroupSessionsTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->has('events', 1)->where('events.0.slug', $event->slug));
 
         $this->get(route('news'))->assertInertia(fn (Assert $page) => $page->has('events', 1));
-        $this->get(route('home'))->assertInertia(fn (Assert $page) => $page->has('news.events', 1));
+        $this->get(route('home'))->assertInertia(fn (Assert $page) => $page->has('events', 1)->where('events.0.slug', $event->slug));
         $this->get(route('sitemap'))->assertSee(route('events.show', $event->slug), false);
     }
 

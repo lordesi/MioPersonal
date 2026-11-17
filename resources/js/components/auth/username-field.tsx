@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import FormField from '@/components/auth/form-field';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import { check } from '@/routes/username';
 
 type CheckResponse = { username: string; error: string | null };
@@ -50,6 +51,8 @@ type UsernameFieldProps = {
         value: string;
         onChange: (event: ChangeEvent<HTMLInputElement>) => void;
     };
+    /** Added to the input: the dark sign-up page. */
+    inputClassName?: string;
 };
 
 /**
@@ -63,6 +66,7 @@ export default function UsernameField({
     suggestion,
     defaultValue = '',
     bind,
+    inputClassName,
 }: UsernameFieldProps) {
     const [typed, setTyped] = useState(defaultValue);
     const value = bind?.value ?? typed;
@@ -145,7 +149,11 @@ export default function UsernameField({
                         autoCorrect="off"
                         spellCheck={false}
                         placeholder={suggestion || 'es. giulia-rossi'}
-                        className="h-11 pl-7 text-base md:text-base"
+                        className={cn(
+                            'h-11 text-base md:text-base',
+                            inputClassName,
+                            'pl-7',
+                        )}
                         value={value}
                         onChange={(event) => {
                             event.target.value = cleanUsername(

@@ -35,6 +35,8 @@ type ReportDialogProps = {
     /** e.g. "Segnala il profilo". */
     label: string;
     className?: string;
+    /** Added to the window, e.g. "theme-dark" on the dark pages (it opens outside the page). */
+    contentClassName?: string;
 };
 
 const titles: Record<ReportDialogProps['type'], string> = {
@@ -52,6 +54,7 @@ export default function ReportDialog({
     target,
     label,
     className,
+    contentClassName,
 }: ReportDialogProps) {
     const user = usePage().props.auth?.user;
     const [open, setOpen] = useState(false);
@@ -100,7 +103,7 @@ export default function ReportDialog({
             }}
         >
             <DialogTrigger asChild>{trigger}</DialogTrigger>
-            <DialogContent>
+            <DialogContent className={contentClassName}>
                 <DialogHeader>
                     <DialogTitle>{titles[type]}</DialogTitle>
                     <DialogDescription>

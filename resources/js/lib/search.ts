@@ -15,6 +15,10 @@ export type SearchFilters = {
     obiettivo?: TrainingGoal[] | null;
     modalita?: 'presenza' | 'online' | null;
     disponibilita?: 'oggi' | '3-giorni' | 'settimana' | null;
+    /** "Scegli data": one day, YYYY-MM-DD (from today to 60 days later). */
+    data?: string | null;
+    /** "Fascia oraria": the slot starts in this part of the day. */
+    fascia?: 'mattina' | 'pomeriggio' | 'sera' | null;
     prezzo?: 'fino-35' | '35-50' | '50-75' | '75-100' | 'oltre-100' | null;
     valutazione?: '3' | '4' | '4-5' | null;
     domicilio?: '1' | null;
@@ -23,6 +27,21 @@ export type SearchFilters = {
     ordina?: 'slot' | 'prezzo' | 'valutazione' | null;
     pagina?: number | null;
 };
+
+/** The filters with more values: [] = not set. */
+type ListFilter = 'disciplina' | 'obiettivo';
+
+/** Every filter of the page, as the server sends it: null (or [] for the lists) = not set. */
+export type ActiveFilters = {
+    [Key in Exclude<keyof SearchFilters, 'pagina' | ListFilter>]-?: NonNullable<
+        SearchFilters[Key]
+    > | null;
+} & {
+    [Key in ListFilter]-?: NonNullable<SearchFilters[Key]>;
+};
+
+/** A discipline or a city of the menus. */
+export type SearchOption = { value: string; label: string };
 
 /**
  * URL of the search page, keeping only the filters that are set.
