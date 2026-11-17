@@ -13,10 +13,12 @@ import type { ReactNode } from 'react';
 import InputError from '@/components/input-error';
 import type { GymDraft, OpeningRange } from '@/components/onboarding/gym/draft';
 import {
+    copyMondayToWeekdays,
     DESCRIPTION_MAX,
     DESCRIPTION_MIN,
     MAX_RANGES_PER_DAY,
     MAX_REGISTRATION_PHOTOS,
+    nextRange,
     timeOptions,
     weekdays,
 } from '@/components/onboarding/gym/draft';
@@ -317,14 +319,7 @@ export function HoursEditor({
             hours.map((current, index) => (index === day ? ranges : current)),
         );
 
-    const copyMondayToWeekdays = () =>
-        onChange(
-            hours.map((ranges, index) =>
-                index > 0 && index < 5
-                    ? hours[0].map((range) => ({ ...range }))
-                    : ranges,
-            ),
-        );
+    const copyMonday = () => onChange(copyMondayToWeekdays(hours));
 
     return (
         <div className="flex flex-col gap-1">
@@ -404,28 +399,12 @@ export function HoursEditor({
                                     type="button"
                                     variant="outline"
                                     className="h-9 px-3 text-sm"
-                                    onClick={() => {
-                                        const last = ranges.at(-1)?.closes;
-                                        const opens =
-                                            last && last < '23:00'
-                                                ? last
-                                                : '09:00';
-
+                                    onClick={() =>
                                         setDay(day, [
                                             ...ranges,
-                                            {
-                                                opens,
-                                                closes: timeOptions[
-                                                    Math.min(
-                                                        timeOptions.indexOf(
-                                                            opens,
-                                                        ) + 8,
-                                                        timeOptions.length - 1,
-                                                    )
-                                                ],
-                                            },
-                                        ]);
-                                    }}
+                                            nextRange(ranges),
+                                        ])
+                                    }
                                 >
                                     <Plus aria-hidden="true" />
                                     Fascia
@@ -451,7 +430,7 @@ export function HoursEditor({
                 type="button"
                 variant="ghost"
                 className="h-9 self-start px-2 text-sm underline"
-                onClick={copyMondayToWeekdays}
+                onClick={copyMonday}
             >
                 Copia gli orari del lunedì fino a venerdì
             </Button>
@@ -460,7 +439,7 @@ export function HoursEditor({
 }
 
 /** A local preview of a chosen file. */
-function useObjectUrls(files: File[]): string[] {
+export function useObjectUrls(files: File[]): string[] {
     const [urls, setUrls] = useState<string[]>([]);
 
     useEffect(() => {

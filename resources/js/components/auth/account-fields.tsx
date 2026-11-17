@@ -58,8 +58,8 @@ type AccountFieldsProps = {
 const inputClass = 'h-11 text-base md:text-base';
 
 /** The domain must have a dot: "nome@esempio" is refused, as on the server. */
-const EMAIL_PATTERN = '[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}';
-const EMAIL_MESSAGE = 'Inserisci un’email valida, es. nome@esempio.it.';
+export const EMAIL_PATTERN = '[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}';
+export const EMAIL_MESSAGE = 'Inserisci un’email valida, es. nome@esempio.it.';
 
 /** Name, surname, username, email, phone and password (all required): the account part of the sign-ups. */
 export default function AccountFields({
@@ -263,9 +263,12 @@ export function PhoneFields({
     defaultPhone,
     onAccountExists,
     inputClassName,
+    labelClassName,
     compact = false,
 }: {
     errors: Partial<Record<'phone', string>>;
+    /** The look of "Prefisso" and "Telefono", e.g. on the gym sign-up. */
+    labelClassName?: string;
     hint?: string;
     bind?: Bind;
     /** Starting number inside a <Form>, e.g. the saved one in the settings. */
@@ -284,7 +287,7 @@ export function PhoneFields({
     return (
         <div className={cn('flex items-start', compact ? 'gap-4.5' : 'gap-2')}>
             <div className={cn('shrink-0', compact ? 'w-22 md:w-33' : 'w-24')}>
-                <FormField label="Prefisso">
+                <FormField label="Prefisso" labelClassName={labelClassName}>
                     {({ id }) => (
                         // Disabled: it can't be changed and it isn't sent.
                         <Input
@@ -301,7 +304,12 @@ export function PhoneFields({
                 </FormField>
             </div>
             <div className="min-w-0 flex-1">
-                <FormField label="Telefono" hint={hint} error={phoneError}>
+                <FormField
+                    label="Telefono"
+                    hint={hint}
+                    error={phoneError}
+                    labelClassName={labelClassName}
+                >
                     {({ id, describedBy }) => (
                         <Input
                             id={id}

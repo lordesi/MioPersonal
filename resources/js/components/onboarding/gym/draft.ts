@@ -78,6 +78,100 @@ export const timeOptions: string[] = Array.from({ length: 49 }, (_, index) => {
     return `${hours}:${index % 2 === 0 ? '00' : '30'}`;
 });
 
+/**
+ * The range added by "+ Fascia": from the end of the last one (or 9:00),
+ * four hours long.
+ */
+export function nextRange(ranges: OpeningRange[]): OpeningRange {
+    const last = ranges.at(-1)?.closes;
+    const opens = last && last < '23:00' ? last : '09:00';
+
+    return {
+        opens,
+        closes: timeOptions[
+            Math.min(timeOptions.indexOf(opens) + 8, timeOptions.length - 1)
+        ],
+    };
+}
+
+/** "Copia lunedì su martedì–venerdì". */
+export function copyMondayToWeekdays(
+    hours: OpeningRange[][],
+): OpeningRange[][] {
+    return hours.map((ranges, index) =>
+        index > 0 && index < 5
+            ? hours[0].map((range) => ({ ...range }))
+            : ranges,
+    );
+}
+
+/** "07:00 – 22:00, 15:00 – 21:00", or "Chiusa". */
+export function dayLabel(ranges: OpeningRange[], dash = ' – '): string {
+    if (ranges.length === 0) {
+        return 'Chiusa';
+    }
+
+    return ranges
+        .map((range) =>
+            range.opens === '00:00' && range.closes === '24:00'
+                ? '24 ore'
+                : `${range.opens}${dash}${range.closes}`,
+        )
+        .join(', ');
+}
+
+/** "15 ore", "7,5 ore": the hours open in a day. */
+export function dayLength(ranges: OpeningRange[]): string {
+    const minutes = (time: string) => {
+        const [hours, mins] = time.split(':').map(Number);
+
+        return hours * 60 + mins;
+    };
+    const total = ranges.reduce(
+        (sum, range) =>
+            sum + Math.max(0, minutes(range.closes) - minutes(range.opens)),
+        0,
+    );
+    const hours = total / 60;
+
+    return `${String(hours).replace('.', ',')} ${hours === 1 ? 'ora' : 'ore'}`;
+}
+
+/**
+ * The services in groups, only to show them (the server keeps a flat list,
+ * App\Enums\GymAmenity). A value not listed here goes in the last group.
+ */
+export const amenityGroups: { title: string; values: string[] }[] = [
+    {
+        title: 'Allenamento',
+        values: [
+            'sala-pesi',
+            'cardio',
+            'corsi',
+            'functional',
+            'crossfit',
+            'spinning',
+            'yoga-pilates',
+            'arti-marziali',
+            'personal-training',
+        ],
+    },
+    {
+        title: 'Benessere',
+        values: ['piscina', 'sauna', 'bagno-turco', 'spa'],
+    },
+    {
+        title: 'Comodità',
+        values: [
+            'spogliatoi-docce',
+            'parcheggio',
+            'aperta-24h',
+            'accessibile',
+            'wifi',
+        ],
+    },
+];
+
 /** Every range opens before it closes and after the previous one. */
 export function hoursAreValid(hours: OpeningRange[][]): boolean {
     return hours.every((ranges) =>

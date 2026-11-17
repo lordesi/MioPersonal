@@ -53,6 +53,11 @@ type UsernameFieldProps = {
     };
     /** Added to the input: the dark sign-up page. */
     inputClassName?: string;
+    /**
+     * "Registra la palestra": the link and "non si può cambiare" (orange) in a
+     * grey box on phones, on one line on desktop; "@" inside the round field.
+     */
+    dark?: boolean;
 };
 
 /**
@@ -67,6 +72,7 @@ export default function UsernameField({
     defaultValue = '',
     bind,
     inputClassName,
+    dark = false,
 }: UsernameFieldProps) {
     const [typed, setTyped] = useState(defaultValue);
     const value = bind?.value ?? typed;
@@ -103,33 +109,69 @@ export default function UsernameField({
         <FormField
             label="Username"
             error={error}
+            labelClassName={
+                dark
+                    ? 'text-[15px] leading-5 font-semibold tracking-[-0.23px]'
+                    : undefined
+            }
             hint={
-                <span className="flex flex-col gap-1">
-                    {available && (
-                        <span className="flex items-center gap-1 font-medium text-emerald-700 dark:text-emerald-400">
-                            <Check className="size-3.5" aria-hidden />
-                            Disponibile
+                dark ? (
+                    <span className="flex flex-col gap-2.5 rounded-[26px] bg-card px-4 py-3.5 text-[13px] leading-4.5 md:flex-row md:items-center md:justify-between md:gap-4 md:rounded-none md:bg-transparent md:px-1 md:py-0">
+                        {available && (
+                            <span className="flex items-center gap-1.5 font-semibold text-brand">
+                                <Check className="size-4" aria-hidden />
+                                Disponibile
+                            </span>
+                        )}
+                        {linkPrefix && (
+                            <span className="break-all text-muted-foreground">
+                                {linkPrefix.replace(/^https?:\/\//, '')}
+                                <span className="font-semibold text-foreground">
+                                    {value || suggestion || 'username'}
+                                </span>
+                            </span>
+                        )}
+                        <span className="flex items-center gap-2 text-[#ff9230] md:shrink-0 md:gap-1.5">
+                            <Lock className="size-4 shrink-0" aria-hidden />
+                            <span className="md:hidden">
+                                Scegli bene: l’username non si può cambiare.
+                            </span>
+                            <span className="hidden md:inline">
+                                Non si può cambiare
+                            </span>
                         </span>
-                    )}
-                    {linkPrefix && (
-                        <span className="break-all">
-                            Il tuo link: {linkPrefix}
-                            <strong className="text-foreground">
-                                {value || suggestion || 'username'}
-                            </strong>
-                        </span>
-                    )}
-                    <span className="flex items-center gap-1 font-medium text-foreground">
-                        <Lock className="size-3.5 shrink-0" aria-hidden />
-                        Scegli bene: l’username non si può cambiare.
                     </span>
-                </span>
+                ) : (
+                    <span className="flex flex-col gap-1">
+                        {available && (
+                            <span className="flex items-center gap-1 font-medium text-emerald-700 dark:text-emerald-400">
+                                <Check className="size-3.5" aria-hidden />
+                                Disponibile
+                            </span>
+                        )}
+                        {linkPrefix && (
+                            <span className="break-all">
+                                Il tuo link: {linkPrefix}
+                                <strong className="text-foreground">
+                                    {value || suggestion || 'username'}
+                                </strong>
+                            </span>
+                        )}
+                        <span className="flex items-center gap-1 font-medium text-foreground">
+                            <Lock className="size-3.5 shrink-0" aria-hidden />
+                            Scegli bene: l’username non si può cambiare.
+                        </span>
+                    </span>
+                )
             }
         >
             {({ id, describedBy }) => (
                 <div className="relative">
                     <span
-                        className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-base text-muted-foreground"
+                        className={cn(
+                            'pointer-events-none absolute inset-y-0 left-3 flex items-center text-base text-muted-foreground',
+                            dark && 'left-5 text-[17px] font-semibold',
+                        )}
                         aria-hidden
                     >
                         @
@@ -152,7 +194,7 @@ export default function UsernameField({
                         className={cn(
                             'h-11 text-base md:text-base',
                             inputClassName,
-                            'pl-7',
+                            dark ? 'pl-10' : 'pl-7',
                         )}
                         value={value}
                         onChange={(event) => {
