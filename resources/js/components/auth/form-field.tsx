@@ -13,6 +13,8 @@ type FormFieldProps = {
     labelAside?: ReactNode;
     /** Fields with a character limit: "42/60" under the field, on the right. */
     counter?: { length: number; max: number };
+    /** E.g. "md:sr-only" in the dark dialogs, where desktop shows only the placeholder. */
+    labelClassName?: string;
     /** Receives the ids to put on the input. */
     children: (ids: { id: string; describedBy?: string }) => ReactNode;
 };
@@ -28,6 +30,7 @@ export default function FormField({
     error: serverError,
     labelAside,
     counter,
+    labelClassName,
     children,
 }: FormFieldProps) {
     const id = useId();
@@ -42,7 +45,9 @@ export default function FormField({
     return (
         <div className="flex flex-col gap-1.5">
             <div className="flex items-baseline justify-between">
-                <Label htmlFor={id}>{label}</Label>
+                <Label htmlFor={id} className={labelClassName}>
+                    {label}
+                </Label>
                 {labelAside}
             </div>
             {children({ id, describedBy })}

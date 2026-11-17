@@ -1,19 +1,18 @@
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Form, Link } from '@inertiajs/react';
+import { Lock, Mail } from 'lucide-react';
 import FormField from '@/components/auth/form-field';
 import PasswordField from '@/components/auth/password-field';
 import SocialSignIn from '@/components/auth/social-sign-in';
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import DarkDialog, {
+    darkLinkClassName,
+    darkSecondaryButtonClassName,
+} from '@/components/mp/dark-dialog';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import type { CheckedField } from '@/hooks/use-account-check';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 
@@ -28,7 +27,18 @@ type ExistingAccountDialogProps = {
     googleEnabled?: boolean;
 };
 
-const inputClass = 'h-11 text-base md:text-base';
+/**
+ * The fields of the design: 50px with a turquoise icon and the label above
+ * on phones; on desktop a round field, white icon, the placeholder as label.
+ */
+const fieldClassName =
+    'h-12.5 rounded-[14px] bg-transparent pl-12 text-[17px] tracking-[-0.43px] shadow-none focus-visible:border-brand focus-visible:bg-[#141414] focus-visible:shadow-[inset_0_0_0_0.5px_var(--brand)] focus-visible:ring-0 md:h-13 md:rounded-full md:text-[17px] md:font-semibold md:tracking-normal md:placeholder:text-foreground md:focus-visible:bg-transparent';
+
+const iconClassName =
+    'pointer-events-none absolute top-1/2 left-4 z-10 size-5 -translate-y-1/2 text-brand md:left-5 md:text-foreground';
+
+const labelClassName =
+    'text-[15px] leading-5 font-semibold tracking-[-0.23px] md:sr-only';
 
 /**
  * "Hai già un account?": opened by the sign-ups when the email or the phone
@@ -44,71 +54,83 @@ export default function ExistingAccountDialog({
     onClose,
     googleEnabled = false,
 }: ExistingAccountDialogProps) {
+    const isMobile = useIsMobile();
+
     // Lowercase, as the sign-up saves it: the login compares it as it is.
     const email =
         account?.field === 'email' ? account.value.trim().toLowerCase() : '';
 
     return (
-        <Dialog
+        <DarkDialog
             open={account !== null}
             onOpenChange={(open) => !open && onClose()}
+            title={
+                <>
+                    Hai già un <strong className="font-bold">account</strong>?
+                </>
+            }
+            description={
+                account?.field === 'phone'
+                    ? 'Questo numero è già registrato. Accedi per continuare.'
+                    : 'Questa email è già registrata. Accedi per continuare.'
+            }
+            logo
         >
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Hai già un account?</DialogTitle>
-                    <DialogDescription>
-                        Risulta già un account con{' '}
-                        {account?.field === 'phone'
-                            ? 'questo numero di telefono'
-                            : 'questa email'}
-                        . Vuoi accedere?
-                    </DialogDescription>
-                </DialogHeader>
+            <Form
+                {...store.form()}
+                resetOnSuccess={['password']}
+                className="flex flex-col gap-6 md:gap-2.5"
+            >
+                {({ processing, errors }) => (
+                    <>
+                        <SocialSignIn
+                            verb="Continua con"
+                            googleEnabled={googleEnabled}
+                            className="h-12.5 rounded-full text-[17px]"
+                            dividerLabel="oppure con email"
+                        />
 
-                <Form
-                    {...store.form()}
-                    resetOnSuccess={['password']}
-                    className="flex flex-col gap-4"
-                >
-                    {({ processing, errors }) => (
-                        <>
-                            <SocialSignIn
-                                verb="Continua con"
-                                googleEnabled={googleEnabled}
-                            />
+                        {/* As on the login page, where it is ticked by default. */}
+                        <input type="hidden" name="remember" value="on" />
 
-                            {/* As on the login page, where it is ticked by default. */}
-                            <input type="hidden" name="remember" value="on" />
-
-                            <FormField label="Email" error={errors.email}>
-                                {({ id, describedBy }) => (
+                        <FormField
+                            label="Email"
+                            error={errors.email}
+                            labelClassName={labelClassName}
+                        >
+                            {({ id, describedBy }) => (
+                                <div className="relative">
+                                    <Mail
+                                        aria-hidden="true"
+                                        className={iconClassName}
+                                    />
                                     <Input
                                         id={id}
                                         aria-describedby={describedBy}
                                         aria-invalid={!!errors.email}
                                         type="email"
                                         name="email"
+                                        inputMode="email"
                                         required
                                         defaultValue={email}
                                         autoFocus={email === ''}
                                         autoComplete="email"
-                                        placeholder="nome@esempio.it"
-                                        className={inputClass}
+                                        placeholder={
+                                            isMobile
+                                                ? 'nome@esempio.it'
+                                                : 'Email'
+                                        }
+                                        className={fieldClassName}
                                     />
-                                )}
-                            </FormField>
+                                </div>
+                            )}
+                        </FormField>
 
+                        <div className="flex flex-col gap-2 md:gap-0">
                             <FormField
                                 label="Password"
                                 error={errors.password}
-                                labelAside={
-                                    <Link
-                                        href={request()}
-                                        className="text-sm text-muted-foreground hover:underline"
-                                    >
-                                        Password dimenticata?
-                                    </Link>
-                                }
+                                labelClassName={labelClassName}
                             >
                                 {({ id, describedBy }) => (
                                     <PasswordField
@@ -119,33 +141,52 @@ export default function ExistingAccountDialog({
                                         required
                                         autoFocus={email !== ''}
                                         autoComplete="current-password"
+                                        placeholder={
+                                            isMobile
+                                                ? 'Scrivi la password'
+                                                : 'Password'
+                                        }
+                                        icon={
+                                            <Lock
+                                                aria-hidden="true"
+                                                className={iconClassName}
+                                            />
+                                        }
+                                        className={fieldClassName}
+                                        toggleClassName="top-1/2 right-1 h-11 min-w-20 -translate-y-1/2 rounded-full text-[15px] font-semibold tracking-[-0.23px] text-brand hover:bg-brand/12 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none md:right-2"
                                     />
                                 )}
                             </FormField>
+                            <Link
+                                href={request()}
+                                className={cn(
+                                    darkLinkClassName,
+                                    'self-start md:self-end',
+                                )}
+                            >
+                                Password dimenticata?
+                            </Link>
+                        </div>
 
-                            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                                <DialogClose asChild>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="h-11"
-                                    >
-                                        Annulla
-                                    </Button>
-                                </DialogClose>
-                                <Button
-                                    type="submit"
-                                    className="h-11"
-                                    disabled={processing}
-                                >
-                                    {processing && <Spinner />}
-                                    Accedi
-                                </Button>
-                            </div>
-                        </>
-                    )}
-                </Form>
-            </DialogContent>
-        </Dialog>
+                        <div className="flex flex-col gap-3 md:gap-2.5">
+                            <button
+                                type="submit"
+                                disabled={processing}
+                                className="btn-brand h-12.5 text-[17px] tracking-[-0.43px]"
+                            >
+                                {processing && <Spinner />}
+                                Accedi
+                            </button>
+                            <DialogPrimitive.Close
+                                type="button"
+                                className={darkSecondaryButtonClassName}
+                            >
+                                Annulla
+                            </DialogPrimitive.Close>
+                        </div>
+                    </>
+                )}
+            </Form>
+        </DarkDialog>
     );
 }

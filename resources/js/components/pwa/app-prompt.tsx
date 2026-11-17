@@ -1,20 +1,17 @@
 import type { Page, SharedPageProps } from '@inertiajs/core';
 import { router } from '@inertiajs/react';
-import { Bell, Download, Smartphone, Zap } from 'lucide-react';
+import { Bell, Download, Monitor, Smartphone, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import DarkDialog, {
+    darkSecondaryButtonClassName,
+} from '@/components/mp/dark-dialog';
 import InstallSteps from '@/components/pwa/install-steps';
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { enablePush, pushState } from '@/lib/push';
 import type { PushState } from '@/lib/push';
 import { installApp, onOpenAppPrompt, useInstallMethod } from '@/lib/pwa';
+import { cn } from '@/lib/utils';
 
 /**
  * "Installa l'app" (and, logged in, "Attiva le notifiche") as a popup, for
@@ -167,130 +164,180 @@ export default function AppPrompt({
     }
 
     const installing = method !== null;
-    const title = installing
-        ? isMobile
-            ? 'Porta MioPersonal sul telefono'
-            : 'Installa MioPersonal sul computer'
-        : 'Attiva le notifiche';
+    const title = installing ? (
+        isMobile ? (
+            'Installa l’app'
+        ) : (
+            <>
+                Installa <strong className="font-bold">MioPersonal</strong> sul
+                computer
+            </>
+        )
+    ) : (
+        <>
+            Attiva le <strong className="font-bold">notifiche</strong>
+        </>
+    );
     const description = installing
-        ? 'Un’app vera e propria, senza passare dallo store.'
+        ? // Phones: said in the "App" card instead.
+          isMobile
+            ? undefined
+            : 'Un’app vera e propria, senza passare dallo store.'
         : role === 'client'
           ? 'Conferme, cambi di orario e promemoria appena succedono.'
           : 'Nuove richieste e messaggi importanti appena arrivano.';
 
+    const primaryClassName =
+        'btn-brand h-12.5 w-full text-[17px] tracking-[-0.43px]';
+
     return (
-        <Dialog
+        <DarkDialog
             open={open}
             onOpenChange={(next) => (next ? setOpen(true) : close())}
+            title={title}
+            description={description}
+            logo
         >
-            <DialogContent
-                // A sheet from the bottom on the phone, a card in the middle on the computer.
-                className="max-sm:top-auto max-sm:bottom-0 max-sm:max-w-full max-sm:translate-y-0 max-sm:rounded-t-3xl max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0 max-sm:pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:max-w-md sm:rounded-3xl"
-            >
-                <div className="flex flex-col items-center gap-3 pt-2 text-center">
-                    <img
-                        src="/icons/icon-192.png"
-                        alt=""
-                        width={64}
-                        height={64}
-                        className="size-16 rounded-2xl shadow-md"
-                    />
-                    <DialogTitle className="text-xl leading-7">
-                        {title}
-                    </DialogTitle>
-                    <DialogDescription className="text-[15px] leading-5.5">
-                        {description}
-                    </DialogDescription>
-                </div>
+            {installing && isMobile && (
+                <Section title="App">
+                    <div className="flex items-center gap-3 rounded-[20px] bg-[#141414] px-4 py-3.5 shadow-[inset_0_0_0_1.5px_var(--brand)]">
+                        <img
+                            src="/icons/icon-192.png"
+                            alt=""
+                            width={48}
+                            height={48}
+                            className="size-12 shrink-0 rounded-xl"
+                        />
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                            <span className="text-[17px] leading-5.5 font-semibold tracking-[-0.43px]">
+                                MioPersonal sul telefono
+                            </span>
+                            <span className="text-[13px] leading-4.5 tracking-[-0.08px] text-muted-foreground">
+                                Un’app vera e propria, senza passare dallo store
+                            </span>
+                        </div>
+                    </div>
+                </Section>
+            )}
 
-                {installing && (
-                    <ul className="flex flex-col gap-2.5 rounded-2xl bg-muted px-4 py-3.5 text-sm">
-                        <Benefit icon={<Zap className="size-4" />}>
-                            Si apre con un tocco, a schermo intero
+            {installing && (
+                <Section title="Cosa ottieni" titleClassName="md:sr-only">
+                    <ul className="flex flex-col gap-2 md:gap-3">
+                        <Benefit icon={<Zap />}>
+                            {isMobile
+                                ? 'Si apre con un tocco, a schermo intero'
+                                : 'Si apre con un clic, in una finestra tutta sua'}
                         </Benefit>
-                        <Benefit icon={<Bell className="size-4" />}>
+                        <Benefit icon={<Bell />}>
                             {loggedIn
                                 ? 'Notifiche di prenotazioni e promemoria'
                                 : 'Notifiche quando ti confermano una seduta'}
                         </Benefit>
-                        <Benefit icon={<Smartphone className="size-4" />}>
+                        <Benefit icon={isMobile ? <Smartphone /> : <Monitor />}>
                             Leggera: niente da scaricare dallo store
                         </Benefit>
                     </ul>
-                )}
+                </Section>
+            )}
 
-                {(method === 'ios' || method === 'mac-safari') && (
-                    <div className="flex flex-col gap-2 text-sm">
-                        <strong className="font-semibold">
-                            Ci vogliono 10 secondi:
-                        </strong>
+            {(method === 'ios' || method === 'mac-safari') && (
+                <Section title="Ci vogliono 10 secondi">
+                    <div className="text-[15px] leading-5 text-muted-foreground [&_strong]:text-foreground">
                         <InstallSteps
                             method={method}
                             withNotifications={loggedIn && method === 'ios'}
                         />
                     </div>
-                )}
+                </Section>
+            )}
 
-                {failed && (
-                    <p role="alert" className="text-sm text-destructive">
-                        Non siamo riusciti ad attivarle. Riprova tra poco.
-                    </p>
-                )}
+            {failed && (
+                <p role="alert" className="text-[15px] text-destructive">
+                    Non siamo riusciti ad attivarle. Riprova tra poco.
+                </p>
+            )}
 
-                <div className="flex flex-col gap-2">
-                    {method === 'prompt' && (
-                        <Button
-                            type="button"
-                            onClick={() => void install()}
-                            className="h-11 font-semibold"
-                        >
-                            <Download aria-hidden="true" />
-                            Installa l’app
-                        </Button>
-                    )}
-                    {(method === 'ios' || method === 'mac-safari') && (
-                        <Button
-                            type="button"
-                            onClick={() => close(DONE_DAYS)}
-                            className="h-11 font-semibold"
-                        >
-                            L’ho aggiunta
-                        </Button>
-                    )}
-                    {offerPush && (
-                        <Button
-                            type="button"
-                            variant={installing ? 'outline' : 'default'}
-                            disabled={processing}
-                            onClick={() => void turnOnPush()}
-                            className="h-11 font-semibold"
-                        >
-                            <Bell aria-hidden="true" />
-                            {installing
-                                ? 'Attiva solo le notifiche'
-                                : 'Attiva le notifiche'}
-                        </Button>
-                    )}
-                    <Button
+            <div className="flex flex-col gap-3 pt-2 md:gap-2.5 md:pt-1">
+                {method === 'prompt' && (
+                    <button
                         type="button"
-                        variant="ghost"
-                        onClick={() => close()}
-                        className="h-11"
+                        onClick={() => void install()}
+                        className={primaryClassName}
                     >
-                        Non ora
-                    </Button>
-                </div>
-            </DialogContent>
-        </Dialog>
+                        <Download aria-hidden="true" className="size-5" />
+                        Installa l’app
+                    </button>
+                )}
+                {(method === 'ios' || method === 'mac-safari') && (
+                    <button
+                        type="button"
+                        onClick={() => close(DONE_DAYS)}
+                        className={primaryClassName}
+                    >
+                        L’ho aggiunta
+                    </button>
+                )}
+                {offerPush && (
+                    <button
+                        type="button"
+                        disabled={processing}
+                        onClick={() => void turnOnPush()}
+                        className={
+                            installing
+                                ? 'flex h-12.5 w-full items-center justify-center gap-2 rounded-full text-[17px] font-semibold tracking-[-0.43px] shadow-[inset_0_0_0_1px_var(--field)] outline-none hover:bg-foreground/5 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-60'
+                                : primaryClassName
+                        }
+                    >
+                        <Bell aria-hidden="true" className="size-5" />
+                        {installing
+                            ? 'Attiva solo le notifiche'
+                            : 'Attiva le notifiche'}
+                    </button>
+                )}
+                <button
+                    type="button"
+                    onClick={() => close()}
+                    className={darkSecondaryButtonClassName}
+                >
+                    Non ora
+                </button>
+            </div>
+        </DarkDialog>
     );
 }
 
+/** "App", "Cosa ottieni": a small title over its content. */
+function Section({
+    title,
+    titleClassName,
+    children,
+}: {
+    title: string;
+    titleClassName?: string;
+    children: ReactNode;
+}) {
+    return (
+        <section className="flex flex-col gap-3">
+            <h3
+                className={cn(
+                    'text-[15px] leading-5 font-semibold tracking-[-0.23px]',
+                    titleClassName,
+                )}
+            >
+                {title}
+            </h3>
+            {children}
+        </section>
+    );
+}
+
+/** A row of "Cosa ottieni": grey card on phones, turquoise outline on desktop. */
 function Benefit({ icon, children }: { icon: ReactNode; children: ReactNode }) {
     return (
-        <li className="flex items-center gap-2.5">
+        <li className="flex items-center gap-3 rounded-[20px] bg-[#141414] px-4 py-3 text-[15px] leading-5 tracking-[-0.23px] shadow-[inset_0_0_0_1px_var(--border)] md:min-h-16 md:rounded-[14px] md:bg-transparent md:px-4.5 md:py-2 md:font-semibold md:shadow-[inset_0_0_0_1px_var(--brand)]">
             <span
                 aria-hidden="true"
-                className="flex size-7 flex-none items-center justify-center rounded-lg bg-background"
+                className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#1f1f1f] text-foreground md:size-5 md:bg-transparent md:text-brand [&_svg]:size-5"
             >
                 {icon}
             </span>

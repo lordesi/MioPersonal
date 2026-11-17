@@ -7,6 +7,9 @@ import type { CookieConsent as Consent } from '@/lib/cookie-consent';
 import { applyConsent, onOpenCookieSettings } from '@/lib/cookie-consent';
 import { store } from '@/routes/cookie-consent';
 
+/** Pages the banner must not cover: the cookie policy is linked from it. */
+const LEGAL_PAGES = ['public/cookies', 'public/privacy', 'public/terms'];
+
 /**
  * The cookie banner and "Impostazioni cookie", on every page. It sits next
  * to the app (see app.tsx), outside the pages, so usePage() isn't available:
@@ -18,14 +21,16 @@ export default function CookieConsent({
     initialPage: Page<SharedPageProps>;
 }) {
     const [consent, setConsent] = useState(initialPage.props.cookieConsent);
+    const [component, setComponent] = useState(initialPage.component);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [saving, setSaving] = useState(false);
 
     useEffect(
         () =>
-            router.on('navigate', (event) =>
-                setConsent(event.detail.page.props.cookieConsent),
-            ),
+            router.on('navigate', (event) => {
+                setConsent(event.detail.page.props.cookieConsent);
+                setComponent(event.detail.page.component);
+            }),
         [],
     );
 
@@ -62,6 +67,7 @@ export default function CookieConsent({
                     onAccept={saveNecessaryOnly}
                     onManage={() => setDialogOpen(true)}
                     disabled={saving}
+                    blocking={!LEGAL_PAGES.includes(component)}
                 />
             )}
             <CookiePreferencesDialog
