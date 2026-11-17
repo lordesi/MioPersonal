@@ -6,7 +6,6 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Sentry } from '@/lib/sentry';
 import AdminLayout from '@/layouts/admin-layout';
-import AuthLayout from '@/layouts/auth-layout';
 import ClientLayout from '@/layouts/client-layout';
 import GymLayout from '@/layouts/gym-layout';
 import PublicLayout from '@/layouts/public-layout';
@@ -30,12 +29,7 @@ export function layout(
         case name.startsWith('dev/'):
         // Full-screen designs that draw their own header.
         case name.startsWith('onboarding/'):
-        case name === 'auth/login':
-        case name === 'auth/register':
-        case name === 'auth/forgot-password':
-        case name === 'auth/reset-password':
-        case name === 'auth/google-sign-up':
-        case name === 'auth/verify-email':
+        case name.startsWith('auth/'):
         case name === 'client/booking-sent':
             return null;
         case name.startsWith('public/'):
@@ -48,8 +42,6 @@ export function layout(
             return AdminLayout;
         case name.startsWith('client/'):
             return ClientLayout;
-        case name.startsWith('auth/'):
-            return AuthLayout;
         // Every page is in one of the folders above.
         default:
             return PublicLayout;

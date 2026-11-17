@@ -1,7 +1,12 @@
 import { Form, Head } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
+import AuthPhotoShell, {
+    AuthIntro,
+    authButtonClassName,
+} from '@/components/auth/auth-photo-shell';
+import { darkSecondaryButtonClassName } from '@/components/mp/dark-dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { formatDayLong } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { logout } from '@/routes';
 import { cancel } from '@/routes/account/deletion';
 
@@ -21,8 +26,19 @@ export default function AccountDeletion({
         <>
             <Head title="Account in eliminazione" />
 
-            <div className="flex flex-col gap-6">
-                <p className="text-sm text-muted-foreground">
+            <AuthPhotoShell
+                titleId="account-deletion-title"
+                title="Account in eliminazione."
+                desktopTitle={
+                    <>
+                        Il tuo account è <strong>in eliminazione</strong>.
+                    </>
+                }
+                logoLinksHome={false}
+                // No way out but the buttons below: the account is on hold.
+                mobileAction={<span />}
+            >
+                <AuthIntro>
                     Hai chiesto di eliminare il tuo account: i tuoi dati
                     verranno cancellati{' '}
                     <strong className="text-foreground">
@@ -30,36 +46,33 @@ export default function AccountDeletion({
                     </strong>
                     . Se hai cambiato idea puoi tenerlo; le prenotazioni già
                     annullate non tornano.
-                </p>
+                </AuthIntro>
 
-                <Form {...cancel.form()}>
+                <Form {...cancel.form()} className="flex flex-col">
                     {({ processing }) => (
-                        <Button
+                        <button
                             type="submit"
                             disabled={processing}
-                            className="h-11 w-full font-semibold"
+                            className={authButtonClassName}
                         >
                             {processing && <Spinner />}
                             Annulla eliminazione
-                        </Button>
+                        </button>
                     )}
                 </Form>
 
-                <Form {...logout.form()}>
-                    <Button
+                <Form {...logout.form()} className="flex flex-col">
+                    <button
                         type="submit"
-                        variant="outline"
-                        className="h-11 w-full"
+                        className={cn(
+                            darkSecondaryButtonClassName,
+                            'md:w-full',
+                        )}
                     >
                         Esci
-                    </Button>
+                    </button>
                 </Form>
-            </div>
+            </AuthPhotoShell>
         </>
     );
 }
-
-AccountDeletion.layout = {
-    title: 'Account in eliminazione',
-    description: 'Puoi ancora cambiare idea.',
-};

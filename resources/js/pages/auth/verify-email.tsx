@@ -1,8 +1,12 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
 import { Mail } from 'lucide-react';
-import BrandPanel from '@/components/auth/brand-panel';
-import BrandLogo from '@/components/layout/brand-logo';
-import { Button } from '@/components/ui/button';
+import type { ReactNode } from 'react';
+import AuthPhotoShell, {
+    AuthIntro,
+    AuthStatus,
+    authButtonClassName,
+    authLinkClassName,
+} from '@/components/auth/auth-photo-shell';
 import { Spinner } from '@/components/ui/spinner';
 import { logout } from '@/routes';
 import { send } from '@/routes/verification';
@@ -19,101 +23,85 @@ export default function VerifyEmail({ status }: { status?: string }) {
             user.role as 'trainer' | 'gym'
         ] ?? 'nel tuo account';
 
+    const signOut = (
+        <Link href={logout()} as="button" className={authLinkClassName}>
+            Esci
+        </Link>
+    );
+
     return (
         <>
             <Head title="Conferma la tua email" />
 
-            <div className="flex min-h-screen flex-wrap bg-background">
-                <BrandPanel
-                    title="Ci sei quasi."
-                    text="Un clic sul link che ti abbiamo mandato e il tuo account è pronto."
-                />
+            <AuthPhotoShell
+                titleId="verify-email-title"
+                title="Conferma la tua email."
+                desktopTitle={
+                    <>
+                        Ci sei quasi: <strong>conferma la tua email</strong>.
+                    </>
+                }
+                aside={
+                    <>
+                        Non è la tua email?
+                        {signOut}
+                    </>
+                }
+                mobileAction={signOut}
+            >
+                <span
+                    aria-hidden="true"
+                    className="order-first flex size-14 items-center justify-center rounded-full border-[1.5px] border-brand bg-[rgba(10,10,10,0.55)] text-brand"
+                >
+                    <Mail className="size-7" />
+                </span>
 
-                <main className="flex flex-[1_1_480px] flex-col items-center justify-center px-4 py-8 md:px-6 md:py-12">
-                    <div className="mb-8 self-start md:hidden">
-                        <BrandLogo />
-                    </div>
+                <AuthIntro>
+                    Abbiamo mandato un link a{' '}
+                    <strong className="font-semibold break-all text-foreground">
+                        {user.email}
+                    </strong>
+                    : serve per entrare {area}.
+                </AuthIntro>
 
-                    <div className="flex w-full max-w-100 flex-col gap-5">
-                        <span className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                            <Mail aria-hidden="true" className="size-7" />
-                        </span>
+                <ol className="flex flex-col gap-3 rounded-[20px] bg-card p-4 text-[15px]">
+                    <Step number={1}>Apri l’email di MioPersonal</Step>
+                    <Step number={2}>
+                        Clicca <strong>Conferma la tua email</strong>
+                    </Step>
+                </ol>
 
-                        <div className="flex flex-col gap-2">
-                            <h1 className="text-3xl font-semibold tracking-tight">
-                                Conferma la tua email
-                            </h1>
-                            <p className="text-muted-foreground">
-                                Abbiamo mandato un link a{' '}
-                                <strong className="font-semibold break-all text-foreground">
-                                    {user.email}
-                                </strong>
-                                : serve per entrare {area}.
-                            </p>
-                        </div>
+                {status === 'verification-link-sent' && (
+                    <AuthStatus>Ti abbiamo mandato un nuovo link.</AuthStatus>
+                )}
 
-                        <ol className="flex flex-col gap-2 rounded-xl border bg-card p-4 text-sm">
-                            <Step number={1}>Apri l’email di MioPersonal</Step>
-                            <Step number={2}>
-                                Clicca <strong>Conferma la tua email</strong>
-                            </Step>
-                        </ol>
+                <Form {...send.form()} className="flex flex-col">
+                    {({ processing }) => (
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className={authButtonClassName}
+                        >
+                            {processing && <Spinner />}
+                            Invia di nuovo il link
+                        </button>
+                    )}
+                </Form>
 
-                        {status === 'verification-link-sent' && (
-                            <p
-                                role="status"
-                                className="rounded-lg bg-muted px-3 py-2.5 text-sm"
-                            >
-                                Ti abbiamo mandato un nuovo link.
-                            </p>
-                        )}
-
-                        <Form {...send.form()} className="flex flex-col">
-                            {({ processing }) => (
-                                <Button
-                                    type="submit"
-                                    variant="outline"
-                                    className="h-11"
-                                    disabled={processing}
-                                >
-                                    {processing && <Spinner />}
-                                    Invia di nuovo il link
-                                </Button>
-                            )}
-                        </Form>
-
-                        <div className="flex flex-col gap-1 text-center text-sm text-muted-foreground">
-                            <p>Non trovi l’email? Controlla nello spam.</p>
-                            <p>
-                                Non è la tua email?{' '}
-                                <Link
-                                    href={logout()}
-                                    as="button"
-                                    className="font-medium text-foreground underline"
-                                >
-                                    Esci
-                                </Link>
-                            </p>
-                        </div>
-                    </div>
-                </main>
-            </div>
+                <p className="text-center text-[13px] leading-4.5 text-muted-foreground">
+                    Non trovi l’email? Controlla nello spam.
+                </p>
+            </AuthPhotoShell>
         </>
     );
 }
 
-function Step({
-    number,
-    children,
-}: {
-    number: number;
-    children: React.ReactNode;
-}) {
+function Step({ number, children }: { number: number; children: ReactNode }) {
     return (
         <li className="flex items-center gap-3">
             <span
                 aria-hidden="true"
-                className="flex size-6 flex-none items-center justify-center rounded-full bg-secondary text-xs font-semibold tabular-nums"
+                className="flex size-7 flex-none items-center justify-center rounded-full text-[13px] font-semibold text-brand tabular-nums shadow-[inset_0_0_0_1px_var(--brand)]"
             >
                 {number}
             </span>

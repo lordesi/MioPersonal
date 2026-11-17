@@ -1,9 +1,14 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import AuthPhotoShell, {
+    AuthIntro,
+    AuthStatus,
+    authButtonClassName,
+    authLinkClassName,
+} from '@/components/auth/auth-photo-shell';
 import FormField from '@/components/auth/form-field';
-import MinimalHeader from '@/components/layout/minimal-header';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import { darkFieldClassName } from '@/lib/dark-form';
 import { login } from '@/routes';
 import { email } from '@/routes/password';
 
@@ -13,49 +18,42 @@ import { email } from '@/routes/password';
  * account or not (see FailedPasswordResetLinkResponse).
  */
 export default function ForgotPassword({ status }: { status?: string }) {
+    const backToLogin = (
+        <>
+            Ricordi la password?
+            <Link href={login()} className={authLinkClassName}>
+                Accedi
+            </Link>
+        </>
+    );
+
     return (
-        <div className="flex min-h-screen flex-col bg-secondary">
+        <>
             <Head title="Password dimenticata" />
 
-            <MinimalHeader>
-                Ricordi la password?
-                <Link
-                    href={login()}
-                    className="font-medium text-primary-foreground underline"
-                >
-                    Accedi
-                </Link>
-            </MinimalHeader>
-
-            <main className="mx-auto w-full max-w-md px-4 pt-5 pb-10 md:px-8 md:pt-12 md:pb-20">
+            <AuthPhotoShell
+                titleId="forgot-password-title"
+                title="Password dimenticata?"
+                desktopTitle={
+                    <>
+                        Recupera la tua <strong>password</strong>.
+                    </>
+                }
+                aside={backToLogin}
+            >
                 <Form
                     {...email.form()}
                     aria-labelledby="forgot-password-title"
-                    className="flex flex-col gap-5 rounded-xl border bg-card p-4 md:p-8"
+                    className="flex flex-col gap-3 md:gap-3.5"
                 >
                     {({ processing, errors }) => (
                         <>
-                            <div className="flex flex-col gap-1.5">
-                                <h1
-                                    id="forgot-password-title"
-                                    className="text-[28px] leading-8.5 font-semibold tracking-tight md:text-3xl"
-                                >
-                                    Password dimenticata?
-                                </h1>
-                                <p className="text-sm text-muted-foreground">
-                                    Scrivi l’email del tuo account: ti mandiamo
-                                    un link per sceglierne una nuova.
-                                </p>
-                            </div>
+                            <AuthIntro>
+                                Scrivi l’email del tuo account: ti mandiamo un
+                                link per sceglierne una nuova.
+                            </AuthIntro>
 
-                            {status && (
-                                <p
-                                    role="status"
-                                    className="rounded-lg bg-muted px-3 py-2.5 text-sm"
-                                >
-                                    {status}
-                                </p>
-                            )}
+                            {status && <AuthStatus>{status}</AuthStatus>}
 
                             <FormField label="Email" error={errors.email}>
                                 {({ id, describedBy }) => (
@@ -65,28 +63,33 @@ export default function ForgotPassword({ status }: { status?: string }) {
                                         aria-invalid={!!errors.email}
                                         type="email"
                                         name="email"
+                                        inputMode="email"
                                         required
                                         autoFocus
                                         autoComplete="email"
                                         placeholder="nome@esempio.it"
-                                        className="h-11 text-base md:text-base"
+                                        className={darkFieldClassName}
                                     />
                                 )}
                             </FormField>
 
-                            <Button
+                            <button
                                 type="submit"
-                                className="h-11"
                                 disabled={processing}
                                 data-test="email-password-reset-link-button"
+                                className={authButtonClassName}
                             >
                                 {processing && <Spinner />}
                                 Inviami il link
-                            </Button>
+                            </button>
+
+                            <p className="flex items-center justify-center gap-1.5 text-[15px] md:hidden">
+                                {backToLogin}
+                            </p>
                         </>
                     )}
                 </Form>
-            </main>
-        </div>
+            </AuthPhotoShell>
+        </>
     );
 }

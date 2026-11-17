@@ -1,9 +1,12 @@
 import { Form, Head } from '@inertiajs/react';
-import InputError from '@/components/input-error';
-import PasswordInput from '@/components/password-input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import AuthPhotoShell, {
+    AuthIntro,
+    authButtonClassName,
+} from '@/components/auth/auth-photo-shell';
+import FormField from '@/components/auth/form-field';
+import PasswordField from '@/components/auth/password-field';
 import { Spinner } from '@/components/ui/spinner';
+import { darkFieldClassName } from '@/lib/dark-form';
 import { store } from '@/routes/password/confirm';
 
 /** Fortify's "conferma la password" before a protected page (route password.confirm). */
@@ -12,40 +15,57 @@ export default function ConfirmPassword() {
         <>
             <Head title="Conferma la password" />
 
-            <Form {...store.form()} resetOnSuccess={['password']}>
-                {({ processing, errors }) => (
-                    <div className="space-y-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
-                            <PasswordInput
-                                id="password"
-                                name="password"
-                                autoComplete="current-password"
-                                autoFocus
-                            />
+            <AuthPhotoShell
+                titleId="confirm-password-title"
+                title="Conferma la password."
+                desktopTitle={
+                    <>
+                        Conferma la <strong>password</strong>.
+                    </>
+                }
+            >
+                <Form
+                    {...store.form()}
+                    resetOnSuccess={['password']}
+                    aria-labelledby="confirm-password-title"
+                    className="flex flex-col gap-3 md:gap-3.5"
+                >
+                    {({ processing, errors }) => (
+                        <>
+                            <AuthIntro>
+                                Per sicurezza, scrivi di nuovo la password prima
+                                di continuare.
+                            </AuthIntro>
 
-                            <InputError message={errors.password} />
-                        </div>
+                            <FormField label="Password" error={errors.password}>
+                                {({ id, describedBy }) => (
+                                    <PasswordField
+                                        id={id}
+                                        aria-describedby={describedBy}
+                                        aria-invalid={!!errors.password}
+                                        name="password"
+                                        required
+                                        autoFocus
+                                        autoComplete="current-password"
+                                        placeholder="La tua password"
+                                        className={darkFieldClassName}
+                                    />
+                                )}
+                            </FormField>
 
-                        <div className="flex items-center">
-                            <Button
-                                className="w-full"
+                            <button
+                                type="submit"
                                 disabled={processing}
                                 data-test="confirm-password-button"
+                                className={authButtonClassName}
                             >
                                 {processing && <Spinner />}
                                 Conferma
-                            </Button>
-                        </div>
-                    </div>
-                )}
-            </Form>
+                            </button>
+                        </>
+                    )}
+                </Form>
+            </AuthPhotoShell>
         </>
     );
 }
-
-ConfirmPassword.layout = {
-    title: 'Conferma la password',
-    description:
-        'Per sicurezza, scrivi di nuovo la password prima di continuare.',
-};

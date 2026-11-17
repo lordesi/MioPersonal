@@ -1,15 +1,20 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
+import AuthPhotoShell, {
+    AuthStatus,
+    authButtonClassName,
+    authLinkClassName,
+} from '@/components/auth/auth-photo-shell';
 import FormField from '@/components/auth/form-field';
 import PasswordField from '@/components/auth/password-field';
 import PasswordRequirements, {
     PASSWORD_PATTERN,
     PASSWORD_PATTERN_MESSAGE,
 } from '@/components/auth/password-requirements';
-import MinimalHeader from '@/components/layout/minimal-header';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import { darkFieldClassName } from '@/lib/dark-form';
+import { cn } from '@/lib/utils';
 import { login } from '@/routes';
 import { request, update } from '@/routes/password';
 
@@ -26,50 +31,49 @@ export default function ResetPassword({ token, email }: Props) {
     const [password, setPassword] = useState('');
 
     return (
-        <div className="flex min-h-screen flex-col bg-secondary">
+        <>
             <Head title="Nuova password" />
 
-            <MinimalHeader>
-                Ricordi la password?
-                <Link
-                    href={login()}
-                    className="font-medium text-primary-foreground underline"
-                >
-                    Accedi
-                </Link>
-            </MinimalHeader>
-
-            <main className="mx-auto w-full max-w-md px-4 pt-5 pb-10 md:px-8 md:pt-12 md:pb-20">
+            <AuthPhotoShell
+                titleId="reset-password-title"
+                title="Scegli una nuova password."
+                desktopTitle={
+                    <>
+                        Scegli una <strong>nuova password</strong>.
+                    </>
+                }
+                aside={
+                    <>
+                        Ricordi la password?
+                        <Link href={login()} className={authLinkClassName}>
+                            Accedi
+                        </Link>
+                    </>
+                }
+            >
                 <Form
                     {...update.form()}
                     transform={(data) => ({ ...data, token, email })}
                     resetOnSuccess={['password', 'password_confirmation']}
                     aria-labelledby="reset-password-title"
-                    className="flex flex-col gap-5 rounded-xl border bg-card p-4 md:p-8"
+                    className="flex flex-col gap-3 md:gap-3.5"
                 >
                     {({ processing, errors }) => (
                         <>
-                            <h1
-                                id="reset-password-title"
-                                className="text-[28px] leading-8.5 font-semibold tracking-tight md:text-3xl"
-                            >
-                                Scegli una nuova password
-                            </h1>
-
                             {/* An expired or already used link. */}
                             {errors.email && (
-                                <div
-                                    role="alert"
-                                    className="flex flex-col gap-1 rounded-lg bg-muted px-3 py-2.5 text-sm"
-                                >
+                                <AuthStatus tone="alert">
                                     {errors.email}
                                     <Link
                                         href={request()}
-                                        className="font-medium underline"
+                                        className={cn(
+                                            authLinkClassName,
+                                            'min-h-0 self-start',
+                                        )}
                                     >
                                         Richiedi un nuovo link
                                     </Link>
-                                </div>
+                                </AuthStatus>
                             )}
 
                             <FormField label="Email">
@@ -80,14 +84,16 @@ export default function ResetPassword({ token, email }: Props) {
                                         value={email}
                                         readOnly
                                         autoComplete="username"
-                                        className="h-11 text-base md:text-base"
+                                        className={cn(
+                                            darkFieldClassName,
+                                            'text-muted-foreground',
+                                        )}
                                     />
                                 )}
                             </FormField>
 
                             <FormField
                                 label="Nuova password"
-                                hint={<PasswordRequirements value={password} />}
                                 error={errors.password}
                             >
                                 {({ id, describedBy }) => (
@@ -106,9 +112,14 @@ export default function ResetPassword({ token, email }: Props) {
                                         onChange={(event) =>
                                             setPassword(event.target.value)
                                         }
+                                        className={darkFieldClassName}
                                     />
                                 )}
                             </FormField>
+                            <PasswordRequirements
+                                value={password}
+                                variant="dark"
+                            />
 
                             <FormField
                                 label="Ripeti la password"
@@ -124,23 +135,24 @@ export default function ResetPassword({ token, email }: Props) {
                                         name="password_confirmation"
                                         required
                                         autoComplete="new-password"
+                                        className={darkFieldClassName}
                                     />
                                 )}
                             </FormField>
 
-                            <Button
+                            <button
                                 type="submit"
-                                className="h-11"
                                 disabled={processing}
                                 data-test="reset-password-button"
+                                className={cn(authButtonClassName, 'mt-1')}
                             >
                                 {processing && <Spinner />}
                                 Salva la nuova password
-                            </Button>
+                            </button>
                         </>
                     )}
                 </Form>
-            </main>
-        </div>
+            </AuthPhotoShell>
+        </>
     );
 }

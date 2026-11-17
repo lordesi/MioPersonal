@@ -1,12 +1,17 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { PhoneFields } from '@/components/auth/account-fields';
+import AuthPhotoShell, {
+    AuthIntro,
+    authButtonClassName,
+    authLinkClassName,
+} from '@/components/auth/auth-photo-shell';
 import ConsentCheckbox from '@/components/auth/consent-checkbox';
 import FormField from '@/components/auth/form-field';
 import UsernameField from '@/components/auth/username-field';
-import MinimalHeader from '@/components/layout/minimal-header';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import { darkCheckboxClassName, darkFieldClassName } from '@/lib/dark-form';
+import { cn } from '@/lib/utils';
 import { login } from '@/routes';
 import { store } from '@/routes/google/register';
 import { privacy, terms } from '@/routes/legal';
@@ -22,7 +27,6 @@ type Props = {
 
 const TERMS_HREF = terms.url();
 const PRIVACY_HREF = privacy.url();
-const inputClass = 'h-11 text-base md:text-base';
 
 /**
  * "Registrati con Google", last step: Google gave name and email, the user
@@ -35,43 +39,43 @@ export default function GoogleSignUp({
     lastName,
     suggestedUsername,
 }: Props) {
+    const toLogin = (
+        <>
+            Hai già un account?
+            <Link href={login()} className={authLinkClassName}>
+                Accedi
+            </Link>
+        </>
+    );
+
     return (
-        <div className="flex min-h-screen flex-col bg-secondary">
+        <>
             <Head title="Completa la registrazione" />
 
-            <MinimalHeader>
-                Hai già un account?
-                <Link
-                    href={login()}
-                    className="font-medium text-primary-foreground underline"
-                >
-                    Accedi
-                </Link>
-            </MinimalHeader>
-
-            <main className="mx-auto w-full max-w-xl px-4 pt-5 pb-10 md:px-8 md:pt-12 md:pb-20">
+            <AuthPhotoShell
+                titleId="google-sign-up-title"
+                title="Ci sei quasi."
+                desktopTitle={
+                    <>
+                        Ci sei <strong>quasi</strong>.
+                    </>
+                }
+                aside={toLogin}
+            >
                 <Form
                     {...store.form()}
                     disableWhileProcessing
                     aria-labelledby="google-sign-up-title"
-                    className="flex flex-col gap-5 rounded-xl border bg-card p-4 md:p-8"
+                    className="flex flex-col gap-3 md:gap-3.5"
                 >
                     {({ processing, errors }) => (
                         <>
-                            <div className="flex flex-col gap-1.5">
-                                <h1
-                                    id="google-sign-up-title"
-                                    className="text-[28px] leading-8.5 font-semibold tracking-tight md:text-3xl"
-                                >
-                                    Ci sei quasi
-                                </h1>
-                                <p className="text-sm text-muted-foreground">
-                                    Controlla i tuoi dati e accetta i Termini
-                                    per creare l’account.
-                                </p>
-                            </div>
+                            <AuthIntro>
+                                Controlla i tuoi dati e accetta i Termini per
+                                creare l’account.
+                            </AuthIntro>
 
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid grid-cols-2 gap-3">
                                 <FormField
                                     label="Nome"
                                     error={errors.first_name}
@@ -86,7 +90,7 @@ export default function GoogleSignUp({
                                             required
                                             maxLength={100}
                                             autoComplete="given-name"
-                                            className={inputClass}
+                                            className={darkFieldClassName}
                                         />
                                     )}
                                 </FormField>
@@ -104,15 +108,17 @@ export default function GoogleSignUp({
                                             required
                                             maxLength={100}
                                             autoComplete="family-name"
-                                            className={inputClass}
+                                            className={darkFieldClassName}
                                         />
                                     )}
                                 </FormField>
                             </div>
 
                             <UsernameField
+                                dark
                                 error={errors.username}
                                 defaultValue={suggestedUsername}
+                                inputClassName={darkFieldClassName}
                             />
 
                             <FormField label="Email">
@@ -122,49 +128,61 @@ export default function GoogleSignUp({
                                         type="email"
                                         value={email}
                                         readOnly
-                                        className={inputClass}
+                                        className={cn(
+                                            darkFieldClassName,
+                                            'text-muted-foreground',
+                                        )}
                                     />
                                 )}
                             </FormField>
 
-                            <PhoneFields errors={errors} />
+                            <PhoneFields
+                                compact
+                                errors={errors}
+                                inputClassName={darkFieldClassName}
+                            />
 
-                            <div className="border-t pt-4">
+                            <div className="pt-1 text-[15px] leading-5.25 [&_label]:text-[15px]">
                                 <ConsentCheckbox
                                     name="terms"
                                     required
                                     error={errors.terms}
+                                    checkboxClassName={darkCheckboxClassName}
                                 >
                                     Ho almeno 18 anni e accetto i{' '}
-                                    <a href={TERMS_HREF} className="underline">
+                                    <a
+                                        href={TERMS_HREF}
+                                        className="text-brand underline"
+                                    >
                                         Termini
                                     </a>{' '}
                                     e l'
                                     <a
                                         href={PRIVACY_HREF}
-                                        className="underline"
+                                        className="text-brand underline"
                                     >
                                         Informativa privacy
                                     </a>
-                                    .{' '}
-                                    <span className="text-muted-foreground">
-                                        (obbligatorio)
-                                    </span>
+                                    .
                                 </ConsentCheckbox>
                             </div>
 
-                            <Button
+                            <button
                                 type="submit"
-                                className="h-11"
                                 disabled={processing}
+                                className={authButtonClassName}
                             >
                                 {processing && <Spinner />}
                                 Crea account
-                            </Button>
+                            </button>
+
+                            <p className="flex items-center justify-center gap-1.5 text-[15px] md:hidden">
+                                {toLogin}
+                            </p>
                         </>
                     )}
                 </Form>
-            </main>
-        </div>
+            </AuthPhotoShell>
+        </>
     );
 }
