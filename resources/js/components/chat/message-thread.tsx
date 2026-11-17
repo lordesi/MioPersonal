@@ -258,7 +258,7 @@ export default function MessageThread({
             <div
                 ref={scroller}
                 onScroll={onScroll}
-                className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-secondary/50 bg-[radial-gradient(circle_at_1px_1px,var(--color-border)_1px,transparent_0)] [background-size:22px_22px] px-3 pt-2 pb-4 md:px-6"
+                className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-secondary/50 bg-[radial-gradient(circle_at_1px_1px,var(--border)_1px,transparent_0)] [background-size:22px_22px] px-3 pt-2 pb-4 md:px-6"
             >
                 {hasOlder && (
                     <Button

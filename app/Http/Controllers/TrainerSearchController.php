@@ -11,11 +11,11 @@ use App\Models\City;
 use App\Models\ClientPreference;
 use App\Models\TrainerProfile;
 use App\Support\CatalogOptions;
-use App\Support\CityGuide;
 use App\Support\Seo;
 use App\Support\Stats;
 use App\Support\TrainerCard;
 use App\Support\TrainerSlots;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,7 +41,10 @@ use Inertia\Response;
  *
  * "Nome" (?nome=marco bianchi): every word must be in the trainer's name.
  *
- * @phpstan-type Filters array{nome: string|null, disciplina: list<string>, obiettivo: list<string>, modalita: string|null, disponibilita: string|null, prezzo: string|null, valutazione: string|null, domicilio: string|null, preferiti: string|null, ordina: string|null}
+ * "Scegli data" (?data=2026-11-17) and "Fascia oraria" (?fascia=sera): a free
+ * slot that day, starting in that part of the day (see availableIds()).
+ *
+ * @phpstan-type Filters array{nome: string|null, disciplina: list<string>, obiettivo: list<string>, modalita: string|null, disponibilita: string|null, data: string|null, fascia: string|null, prezzo: string|null, valutazione: string|null, domicilio: string|null, preferiti: string|null, ordina: string|null}
  */
 class TrainerSearchController extends Controller
 {
@@ -49,6 +52,15 @@ class TrainerSearchController extends Controller
 
     /** "Disponibilità": the first free slot must be at most this many days from today. */
     private const AVAILABILITY_DAYS = ['oggi' => 0, '3-giorni' => 2, 'settimana' => 6];
+
+    /** "Scegli data": at most this many days from today. */
+    private const DATE_MAX_DAYS = 60;
+
+    /** "Fascia oraria" without a date: the next this many days, today included. */
+    private const TIME_BAND_DAYS = 7;
+
+    /** "Fascia oraria": the start of the slot, [from, to) hours in Rome. */
+    private const TIME_BANDS = ['mattina' => [6, 12], 'pomeriggio' => [12, 18], 'sera' => [18, 24]];
 
     /**
      * "Prezzo a seduta": [min, max] in cents, both included, null = no maximum.
@@ -69,7 +81,7 @@ class TrainerSearchController extends Controller
     private const RATING_MIN_TENTHS = ['3' => 30, '4' => 40, '4-5' => 45];
 
     /** The filters left out by the second step of suggestions(). */
-    private const MINOR_FILTERS = ['nome', 'disponibilita', 'prezzo', 'valutazione', 'domicilio', 'preferiti'];
+    private const MINOR_FILTERS = ['nome', 'disponibilita', 'data', 'fascia', 'prezzo', 'valutazione', 'domicilio', 'preferiti'];
 
     /** "Nome": as long as `users.first_name`, longer text is cut. */
     private const NAME_MAX_LENGTH = 100;
@@ -122,12 +134,6 @@ class TrainerSearchController extends Controller
         }
 
         $seo = $this->seo($filters, $city, $page, $disciplines);
-        $guide = $seo['index'] ? CityGuide::for($city, $this->discipline($filters, $disciplines)) : null;
-        // The questions on the first page only: the next ones are the same list.
-        $faq = $page->currentPage() === 1 ? ($guide['faq'] ?? []) : [];
-        if ($faq !== []) {
-            $seo['jsonLd'][] = Seo::faq($faq);
-        }
 
         return Inertia::render('public/search', [
             'city' => $city === null ? null : ['slug' => $city->slug, 'name' => $city->name],
@@ -141,10 +147,6 @@ class TrainerSearchController extends Controller
             // With the center of each city, for "Usa la mia posizione".
             'cities' => CatalogOptions::citiesWithCoordinates(),
             'seo' => $seo,
-            // A few lines with the real numbers, for search engines, AI assistants and people: only on the indexed pages.
-            'intro' => $guide['intro'] ?? null,
-            // "Domande frequenti" under the results, with the same numbers.
-            'faq' => $faq,
         ]);
     }
 
@@ -289,6 +291,7 @@ class TrainerSearchController extends Controller
         $allowed = [
             'modalita' => ['presenza', 'online'],
             'disponibilita' => array_keys(self::AVAILABILITY_DAYS),
+            'fascia' => array_keys(self::TIME_BANDS),
             'prezzo' => array_keys(self::PRICE_RANGES),
             // PHP turns the keys '3' and '4' into numbers: back to text, like the URL.
             'valutazione' => array_map('strval', array_keys(self::RATING_MIN_TENTHS)),
@@ -304,6 +307,7 @@ class TrainerSearchController extends Controller
             'nome' => $name === '' ? null : $name,
             'disciplina' => $this->listFilter($request, 'disciplina', $disciplineSlugs),
             'obiettivo' => $this->listFilter($request, 'obiettivo', array_column(TrainingGoal::cases(), 'value')),
+            'data' => $this->dateFilter($request->string('data')->value()),
         ];
 
         foreach ($allowed as $name => $values) {
@@ -311,8 +315,30 @@ class TrainerSearchController extends Controller
             $filters[$name] = in_array($value, $values, true) ? $value : null;
         }
 
+        // A day chosen in the calendar replaces "Oggi / Questa settimana".
+        if ($filters['data'] !== null) {
+            $filters['disponibilita'] = null;
+        }
+
         /** @var Filters $filters */
         return $filters;
+    }
+
+    /** "Scegli data": a real day, from today (in Rome) to DATE_MAX_DAYS later; anything else is ignored. */
+    private function dateFilter(string $value): ?string
+    {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) !== 1) {
+            return null;
+        }
+
+        $date = CarbonImmutable::createFromFormat('!Y-m-d', $value, TrainerSlots::TIMEZONE);
+        $today = CarbonImmutable::now(TrainerSlots::TIMEZONE)->startOfDay();
+
+        if ($date === null || $date->format('Y-m-d') !== $value || $date->lessThan($today) || $date->greaterThan($today->addDays(self::DATE_MAX_DAYS))) {
+            return null;
+        }
+
+        return $value;
     }
 
     /**
@@ -410,6 +436,58 @@ class TrainerSearchController extends Controller
         if ($filters['preferiti'] !== null) {
             $query->whereIn('trainer_profiles.id', $favoriteIds);
         }
+
+        // Last: it reads the slots of the trainers left by the other filters.
+        if ($filters['data'] !== null || $filters['fascia'] !== null) {
+            $query->whereIn('trainer_profiles.id', $this->availableIds($query, $filters['data'], $filters['fascia']));
+        }
+    }
+
+    /**
+     * The trainers of the query with a free slot on the day (or in the next
+     * TIME_BAND_DAYS days) starting in the time band (or at any time). The
+     * saved first free slot leaves out at once who has nothing before the
+     * end of those days; the slots of the others are computed like on the
+     * profile (TrainerSlots::days()).
+     *
+     * @param  Builder<TrainerProfile>  $query
+     * @return list<int>
+     */
+    private function availableIds(Builder $query, ?string $date, ?string $band): array
+    {
+        $today = CarbonImmutable::now(TrainerSlots::TIMEZONE)->startOfDay();
+        $first = $date === null ? $today : CarbonImmutable::parse($date, TrainerSlots::TIMEZONE)->startOfDay();
+        $last = $date === null ? $today->addDays(self::TIME_BAND_DAYS - 1) : $first;
+        $days = (int) $today->diffInDays($last) + 1;
+        [$from, $to] = $band === null ? [0, 24] : self::TIME_BANDS[$band];
+
+        $candidates = (clone $query)
+            ->setEagerLoads([])
+            ->whereNotNull('next_free_slot_at')
+            ->where('next_free_slot_at', '<=', $last->endOfDay()->utc())
+            ->get();
+
+        $ids = [];
+
+        foreach ($candidates as $profile) {
+            foreach (TrainerSlots::days($profile, $days) as $day) {
+                if ($day['date'] < $first->toDateString()) {
+                    continue;
+                }
+
+                foreach ($day['slots'] as $slot) {
+                    $hour = CarbonImmutable::parse($slot['start'])->setTimezone(TrainerSlots::TIMEZONE)->hour;
+
+                    if ($hour >= $from && $hour < $to) {
+                        $ids[] = $profile->id;
+
+                        continue 3;
+                    }
+                }
+            }
+        }
+
+        return $ids;
     }
 
     /**

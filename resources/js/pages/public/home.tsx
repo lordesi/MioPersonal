@@ -1,18 +1,18 @@
 import { Head } from '@inertiajs/react';
-import UpcomingEvents from '@/components/events/upcoming-events';
-import FeaturedCourses from '@/components/home/featured-courses';
-import FeaturedGyms from '@/components/home/featured-gyms';
-import FeaturedTrainers from '@/components/home/featured-trainers';
-import HeroSearch from '@/components/home/hero-search';
-import ProBand from '@/components/home/pro-band';
-import NewsStrip from '@/components/news/news-strip';
+import HomeHero from '@/components/home/home-hero';
+import HomeShelf from '@/components/home/home-shelf';
+import ProCards from '@/components/home/pro-cards';
+import { eventCard, gymCard, trainerCard } from '@/components/mp/cards';
+import ProfileCard from '@/components/mp/profile-card';
+import SaveableCard from '@/components/mp/saveable-card';
+import { gymSearchUrl } from '@/lib/gym';
+import { searchUrl } from '@/lib/search';
+import { search as eventsSearch } from '@/routes/events';
 import type {
     CatalogOption,
     CityWithCoordinates,
-    CourseSummary,
     GroupSessionSummary,
     GymSummary,
-    NewsPreview,
     SeoData,
     TrainerSummary,
 } from '@/types';
@@ -28,33 +28,26 @@ type HomeProps = {
     trainers: Shelf<TrainerSummary>;
     /** Hidden when empty. */
     gyms: Shelf<GymSummary>;
-    /** "Corsi in palestra": hidden when empty. */
-    featuredCourses: CourseSummary[];
     /** "Prossimi eventi": hidden when empty. */
     events: GroupSessionSummary[];
     disciplines: CatalogOption[];
     /** With their center, for "Usa la mia posizione". */
     cities: CityWithCoordinates[];
-    /** "Servizi" of the gyms' search. */
+    /** "Cosa" of the gyms' search: the services. */
     amenities: CatalogOption[];
-    /** "Tipo" of the events' search. */
+    /** "Cosa" of the events' search: the type. */
     eventTypes: CatalogOption[];
-    /** "Novità" of all of Italy: hidden when empty. */
-    news: NewsPreview;
     seo: SeoData;
 };
 
 /**
- * The home: the search of the four kinds, then the trainers and the gyms
- * "in tendenza" (or "in evidenza"), the courses, the events, the news and
- * the professionals.
+ * The home: the search of the four kinds on a photo, then the trainers, the
+ * gyms and the events and the two sign-ups for professionals.
  */
 export default function Home({
     trainers,
     gyms,
-    featuredCourses,
     events,
-    news,
     disciplines,
     cities,
     amenities,
@@ -64,29 +57,54 @@ export default function Home({
     return (
         <>
             <Head title={seo.title} />
-            <HeroSearch
+            <HomeHero
                 disciplines={disciplines}
                 cities={cities}
                 amenities={amenities}
                 eventTypes={eventTypes}
             />
-            <FeaturedTrainers
+            <HomeShelf
                 id={`${trainers.key}-trainers`}
                 title={trainers.title}
-                trainers={trainers.items}
-            />
-            <FeaturedGyms
+                link={{ label: 'Vedi tutti', href: searchUrl() }}
+                items={trainers.items}
+                itemKey={(trainer) => trainer.slug}
+            >
+                {(trainer) => (
+                    <SaveableCard
+                        {...trainerCard(trainer)}
+                        slug={trainer.slug}
+                        favoriteKind="trainer"
+                        saved={trainer.favorite}
+                    />
+                )}
+            </HomeShelf>
+            <HomeShelf
                 id={`${gyms.key}-gyms`}
                 title={gyms.title}
-                gyms={gyms.items}
-            />
-            <FeaturedCourses courses={featuredCourses} />
-            <UpcomingEvents
-                events={events}
-                className="mx-auto w-full max-w-7xl px-4 pb-10 md:px-8 md:pb-18"
-            />
-            <NewsStrip news={news} variant="home" />
-            <ProBand />
+                link={{ label: 'Vedi tutte', href: gymSearchUrl() }}
+                items={gyms.items}
+                itemKey={(gym) => gym.slug}
+            >
+                {(gym) => (
+                    <SaveableCard
+                        {...gymCard(gym)}
+                        slug={gym.slug}
+                        favoriteKind="gym"
+                        saved={gym.favorite}
+                    />
+                )}
+            </HomeShelf>
+            <HomeShelf
+                id="events-title"
+                title="Prossimi eventi"
+                link={{ label: 'Tutti gli eventi', href: eventsSearch.url() }}
+                items={events}
+                itemKey={(event) => event.slug}
+            >
+                {(event) => <ProfileCard {...eventCard(event)} />}
+            </HomeShelf>
+            <ProCards />
         </>
     );
 }

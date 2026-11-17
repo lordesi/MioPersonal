@@ -9,6 +9,7 @@ use App\Models\City;
 use App\Models\Discipline;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\TrainerSlots;
 use Carbon\CarbonImmutable;
 use Database\Seeders\CatalogSeeder;
 use Database\Seeders\DemoTrainerSeeder;
@@ -302,6 +303,155 @@ class TrainerSearchTest extends TestCase
         // Giulia, Chiara, Andrea and Elena.
         $this->get(route('trainers.search', ['disponibilita' => 'settimana']))
             ->assertInertia(fn (Assert $page) => $page->where('total', 4));
+    }
+
+    /**
+     * The names of the published trainers with a free slot on the day (in Rome)
+     * starting between the hours [from, to), computed like the profile does.
+     *
+     * @return list<string>
+     */
+    private function namesWithSlot(CarbonImmutable $day, int $from = 0, int $to = 24): array
+    {
+        $days = (int) CarbonImmutable::now('Europe/Rome')->startOfDay()->diffInDays($day) + 1;
+
+        return TrainerProfile::query()->published()->with('user')->get()
+            ->filter(fn (TrainerProfile $profile) => collect(TrainerSlots::days($profile, $days)[$days - 1]['slots'])
+                ->contains(function (array $slot) use ($from, $to) {
+                    $hour = CarbonImmutable::parse($slot['start'])->setTimezone('Europe/Rome')->hour;
+
+                    return $hour >= $from && $hour < $to;
+                }))
+            ->map(fn (TrainerProfile $profile) => $profile->user->name)
+            ->sort()->values()->all();
+    }
+
+    /**
+     * The demo trainers are made in setUp() with the real clock: after going
+     * back in time their saved first free slot can be later than the real
+     * one (refreshStale() only redoes the past ones). Redo them all.
+     */
+    private function refreshFirstSlots(): void
+    {
+        TrainerProfile::query()->each(fn (TrainerProfile $profile) => TrainerSlots::refresh($profile));
+    }
+
+    /** @param  array<string, string>  $query */
+    private function searchedNames(array $query): array
+    {
+        $names = [];
+
+        $this->get(route('trainers.search', $query))
+            ->assertOk()
+            ->assertInertia(function (Assert $page) use (&$names) {
+                $names = collect($page->toArray()['props']['trainers'])->pluck('name')->sort()->values()->all();
+            });
+
+        return $names;
+    }
+
+    public function test_the_date_filter_shows_the_trainers_with_a_free_slot_that_day()
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-16 09:00', 'Europe/Rome'));
+        $this->refreshFirstSlots();
+        $tomorrow = CarbonImmutable::parse('2026-11-17', 'Europe/Rome');
+
+        $expected = $this->namesWithSlot($tomorrow);
+        $this->assertNotEmpty($expected);
+        $this->assertSame($expected, $this->searchedNames(['data' => '2026-11-17']));
+
+        $this->get(route('trainers.search', ['data' => '2026-11-17']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('filters.data', '2026-11-17')
+                ->where('total', count($expected))
+                // A filtered list is not for search engines.
+                ->where('seo.index', false)
+            );
+    }
+
+    public function test_the_time_band_keeps_only_the_slots_starting_in_it()
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-16 09:00', 'Europe/Rome'));
+        $this->refreshFirstSlots();
+        $tomorrow = CarbonImmutable::parse('2026-11-17', 'Europe/Rome');
+
+        $this->assertSame(
+            $this->namesWithSlot($tomorrow, 18, 24),
+            $this->searchedNames(['data' => '2026-11-17', 'fascia' => 'sera']),
+        );
+        $this->assertSame(
+            $this->namesWithSlot($tomorrow, 6, 12),
+            $this->searchedNames(['data' => '2026-11-17', 'fascia' => 'mattina']),
+        );
+    }
+
+    public function test_the_time_band_alone_looks_at_the_next_seven_days()
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-16 09:00', 'Europe/Rome'));
+        $this->refreshFirstSlots();
+
+        $expected = collect(range(0, 6))
+            ->flatMap(fn (int $index) => $this->namesWithSlot(CarbonImmutable::parse('2026-11-16', 'Europe/Rome')->addDays($index), 12, 18))
+            ->unique()->sort()->values()->all();
+
+        $this->assertSame($expected, $this->searchedNames(['fascia' => 'pomeriggio']));
+    }
+
+    public function test_a_trainer_without_a_saved_first_free_slot_is_left_out_at_once()
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-16 09:00', 'Europe/Rome'));
+        $this->refreshFirstSlots();
+
+        $expected = $this->namesWithSlot(CarbonImmutable::parse('2026-11-17', 'Europe/Rome'));
+        $first = TrainerProfile::query()->published()->whereHas('user', fn ($user) => $user
+            ->whereRaw("first_name || ' ' || last_name = ?", [$expected[0]]))->firstOrFail();
+        // As if the last refresh had found nothing free.
+        $first->forceFill(['next_free_slot_at' => null])->saveQuietly();
+
+        $this->assertNotContains($expected[0], $this->searchedNames(['data' => '2026-11-17']));
+    }
+
+    public function test_a_chosen_day_replaces_the_quick_availability()
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-16 09:00', 'Europe/Rome'));
+
+        $this->get(route('trainers.search', ['data' => '2026-11-20', 'disponibilita' => 'oggi']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('filters.data', '2026-11-20')
+                ->where('filters.disponibilita', null)
+            );
+    }
+
+    public function test_wrong_or_far_dates_and_unknown_bands_are_ignored()
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-16 09:00', 'Europe/Rome'));
+
+        foreach (['domani', '2026-02-30', '2026-11-15', '2027-01-16', '17/11/2026'] as $date) {
+            $this->get(route('trainers.search', ['data' => $date, 'fascia' => 'notte']))
+                ->assertOk()
+                ->assertInertia(fn (Assert $page) => $page
+                    ->where('filters.data', null)
+                    ->where('filters.fascia', null)
+                    ->where('total', 9)
+                );
+        }
+
+        // The last day allowed: 60 days from today.
+        $this->get(route('trainers.search', ['data' => '2027-01-15']))
+            ->assertInertia(fn (Assert $page) => $page->where('filters.data', '2027-01-15'));
+    }
+
+    public function test_suggestions_leave_out_the_date_and_the_band()
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-16 09:00', 'Europe/Rome'));
+
+        // A name nobody has: the suggestions drop it, and the day and the band with it.
+        $this->get(route('trainers.search', ['data' => '2026-12-20', 'fascia' => 'mattina', 'nome' => 'zzz']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('total', 0)
+                ->where('suggestions.step', 'fewer-filters')
+                ->has('suggestions.trainers', 9)
+            );
     }
 
     public function test_the_home_search_bar_combines_city_discipline_availability_and_mode()

@@ -1,8 +1,9 @@
 import type { SearchFilters } from '@/lib/search';
 
 /*
- * Options and pill look shared by the filters above the results
- * (filter-bar.tsx) and the "Filtri" panel on phones (mobile-filters.tsx).
+ * The options of the trainer filters ("Filtri" of the search,
+ * mp/filters-sheet.tsx) and the pill look of the light filter pills
+ * (filter-pill.tsx, filter-sheet.tsx) of the events page.
  */
 
 type Option<Key extends keyof SearchFilters> = {

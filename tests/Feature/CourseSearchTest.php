@@ -192,15 +192,15 @@ class CourseSearchTest extends TestCase
                 ->where('todayLessons.0.start', '18:30'));
     }
 
-    public function test_the_home_shows_courses_and_events(): void
+    public function test_the_home_has_the_events_and_the_options_of_the_other_searches(): void
     {
-        $this->course(GymProfile::factory()->approved()->create(), 'Pilates', [[1, '18:30']]);
-
         $this->get(route('home'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->has('featuredCourses', 1)
+                // "Corsi in palestra" left the home: the courses have their own search.
+                ->missing('featuredCourses')
                 ->has('events')
-                ->has('eventTypes'));
+                ->has('eventTypes')
+                ->has('amenities'));
     }
 }

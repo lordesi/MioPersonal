@@ -5,16 +5,13 @@ namespace App\Http\Controllers;
 use App\Enums\GroupSessionType;
 use App\Enums\GymAmenity;
 use App\Models\GroupSession;
-use App\Models\GymCourse;
 use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use App\Support\CatalogOptions;
-use App\Support\CourseCard;
 use App\Support\GroupSessionCard;
 use App\Support\GymCard;
 use App\Support\GymShelves;
 use App\Support\HowItWorks;
-use App\Support\NewsFeed;
 use App\Support\Seo;
 use App\Support\TrainerCard;
 use App\Support\TrainerShelves;
@@ -26,17 +23,14 @@ use Inertia\Response;
 
 class HomeController extends Controller
 {
-    /** "Trainer in evidenza": 3 per page of the carousel, 3 pages. */
+    /** "Trainer in evidenza": a row of 4 on desktop, all of them in the row that scrolls on phones. */
     private const FEATURED = 9;
 
-    /** "Palestre in evidenza": the same carousel, 3 per page, 3 pages. */
+    /** "Palestre in evidenza": the same. */
     private const FEATURED_GYMS = 9;
 
-    /** "Corsi in palestra": the same carousel. */
-    private const FEATURED_COURSES = 9;
-
-    /** "Prossimi eventi". */
-    private const EVENTS = 6;
+    /** "Prossimi eventi": one row of 4. */
+    private const EVENTS = 4;
 
     public function __invoke(Request $request): Response
     {
@@ -56,19 +50,15 @@ class HomeController extends Controller
             'gyms' => $trendingGyms !== null
                 ? ['key' => 'trending', 'title' => 'Palestre in tendenza', 'items' => $trendingGyms]
                 : ['key' => 'featured', 'title' => 'Palestre in evidenza', 'items' => GymCard::many($this->featuredGyms(), $gymFavorites)],
-            // "Corsi in palestra".
-            'featuredCourses' => $this->featuredCourses(),
             // "Prossimi eventi" of all of Italy.
             'events' => GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()->listed()->upcoming())->orderBy('starts_at')->limit(self::EVENTS)->get()),
-            // "Novità": the newest trainers, gyms and events of all of Italy.
-            'news' => NewsFeed::preview(null, $request->user()),
             // Options of the search form.
             'disciplines' => CatalogOptions::disciplines(),
             // With the center of each city: "Usa la mia posizione" finds the closest one in the browser.
             'cities' => CatalogOptions::citiesWithCoordinates(),
-            // "Servizi" of the gyms' search ("Trainer | Palestre").
+            // "Cosa" of the gyms' search ("Trainer | Palestre"): the services.
             'amenities' => GymAmenity::options(),
-            // "Tipo" of the events' search.
+            // "Cosa" of the events' search: the type.
             'eventTypes' => GroupSessionType::options(),
             'seo' => $this->seo(),
         ]);
@@ -120,24 +110,6 @@ class HomeController extends Controller
                 ],
             ],
         );
-    }
-
-    /**
-     * "Corsi in palestra": active courses with lessons of the published gyms,
-     * the newest first.
-     *
-     * @return list<array<string, mixed>>
-     */
-    private function featuredCourses(): array
-    {
-        return CourseCard::many(GymCourse::query()
-            ->where('is_active', true)
-            ->whereHas('lessons')
-            ->whereHas('gymProfile', fn ($gym) => $gym->published())
-            ->with(CourseCard::RELATIONS)
-            ->latest('id')
-            ->limit(self::FEATURED_COURSES)
-            ->get());
     }
 
     /**

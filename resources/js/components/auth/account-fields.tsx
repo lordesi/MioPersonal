@@ -12,6 +12,7 @@ import UsernameField, {
 import { Input } from '@/components/ui/input';
 import { useAccountCheck } from '@/hooks/use-account-check';
 import type { CheckedField } from '@/hooks/use-account-check';
+import { cn } from '@/lib/utils';
 
 export type AccountField =
     | 'first_name'
@@ -44,6 +45,14 @@ type AccountFieldsProps = {
     onAccountExists?: (field: CheckedField, value: string) => void;
     /** Trainers and gyms: "miopersonal.it/trainer/", their public link under the username. */
     usernameLinkPrefix?: string | null;
+    /** Added to every input: the dark sign-up page (lib/dark-form.ts). */
+    inputClassName?: string;
+    /**
+     * The clients' dark sign-up (design "RegistraFrase" / "DkRegistraPieno"):
+     * name and surname always side by side with an example, then email,
+     * password and phone.
+     */
+    compact?: boolean;
 };
 
 const inputClass = 'h-11 text-base md:text-base';
@@ -60,7 +69,10 @@ export default function AccountFields({
     bind,
     onAccountExists,
     usernameLinkPrefix,
+    inputClassName,
+    compact = false,
 }: AccountFieldsProps) {
+    const fieldClass = cn(inputClass, inputClassName);
     // Inside a <Form> the names are not in React state: the username example needs them.
     const [typedNames, setTypedNames] = useState({ first: '', last: '' });
     const firstName = bind?.('first_name').value ?? typedNames.first;
@@ -78,9 +90,55 @@ export default function AccountFields({
     // The answer of the check is newer than the error of the last submit.
     const emailError = emailCheck.error ?? errors.email;
 
+    const phoneFields = (
+        <PhoneFields
+            errors={errors}
+            hint={phoneHint}
+            bind={bind}
+            inputClassName={inputClassName}
+            compact={compact}
+            onAccountExists={
+                onAccountExists && ((value) => onAccountExists('phone', value))
+            }
+        />
+    );
+
+    const passwordField = (
+        <FormField
+            label="Password"
+            hint={<PasswordRequirements value={password} />}
+            error={errors.password}
+        >
+            {({ id, describedBy }) => (
+                <PasswordField
+                    id={id}
+                    aria-describedby={describedBy}
+                    aria-invalid={!!errors.password}
+                    name="password"
+                    required
+                    pattern={PASSWORD_PATTERN}
+                    data-pattern-message={PASSWORD_PATTERN_MESSAGE}
+                    autoComplete="new-password"
+                    placeholder={compact ? 'Almeno 8 caratteri' : undefined}
+                    className={inputClassName}
+                    {...passwordBinding}
+                    onChange={(event) => {
+                        setTypedPassword(event.target.value);
+                        passwordBinding?.onChange(event);
+                    }}
+                />
+            )}
+        </FormField>
+    );
+
     return (
         <>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+                className={cn(
+                    'grid gap-4',
+                    compact ? 'grid-cols-2 gap-x-4.5' : 'sm:grid-cols-2',
+                )}
+            >
                 <FormField label="Nome" error={errors.first_name}>
                     {({ id, describedBy }) => (
                         <Input
@@ -91,7 +149,8 @@ export default function AccountFields({
                             required
                             maxLength={100}
                             autoComplete="given-name"
-                            className={inputClass}
+                            placeholder={compact ? 'Giulia' : undefined}
+                            className={fieldClass}
                             {...bind?.('first_name')}
                             onChange={(event) => {
                                 bind?.('first_name').onChange(event);
@@ -113,7 +172,8 @@ export default function AccountFields({
                             required
                             maxLength={100}
                             autoComplete="family-name"
-                            className={inputClass}
+                            placeholder={compact ? 'Rossi' : undefined}
+                            className={fieldClass}
                             {...bind?.('last_name')}
                             onChange={(event) => {
                                 bind?.('last_name').onChange(event);
@@ -132,6 +192,7 @@ export default function AccountFields({
                 linkPrefix={usernameLinkPrefix}
                 suggestion={usernameFromName(firstName, lastName)}
                 bind={bind?.('username')}
+                inputClassName={inputClassName}
             />
 
             <FormField label="Email" hint={emailHint} error={emailError}>
@@ -148,7 +209,7 @@ export default function AccountFields({
                         data-pattern-message={EMAIL_MESSAGE}
                         autoComplete="email"
                         placeholder="nome@esempio.it"
-                        className={inputClass}
+                        className={fieldClass}
                         {...emailBinding}
                         onChange={(event) => {
                             emailBinding?.onChange(event);
@@ -159,39 +220,17 @@ export default function AccountFields({
                 )}
             </FormField>
 
-            <PhoneFields
-                errors={errors}
-                hint={phoneHint}
-                bind={bind}
-                onAccountExists={
-                    onAccountExists &&
-                    ((value) => onAccountExists('phone', value))
-                }
-            />
-
-            <FormField
-                label="Password"
-                hint={<PasswordRequirements value={password} />}
-                error={errors.password}
-            >
-                {({ id, describedBy }) => (
-                    <PasswordField
-                        id={id}
-                        aria-describedby={describedBy}
-                        aria-invalid={!!errors.password}
-                        name="password"
-                        required
-                        pattern={PASSWORD_PATTERN}
-                        data-pattern-message={PASSWORD_PATTERN_MESSAGE}
-                        autoComplete="new-password"
-                        {...passwordBinding}
-                        onChange={(event) => {
-                            setTypedPassword(event.target.value);
-                            passwordBinding?.onChange(event);
-                        }}
-                    />
-                )}
-            </FormField>
+            {compact ? (
+                <>
+                    {passwordField}
+                    {phoneFields}
+                </>
+            ) : (
+                <>
+                    {phoneFields}
+                    {passwordField}
+                </>
+            )}
         </>
     );
 }
@@ -223,6 +262,8 @@ export function PhoneFields({
     bind,
     defaultPhone,
     onAccountExists,
+    inputClassName,
+    compact = false,
 }: {
     errors: Partial<Record<'phone', string>>;
     hint?: string;
@@ -231,14 +272,18 @@ export function PhoneFields({
     defaultPhone?: string;
     /** Sign-ups only: the number is checked while typed (see AccountFields). */
     onAccountExists?: (value: string) => void;
+    inputClassName?: string;
+    /** The dark sign-up: "+39" as an example, not greyed out; spaced example number. */
+    compact?: boolean;
 }) {
+    const fieldClass = cn(inputClass, inputClassName);
     const phoneBinding = bind?.('phone');
     const phoneCheck = useAccountCheck('phone', onAccountExists);
     const phoneError = phoneCheck.error ?? errors.phone;
 
     return (
-        <div className="flex items-start gap-2">
-            <div className="w-24 shrink-0">
+        <div className={cn('flex items-start', compact ? 'gap-4.5' : 'gap-2')}>
+            <div className={cn('shrink-0', compact ? 'w-22 md:w-33' : 'w-24')}>
                 <FormField label="Prefisso">
                     {({ id }) => (
                         // Disabled: it can't be changed and it isn't sent.
@@ -246,7 +291,11 @@ export function PhoneFields({
                             id={id}
                             value={PHONE_PREFIX}
                             disabled
-                            className={inputClass}
+                            className={cn(
+                                fieldClass,
+                                compact &&
+                                    'text-muted-foreground disabled:cursor-default disabled:opacity-100',
+                            )}
                         />
                     )}
                 </FormField>
@@ -271,8 +320,10 @@ export function PhoneFields({
                             data-pattern-message="Inserisci un cellulare di 10 cifre, es. 3475218846."
                             inputMode="numeric"
                             autoComplete="tel-national"
-                            placeholder="3475218846"
-                            className={inputClass}
+                            placeholder={
+                                compact ? '347 123 4567' : '3475218846'
+                            }
+                            className={fieldClass}
                             {...phoneBinding}
                             onChange={(event) => {
                                 // Letters, spaces and an 11th digit never show up.

@@ -2,6 +2,7 @@ import { useId } from 'react';
 import type { ReactNode } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useFieldValidation } from '@/hooks/use-field-validation';
+import { cn } from '@/lib/utils';
 
 type ConsentCheckboxProps = {
     name: string;
@@ -11,6 +12,8 @@ type ConsentCheckboxProps = {
     /** Controlled mode, for forms that keep their own state. */
     checked?: boolean;
     onCheckedChange?: (checked: boolean) => void;
+    /** Added to the box, e.g. the bigger outline box of the dark sign-up. */
+    checkboxClassName?: string;
 };
 
 /** Checkbox with a long label that can contain links (Terms, Privacy). */
@@ -21,6 +24,7 @@ export default function ConsentCheckbox({
     required,
     checked,
     onCheckedChange,
+    checkboxClassName,
 }: ConsentCheckboxProps) {
     const id = useId();
     const errorId = `${id}-error`;
@@ -38,7 +42,7 @@ export default function ConsentCheckbox({
                     required={required}
                     aria-invalid={!!serverError}
                     aria-describedby={error ? errorId : undefined}
-                    className="mt-0.5"
+                    className={cn('mt-0.5', checkboxClassName)}
                     {...(checked !== undefined && {
                         checked,
                         onCheckedChange: (value) =>

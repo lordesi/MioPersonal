@@ -56,6 +56,8 @@ export type TrainerService = {
     mostBooked?: boolean;
     /** "Ripeti ogni settimana": a plain session or a package, not the first one. */
     repeatable?: boolean;
+    /** A package to buy: how many sessions it holds ("Pacchetto 10 sedute"); null for a session. */
+    sessions?: number | null;
 };
 
 export type TrainingPlace = {

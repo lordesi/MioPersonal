@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import ClientTabBar from '@/components/layout/client-tab-bar';
 import PublicFooter from '@/components/layout/public-footer';
 import PublicHeader from '@/components/layout/public-header';
+import DarkHeader from '@/components/mp/dark-header';
 
 /**
  * The pages to explore: a logged-in client keeps the tabs of the client area
@@ -16,6 +17,19 @@ const EXPLORE_PAGES = [
     'public/course-search',
     'public/events',
     'public/news',
+];
+
+/**
+ * The pages of the new dark design (.theme-dark in app.css). The header lies
+ * on top of the page (on the photo of the home and of the trainer profile):
+ * each page leaves the room for it.
+ */
+const DARK_PAGES = [
+    'public/home',
+    'public/search',
+    'public/gym-search',
+    'public/course-search',
+    'public/profile',
 ];
 
 type PublicLayoutProps = {
@@ -33,6 +47,22 @@ export default function PublicLayout({
     const showClientTabs =
         page.props.auth?.user?.role === 'client' &&
         EXPLORE_PAGES.includes(page.component);
+    const tabs = showClientTabs && <ClientTabBar section="explore" />;
+
+    if (DARK_PAGES.includes(page.component)) {
+        return (
+            <div className="theme-dark relative flex min-h-screen flex-col">
+                <DarkHeader
+                    className={
+                        hideHeaderOnMobile ? 'hidden md:block' : undefined
+                    }
+                />
+                <main className="flex flex-1 flex-col">{children}</main>
+                <PublicFooter variant="dark" />
+                {tabs}
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen flex-col bg-background">
@@ -41,7 +71,7 @@ export default function PublicLayout({
             />
             <main className="flex flex-1 flex-col">{children}</main>
             <PublicFooter />
-            {showClientTabs && <ClientTabBar section="explore" />}
+            {tabs}
         </div>
     );
 }
