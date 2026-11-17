@@ -19,7 +19,7 @@ import {
     pillFieldClassName,
     Section,
     TimeSelect,
-} from '@/components/onboarding/gym/gym-fields';
+} from '@/components/onboarding/dark-fields';
 import { Switch } from '@/components/ui/switch';
 import { darkSwitchClassName } from '@/lib/dark-form';
 import { cn } from '@/lib/utils';

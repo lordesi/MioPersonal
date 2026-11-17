@@ -17,6 +17,7 @@ class TrainerRegistrationStepRequest extends TrainerProfileRequest
         'headline' => 2,
         'bio' => 2,
         'experience' => 2,
+        'instagram' => 2,
         'photo' => 2,
         'disciplines' => 3,
         'goals' => 3,

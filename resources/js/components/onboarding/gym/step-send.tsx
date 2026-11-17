@@ -6,8 +6,8 @@ import {
     pillBoxClassName,
     pillInnerClassName,
     Section,
-} from '@/components/onboarding/gym/gym-fields';
-import { gymSteps } from '@/components/onboarding/gym/gym-shell';
+} from '@/components/onboarding/dark-fields';
+import { gymSteps } from '@/components/onboarding/gym/draft';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 

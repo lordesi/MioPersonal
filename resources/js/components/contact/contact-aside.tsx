@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
-import { Mail } from 'lucide-react';
+import { Mail, ShieldCheck } from 'lucide-react';
+import { IconBadge, darkCardClassName } from '@/components/mp/page-bits';
 import { cn } from '@/lib/utils';
 import { privacy } from '@/routes/legal';
 
@@ -12,38 +13,51 @@ export default function ContactAside({
     className?: string;
 }) {
     return (
-        <aside className={cn('flex flex-col gap-4', className)}>
+        <aside
+            aria-label="Altri modi per contattarci"
+            className={cn('flex flex-col gap-2 md:gap-4', className)}
+        >
             <section
                 aria-label="Contatti diretti"
-                className="flex flex-col gap-3 rounded-[18px] bg-primary p-5 text-primary-foreground"
+                className={cn(
+                    darkCardClassName,
+                    'flex items-center gap-3 px-4 py-3.5 md:gap-4 md:p-6',
+                )}
             >
-                <span className="flex items-center gap-2.5 font-semibold">
-                    <Mail aria-hidden="true" className="size-5" />
-                    Preferisci l’email?
+                <IconBadge icon={Mail} />
+                <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="text-[13px] leading-4.5 text-muted-foreground">
+                        Preferisci l’email?
+                    </span>
+                    <a
+                        href={`mailto:${email}`}
+                        className="text-[17px] leading-5.5 font-semibold break-all text-brand outline-none hover:text-[#7fe6e7] focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    >
+                        {email}
+                    </a>
                 </span>
-                <a
-                    href={`mailto:${email}`}
-                    className="text-lg font-bold break-all underline"
-                >
-                    {email}
-                </a>
             </section>
 
             <section
                 aria-label="Privacy"
-                className="flex flex-col gap-1.5 rounded-[14px] border bg-card p-4.5"
+                className={cn(
+                    darkCardClassName,
+                    'flex items-start gap-3 px-4 py-3.5 md:gap-4 md:p-6',
+                )}
             >
-                <span className="font-semibold">I tuoi dati</span>
-                <span className="text-sm text-muted-foreground">
-                    Per accedere, correggere o cancellare i tuoi dati scegli
-                    l’argomento «Privacy e dati». Trovi tutto nella{' '}
-                    <Link
-                        href={privacy()}
-                        className="text-foreground underline"
-                    >
-                        privacy policy
-                    </Link>
-                    .
+                <IconBadge icon={ShieldCheck} />
+                <span className="flex flex-col gap-1">
+                    <span className="text-[17px] leading-5.5 font-semibold">
+                        I tuoi dati
+                    </span>
+                    <span className="text-[13px] leading-4.5 text-muted-foreground md:text-[15px] md:leading-5.25">
+                        Per accedere, correggere o cancellare i tuoi dati scegli
+                        l’argomento «Privacy e dati». Trovi tutto nella{' '}
+                        <Link href={privacy()} className="text-brand underline">
+                            privacy policy
+                        </Link>
+                        .
+                    </span>
                 </span>
             </section>
         </aside>

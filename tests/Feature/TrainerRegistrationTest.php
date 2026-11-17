@@ -741,6 +741,31 @@ class TrainerRegistrationTest extends TestCase
         $this->assertSame(1, User::count());
     }
 
+    public function test_continua_checks_instagram_in_step_2_not_in_step_1()
+    {
+        $account = [
+            'first_name' => 'Giulia',
+            'last_name' => 'Rossi',
+            'username' => 'giulia-rossi',
+            'email' => 'giulia@example.com',
+            'phone' => '347 521 8846',
+            'password' => 'Password1',
+            'terms' => '1',
+        ];
+
+        // Step 1 is the account: a wrong Instagram there is not its business.
+        $this->post(route('trainer.register.check', 1), [...$account, 'instagram' => 'non valido!'])
+            ->assertSessionHasNoErrors();
+
+        $this->post(route('trainer.register.check', 2), [
+            'headline' => 'Functional training e Pilates',
+            'bio' => str_repeat('Alleno persone che vogliono tornare in forma. ', 5),
+            'experience' => '5to10',
+            'photo' => UploadedFile::fake()->image('ritratto.jpg', 600, 600),
+            'instagram' => 'non valido!',
+        ])->assertSessionHasErrors(['instagram']);
+    }
+
     public function test_a_trainer_waiting_for_the_team_cannot_check_a_step()
     {
         $trainer = User::factory()->trainer()->create();

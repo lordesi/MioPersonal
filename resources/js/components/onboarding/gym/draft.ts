@@ -238,3 +238,12 @@ const fieldSteps: Record<string, number> = {
 export function stepOfGymField(field: string): number {
     return fieldSteps[field.split('.')[0]] ?? 1;
 }
+
+/** The names of the 5 steps of "Registra la palestra". */
+export const gymSteps = [
+    'Account',
+    'La palestra',
+    'Servizi e orari',
+    'Foto',
+    'Contatti e invio',
+];

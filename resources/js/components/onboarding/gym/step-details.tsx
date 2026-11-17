@@ -12,7 +12,7 @@ import {
     pillFieldClassName,
     pillInnerClassName,
     Section,
-} from '@/components/onboarding/gym/gym-fields';
+} from '@/components/onboarding/dark-fields';
 import {
     Select,
     SelectContent,

@@ -1,5 +1,15 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowRight } from 'lucide-react';
+import { Building2, Dumbbell } from 'lucide-react';
+import {
+    IconBadge,
+    LinkCard,
+    PageBreadcrumb,
+    brandFilledClassName,
+    brandOutlineClassName,
+    pageColumnClassName,
+    pageTitleClassName,
+    sectionTitleClassName,
+} from '@/components/mp/page-bits';
 import {
     searchKinds,
     searchKindUrl,
@@ -7,9 +17,8 @@ import {
 import type { SearchKind } from '@/components/search/search-kind-toggle';
 import FaqList from '@/components/seo/faq-list';
 import type { FaqItem } from '@/components/seo/faq-list';
-import { Button } from '@/components/ui/button';
 import { searchUrl } from '@/lib/search';
-import { home } from '@/routes';
+import { cn } from '@/lib/utils';
 import { register as gymRegister } from '@/routes/gym';
 import { register as trainerRegister } from '@/routes/trainer';
 
@@ -34,11 +43,13 @@ const pros = [
         title: 'Sei un personal trainer?',
         text: 'Profilo, agenda, richieste e clienti in un posto solo.',
         href: trainerRegister.url(),
+        icon: Dumbbell,
     },
     {
         title: 'Hai una palestra?',
         text: 'Profilo, corsi, eventi, abbonamenti e i tuoi trainer.',
         href: gymRegister.url(),
+        icon: Building2,
     },
 ];
 
@@ -48,74 +59,54 @@ const pros = [
  */
 export default function HowItWorks({ summary, faq }: HowItWorksProps) {
     return (
-        <div className="mx-auto flex w-full max-w-300 flex-col gap-8 px-4 pt-5 pb-10 md:gap-10 md:px-8 md:pt-10 md:pb-20">
+        <div
+            className={cn(
+                pageColumnClassName,
+                'gap-10 pb-12 md:gap-16 md:pb-24',
+            )}
+        >
             <Head title="Come funziona MioPersonal" />
 
-            <div className="flex max-w-195 flex-col gap-6">
-                <nav
-                    aria-label="Percorso"
-                    className="text-sm text-muted-foreground"
-                >
-                    <Link href={home()} className="hover:underline">
-                        Home
-                    </Link>{' '}
-                    /{' '}
-                    <span aria-current="page" className="text-foreground">
-                        Come funziona
-                    </span>
-                </nav>
-
-                <div className="flex flex-col gap-3">
-                    <h1 className="text-3xl leading-9 font-bold tracking-tighter md:text-[44px] md:leading-12">
-                        Come funziona MioPersonal
-                    </h1>
-                    <p className="text-lg text-muted-foreground">{summary}</p>
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-                    <Button
-                        asChild
-                        className="h-11 rounded-xl px-5 font-semibold"
+            <header className="flex flex-col gap-3 pt-2 md:gap-4 md:pt-6">
+                <PageBreadcrumb current="Come funziona" />
+                <h1 className={pageTitleClassName}>
+                    Come funziona MioPersonal
+                </h1>
+                <p className="text-[17px] leading-6 text-muted-foreground md:max-w-170 md:text-xl md:leading-7.5">
+                    {summary}
+                </p>
+                <div className="mt-2 flex flex-col gap-2 md:flex-row md:flex-wrap md:gap-3">
+                    <Link href={searchUrl()} className={brandFilledClassName}>
+                        Cerca un personal trainer
+                    </Link>
+                    <Link
+                        href={trainerRegister()}
+                        className={cn(brandOutlineClassName, 'max-md:h-11')}
                     >
-                        <Link href={searchUrl()}>
-                            Cerca un personal trainer
-                        </Link>
-                    </Button>
-                    <Button
-                        asChild
-                        variant="outline"
-                        className="h-11 rounded-xl px-5 font-semibold"
-                    >
-                        <Link href={trainerRegister()}>Sei un trainer?</Link>
-                    </Button>
+                        Sei un trainer?
+                    </Link>
                 </div>
-            </div>
+            </header>
 
             <section
                 aria-labelledby="explore-title"
-                className="flex flex-col gap-4"
+                className="flex flex-col gap-3 md:gap-5"
             >
-                <h2
-                    id="explore-title"
-                    className="text-[22px] leading-7 font-bold tracking-[-0.02em]"
-                >
+                <h2 id="explore-title" className={sectionTitleClassName}>
                     Cosa trovi su MioPersonal
                 </h2>
-                <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <ul className="grid grid-cols-2 gap-2 md:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] md:gap-4">
                     {searchKinds.map((kind) => (
                         <li key={kind.value}>
                             <Link
                                 href={searchKindUrl(kind.value)}
-                                className="flex h-full flex-col gap-2 rounded-2xl border bg-card p-4 hover:border-foreground/30"
+                                className="flex h-full flex-col gap-2.5 rounded-[20px] border border-brand p-4 outline-none hover:bg-brand/5 focus-visible:ring-[3px] focus-visible:ring-ring/50 md:gap-3 md:p-6"
                             >
-                                <kind.icon
-                                    aria-hidden="true"
-                                    className="size-5"
-                                />
-                                <span className="font-semibold">
+                                <IconBadge icon={kind.icon} />
+                                <span className="text-[15px] font-semibold md:text-xl md:leading-6.25 md:tracking-[-0.45px]">
                                     {kind.label}
                                 </span>
-                                <span className="text-sm text-muted-foreground">
+                                <span className="text-[13px] leading-4.5 text-muted-foreground md:text-[15px] md:leading-5.25">
                                     {kindHints[kind.value]}
                                 </span>
                             </Link>
@@ -124,38 +115,25 @@ export default function HowItWorks({ summary, faq }: HowItWorksProps) {
                 </ul>
             </section>
 
-            <FaqList items={faq} className="max-w-195" />
+            <FaqList items={faq} />
 
             <section
                 aria-labelledby="pros-title"
-                className="flex flex-col gap-4"
+                className="flex flex-col gap-3 md:gap-5"
             >
-                <h2
-                    id="pros-title"
-                    className="text-[22px] leading-7 font-bold tracking-[-0.02em]"
-                >
+                <h2 id="pros-title" className={sectionTitleClassName}>
                     Per i professionisti
                 </h2>
-                <ul className="grid gap-3 md:grid-cols-2">
+                <ul className="grid gap-2 md:grid-cols-[repeat(auto-fit,minmax(300px,1fr))] md:gap-4">
                     {pros.map((item) => (
                         <li key={item.title}>
-                            <Link
+                            <LinkCard
                                 href={item.href}
-                                className="flex h-full items-center justify-between gap-4 rounded-2xl bg-primary p-5 text-primary-foreground hover:bg-primary/90"
+                                icon={item.icon}
+                                title={item.title}
                             >
-                                <span className="flex flex-col gap-1">
-                                    <span className="text-lg font-bold">
-                                        {item.title}
-                                    </span>
-                                    <span className="text-sm text-primary-foreground/75">
-                                        {item.text}
-                                    </span>
-                                </span>
-                                <ArrowRight
-                                    aria-hidden="true"
-                                    className="size-5 shrink-0"
-                                />
-                            </Link>
+                                {item.text}
+                            </LinkCard>
                         </li>
                     ))}
                 </ul>

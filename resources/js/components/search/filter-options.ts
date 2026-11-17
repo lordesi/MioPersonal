@@ -2,8 +2,7 @@ import type { SearchFilters } from '@/lib/search';
 
 /*
  * The options of the trainer filters ("Filtri" of the search,
- * mp/filters-sheet.tsx) and the pill look of the light filter pills
- * (filter-pill.tsx, filter-sheet.tsx) of the events page.
+ * mp/filters-sheet.tsx).
  */
 
 type Option<Key extends keyof SearchFilters> = {
@@ -35,11 +34,3 @@ export const modeOptions: {
     { value: 'presenza', label: 'In presenza' },
     { value: 'online', label: 'Online' },
 ];
-
-/** The round filters above the results; black while on. */
-export const pillClassName =
-    'inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium whitespace-nowrap outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
-export const pillOff =
-    'border-input bg-background text-foreground hover:bg-accent';
-export const pillOn =
-    'border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground';

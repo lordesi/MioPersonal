@@ -15,7 +15,7 @@ import type { BookingRules, TrainerAvailability } from '@/types';
 const NO_LIMIT = 'none';
 
 /** The options are the same as TrainerProfileRequest::RULE_OPTIONS on the server. */
-const rules: {
+export const bookingRuleOptions: {
     name: keyof BookingRules;
     /** The name of the field on the server, for its error. */
     field: string;
@@ -85,7 +85,7 @@ export default function BookingRulesFields({
     return (
         <>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-x-4 gap-y-4.5">
-                {rules.map((rule) => (
+                {bookingRuleOptions.map((rule) => (
                     <RuleField
                         key={rule.name}
                         rule={rule}
@@ -158,7 +158,7 @@ function RuleField({
     error,
     onChange,
 }: {
-    rule: (typeof rules)[number];
+    rule: (typeof bookingRuleOptions)[number];
     value: number | null;
     error?: string;
     onChange: (value: number | null) => void;

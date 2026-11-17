@@ -30,6 +30,13 @@ const DARK_PAGES = [
     'public/gym-search',
     'public/course-search',
     'public/profile',
+    'public/events',
+    'public/news',
+    'public/how-it-works',
+    'public/contacts',
+    'public/privacy',
+    'public/cookies',
+    'public/terms',
 ];
 
 type PublicLayoutProps = {

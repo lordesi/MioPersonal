@@ -1,20 +1,21 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { ChevronLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { DarkLogo } from '@/components/mp/dark-header';
 import { cn } from '@/lib/utils';
 import { login } from '@/routes';
 
-export const gymSteps = [
-    'Account',
-    'La palestra',
-    'Servizi e orari',
-    'Foto',
-    'Contatti e invio',
-];
-
-type GymShellProps = {
-    /** The open step, 1–5; null on "Profilo inviato" and "serve un altro account". */
+type DarkShellProps = {
+    /** The names of the steps, e.g. "Account", "La palestra". */
+    steps: string[];
+    /** Phones, over the photo: "Registra la palestra" (· Passo 1 di 5). */
+    eyebrow: string;
+    /** Phones: the photo on top of step 1. */
+    heroImage: string;
+    heroAlt?: string;
+    /** Where the photo is cropped, e.g. "object-[50%_30%]". */
+    heroClassName?: string;
+    /** The open step; null on "Profilo inviato" and "serve un altro account". */
     step: number | null;
     /** The steps that can be opened from the bar (desktop). */
     reached?: number;
@@ -29,20 +30,27 @@ type GymShellProps = {
     topRight?: ReactNode;
     /** Phones: the photo on top with the title over it (step 1 of a guest). */
     hero?: boolean;
+    /** Above the title, e.g. the round tick of "Profilo inviato". */
+    icon?: ReactNode;
     footer?: ReactNode;
     children: ReactNode;
 };
 
 /** Turquoise links of the page: "Accedi", "Salva ed esci", "Modifica". */
-export const gymLinkClassName =
+export const shellLinkClassName =
     'flex min-h-11 items-center text-[15px] font-semibold text-brand outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 /**
- * The dark page of "Registra la palestra" (design "Registrazione
- * palestra"): on phones the steps one under the other with a bar of 5
- * segments, on desktop a column of 960px with the 5 steps named on top.
+ * The dark page of a sign-up ("Registra la palestra", "Diventa trainer"):
+ * on phones the steps one under the other with a bar of segments, on
+ * desktop a column of 960px with the steps named on top.
  */
-export default function GymShell({
+export default function DarkShell({
+    steps,
+    eyebrow,
+    heroImage,
+    heroAlt = '',
+    heroClassName = 'object-[50%_30%]',
     step,
     reached = 1,
     firstStep = 1,
@@ -52,11 +60,18 @@ export default function GymShell({
     intro,
     topRight,
     hero = false,
+    icon,
     footer,
     children,
-}: GymShellProps) {
+}: DarkShellProps) {
+    const guest = !usePage().props.auth?.user;
     const heading = (
         <div className="flex flex-col gap-2 md:gap-2.5">
+            {icon && (
+                <span className="mb-1.5 flex size-14 items-center justify-center rounded-full border-[1.5px] border-brand bg-[rgba(10,10,10,0.55)] text-brand [&_svg]:size-7">
+                    {icon}
+                </span>
+            )}
             <h1 className="text-[34px] leading-[1.12] font-light tracking-[-0.035em] text-balance md:text-5xl md:leading-[1.1] md:tracking-[-0.03em] [&_strong]:font-bold">
                 {title}
             </h1>
@@ -82,10 +97,13 @@ export default function GymShell({
             {hero ? (
                 <header className="relative isolate flex h-95 flex-col overflow-hidden md:hidden">
                     <img
-                        src="/images/design/pro-gym.webp"
-                        alt=""
+                        src={heroImage}
+                        alt={heroAlt}
                         fetchPriority="high"
-                        className="absolute inset-0 -z-10 size-full object-cover object-[50%_30%]"
+                        className={cn(
+                            'absolute inset-0 -z-10 size-full object-cover',
+                            heroClassName,
+                        )}
                     />
                     <div
                         aria-hidden="true"
@@ -93,18 +111,19 @@ export default function GymShell({
                     />
                     <div className="mx-4 mt-3 flex h-13 items-center justify-between">
                         <DarkLogo />
-                        <Link
-                            href={login()}
-                            className="flex h-8.5 items-center rounded-full bg-[rgba(10,10,10,0.55)] px-4 text-[15px] font-semibold shadow-[inset_0_0_0_1.5px_var(--foreground)] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                        >
-                            Accedi
-                        </Link>
+                        {guest && (
+                            <Link
+                                href={login()}
+                                className="flex h-8.5 items-center rounded-full bg-[rgba(10,10,10,0.55)] px-4 text-[15px] font-semibold shadow-[inset_0_0_0_1.5px_var(--foreground)] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                            >
+                                Accedi
+                            </Link>
+                        )}
                     </div>
                     <div className="mx-4 mt-auto mb-5 flex flex-col gap-2.5">
                         {step !== null && (
                             <span className="text-[13px] font-semibold tracking-[0.6px] text-brand uppercase">
-                                Registra la palestra · Passo {step} di{' '}
-                                {gymSteps.length}
+                                {eyebrow} · Passo {step} di {steps.length}
                             </span>
                         )}
                         {heading}
@@ -119,7 +138,7 @@ export default function GymShell({
                                 onClick={onBack}
                                 aria-label={
                                     step && step > 1
-                                        ? `Torna al passo ${step - 1}, ${gymSteps[step - 2]}`
+                                        ? `Torna al passo ${step - 1}, ${steps[step - 2]}`
                                         : 'Indietro'
                                 }
                                 className="flex size-11 shrink-0 items-center justify-center rounded-full border border-white/35 outline-none hover:bg-foreground/10 focus-visible:ring-[3px] focus-visible:ring-ring/50"
@@ -134,7 +153,7 @@ export default function GymShell({
                         )}
                         {step !== null && (
                             <span className="text-[15px] font-semibold text-muted-foreground tabular-nums">
-                                Passo {step} di {gymSteps.length}
+                                Passo {step} di {steps.length}
                             </span>
                         )}
                         <div className="flex min-w-11 justify-end">
@@ -146,6 +165,7 @@ export default function GymShell({
 
             {step !== null && (
                 <StepBar
+                    steps={steps}
                     step={step}
                     reached={reached}
                     firstStep={firstStep}
@@ -164,15 +184,17 @@ export default function GymShell({
 }
 
 /**
- * Phones: 5 segments under the header. Desktop: the 5 steps named, the
- * ones already reached can be opened again.
+ * Phones: a segment per step under the header. Desktop: the steps named,
+ * the ones already reached can be opened again.
  */
 function StepBar({
+    steps,
     step,
     reached,
     firstStep,
     onSelect,
 }: {
+    steps: string[];
     step: number;
     reached: number;
     firstStep: number;
@@ -185,10 +207,10 @@ function StepBar({
                 aria-label="Avanzamento della registrazione"
                 aria-valuenow={step}
                 aria-valuemin={1}
-                aria-valuemax={gymSteps.length}
+                aria-valuemax={steps.length}
                 className="flex gap-1 px-4 md:hidden"
             >
-                {gymSteps.map((label, index) => (
+                {steps.map((label, index) => (
                     <span
                         key={label}
                         className={cn(
@@ -201,9 +223,9 @@ function StepBar({
 
             <ol
                 aria-label="Passi"
-                className="mx-auto mt-10 hidden w-full max-w-240 grid-cols-5 gap-2 text-[13px] leading-4.5 md:grid"
+                className="mx-auto mt-10 hidden w-full max-w-240 auto-cols-fr grid-flow-col gap-2 text-[13px] leading-4.5 md:grid"
             >
-                {gymSteps.map((label, index) => {
+                {steps.map((label, index) => {
                     const number = index + 1;
                     const current = number === step;
                     const open =
@@ -262,7 +284,7 @@ function StepBar({
  * fade, with a note above or below. Desktop: "Annulla"/"Indietro" on the
  * left, a status and the 280px button on the right, a line above.
  */
-export function GymFooter({
+export function ShellFooter({
     back,
     status,
     noteAbove,
@@ -309,12 +331,12 @@ export function GymFooter({
 }
 
 /** "Continua" (turquoise outline) or "Invia per approvazione" (filled). */
-export const gymNextClassName =
+export const shellNextClassName =
     'btn-brand h-13 w-full text-[17px] disabled:pointer-events-none disabled:text-[#707070] disabled:opacity-100 disabled:shadow-[inset_0_0_0_1px_var(--border)] md:h-12.5 md:w-70';
 
-export const gymSendClassName =
+export const shellSendClassName =
     'flex h-13 w-full items-center justify-center gap-2 rounded-full bg-brand text-[17px] font-semibold text-[#0a0a0a] shadow-[0_8px_24px_0_rgba(66,215,217,0.28)] outline-none hover:bg-[#7fe6e7] focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-60 md:h-12.5 md:w-70';
 
 /** "Annulla" / "Indietro" of the desktop footer: white, underlined. */
-export const gymBackClassName =
+export const shellBackClassName =
     'flex min-h-11 items-center px-2 text-[15px] font-semibold text-foreground underline underline-offset-3 outline-none hover:text-brand focus-visible:ring-[3px] focus-visible:ring-ring/50';

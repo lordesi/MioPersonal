@@ -10,23 +10,24 @@ import type { GymDraft } from '@/components/onboarding/gym/draft';
 import {
     initialGymDraft,
     isDetailsComplete,
+    gymSteps,
     isServicesComplete,
     stepOfGymField,
     toGymPayload,
 } from '@/components/onboarding/gym/draft';
-import GymShell, {
-    GymFooter,
-    gymBackClassName,
-    gymLinkClassName,
-    gymNextClassName,
-    gymSendClassName,
-} from '@/components/onboarding/gym/gym-shell';
+import DarkShell, {
+    ShellFooter,
+    shellBackClassName,
+    shellLinkClassName,
+    shellNextClassName,
+    shellSendClassName,
+} from '@/components/onboarding/dark-shell';
 import {
     clearGymDraft,
     loadGymDraft,
     saveGymDraft,
 } from '@/components/onboarding/gym/saved-draft';
-import StepAccount from '@/components/onboarding/gym/step-account';
+import StepAccount from '@/components/onboarding/account-step';
 import StepDetails from '@/components/onboarding/gym/step-details';
 import StepPhotos from '@/components/onboarding/gym/step-photos';
 import StepSend from '@/components/onboarding/gym/step-send';
@@ -42,6 +43,13 @@ import { check, store, switchMethod } from '@/routes/gym/register';
 import type { CatalogOption } from '@/types';
 
 const LAST_STEP = 5;
+
+/** What the dark shell shows of "Registra la palestra". */
+const gymShell = {
+    steps: gymSteps,
+    eyebrow: 'Registra la palestra',
+    heroImage: '/images/design/pro-gym.webp',
+};
 
 /** The titles of the design: light, with the key words in bold. */
 const titles: Record<number, ReactNode> = {
@@ -157,7 +165,8 @@ export default function GymRegistration({
         return (
             <>
                 <Head title="Registra la tua palestra" />
-                <GymShell
+                <DarkShell
+                    {...gymShell}
                     step={null}
                     title={
                         <>
@@ -178,7 +187,7 @@ export default function GymRegistration({
                                 href={switchMethod()}
                                 as="button"
                                 onClick={() => router.flushAll()}
-                                className={gymNextClassName}
+                                className={shellNextClassName}
                             >
                                 Esci e registra la palestra
                                 <ArrowRight
@@ -188,13 +197,13 @@ export default function GymRegistration({
                             </Link>
                             <Link
                                 href={areaHome()}
-                                className={gymBackClassName}
+                                className={shellBackClassName}
                             >
                                 Torna alla tua area
                             </Link>
                         </div>
                     </Outcome>
-                </GymShell>
+                </DarkShell>
             </>
         );
     }
@@ -203,7 +212,8 @@ export default function GymRegistration({
         return (
             <>
                 <Head title="Profilo inviato" />
-                <GymShell
+                <DarkShell
+                    {...gymShell}
                     step={null}
                     title={
                         <>
@@ -224,7 +234,7 @@ export default function GymRegistration({
                         <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:gap-6">
                             <Link
                                 href={dashboard()}
-                                className={gymNextClassName}
+                                className={shellNextClassName}
                             >
                                 Vai all’area palestra
                                 <ArrowRight
@@ -235,14 +245,14 @@ export default function GymRegistration({
                             {previewHref && (
                                 <Link
                                     href={previewHref}
-                                    className={gymBackClassName}
+                                    className={shellBackClassName}
                                 >
                                     Vedi l’anteprima del profilo
                                 </Link>
                             )}
                         </div>
                     </Outcome>
-                </GymShell>
+                </DarkShell>
             </>
         );
     }
@@ -343,14 +353,14 @@ export default function GymRegistration({
             <button
                 type="button"
                 onClick={saveAndExit}
-                className={gymLinkClassName}
+                className={shellLinkClassName}
             >
                 Salva ed esci
             </button>
         ) : (
             <p className="hidden items-center gap-2 text-[15px] text-muted-foreground md:flex">
                 Hai già registrato la palestra?
-                <Link href={login()} className={gymLinkClassName}>
+                <Link href={login()} className={shellLinkClassName}>
                     Accedi
                 </Link>
             </p>
@@ -360,7 +370,7 @@ export default function GymRegistration({
         step === firstStep ? (
             <Link
                 href={editing ? dashboard.url() : home.url()}
-                className={gymBackClassName}
+                className={shellBackClassName}
             >
                 Annulla
             </Link>
@@ -368,7 +378,7 @@ export default function GymRegistration({
             <button
                 type="button"
                 onClick={() => goTo(step - 1)}
-                className={gymBackClassName}
+                className={shellBackClassName}
             >
                 Indietro
             </button>
@@ -394,7 +404,8 @@ export default function GymRegistration({
                     }
                 }}
             >
-                <GymShell
+                <DarkShell
+                    {...gymShell}
                     step={step}
                     reached={reached}
                     firstStep={firstStep}
@@ -412,7 +423,7 @@ export default function GymRegistration({
                     }
                     topRight={saveLink}
                     footer={
-                        <GymFooter
+                        <ShellFooter
                             back={back}
                             status={
                                 !canContinue[step] ? missing[step] : undefined
@@ -439,8 +450,8 @@ export default function GymRegistration({
                                 disabled={!canContinue[step] || form.processing}
                                 className={
                                     step === LAST_STEP
-                                        ? gymSendClassName
-                                        : gymNextClassName
+                                        ? shellSendClassName
+                                        : shellNextClassName
                                 }
                             >
                                 {form.processing && <Spinner />}
@@ -452,7 +463,7 @@ export default function GymRegistration({
                                     className="size-4.5 md:hidden"
                                 />
                             </button>
-                        </GymFooter>
+                        </ShellFooter>
                     }
                 >
                     {(changeRequest && step === firstStep) ||
@@ -476,7 +487,7 @@ export default function GymRegistration({
                                     <button
                                         type="button"
                                         onClick={startOver}
-                                        className={gymLinkClassName}
+                                        className={shellLinkClassName}
                                     >
                                         Ricomincia da capo
                                     </button>
@@ -535,7 +546,7 @@ export default function GymRegistration({
                             onEdit={goTo}
                         />
                     )}
-                </GymShell>
+                </DarkShell>
             </form>
 
             <ExistingAccountDialog

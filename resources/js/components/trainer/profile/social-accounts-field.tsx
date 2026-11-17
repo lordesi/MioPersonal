@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import TrainerSocialController from '@/actions/App/Http/Controllers/TrainerSocialController';
 import SocialIcon from '@/components/shared/social-icon';
 import InstagramField from '@/components/trainer/profile/instagram-field';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { connectSocial } from '@/lib/social-connect';
 import type { SocialProvider, TrainerSocialsProps } from '@/types';
@@ -18,6 +19,8 @@ type SocialAccountsFieldProps = {
      * profilo"). Not in "Diventa trainer": account and photo would be lost.
      */
     allowRedirect?: boolean;
+    /** The look of the dark sign-up ("Diventa trainer"). */
+    dark?: boolean;
 };
 
 /**
@@ -29,6 +32,7 @@ export default function SocialAccountsField({
     instagram,
     onInstagramChange,
     allowRedirect = false,
+    dark = false,
 }: SocialAccountsFieldProps) {
     const socials = usePage<{ socials?: TrainerSocialsProps }>().props
         .socials ?? { providers: [], linked: [] };
@@ -46,6 +50,7 @@ export default function SocialAccountsField({
     if (socials.providers.length === 0) {
         return (
             <InstagramField
+                dark={dark}
                 id={`${id}-instagram`}
                 value={instagram}
                 onChange={onInstagramChange}
@@ -98,8 +103,18 @@ export default function SocialAccountsField({
         });
 
     return (
-        <fieldset className="flex max-w-120 flex-col gap-2.5">
-            <legend className="mb-1.5 text-sm font-semibold">
+        <fieldset
+            className={cn(
+                'flex max-w-120 flex-col gap-2.5',
+                dark && 'max-w-none',
+            )}
+        >
+            <legend
+                className={cn(
+                    'mb-1.5 text-sm font-semibold',
+                    dark && 'text-[15px] leading-5',
+                )}
+            >
                 Social{' '}
                 <span className="font-normal text-muted-foreground">
                     · facoltativo
@@ -117,7 +132,10 @@ export default function SocialAccountsField({
                     return (
                         <li
                             key={provider}
-                            className="flex items-center gap-3 rounded-2xl border p-3"
+                            className={cn(
+                                'flex items-center gap-3 rounded-2xl border p-3',
+                                dark && 'rounded-[20px] border-0 bg-card px-4',
+                            )}
                         >
                             <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-muted [&>svg]:size-5">
                                 <SocialIcon provider={provider} />
@@ -131,7 +149,10 @@ export default function SocialAccountsField({
                                         <span className="inline-flex items-center gap-1">
                                             <Check
                                                 aria-hidden="true"
-                                                className="size-3.5 text-emerald-600"
+                                                className={cn(
+                                                    'size-3.5 text-emerald-600',
+                                                    dark && 'text-brand',
+                                                )}
                                             />
                                             Collegato · @{account.handle}
                                         </span>
@@ -171,6 +192,7 @@ export default function SocialAccountsField({
             {!linked('instagram') &&
                 (!instagramLinkable || manual ? (
                     <InstagramField
+                        dark={dark}
                         id={`${id}-instagram`}
                         value={instagram}
                         onChange={onInstagramChange}

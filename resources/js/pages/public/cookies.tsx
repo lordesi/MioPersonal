@@ -3,8 +3,9 @@ import LegalPage, {
     LegalNote,
     LegalParagraph,
 } from '@/components/legal/legal-page';
-import { Button } from '@/components/ui/button';
+import { brandOutlineClassName } from '@/components/mp/page-bits';
 import { openCookieSettings } from '@/lib/cookie-consent';
+import { cn } from '@/lib/utils';
 
 /**
  * Every cookie and browser storage of the site: names and durations come from
@@ -73,8 +74,6 @@ const cookies = [
     },
 ];
 
-const cellClassName = 'border-b px-3 py-2.5 align-top';
-
 const sections: LegalSection[] = [
     {
         id: 'cosa',
@@ -92,45 +91,72 @@ const sections: LegalSection[] = [
         title: 'Quali cookie usiamo',
         content: (
             <>
-                <div className="overflow-x-auto rounded-xl border">
-                    <table className="w-full min-w-140 bg-card text-left text-sm">
-                        <thead>
-                            <tr className="text-[13px]">
-                                {['Nome', 'A cosa serve', 'Durata', 'Tipo'].map(
-                                    (heading) => (
-                                        <th
-                                            key={heading}
-                                            scope="col"
-                                            className="border-b px-3 py-2.5 font-semibold"
-                                        >
-                                            {heading}
-                                        </th>
-                                    ),
-                                )}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {cookies.map((cookie) => (
-                                <tr key={cookie.name}>
-                                    <td
-                                        className={`${cellClassName} font-mono text-[13px]`}
+                {/* Desktop: a table with lines between the rows. */}
+                <table className="hidden w-full text-left md:table">
+                    <thead>
+                        <tr className="grid grid-cols-[1.4fr_2.4fr_1.1fr_1.1fr] gap-4 border-b border-separator pb-2.5">
+                            {['Nome', 'A cosa serve', 'Durata', 'Tipo'].map(
+                                (heading) => (
+                                    <th
+                                        key={heading}
+                                        scope="col"
+                                        className="text-xs leading-4 font-semibold tracking-[0.6px] text-muted-foreground uppercase"
                                     >
-                                        {cookie.name}
-                                    </td>
-                                    <td className={cellClassName}>
-                                        {cookie.purpose}
-                                    </td>
-                                    <td className={cellClassName}>
-                                        {cookie.duration}
-                                    </td>
-                                    <td className={cellClassName}>
-                                        {cookie.type}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                        {heading}
+                                    </th>
+                                ),
+                            )}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {cookies.map((cookie) => (
+                            <tr
+                                key={cookie.name}
+                                className="grid grid-cols-[1.4fr_2.4fr_1.1fr_1.1fr] gap-4 border-b border-separator py-3.5 text-[15px] leading-5.25 last:border-b-0"
+                            >
+                                <td className="font-mono text-[13px] leading-5.25 break-all text-brand">
+                                    {cookie.name}
+                                </td>
+                                <td>{cookie.purpose}</td>
+                                <td className="text-muted-foreground">
+                                    {cookie.duration}
+                                </td>
+                                <td className="text-muted-foreground">
+                                    {cookie.type}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+                {/* Phones: a card per cookie. */}
+                <ul className="flex flex-col gap-2 md:hidden">
+                    {cookies.map((cookie) => (
+                        <li
+                            key={cookie.name}
+                            className="flex flex-col gap-2 rounded-[20px] bg-card p-4"
+                        >
+                            <span className="font-mono text-[13px] leading-4.5 break-all text-brand">
+                                {cookie.name}
+                            </span>
+                            <span>{cookie.purpose}</span>
+                            <dl className="grid grid-cols-2 gap-3 text-[13px] leading-4.5">
+                                <div className="flex flex-col gap-0.5">
+                                    <dt className="text-muted-foreground">
+                                        Durata
+                                    </dt>
+                                    <dd>{cookie.duration}</dd>
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                    <dt className="text-muted-foreground">
+                                        Tipo
+                                    </dt>
+                                    <dd>{cookie.type}</dd>
+                                </div>
+                            </dl>
+                        </li>
+                    ))}
+                </ul>
                 <LegalNote>
                     Questi sono tutti i cookie e i dati salvati nel browser che
                     usiamo oggi. Se ne aggiungiamo uno, aggiorniamo questa
@@ -196,14 +222,16 @@ const sections: LegalSection[] = [
                     Puoi cambiare la tua scelta in ogni momento da «Impostazioni
                     cookie», in fondo a ogni pagina, o da qui:
                 </LegalParagraph>
-                <Button
+                <button
                     type="button"
-                    variant="outline"
-                    className="h-10 self-start"
+                    className={cn(
+                        brandOutlineClassName,
+                        'h-11 self-start px-5 text-[15px]',
+                    )}
                     onClick={openCookieSettings}
                 >
                     Gestisci le preferenze
-                </Button>
+                </button>
                 <LegalParagraph>
                     Puoi anche vedere ed eliminare i cookie dalle impostazioni
                     del tuo browser (Chrome, Safari, Firefox, Edge). Se blocchi

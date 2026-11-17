@@ -1,17 +1,19 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Sparkles } from 'lucide-react';
-import { EventGrid } from '@/components/events/event-card';
-import { SaveableGymCard } from '@/components/gym/gym-card';
-import { NewBadge, NewsTrainerCard } from '@/components/news/news-strip';
+import { ChevronDown, MapPin, Sparkles } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { eventCard, gymCard, trainerCard } from '@/components/mp/cards';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+    pageColumnClassName,
+    pageTitleClassName,
+    sectionTitleClassName,
+} from '@/components/mp/page-bits';
+import ProfileCard from '@/components/mp/profile-card';
+import SaveableCard from '@/components/mp/saveable-card';
+import { ResultsGrid } from '@/components/mp/search-results';
+import OptionsMenu from '@/components/search/options-menu';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
+import { cn } from '@/lib/utils';
 import { news } from '@/routes';
 import type {
     GroupSessionSummary,
@@ -32,9 +34,10 @@ type NewsProps = {
     days: number;
 };
 
-const ITALY = 'italia';
-
-/** "Novità": the trainers and gyms that joined in the last days, in Italy or a city. */
+/**
+ * "Novità": the trainers and gyms that joined in the last days, and the new
+ * events, in Italy or a city. The cards of the home and of the searches.
+ */
 export default function News({
     seo,
     city,
@@ -45,128 +48,146 @@ export default function News({
     days,
 }: NewsProps) {
     const place = city ? `a ${city.name}` : 'in Italia';
+    const empty =
+        trainers.length === 0 && gyms.length === 0 && events.length === 0;
 
     return (
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 pt-6 pb-12 md:gap-10 md:px-8 md:pt-12 md:pb-20">
+        <div
+            className={cn(
+                pageColumnClassName,
+                'gap-10 pb-16 md:gap-16 md:pb-24',
+            )}
+        >
             <Head title={seo.title} />
 
-            <div className="flex flex-wrap items-end justify-between gap-4">
-                <div className="flex flex-col gap-2">
-                    <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+            <header className="flex flex-col gap-4 pt-6 md:flex-row md:flex-wrap md:items-end md:justify-between md:gap-6 md:pt-10">
+                <div className="flex flex-col gap-3">
+                    <span className="flex items-center gap-2 text-[13px] font-semibold tracking-[0.6px] text-brand uppercase">
                         <Sparkles aria-hidden="true" className="size-4" />
                         Ultimi {days} giorni
                     </span>
-                    <h1 className="text-[32px] leading-9.5 font-bold tracking-tighter md:text-5xl md:leading-13">
-                        Novità {place}
-                    </h1>
-                    <p className="max-w-150 text-muted-foreground">
+                    <h1 className={pageTitleClassName}>Novità {place}</h1>
+                    <p className="max-w-150 text-[17px] leading-6 text-muted-foreground">
                         I personal trainer e le palestre appena arrivati su
                         MioPersonal, verificati dal nostro team, e i nuovi
                         eventi in programma.
                     </p>
                 </div>
-                <Select
-                    value={city?.slug ?? ITALY}
-                    onValueChange={(value) =>
-                        router.visit(
-                            news.url(value === ITALY ? {} : { city: value }),
-                        )
+                <OptionsMenu
+                    label="Città"
+                    noneLabel="Tutta Italia"
+                    options={cities}
+                    value={city?.slug ?? null}
+                    onChange={(value) =>
+                        router.visit(news.url(value ? { city: value } : {}))
                     }
-                >
-                    <SelectTrigger aria-label="Città" className="h-11 w-56">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value={ITALY}>Tutta Italia</SelectItem>
-                        {cities.map((item) => (
-                            <SelectItem key={item.value} value={item.value}>
-                                {item.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
+                    searchPlaceholder="Cerca una città"
+                    className="theme-dark"
+                    trigger={
+                        <button
+                            type="button"
+                            className="field-pill h-12.5 w-full justify-between px-5 text-[17px] font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 md:w-64"
+                        >
+                            <span className="flex items-center gap-2.5">
+                                <MapPin
+                                    aria-hidden="true"
+                                    className="size-5 text-muted-foreground"
+                                />
+                                {city?.name ?? 'Tutta Italia'}
+                            </span>
+                            <ChevronDown
+                                aria-hidden="true"
+                                className="size-5 text-muted-foreground"
+                            />
+                        </button>
+                    }
+                />
+            </header>
 
-            {trainers.length === 0 &&
-                gyms.length === 0 &&
-                events.length === 0 && (
-                    <p className="rounded-2xl bg-muted px-4 py-3 text-sm">
-                        Nessuna novità {place} negli ultimi {days} giorni.{' '}
-                        <Link
-                            href={searchUrl({}, city?.slug)}
-                            className="font-medium underline underline-offset-4"
-                        >
-                            Cerca tra tutti i trainer
-                        </Link>{' '}
-                        o{' '}
-                        <Link
-                            href={gymSearchUrl({}, city?.slug)}
-                            className="font-medium underline underline-offset-4"
-                        >
-                            le palestre
-                        </Link>
-                        .
-                    </p>
-                )}
+            {empty && (
+                <p
+                    role="status"
+                    className="rounded-[26px] bg-card px-5 py-4 text-[15px] leading-5.25 text-muted-foreground"
+                >
+                    Nessuna novità {place} negli ultimi {days} giorni.{' '}
+                    <Link
+                        href={searchUrl({}, city?.slug)}
+                        className="font-semibold text-brand hover:underline"
+                    >
+                        Cerca tra tutti i trainer
+                    </Link>{' '}
+                    o{' '}
+                    <Link
+                        href={gymSearchUrl({}, city?.slug)}
+                        className="font-semibold text-brand hover:underline"
+                    >
+                        le palestre
+                    </Link>
+                    .
+                </p>
+            )}
 
             {trainers.length > 0 && (
-                <section
-                    aria-labelledby="new-trainers"
-                    className="flex flex-col gap-4"
-                >
-                    <h2
-                        id="new-trainers"
-                        className="text-2xl font-semibold tracking-tight"
+                <NewsSection id="new-trainers" title="Nuovi trainer">
+                    <ResultsGrid
+                        items={trainers}
+                        itemKey={(trainer) => trainer.slug}
                     >
-                        Nuovi trainer
-                    </h2>
-                    <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-3 sm:gap-5">
-                        {trainers.map((trainer) => (
-                            <li key={trainer.slug} className="relative flex">
-                                <NewBadge />
-                                <NewsTrainerCard trainer={trainer} />
-                            </li>
-                        ))}
-                    </ul>
-                </section>
+                        {(trainer) => (
+                            <SaveableCard
+                                {...trainerCard(trainer)}
+                                badge="Nuovo"
+                                slug={trainer.slug}
+                                favoriteKind="trainer"
+                                saved={trainer.favorite}
+                            />
+                        )}
+                    </ResultsGrid>
+                </NewsSection>
             )}
 
             {gyms.length > 0 && (
-                <section
-                    aria-labelledby="new-gyms"
-                    className="flex flex-col gap-4"
-                >
-                    <h2
-                        id="new-gyms"
-                        className="text-2xl font-semibold tracking-tight"
-                    >
-                        Nuove palestre
-                    </h2>
-                    <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-3 sm:gap-5">
-                        {gyms.map((gym) => (
-                            <li key={gym.slug} className="relative flex">
-                                <NewBadge />
-                                <SaveableGymCard gym={gym} className="flex-1" />
-                            </li>
-                        ))}
-                    </ul>
-                </section>
+                <NewsSection id="new-gyms" title="Nuove palestre">
+                    <ResultsGrid items={gyms} itemKey={(gym) => gym.slug}>
+                        {(gym) => (
+                            <SaveableCard
+                                {...gymCard(gym)}
+                                badge="Nuova"
+                                slug={gym.slug}
+                                favoriteKind="gym"
+                                saved={gym.favorite}
+                            />
+                        )}
+                    </ResultsGrid>
+                </NewsSection>
             )}
 
             {events.length > 0 && (
-                <section
-                    aria-labelledby="new-events"
-                    className="flex flex-col gap-4"
-                >
-                    <h2
-                        id="new-events"
-                        className="text-2xl font-semibold tracking-tight"
-                    >
-                        Nuovi eventi
-                    </h2>
-                    <EventGrid events={events} />
-                </section>
+                <NewsSection id="new-events" title="Nuovi eventi">
+                    <ResultsGrid items={events} itemKey={(event) => event.slug}>
+                        {(event) => <ProfileCard {...eventCard(event)} />}
+                    </ResultsGrid>
+                </NewsSection>
             )}
         </div>
+    );
+}
+
+function NewsSection({
+    id,
+    title,
+    children,
+}: {
+    id: string;
+    title: string;
+    children: ReactNode;
+}) {
+    return (
+        <section aria-labelledby={id} className="flex flex-col gap-4 md:gap-5">
+            <h2 id={id} className={sectionTitleClassName}>
+                {title}
+            </h2>
+            {children}
+        </section>
     );
 }

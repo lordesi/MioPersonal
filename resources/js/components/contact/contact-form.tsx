@@ -1,15 +1,21 @@
 import { Form, Link } from '@inertiajs/react';
 import { Check } from 'lucide-react';
 import { useId, useState } from 'react';
-import FormField from '@/components/auth/form-field';
 import ConsentCheckbox from '@/components/auth/consent-checkbox';
+import FormField from '@/components/auth/form-field';
+import {
+    brandFilledClassName,
+    brandOutlineClassName,
+    darkCardClassName,
+    sectionTitleClassName,
+} from '@/components/mp/page-bits';
+import SegmentedControl from '@/components/mp/segmented-control';
 import type { ChoiceOption } from '@/components/shared/choice-chips';
-import ChoiceChips from '@/components/shared/choice-chips';
-import SegmentedControl from '@/components/shared/segmented-control';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { darkCheckboxClassName, darkFieldClassName } from '@/lib/dark-form';
+import { cn } from '@/lib/utils';
 import { store } from '@/routes/contact';
 import { privacy } from '@/routes/legal';
 
@@ -23,7 +29,7 @@ const placeholders: Record<string, string> = {
         'Da quanto hai inviato il profilo? Ti serve aiuto con un documento?',
 };
 
-const inputClass = 'h-11 text-base md:text-base';
+const labelClassName = 'text-[15px] leading-5 font-semibold';
 
 type ContactFormProps = {
     /** True right after a message was sent: shows "Messaggio inviato". */
@@ -32,6 +38,7 @@ type ContactFormProps = {
     /** role => the topics offered to that role. */
     topics: Record<string, ChoiceOption<string>[]>;
     messageMaxLength: number;
+    className?: string;
 };
 
 /** "Scrivici un messaggio": sends an email to the team and a confirmation to the sender. */
@@ -40,8 +47,10 @@ export default function ContactForm({
     roles,
     topics,
     messageMaxLength,
+    className,
 }: ContactFormProps) {
     const titleId = useId();
+    const roleLabelId = useId();
     const topicLabelId = useId();
     const [role, setRole] = useState(roles[0].value);
     const [topic, setTopic] = useState(topics[role][0].value);
@@ -61,28 +70,29 @@ export default function ContactForm({
         return (
             <section
                 aria-label="Messaggio inviato"
-                className="rounded-[18px] border bg-card p-4.5 md:p-7"
+                className={cn(darkCardClassName, 'p-5 md:p-8', className)}
             >
                 <div
                     role="status"
-                    className="flex flex-col items-center gap-2.5 px-2 py-8 text-center"
+                    className="flex flex-col items-center gap-3 px-2 py-8 text-center"
                 >
-                    <span className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                        <Check aria-hidden="true" className="size-6" />
+                    <span className="flex size-14 items-center justify-center rounded-full border-[1.5px] border-brand text-brand">
+                        <Check aria-hidden="true" className="size-7" />
                     </span>
-                    <strong className="text-xl">Messaggio inviato</strong>
-                    <span className="max-w-90 text-sm text-muted-foreground">
+                    <strong className="text-[22px] leading-7">
+                        Messaggio inviato
+                    </strong>
+                    <span className="max-w-90 text-[15px] leading-5.25 text-muted-foreground">
                         Grazie! Ti abbiamo mandato una conferma via email e ti
                         rispondiamo appena possibile.
                     </span>
-                    <Button
+                    <button
                         type="button"
-                        variant="outline"
-                        className="h-10"
+                        className={cn(brandOutlineClassName, 'mt-2 h-11')}
                         onClick={() => setWritingAnother(true)}
                     >
                         Scrivi un altro messaggio
-                    </Button>
+                    </button>
                 </div>
             </section>
         );
@@ -95,25 +105,24 @@ export default function ContactForm({
             resetOnSuccess
             onSuccess={() => setWritingAnother(false)}
             aria-labelledby={titleId}
-            className="flex flex-col gap-4.5 rounded-[18px] border bg-card p-4.5 md:p-7"
+            className={cn('flex flex-col gap-5 md:gap-6', className)}
         >
             {({ processing, errors }) => (
                 <>
-                    <h2
-                        id={titleId}
-                        className="text-xl font-semibold tracking-tight"
-                    >
+                    <h2 id={titleId} className={sectionTitleClassName}>
                         Scrivici un messaggio
                     </h2>
 
-                    <fieldset className="flex flex-col gap-2">
-                        <legend className="pb-2 text-sm font-medium">
+                    <div className="flex flex-col gap-2">
+                        <span id={roleLabelId} className={labelClassName}>
                             Sei
-                        </legend>
+                        </span>
                         <SegmentedControl
+                            label="Sei"
+                            tone="brand"
                             options={roles}
                             value={role}
-                            onChange={changeRole}
+                            onValueChange={changeRole}
                         />
                         <input type="hidden" name="role" value={role} />
                         {/* Honeypot: hidden from people, filled in by spam bots. */}
@@ -126,14 +135,18 @@ export default function ContactForm({
                             className="absolute -left-[9999px] size-px opacity-0"
                         />
                         {errors.role && (
-                            <p className="text-sm text-destructive">
+                            <p className="text-[13px] text-destructive">
                                 {errors.role}
                             </p>
                         )}
-                    </fieldset>
+                    </div>
 
-                    <div className="grid gap-3.5 sm:grid-cols-2">
-                        <FormField label="Nome" error={errors.name}>
+                    <div className="grid gap-5 md:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] md:gap-x-4 md:gap-y-6">
+                        <FormField
+                            label="Nome"
+                            error={errors.name}
+                            labelClassName={labelClassName}
+                        >
                             {({ id, describedBy }) => (
                                 <Input
                                     id={id}
@@ -142,49 +155,66 @@ export default function ContactForm({
                                     autoComplete="name"
                                     aria-describedby={describedBy}
                                     aria-invalid={!!errors.name}
-                                    className={inputClass}
+                                    className={darkFieldClassName}
                                 />
                             )}
                         </FormField>
-                        <FormField label="Email" error={errors.email}>
+                        <FormField
+                            label="Email"
+                            error={errors.email}
+                            labelClassName={labelClassName}
+                        >
                             {({ id, describedBy }) => (
                                 <Input
                                     id={id}
                                     type="email"
                                     name="email"
                                     required
+                                    inputMode="email"
                                     autoComplete="email"
                                     placeholder="nome@esempio.it"
                                     aria-describedby={describedBy}
                                     aria-invalid={!!errors.email}
-                                    className={inputClass}
+                                    className={darkFieldClassName}
                                 />
                             )}
                         </FormField>
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                        <span
-                            id={topicLabelId}
-                            className="pb-2 text-sm font-medium"
-                        >
+                    <div
+                        role="group"
+                        aria-labelledby={topicLabelId}
+                        className="flex flex-col gap-2"
+                    >
+                        <span id={topicLabelId} className={labelClassName}>
                             Argomento
                         </span>
-                        <ChoiceChips
-                            options={topics[role]}
-                            value={topic}
-                            onChange={setTopic}
-                            aria-labelledby={topicLabelId}
-                        />
+                        <div className="flex flex-wrap gap-2">
+                            {topics[role].map((option) => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    aria-pressed={option.value === topic}
+                                    onClick={() => setTopic(option.value)}
+                                    className="chip h-11"
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
                         <input type="hidden" name="topic" value={topic} />
                         {errors.topic && (
-                            <p className="text-sm text-destructive">
+                            <p className="text-[13px] text-destructive">
                                 {errors.topic}
                             </p>
                         )}
                     </div>
 
-                    <FormField label="Messaggio" error={errors.message}>
+                    <FormField
+                        label="Messaggio"
+                        error={errors.message}
+                        labelClassName={labelClassName}
+                    >
                         {({ id, describedBy }) => (
                             <Textarea
                                 id={id}
@@ -198,31 +228,40 @@ export default function ContactForm({
                                 }
                                 aria-describedby={describedBy}
                                 aria-invalid={!!errors.message}
-                                className="min-h-36 resize-y text-base md:text-base"
+                                className="min-h-36 resize-y rounded-[14px] bg-card px-4 py-3.5 text-[17px] leading-5.5 md:min-h-42 md:text-[17px]"
                             />
                         )}
                     </FormField>
 
-                    <ConsentCheckbox
-                        name="privacy"
-                        required
-                        error={errors.privacy}
-                    >
-                        Ho letto la{' '}
-                        <Link href={privacy()} className="underline">
-                            privacy policy
-                        </Link>{' '}
-                        e acconsento a essere ricontattato via email.
-                    </ConsentCheckbox>
+                    <div className="text-[15px] leading-5.25 [&_label]:text-[15px]">
+                        <ConsentCheckbox
+                            name="privacy"
+                            required
+                            error={errors.privacy}
+                            checkboxClassName={darkCheckboxClassName}
+                        >
+                            Ho letto la{' '}
+                            <Link
+                                href={privacy()}
+                                className="text-brand underline"
+                            >
+                                privacy policy
+                            </Link>{' '}
+                            e acconsento a essere ricontattato via email.
+                        </ConsentCheckbox>
+                    </div>
 
-                    <Button
+                    <button
                         type="submit"
                         disabled={processing}
-                        className="h-12 rounded-[10px] text-base font-semibold"
+                        className={cn(
+                            brandFilledClassName,
+                            'gap-2 md:self-start md:px-10',
+                        )}
                     >
                         {processing && <Spinner />}
                         Invia messaggio
-                    </Button>
+                    </button>
                 </>
             )}
         </Form>

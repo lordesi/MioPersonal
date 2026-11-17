@@ -8,7 +8,7 @@ import {
     errorOf,
     Optional,
     Section,
-} from '@/components/onboarding/gym/gym-fields';
+} from '@/components/onboarding/dark-fields';
 import { cn } from '@/lib/utils';
 
 type StepPhotosProps = {

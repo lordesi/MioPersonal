@@ -1,14 +1,15 @@
 import { Head, Link } from '@inertiajs/react';
 import { Check, ChevronDown } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
 import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+    PageBreadcrumb,
+    brandFilledClassName,
+    darkCardClassName,
+    pageColumnClassName,
+    pageTitleClassName,
+} from '@/components/mp/page-bits';
 import { cn } from '@/lib/utils';
-import { home } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
 
 export type LegalSection = {
@@ -29,8 +30,13 @@ type LegalPageProps = {
     sections: LegalSection[];
 };
 
+const smallLabelClassName =
+    'text-xs leading-4 font-semibold tracking-[0.6px] uppercase';
+
 /**
  * Privacy, Terms and Cookie pages: same structure, different texts.
+ * Phones: "In breve", then every section folds (the first one open).
+ * Desktop: the index on the left, the sections open on the right.
  * The texts are drafts: a lawyer must check them before the launch.
  */
 export default function LegalPage({
@@ -41,108 +47,188 @@ export default function LegalPage({
     summary,
     sections,
 }: LegalPageProps) {
+    // Phones: the open sections; desktop shows them all.
+    const [open, setOpen] = useState<string[]>(
+        sections.length > 0 ? [sections[0].id] : [],
+    );
+    const toggle = (id: string) =>
+        setOpen((current) =>
+            current.includes(id)
+                ? current.filter((item) => item !== id)
+                : [...current, id],
+        );
+
+    // Phones: a link to "#dati" opens that section.
+    useEffect(() => {
+        const id = window.location.hash.slice(1);
+
+        if (sections.some((section) => section.id === id)) {
+            setOpen((current) =>
+                current.includes(id) ? current : [...current, id],
+            );
+        }
+    }, [sections]);
+
     return (
-        <div className="mx-auto flex w-full max-w-300 flex-col gap-6 px-4 pt-5 pb-10 md:gap-8 md:px-8 md:pt-10 md:pb-20">
+        <div
+            className={cn(
+                pageColumnClassName,
+                'gap-8 pb-12 md:gap-12 md:pb-24',
+            )}
+        >
             <Head title={pageName} />
 
-            <div className="flex max-w-195 flex-col gap-6">
-                <nav
-                    aria-label="Percorso"
-                    className="text-sm text-muted-foreground"
-                >
-                    <Link href={home()} className="hover:underline">
-                        Home
-                    </Link>{' '}
-                    /{' '}
-                    <span aria-current="page" className="text-foreground">
-                        {pageName}
-                    </span>
-                </nav>
+            <header className="flex flex-col gap-3 pt-2 md:gap-4 md:pt-6">
+                <PageBreadcrumb current={pageName} />
+                <h1 className={pageTitleClassName}>{title}</h1>
+                <p className="text-[17px] leading-6 text-muted-foreground md:max-w-170 md:text-xl md:leading-7.5">
+                    {intro}
+                </p>
+                <p className="text-[13px] leading-4.5 text-muted-foreground tabular-nums">
+                    Ultimo aggiornamento: {updatedOn}
+                </p>
+            </header>
 
-                <div className="flex flex-col gap-2.5">
-                    <h1 className="text-3xl leading-9 font-bold tracking-tighter md:text-[44px] md:leading-12">
-                        {title}
-                    </h1>
-                    <p className="text-lg text-muted-foreground">{intro}</p>
-                    <span className="text-[13px] text-muted-foreground tabular-nums">
-                        Ultimo aggiornamento: {updatedOn}
-                    </span>
-                </div>
-
-                <section
-                    aria-label="In breve"
-                    className="flex flex-col gap-3 rounded-[18px] bg-primary p-4.5 text-primary-foreground md:p-6"
-                >
-                    <span className="text-xs font-semibold tracking-[0.08em] uppercase opacity-70">
-                        In breve
-                    </span>
-                    <ul className="flex flex-col gap-2.5">
-                        {summary.map((item) => (
-                            <li
-                                key={item}
-                                className="flex gap-2.5 text-[15px] leading-5.5"
-                            >
-                                <Check
-                                    aria-hidden="true"
-                                    strokeWidth={2.5}
-                                    className="mt-0.75 size-4 shrink-0"
-                                />
-                                {item}
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-
-                <MobileIndex sections={sections} />
-            </div>
-
-            <div className="flex flex-wrap items-start gap-14">
+            <div className="flex flex-col gap-8 md:flex-row md:flex-wrap md:items-start md:gap-x-16 md:gap-y-12">
                 <nav
                     aria-label="Indice"
-                    className="sticky top-6 hidden max-w-65 flex-[1_1_220px] flex-col gap-1.5 md:flex"
+                    className="hidden max-w-80 flex-[1_1_240px] flex-col gap-2 md:flex"
                 >
-                    <span className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+                    <span
+                        className={cn(
+                            smallLabelClassName,
+                            'text-muted-foreground',
+                        )}
+                    >
                         Indice
                     </span>
-                    <IndexList sections={sections} />
+                    <ol>
+                        {sections.map((section, index) => (
+                            <li key={section.id}>
+                                <a
+                                    href={`#${section.id}`}
+                                    className="flex min-h-9 items-center gap-3 text-[15px] text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                >
+                                    <span className="w-5 shrink-0 font-semibold text-brand tabular-nums">
+                                        {index + 1}
+                                    </span>
+                                    {section.title}
+                                </a>
+                            </li>
+                        ))}
+                    </ol>
                 </nav>
 
-                <article className="flex max-w-190 min-w-0 flex-[999_1_560px] flex-col gap-9">
-                    {sections.map((section, index) => (
-                        <section
-                            key={section.id}
-                            id={section.id}
-                            aria-labelledby={`${section.id}-title`}
-                            className="flex scroll-mt-6 flex-col gap-3"
+                <article className="flex min-w-0 flex-col gap-8 md:max-w-180 md:flex-[999_1_560px] md:gap-12">
+                    <section
+                        aria-labelledby="legal-summary"
+                        className={cn(
+                            darkCardClassName,
+                            'flex flex-col gap-3 p-4 md:p-6',
+                        )}
+                    >
+                        <h2
+                            id="legal-summary"
+                            className={cn(smallLabelClassName, 'text-brand')}
                         >
-                            <h2
-                                id={`${section.id}-title`}
-                                className="flex gap-3 text-xl font-semibold tracking-tight md:text-2xl"
-                            >
-                                <span className="text-muted-foreground tabular-nums">
-                                    {index + 1}.
-                                </span>
-                                {section.title}
-                            </h2>
-                            {section.content}
-                        </section>
-                    ))}
+                            In breve
+                        </h2>
+                        <ul className="flex flex-col gap-2.5">
+                            {summary.map((item) => (
+                                <li
+                                    key={item}
+                                    className="flex gap-2.5 text-[15px] leading-5.25"
+                                >
+                                    <Check
+                                        aria-hidden="true"
+                                        strokeWidth={2.5}
+                                        className="mt-0.5 size-4 shrink-0 text-brand"
+                                    />
+                                    {item}
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+
+                    <div className="flex flex-col md:gap-12">
+                        {sections.map((section, index) => {
+                            const isOpen = open.includes(section.id);
+                            const contentId = `${section.id}-content`;
+
+                            return (
+                                <section
+                                    key={section.id}
+                                    id={section.id}
+                                    aria-labelledby={`${section.id}-title`}
+                                    className="flex scroll-mt-6 flex-col border-b border-separator md:gap-4 md:border-b-0"
+                                >
+                                    <h2
+                                        id={`${section.id}-title`}
+                                        className="text-[17px] leading-5.5 font-semibold tracking-[-0.43px] md:text-[22px] md:leading-7 md:font-bold md:tracking-normal"
+                                    >
+                                        {/* Phones: the row that opens and closes the section. */}
+                                        <button
+                                            type="button"
+                                            aria-expanded={isOpen}
+                                            aria-controls={contentId}
+                                            onClick={() => toggle(section.id)}
+                                            className="flex min-h-14 w-full items-center gap-3 py-3.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 md:hidden"
+                                        >
+                                            <SectionNumber number={index + 1} />
+                                            <span className="flex-1">
+                                                {section.title}
+                                            </span>
+                                            <ChevronDown
+                                                aria-hidden="true"
+                                                className={cn(
+                                                    'size-5 shrink-0 transition-transform duration-200',
+                                                    isOpen
+                                                        ? 'rotate-180 text-brand'
+                                                        : 'text-muted-foreground',
+                                                )}
+                                            />
+                                        </button>
+                                        {/* Desktop: a plain title. */}
+                                        <span className="hidden gap-3 md:flex">
+                                            <SectionNumber number={index + 1} />
+                                            {section.title}
+                                        </span>
+                                    </h2>
+                                    <div
+                                        id={contentId}
+                                        className={cn(
+                                            'flex-col gap-3 pb-5 pl-9 text-[15px] leading-5.25 md:flex md:gap-4 md:pb-0 md:pl-0 md:text-base md:leading-6.5 [&_a]:text-brand',
+                                            isOpen ? 'flex' : 'hidden',
+                                        )}
+                                    >
+                                        {section.content}
+                                    </div>
+                                </section>
+                            );
+                        })}
+                    </div>
 
                     <section
                         aria-label="Domande"
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border bg-card p-5"
+                        className={cn(
+                            darkCardClassName,
+                            'flex flex-wrap items-center justify-between gap-4 p-4 md:p-6',
+                        )}
                     >
-                        <span className="flex flex-col">
-                            <span className="font-semibold">
+                        <span className="flex flex-col gap-0.5">
+                            <span className="text-[17px] leading-5.5 font-semibold">
                                 Hai una domanda su questa pagina?
                             </span>
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-[13px] leading-4.5 text-muted-foreground md:text-[15px] md:leading-5.25">
                                 Ti rispondiamo noi, senza giri di parole.
                             </span>
                         </span>
-                        <Button asChild className="h-11 rounded-[10px] px-4.5">
-                            <Link href={contactPage()}>Scrivici</Link>
-                        </Button>
+                        <Link
+                            href={contactPage()}
+                            className={cn(brandFilledClassName, 'h-11 px-6')}
+                        >
+                            Scrivici
+                        </Link>
                     </section>
                 </article>
             </div>
@@ -150,53 +236,21 @@ export default function LegalPage({
     );
 }
 
-function IndexList({ sections }: { sections: LegalSection[] }) {
+function SectionNumber({ number }: { number: number }) {
     return (
-        <ol>
-            {sections.map((section, index) => (
-                <li key={section.id}>
-                    <a
-                        href={`#${section.id}`}
-                        className="flex gap-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground"
-                    >
-                        <span className="w-5 shrink-0 font-semibold text-foreground tabular-nums">
-                            {index + 1}
-                        </span>
-                        {section.title}
-                    </a>
-                </li>
-            ))}
-        </ol>
-    );
-}
-
-/** Below md the index is folded: "Indice · 9 sezioni". */
-function MobileIndex({ sections }: { sections: LegalSection[] }) {
-    return (
-        <Collapsible className="group rounded-xl border bg-card md:hidden">
-            <CollapsibleTrigger className="flex min-h-12 w-full items-center justify-between px-3.5 text-[15px] font-semibold">
-                Indice · {sections.length} sezioni
-                <ChevronDown
-                    aria-hidden="true"
-                    className="size-4 transition-transform group-data-[state=open]:rotate-180"
-                />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="px-3.5 pb-2.5">
-                <IndexList sections={sections} />
-            </CollapsibleContent>
-        </Collapsible>
+        <span className="w-6 shrink-0 text-brand tabular-nums">{number}</span>
     );
 }
 
 /** A paragraph of a legal section. */
 export function LegalParagraph({ children }: { children: ReactNode }) {
-    return <p className="leading-6.5">{children}</p>;
+    return <p>{children}</p>;
 }
 
 /** A bulleted list of a legal section. */
 export function LegalList({ items }: { items: ReactNode[] }) {
     return (
-        <ul className="flex list-disc flex-col gap-2 pl-5 leading-6.5">
+        <ul className="flex list-disc flex-col gap-2.5 pl-4.5">
             {items.map((item, index) => (
                 <li key={index}>{item}</li>
             ))}
@@ -215,7 +269,7 @@ export function LegalNote({
     return (
         <p
             className={cn(
-                'rounded-r-[10px] border-l-3 border-foreground bg-muted px-3.5 py-3 text-sm leading-5.25',
+                'rounded-[14px] bg-muted px-3.5 py-3 text-[13px] leading-4.5 text-muted-foreground md:px-4 md:py-3.5 md:text-[15px] md:leading-5.25',
                 className,
             )}
         >

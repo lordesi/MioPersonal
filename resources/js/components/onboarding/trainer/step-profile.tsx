@@ -1,5 +1,11 @@
-import { Camera, UserRound } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
+import {
+    fieldLabelClassName,
+    pillFieldClassName,
+    Section,
+} from '@/components/onboarding/dark-fields';
+import { ChipRow } from '@/components/onboarding/trainer/dark-bits';
 import type { TrainerDraft } from '@/components/onboarding/trainer/draft';
 import {
     BIO_MAX,
@@ -7,38 +13,19 @@ import {
     experienceOptions,
     HEADLINE_MAX,
 } from '@/components/onboarding/trainer/draft';
-import {
-    DarkPanel,
-    StepColumns,
-} from '@/components/onboarding/trainer/onboarding-shell';
-import type { PanelCheck } from '@/components/onboarding/trainer/search-card-preview';
-import SearchCardPreview, {
-    PanelChecklist,
-} from '@/components/onboarding/trainer/search-card-preview';
-import NumberedSection from '@/components/trainer/area/numbered-section';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import SocialAccountsField from '@/components/trainer/profile/social-accounts-field';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
-import type { CatalogOption } from '@/types';
 
 type StepProps = {
     draft: TrainerDraft;
     update: (changes: Partial<TrainerDraft>) => void;
-    /** The trainer's name, in the preview. */
+    /** The trainer's name: the initials while there is no photo. */
     name: string;
     /** The new photo or the saved one (usePhotoPreview). */
     photo: string | null;
-    disciplines: CatalogOption[];
-    cities: CatalogOption[];
 };
 
 const CONTACTS_NOTE =
@@ -64,112 +51,39 @@ export function usePhotoPreview(draft: TrainerDraft): string | null {
     return url ?? draft.photoUrl;
 }
 
-/** The 4 required fields of step 2, with the line under each one. */
-function profileChecks(draft: TrainerDraft, hasPhoto: boolean): PanelCheck[] {
-    const bioLength = draft.bio.trim().length;
-    const bioOk = bioLength >= BIO_MIN;
-    const headlineOk = draft.headline.trim() !== '';
-    const experience = experienceOptions.find(
-        (option) => option.value === draft.experience,
-    );
+/** "4 campi obbligatori su 4 compilati": photo, headline, bio, experience. */
+export function profileStatus(draft: TrainerDraft, hasPhoto: boolean): string {
+    const done = [
+        hasPhoto,
+        draft.headline.trim() !== '',
+        draft.bio.trim().length >= BIO_MIN,
+        draft.experience !== '',
+    ].filter(Boolean).length;
 
-    let bioHint = `Almeno ${BIO_MIN} caratteri`;
-
-    if (bioOk) {
-        bioHint = 'Fatto';
-    } else if (bioLength > 0) {
-        bioHint = `Mancano ${BIO_MIN - bioLength} caratteri`;
-    }
-
-    return [
-        {
-            label: 'Foto profilo',
-            done: hasPhoto,
-            hint: hasPhoto ? 'Caricata' : 'Non ancora caricata',
-        },
-        {
-            label: 'Titolo del profilo',
-            done: headlineOk,
-            hint: headlineOk ? 'Fatto' : 'Una riga che ti descriva',
-        },
-        {
-            label: 'Chi sei e come lavori',
-            done: bioOk,
-            hint: bioHint,
-        },
-        {
-            label: 'Anni di esperienza',
-            done: experience !== undefined,
-            hint: experience?.label ?? 'Scegli dall’elenco',
-        },
-    ];
+    return `${done} campi obbligatori su 4 compilati`;
 }
 
-/** Step 2: photo, headline, bio and years of experience, all required. */
-export default function StepProfile({
-    draft,
-    update,
-    name,
-    photo,
-    disciplines,
-    cities,
-}: StepProps) {
-    const checks = profileChecks(draft, photo !== null);
-    const done = checks.filter((check) => check.done).length;
-
+/**
+ * Step 2 "Il tuo profilo": photo, headline, bio and years of experience
+ * (all required) and the socials. Desktop: the photo in a box on the left.
+ */
+export default function StepProfile({ draft, update, name, photo }: StepProps) {
     return (
-        <StepColumns
-            aside={
-                <DarkPanel title="Anteprima profilo">
-                    <SearchCardPreview
-                        draft={draft}
-                        name={name}
-                        photo={photo}
-                        disciplines={disciplines}
-                        cities={cities}
-                        experience
-                        photoPlaceholder
-                    />
-                    <div className="flex flex-col gap-2.5">
-                        <div className="flex items-baseline justify-between gap-2">
-                            <span className="text-[15px] leading-5.5 font-semibold">
-                                Campi obbligatori
-                            </span>
-                            <span className="text-[22px] leading-7 font-bold tabular-nums">
-                                {done}/{checks.length}
-                            </span>
-                        </div>
-                        <div
-                            aria-hidden="true"
-                            className="h-2 overflow-hidden rounded-full bg-sidebar-border"
-                        >
-                            <div
-                                className="h-full rounded-full bg-sidebar-primary transition-[width]"
-                                style={{
-                                    width: `${(done / checks.length) * 100}%`,
-                                }}
-                            />
-                        </div>
-                        <PanelChecklist checks={checks} className="mt-1" />
-                    </div>
-                </DarkPanel>
-            }
-        >
+        <div className="grid items-start gap-10 md:grid-cols-[280px_minmax(0,1fr)] md:gap-16">
             <PhotoSection
                 photo={photo}
                 name={name}
                 onChange={(file) => update({ photo: file })}
                 onRemove={() => update({ photo: null, photoUrl: null })}
             />
-
-            <NumberedSection step={2} title="Presentazione">
+            <Section title="Presentazione" className="md:gap-5.5">
                 <Presentation draft={draft} update={update} />
-            </NumberedSection>
-        </StepColumns>
+            </Section>
+        </div>
     );
 }
 
-/** "Foto profilo": the round photo, the rules and the buttons. */
+/** "Foto profilo": the round photo (or the initials) and the buttons. */
 function PhotoSection({
     photo,
     name,
@@ -182,89 +96,85 @@ function PhotoSection({
     onRemove: () => void;
 }) {
     const fileInput = useRef<HTMLInputElement>(null);
+    const getInitials = useInitials();
+    const initials = name.trim() ? getInitials(name) : '';
     const choose = () => fileInput.current?.click();
 
     return (
-        <NumberedSection step={1} title="Foto profilo" className="gap-4.5">
-            <div className="flex flex-wrap items-center gap-5 rounded-[18px] border bg-muted/50 p-4.5">
+        <Section
+            title="Foto profilo"
+            className="md:items-center md:rounded-[20px] md:p-6 md:shadow-[inset_0_0_0_1px_var(--border)] md:[&>div:first-child]:self-stretch"
+        >
+            <div className="flex items-center gap-5 md:flex-col md:gap-4">
                 {photo ? (
                     <img
                         src={photo}
-                        alt={`Foto profilo di ${name}`}
-                        className="size-26 flex-none rounded-full object-cover ring-4 ring-card"
+                        alt={`Foto profilo di ${name || 'te'}`}
+                        className="size-24 shrink-0 rounded-full object-cover ring-[1.5px] ring-brand md:size-40"
                     />
                 ) : (
                     <button
                         type="button"
                         onClick={choose}
                         aria-label="Carica una foto"
-                        className="flex size-26 flex-none items-center justify-center rounded-full border-[1.5px] border-dashed border-ring bg-card text-muted-foreground transition-colors hover:bg-secondary"
+                        className="flex size-24 shrink-0 items-center justify-center rounded-full text-[32px] font-bold text-muted-foreground shadow-[inset_0_0_0_1.5px_var(--field)] outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 md:size-40 md:text-[52px]"
                     >
-                        <UserRound aria-hidden="true" className="size-6.5" />
+                        {initials || (
+                            <Camera aria-hidden="true" className="size-8" />
+                        )}
                     </button>
                 )}
-
-                <div className="flex min-w-55 flex-1 flex-col gap-2.5">
-                    <p className="flex items-center gap-2 text-[13px] leading-4.5 text-foreground/80">
-                        <span
-                            aria-hidden="true"
-                            className="size-1.5 rounded-full bg-foreground"
-                        />
+                <div className="flex flex-1 flex-col items-start gap-1 md:w-full md:items-center md:gap-2">
+                    {/* Hidden: the buttons open it. Sent with the whole registration. */}
+                    <input
+                        ref={fileInput}
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        className="hidden"
+                        onChange={(event) => {
+                            onChange(event.target.files?.[0] ?? null);
+                            // The same file can be chosen again after "Rimuovi".
+                            event.target.value = '';
+                        }}
+                    />
+                    <button
+                        type="button"
+                        onClick={choose}
+                        className="flex h-11 items-center justify-center gap-2 rounded-full px-5 text-[15px] font-semibold shadow-[inset_0_0_0_1px_var(--field)] outline-none hover:shadow-[inset_0_0_0_1.5px_var(--brand)] focus-visible:ring-[3px] focus-visible:ring-ring/50 md:w-full"
+                    >
+                        <Camera aria-hidden="true" className="size-4.5" />
+                        {photo ? 'Cambia foto' : 'Carica una foto'}
+                    </button>
+                    {photo && (
+                        <button
+                            type="button"
+                            onClick={onRemove}
+                            className="flex min-h-11 items-center px-2 text-[15px] font-semibold underline underline-offset-3 outline-none hover:text-brand focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        >
+                            Rimuovi
+                        </button>
+                    )}
+                    <p className="text-[13px] leading-4.5 text-muted-foreground md:text-center">
                         JPG o PNG, almeno 400 × 400 px
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                        {/* Hidden: the buttons open it. Sent with the whole registration. */}
-                        <input
-                            ref={fileInput}
-                            type="file"
-                            accept="image/jpeg,image/png"
-                            className="hidden"
-                            onChange={(event) => {
-                                onChange(event.target.files?.[0] ?? null);
-                                // The same file can be chosen again after "Rimuovi".
-                                event.target.value = '';
-                            }}
-                        />
-                        <Button
-                            type="button"
-                            onClick={choose}
-                            className="h-10 rounded-[10px] px-3.5 font-semibold"
-                        >
-                            <Camera aria-hidden="true" />
-                            {photo ? 'Cambia foto' : 'Carica una foto'}
-                        </Button>
-                        {photo && (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={onRemove}
-                                className="h-10 rounded-[10px] border-input px-3.5"
-                            >
-                                Rimuovi
-                            </Button>
-                        )}
-                    </div>
                 </div>
             </div>
-        </NumberedSection>
+        </Section>
     );
 }
 
-/** Headline, bio (with the bar up to 60 characters) and experience. */
+/** Headline, bio (at least 60 characters), experience and the socials. */
 function Presentation({ draft, update }: Pick<StepProps, 'draft' | 'update'>) {
     const id = useId();
     const bioLength = draft.bio.trim().length;
     const bioOk = bioLength >= BIO_MIN;
-    const bioHint = bioOk
-        ? `Ottimo. ${CONTACTS_NOTE}`
-        : `Almeno ${BIO_MIN} caratteri${bioLength > 0 ? ` · ne mancano ${BIO_MIN - bioLength}` : ''}. ${CONTACTS_NOTE}`;
 
     return (
         <>
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
                 <label
                     htmlFor={`${id}-headline`}
-                    className="text-sm font-semibold"
+                    className={fieldLabelClassName}
                 >
                     Titolo del profilo
                 </label>
@@ -273,16 +183,16 @@ function Presentation({ draft, update }: Pick<StepProps, 'draft' | 'update'>) {
                     aria-describedby={`${id}-headline-hint`}
                     required
                     maxLength={HEADLINE_MAX}
-                    placeholder="Es. Personal trainer · Bodybuilding e Functional"
+                    placeholder="Es. Personal trainer · Boxe e functional"
                     value={draft.headline}
                     onChange={(event) =>
                         update({ headline: event.target.value })
                     }
-                    className="h-12 rounded-xl px-3.5 text-[15px] md:text-[15px]"
+                    className={pillFieldClassName}
                 />
                 <div
                     id={`${id}-headline-hint`}
-                    className="flex justify-between gap-2 text-[13px] leading-4.5 text-muted-foreground"
+                    className="flex justify-between gap-3 text-[13px] leading-4.5 text-muted-foreground"
                 >
                     <span>Una riga. Compare sotto il tuo nome.</span>
                     <span className="tabular-nums">
@@ -291,8 +201,8 @@ function Presentation({ draft, update }: Pick<StepProps, 'draft' | 'update'>) {
                 </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-                <label htmlFor={`${id}-bio`} className="text-sm font-semibold">
+            <div className="flex flex-col gap-2">
+                <label htmlFor={`${id}-bio`} className={fieldLabelClassName}>
                     Chi sei e come lavori
                 </label>
                 <Textarea
@@ -304,76 +214,47 @@ function Presentation({ draft, update }: Pick<StepProps, 'draft' | 'update'>) {
                     placeholder="Chi alleni di solito, che metodo usi, cosa succede nella prima seduta…"
                     value={draft.bio}
                     onChange={(event) => update({ bio: event.target.value })}
-                    className="rounded-xl px-3.5 py-3 text-[15px] leading-5.5 md:text-[15px]"
+                    className="min-h-35 rounded-[20px] border-0 bg-transparent px-4.5 py-3.5 text-[17px] leading-5.5 shadow-[inset_0_0_0_1px_var(--field)] focus-visible:shadow-[inset_0_0_0_1.5px_var(--brand)] focus-visible:ring-0 md:text-base"
                 />
                 <div
                     id={`${id}-bio-hint`}
-                    className="flex justify-between gap-2 text-[13px] leading-4.5"
+                    className="flex justify-between gap-3 text-[13px] leading-4.5 text-muted-foreground"
                 >
-                    <span
-                        className={cn(
-                            bioOk
-                                ? 'text-foreground/70'
-                                : 'font-medium text-foreground',
+                    <span>
+                        {bioOk ? (
+                            <span className="font-semibold text-brand">
+                                Ottimo.{' '}
+                            </span>
+                        ) : (
+                            `Almeno ${BIO_MIN} caratteri${bioLength > 0 ? `, ne mancano ${BIO_MIN - bioLength}` : ''}. `
                         )}
-                    >
-                        {bioHint}
+                        {CONTACTS_NOTE}
                     </span>
-                    <span className="flex-none text-muted-foreground tabular-nums">
+                    <span className="shrink-0 tabular-nums">
                         {draft.bio.length}/{BIO_MAX}
                     </span>
                 </div>
-                <div
-                    aria-hidden="true"
-                    className="h-1 overflow-hidden rounded-full bg-secondary"
-                >
-                    <div
-                        className="h-full rounded-full bg-foreground transition-[width]"
-                        style={{
-                            width: `${Math.min(100, (bioLength / BIO_MIN) * 100)}%`,
-                        }}
-                    />
-                </div>
             </div>
 
-            <div className="flex max-w-70 flex-col gap-1.5">
-                <label
-                    htmlFor={`${id}-experience`}
-                    className="text-sm font-semibold"
-                >
+            <div className="flex flex-col gap-2.5">
+                <span id={`${id}-experience`} className={fieldLabelClassName}>
                     Anni di esperienza
-                </label>
-                <Select
-                    // '' shows the placeholder "Scegli".
-                    value={draft.experience}
-                    onValueChange={(experience) =>
-                        update({
-                            experience:
-                                experience as TrainerDraft['experience'],
-                        })
-                    }
-                >
-                    <SelectTrigger
-                        id={`${id}-experience`}
-                        aria-required="true"
-                        className="h-12 w-full rounded-xl px-3.5 text-[15px] data-[size=default]:h-12"
-                    >
-                        <SelectValue placeholder="Scegli" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {experienceOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                </span>
+                <ChipRow
+                    label="Anni di esperienza"
+                    options={experienceOptions}
+                    isOn={(value) => draft.experience === value}
+                    onToggle={(experience) => update({ experience })}
+                />
             </div>
 
-            <SocialAccountsField
-                instagram={draft.instagram}
-                onInstagramChange={(instagram) => update({ instagram })}
-            />
+            <div className={cn('md:max-w-90')}>
+                <SocialAccountsField
+                    dark
+                    instagram={draft.instagram}
+                    onInstagramChange={(instagram) => update({ instagram })}
+                />
+            </div>
         </>
     );
 }

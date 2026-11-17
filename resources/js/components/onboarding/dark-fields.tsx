@@ -6,8 +6,8 @@ import { timeOptions } from '@/components/onboarding/gym/draft';
 import { cn } from '@/lib/utils';
 
 /*
- * The pieces of the dark "Registra la palestra" (design "Registrazione
- * palestra"): round fields with a grey outline, turquoise while typing.
+ * The pieces of the dark sign-ups ("Registra la palestra", "Diventa
+ * trainer"): round fields with a grey outline, turquoise while typing.
  */
 
 /** A round field: 52px on phones, 50px on desktop. */
@@ -132,12 +132,13 @@ export function errorOf(
     );
 }
 
-/** An hour, every half hour: a native select, round, with an arrow. */
+/** An hour (every half hour unless `options` says otherwise): a native select, round, with an arrow. */
 export function TimeSelect({
     value,
     onChange,
     label,
     from,
+    options = timeOptions,
     className,
 }: {
     value: string;
@@ -145,6 +146,8 @@ export function TimeSelect({
     label: string;
     /** Only the times after this one. */
     from?: string;
+    /** The times to choose from, "HH:MM". */
+    options?: string[];
     className?: string;
 }) {
     return (
@@ -155,7 +158,7 @@ export function TimeSelect({
                 onChange={(event) => onChange(event.target.value)}
                 className="h-12 w-full min-w-0 cursor-pointer appearance-none rounded-full border-0 bg-transparent pr-8.5 pl-4.5 text-[17px] font-semibold text-foreground tabular-nums shadow-[inset_0_0_0_1px_var(--field)] outline-none focus-visible:shadow-[inset_0_0_0_1.5px_var(--brand)] md:h-11 md:text-[15px]"
             >
-                {timeOptions
+                {options
                     .filter((time) => from === undefined || time > from)
                     .map((time) => (
                         <option key={time} value={time}>

@@ -10,19 +10,25 @@ type SegmentedControlProps<T extends string> = {
     options: readonly Option<T>[];
     value: T;
     onValueChange: (value: T) => void;
+    /**
+     * white: the chosen one is white with dark text (search).
+     * brand: the chosen one has a turquoise outline and text (forms, e.g. "Sei" of Contatti).
+     */
+    tone?: 'white' | 'brand';
     className?: string;
 };
 
 /**
  * One choice among a few, side by side in a round track (design system
  * "SegmentedControl", white variant): the chosen one is white with dark
- * text. A radio group: the arrows move the choice, like the native radios.
+ * text, or (brand) outlined in turquoise. A radio group: the arrows move the choice, like the native radios.
  */
 export default function SegmentedControl<T extends string>({
     label,
     options,
     value,
     onValueChange,
+    tone = 'white',
     className,
 }: SegmentedControlProps<T>) {
     const buttons = useRef<(HTMLButtonElement | null)[]>([]);
@@ -50,7 +56,10 @@ export default function SegmentedControl<T extends string>({
             role="radiogroup"
             aria-label={label}
             className={cn(
-                'flex w-full gap-0.5 rounded-full p-1 shadow-[inset_0_0_0_1px_var(--field)]',
+                'flex w-full gap-0.5 rounded-full',
+                tone === 'white'
+                    ? 'p-1 shadow-[inset_0_0_0_1px_var(--field)]'
+                    : 'p-0.5 shadow-[inset_0_0_0_1px_var(--border)]',
                 className,
             )}
         >
@@ -69,7 +78,12 @@ export default function SegmentedControl<T extends string>({
                         tabIndex={checked ? 0 : -1}
                         onClick={() => onValueChange(option.value)}
                         onKeyDown={(event) => move(event, index)}
-                        className="min-h-9 min-w-0 flex-1 truncate rounded-full px-3 text-[15px] font-semibold text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-checked:bg-foreground aria-checked:text-background aria-checked:shadow-[0_2px_6px_0_rgba(0,0,0,0.3)]"
+                        className={cn(
+                            'min-w-0 flex-1 truncate rounded-full px-3 text-[15px] text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                            tone === 'white'
+                                ? 'min-h-9 font-semibold aria-checked:bg-foreground aria-checked:text-background aria-checked:shadow-[0_2px_6px_0_rgba(0,0,0,0.3)]'
+                                : 'min-h-10 font-normal aria-checked:font-semibold aria-checked:text-brand aria-checked:shadow-[inset_0_0_0_1.5px_var(--brand)]',
+                        )}
                     >
                         {option.label}
                     </button>

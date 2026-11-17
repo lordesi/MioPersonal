@@ -64,7 +64,7 @@ class EventSearchController extends Controller
             ],
             'types' => GroupSessionType::options(),
             'disciplines' => CatalogOptions::disciplines(),
-            'cities' => CatalogOptions::cities(),
+            'cities' => CatalogOptions::citiesWithCoordinates(),
             'seo' => Seo::page(
                 "Eventi fitness {$place}: workshop, open day e allenamenti di gruppo",
                 "I prossimi eventi di personal trainer e palestre {$place}: workshop, open day e allenamenti di gruppo. Prenota il tuo posto su MioPersonal.",

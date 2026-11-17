@@ -20,8 +20,8 @@ import {
     fieldLabelClassName,
     pillFieldClassName,
     Section,
-} from '@/components/onboarding/gym/gym-fields';
-import { gymLinkClassName } from '@/components/onboarding/gym/gym-shell';
+} from '@/components/onboarding/dark-fields';
+import { shellLinkClassName } from '@/components/onboarding/dark-shell';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useAccountCheck } from '@/hooks/use-account-check';
@@ -41,12 +41,33 @@ type StepAccountProps = {
     onTermsChange: (accepted: boolean) => void;
     onAccountExists: (field: CheckedField, value: string) => void;
     usernameLinkPrefix: string;
+    /** The words of the sign-up: gym or trainer. */
+    copy?: AccountStepCopy;
+};
+
+export type AccountStepCopy = {
+    /** "Il referente" (gym), "Chi sei" (trainer). */
+    whoTitle: string;
+    whoDescription?: string;
+    /** "Il link della palestra"; without it the username is under "Chi sei". */
+    linkTitle?: string;
+    linkDescription?: string;
+    terms: string;
+};
+
+/** The words of "Registra la palestra". */
+export const gymAccountCopy: AccountStepCopy = {
+    whoTitle: 'Il referente',
+    whoDescription: 'Chi gestisce il profilo della palestra.',
+    linkTitle: 'Il link della palestra',
+    linkDescription: 'L’indirizzo che condividi con i clienti.',
+    terms: 'Accetto i Termini e l’Informativa privacy',
 };
 
 /**
- * Step 1, "Account": who runs the gym's profile, its link, the contacts of
- * the team, the password and the terms. The same fields and checks of the
- * other sign-ups (AccountFields), split in the sections of the design.
+ * Step 1, "Account", of the dark sign-ups (gym, trainer): who you are, the
+ * link, the contacts, the password and the terms. The same fields and checks
+ * of the other sign-ups (AccountFields), split in the sections of the design.
  */
 export default function StepAccount({
     errors,
@@ -55,9 +76,8 @@ export default function StepAccount({
     onTermsChange,
     onAccountExists,
     usernameLinkPrefix,
+    copy = gymAccountCopy,
 }: StepAccountProps) {
-    const termsId = useId();
-    const termsErrorId = `${termsId}-error`;
     const email = bind('email');
     const password = bind('password');
     const emailCheck = useAccountCheck('email', (value) =>
@@ -65,6 +85,20 @@ export default function StepAccount({
     );
     // The answer of the check is newer than the error of the last submit.
     const emailError = emailCheck.error ?? errors.email;
+
+    const username = (
+        <UsernameField
+            dark
+            error={errors.username}
+            linkPrefix={usernameLinkPrefix}
+            suggestion={usernameFromName(
+                bind('first_name').value,
+                bind('last_name').value,
+            )}
+            bind={bind('username')}
+            inputClassName={pillFieldClassName}
+        />
+    );
 
     const nameField = (field: 'first_name' | 'last_name') => (
         <FormField
@@ -94,31 +128,24 @@ export default function StepAccount({
         <div className="grid items-start gap-10 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:gap-14">
             <div className="flex flex-col gap-10 md:gap-9">
                 <Section
-                    title="Il referente"
-                    description="Chi gestisce il profilo della palestra."
+                    title={copy.whoTitle}
+                    description={copy.whoDescription}
                 >
                     <div className="grid grid-cols-2 gap-2.5 md:gap-3">
                         {nameField('first_name')}
                         {nameField('last_name')}
                     </div>
+                    {!copy.linkTitle && username}
                 </Section>
 
-                <Section
-                    title="Il link della palestra"
-                    description="L’indirizzo che condividi con i clienti."
-                >
-                    <UsernameField
-                        dark
-                        error={errors.username}
-                        linkPrefix={usernameLinkPrefix}
-                        suggestion={usernameFromName(
-                            bind('first_name').value,
-                            bind('last_name').value,
-                        )}
-                        bind={bind('username')}
-                        inputClassName={pillFieldClassName}
-                    />
-                </Section>
+                {copy.linkTitle && (
+                    <Section
+                        title={copy.linkTitle}
+                        description={copy.linkDescription}
+                    >
+                        {username}
+                    </Section>
+                )}
 
                 <Section title="Contatti">
                     <div className="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] md:items-start md:gap-3">
@@ -190,46 +217,67 @@ export default function StepAccount({
                     </div>
                 </Section>
 
-                <section className="flex flex-col gap-1 rounded-[26px] bg-card p-4 md:gap-1.5 md:rounded-[20px] md:bg-transparent md:p-5 md:shadow-[inset_0_0_0_1px_var(--border)]">
-                    <label
-                        htmlFor={termsId}
-                        className="flex min-h-11 cursor-pointer items-center gap-3 text-[17px] leading-5.5 font-semibold"
-                    >
-                        <Checkbox
-                            id={termsId}
-                            checked={acceptedTerms}
-                            onCheckedChange={(checked) =>
-                                onTermsChange(checked === true)
-                            }
-                            aria-invalid={!!errors.terms}
-                            aria-describedby={
-                                errors.terms ? termsErrorId : undefined
-                            }
-                            className={darkCheckboxClassName}
-                        />
-                        Accetto i Termini e l’Informativa privacy
-                    </label>
-                    <div className="flex flex-wrap gap-x-5 pl-8.5">
-                        <a
-                            href={terms.url()}
-                            target="_blank"
-                            rel="noopener"
-                            className={gymLinkClassName}
-                        >
-                            Leggi i Termini
-                        </a>
-                        <a
-                            href={privacy.url()}
-                            target="_blank"
-                            rel="noopener"
-                            className={gymLinkClassName}
-                        >
-                            Leggi l’Informativa
-                        </a>
-                    </div>
-                    <DarkError id={termsErrorId} message={errors.terms} />
-                </section>
+                <TermsCard
+                    label={copy.terms}
+                    accepted={acceptedTerms}
+                    onChange={onTermsChange}
+                    error={errors.terms}
+                />
             </div>
         </div>
+    );
+}
+
+/** "Accetto i Termini…": the checkbox and the links to read them. */
+export function TermsCard({
+    label,
+    accepted,
+    onChange,
+    error,
+}: {
+    label: string;
+    accepted: boolean;
+    onChange: (accepted: boolean) => void;
+    error?: string;
+}) {
+    const termsId = useId();
+    const termsErrorId = `${termsId}-error`;
+
+    return (
+        <section className="flex flex-col gap-1 rounded-[26px] bg-card p-4 md:gap-1.5 md:rounded-[20px] md:bg-transparent md:p-5 md:shadow-[inset_0_0_0_1px_var(--border)]">
+            <label
+                htmlFor={termsId}
+                className="flex min-h-11 cursor-pointer items-center gap-3 text-[17px] leading-5.5 font-semibold"
+            >
+                <Checkbox
+                    id={termsId}
+                    checked={accepted}
+                    onCheckedChange={(checked) => onChange(checked === true)}
+                    aria-invalid={!!error}
+                    aria-describedby={error ? termsErrorId : undefined}
+                    className={darkCheckboxClassName}
+                />
+                {label}
+            </label>
+            <div className="flex flex-wrap gap-x-5 pl-8.5">
+                <a
+                    href={terms.url()}
+                    target="_blank"
+                    rel="noopener"
+                    className={shellLinkClassName}
+                >
+                    Leggi i Termini
+                </a>
+                <a
+                    href={privacy.url()}
+                    target="_blank"
+                    rel="noopener"
+                    className={shellLinkClassName}
+                >
+                    Leggi l’Informativa
+                </a>
+            </div>
+            <DarkError id={termsErrorId} message={error} />
+        </section>
     );
 }
