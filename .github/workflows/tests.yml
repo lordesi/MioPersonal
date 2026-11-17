@@ -47,4 +47,4 @@ jobs:
       - name: Audit dependencies
         run: |
           composer audit --abandoned=report
-          npm audit --omit=dev --audit-level=high
+          node scripts/npm-audit.mjs
