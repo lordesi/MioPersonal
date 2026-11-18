@@ -140,6 +140,8 @@ export type TrainerProfile = {
 /** A confirmed session in the trainer's "Le tue prenotazioni" page. */
 export type TrainerTodaySession = {
     id: number;
+    /** "Aggiungi nota": the trainer's own, never shown to the client. */
+    trainerNote: string | null;
     /** null once the client deleted the account: no link to the profile. */
     clientId: number | null;
     clientName: string;
@@ -168,6 +170,42 @@ export type TrainerSession = TrainerTodaySession &
         guestNames: string[];
     };
 
+/** A session of the day chosen in "Home" (TrainerDashboardController::daySessions). */
+export type TrainerDaySession = TrainerSession & {
+    /** "Seduta 2 di 10" as numbers; null for a single session. */
+    package: { position: number; total: number } | null;
+    /** For "Chiama": the client's, or the one written by the trainer. */
+    phone: string | null;
+    /** Confirmed and over: "Effettuata" or "Saltata". */
+    over: boolean;
+    /** Over less than 7 days ago: "Saltata" can still be set or taken back. */
+    canChangeNoShow: boolean;
+};
+
+/** A day of the week strip of "Home". */
+export type TrainerWeekDay = {
+    /** Rome date "YYYY-MM-DD". */
+    date: string;
+    /** Confirmed and waiting sessions. */
+    count: number;
+};
+
+/** The period of "Statistiche": `?periodo=`. */
+export type TrainerStatsPeriod = 'oggi' | '7' | '30' | 'intervallo';
+
+/** "Statistiche" of "Home", with the same numbers of the period before. */
+export type TrainerDashboardStats = {
+    period: TrainerStatsPeriod;
+    /** Rome dates "YYYY-MM-DD", both included. */
+    from: string;
+    to: string;
+    views: number;
+    viewsBefore: number;
+    /** Confirmed sessions starting in the period. */
+    sessions: number;
+    sessionsBefore: number;
+    hours: number;
+};
 /** "Sposta" and "Annulla seduta" of a confirmed session (TrainerSessions::change). */
 export type SessionChange = {
     /** Confirmed and not started: the buttons show. */
@@ -233,6 +271,8 @@ export type ClientAttendance = {
 /** A booking waiting for the trainer's answer. */
 export type TrainerBookingRequest = TrainerSession & {
     note: string | null;
+    /** The total in cents, for all the people of the session. */
+    priceCents: number;
     /** "Ripeti ogni settimana": "Ogni martedì alle 18:00", or null. */
     repeatWeekly: string | null;
     /** ISO UTC string: when the client asked. */
@@ -288,6 +328,8 @@ export type TrainerStats = {
 /** Sent by every page of the trainer area, read by the trainer layout. */
 export type TrainerAreaData = {
     pendingCount: number;
+    /** Conversations with messages not read yet: the badge of "Clienti". */
+    unreadChats: number;
     /** Null until the registration is sent. */
     publicProfileHref: string | null;
     /** For the notice at the top of every page, until the profile is approved. */
@@ -310,6 +352,10 @@ export type CalendarEvent = SessionChange & {
     /** "Seduta singola · 3 persone" for a session of more people. */
     serviceName: string;
     placeLabel: string;
+    /** For "Chiama": the client's, or the one written by the trainer. */
+    phone: string | null;
+    /** "Seduta 2 di 10" as numbers; null for a single session. */
+    package: { position: number; total: number } | null;
     kind: 'confirmed' | 'pending';
     /** "Invita un amico": the friends who joined the client. */
     guestNames: string[];
@@ -319,6 +365,8 @@ export type CalendarEvent = SessionChange & {
     offApp: boolean;
     /** Their personal link, to invite them (null once the profile isn't public). */
     inviteLink: string | null;
+    /** "Aggiungi nota". */
+    trainerNote: string | null;
 };
 
 /** "Aggiungi seduta": who, what and where. */
@@ -351,6 +399,16 @@ export type ClientPayment = {
     note: string | null;
 };
 
+/** A dated note of the trainer on a client ("Note"): never shown to the client. */
+export type ClientNote = {
+    id: number;
+    body: string;
+    /** ISO UTC. */
+    createdAt: string;
+    /** Changed after it was written. */
+    edited: boolean;
+};
+
 /** A "sedute fisse" rule going on: «Ogni martedì alle 18:00». */
 export type ClientSeriesRule = {
     id: number;
@@ -377,6 +435,12 @@ export type SeriesService = {
  * and who the trainer added by hand.
  */
 export type TrainerClient = {
+    /** "Svolte": the last sessions over, the most recent first. */
+    past: TrainerPastSession[];
+    /** Taken out of "Ancora da contattare" (saved on the account). */
+    contactHidden: boolean;
+    /** A request waiting for the trainer: the filter "Richieste". */
+    hasRequest: boolean;
     /** The account (links of Panoramica and Calendario); null until the person signs up. */
     id: number | null;
     /** The row of the trainer's list: what the page selects and edits. */
@@ -412,7 +476,10 @@ export type TrainerClient = {
     sharedNoteAt: string | null;
     /** The trainer's own goal and private notes: never shown to the client. */
     goal: string | null;
+    /** The old single note: the first, undated, while it has text. */
     notes: string | null;
+    /** "Note": the dated ones, the most recent first. */
+    datedNotes: ClientNote[];
     payments: ClientPayment[];
     paidCents: number;
     /** The personal link to send; null once signed up, or while the profile is not public. */

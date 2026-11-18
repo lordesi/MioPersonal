@@ -38,7 +38,7 @@ class TrainerCalendarTest extends TestCase
         Booking::factory()->confirmed()->at($this->now->setTime(19, 0))->create();
 
         $this->actingAs($trainer->user)
-            ->get(route('trainer.calendar'))
+            ->get(route('trainer.calendar', ['vista' => 'settimana']))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('view', 'week')
                 ->where('focus', '2026-10-15')

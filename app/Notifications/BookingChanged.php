@@ -31,10 +31,14 @@ class BookingChanged extends Notification implements ShouldQueue
 {
     use Queueable, SendsPush;
 
+    /** The cancellations have their own switch ("Cancellazioni"). */
     protected function pushCategory(): PushCategory
     {
-        return PushCategory::Bookings;
+        return in_array($this->kind, self::CANCELLATIONS, true) ? PushCategory::Cancellations : PushCategory::Bookings;
     }
+
+    /** The kinds that say the session won't take place. */
+    public const CANCELLATIONS = ['cancelled-by-trainer', 'cancelled-by-client', 'guest-cancelled'];
 
     public function __construct(public Booking $booking, public string $kind)
     {

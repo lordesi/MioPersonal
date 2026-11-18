@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ClientPayment;
 use App\Models\TrainerClient;
+use App\Models\TrainerClientNote;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Notifications\TrainerNoteShared;
@@ -180,6 +181,64 @@ class TrainerClientRecordsController extends Controller
         return back();
     }
 
+    /** "Aggiungi nota" in "Note": dated, only the trainer reads it. */
+    public function storeNote(Request $request, TrainerClient $client): RedirectResponse
+    {
+        $this->authorizeRecord($request, $client);
+
+        $client->clientNotes()->create(['body' => $this->noteBody($request)]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Nota aggiunta.']);
+
+        return back();
+    }
+
+    public function updateNote(Request $request, TrainerClient $client, TrainerClientNote $note): RedirectResponse
+    {
+        $this->authorizeNote($request, $client, $note);
+
+        $note->update(['body' => $this->noteBody($request)]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Nota salvata.']);
+
+        return back();
+    }
+
+    public function destroyNote(Request $request, TrainerClient $client, TrainerClientNote $note): RedirectResponse
+    {
+        $this->authorizeNote($request, $client, $note);
+
+        $note->delete();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Nota eliminata.']);
+
+        return back();
+    }
+
+    private function noteBody(Request $request): string
+    {
+        $data = $request->validate([
+            'body' => ['required', 'string', 'max:'.TrainerClientNote::BODY_MAX],
+        ], [
+            'body.required' => 'Scrivi la nota.',
+            'body.max' => 'La nota può avere al massimo '.TrainerClientNote::BODY_MAX.' caratteri.',
+        ]);
+
+        $body = trim($data['body']);
+
+        if ($body === '') {
+            throw ValidationException::withMessages(['body' => 'Scrivi la nota.']);
+        }
+
+        return $body;
+    }
+
+    private function authorizeNote(Request $request, TrainerClient $client, TrainerClientNote $note): void
+    {
+        $this->authorizeRecord($request, $client);
+        abort_unless($note->trainer_client_id === $client->id, 404);
+    }
+
     /**
      * @return array{name: string, email: string|null, phone: string|null}
      */
@@ -217,6 +276,26 @@ class TrainerClientRecordsController extends Controller
         $value = trim((string) $value);
 
         return $value === '' ? null : $value;
+    }
+
+    /** "Ancora da contattare": the X takes the client out of the list, on every device. */
+    public function hideToContact(Request $request, TrainerClient $client): RedirectResponse
+    {
+        $this->authorizeRecord($request, $client);
+
+        $client->forceFill(['contact_hidden_at' => now()])->save();
+
+        return back();
+    }
+
+    /** "Mostra nascosti": every client taken out of "Ancora da contattare" comes back. */
+    public function restoreToContact(Request $request): RedirectResponse
+    {
+        $this->profile($request)->clientRecords()
+            ->whereNotNull('contact_hidden_at')
+            ->update(['contact_hidden_at' => null]);
+
+        return back();
     }
 
     private function profile(Request $request): TrainerProfile

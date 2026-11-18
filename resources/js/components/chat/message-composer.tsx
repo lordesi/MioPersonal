@@ -19,6 +19,8 @@ import {
     PHOTO_MAX_BYTES,
     PHOTOS_AT_ONCE,
     sendMessage,
+    sendTyping,
+    TYPING_EVERY_MS,
 } from '@/lib/chat';
 import { shrinkImage } from '@/lib/image';
 import { cn } from '@/lib/utils';
@@ -72,6 +74,22 @@ export default function MessageComposer({
     const pdfInput = useRef<HTMLInputElement>(null);
     const textarea = useRef<HTMLTextAreaElement>(null);
     const previews = useRef(new Set<string>());
+    // "Sta scrivendo…": when the other side was last told.
+    const typingSentAt = useRef(0);
+
+    const write = (text: string) => {
+        setBody(text);
+
+        const now = Date.now();
+
+        if (
+            text.trim() !== '' &&
+            now - typingSentAt.current > TYPING_EVERY_MS
+        ) {
+            typingSentAt.current = now;
+            sendTyping(recordId);
+        }
+    };
 
     const sending = progress !== null;
     const hasFiles = photos.length > 0 || pdf !== null;
@@ -392,7 +410,7 @@ export default function MessageComposer({
                         ref={textarea}
                         id={`message-${recordId}`}
                         value={body}
-                        onChange={(event) => setBody(event.target.value)}
+                        onChange={(event) => write(event.target.value)}
                         onKeyDown={onKeyDown}
                         onPaste={onPaste}
                         maxLength={BODY_MAX}

@@ -232,8 +232,11 @@ class TrainerClientRecordsTest extends TestCase
         $mine = $trainer->clientRecords()->create(['name' => 'Marco', 'user_id' => $client->id, 'private_notes' => 'Prima nota']);
         $manual = $trainer->clientRecords()->create(['name' => 'Marco R.', 'private_notes' => 'Seconda nota', 'goal' => 'Dimagrire']);
         $manual->payments()->create(['amount_cents' => 5000, 'paid_on' => '2026-10-01']);
+        $manual->clientNotes()->create(['body' => 'Nota datata']);
 
         app(LinkClient::class)->claimToken($trainer, $client, $manual->invite_token);
+
+        $this->assertSame(['Nota datata'], $mine->clientNotes()->pluck('body')->all());
 
         $this->assertDatabaseMissing('trainer_clients', ['id' => $manual->id]);
         $this->assertSame("Prima nota\n\nSeconda nota", $mine->fresh()->private_notes);
@@ -274,5 +277,99 @@ class TrainerClientRecordsTest extends TestCase
 
         $this->assertDatabaseCount('trainer_clients', 0);
         $this->assertDatabaseCount('client_payments', 0);
+    }
+
+    /** "Ancora da contattare": hidden on the account, so on every device; "Mostra nascosti" brings them back. */
+    public function test_the_trainer_hides_a_client_to_contact_and_shows_them_again()
+    {
+        $trainer = $this->trainer();
+        $first = $trainer->clientRecords()->create(['name' => 'Marco']);
+        $second = $trainer->clientRecords()->create(['name' => 'Anna']);
+
+        $this->actingAs($trainer->user)
+            ->post(route('trainer.clients.to-contact.hide', $first))
+            ->assertRedirect();
+        $this->actingAs($trainer->user)->post(route('trainer.clients.to-contact.hide', $second));
+
+        $this->actingAs($trainer->user)->get(route('trainer.clients'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('clients.0.contactHidden', true)
+                ->where('clients.1.contactHidden', true));
+
+        $this->actingAs($trainer->user)
+            ->delete(route('trainer.clients.to-contact.restore'))
+            ->assertRedirect();
+
+        $this->assertNull($first->fresh()->contact_hidden_at);
+        $this->assertNull($second->fresh()->contact_hidden_at);
+    }
+
+    public function test_a_trainer_cannot_hide_the_client_of_another_trainer()
+    {
+        $record = $this->trainer()->clientRecords()->create(['name' => 'Marco']);
+
+        $this->actingAs($this->trainer()->user)
+            ->post(route('trainer.clients.to-contact.hide', $record))
+            ->assertNotFound();
+    }
+
+    public function test_the_trainer_writes_edits_and_deletes_dated_notes()
+    {
+        $trainer = $this->trainer();
+        $record = $trainer->clientRecords()->create(['name' => 'Marco', 'private_notes' => 'Vecchia nota']);
+
+        $this->actingAs($trainer->user)
+            ->post(route('trainer.clients.notes.store', $record), ['body' => '  Squat 3x8, bene.  '])
+            ->assertRedirect();
+        $this->travel(2)->days();
+        $this->post(route('trainer.clients.notes.store', $record), ['body' => 'Preferisce la sera.']);
+
+        $this->get(route('trainer.clients', ['con' => $record->id]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('clients.0.notes', 'Vecchia nota')
+                ->has('clients.0.datedNotes', 2)
+                ->where('clients.0.datedNotes.0.body', 'Preferisce la sera.')
+                ->where('clients.0.datedNotes.1.body', 'Squat 3x8, bene.')
+                ->where('clients.0.datedNotes.1.edited', false));
+
+        $note = $record->clientNotes()->where('body', 'Squat 3x8, bene.')->firstOrFail();
+        $this->travel(1)->hours();
+        $this->patch(route('trainer.clients.notes.update', [$record, $note]), ['body' => 'Squat 4x8.'])->assertRedirect();
+        $this->assertSame('Squat 4x8.', $note->fresh()->body);
+
+        $this->get(route('trainer.clients', ['con' => $record->id]))
+            ->assertInertia(fn (Assert $page) => $page->where('clients.0.datedNotes.1.edited', true));
+
+        $this->delete(route('trainer.clients.notes.destroy', [$record, $note]))->assertRedirect();
+        $this->assertSame(1, $record->clientNotes()->count());
+    }
+
+    public function test_an_empty_dated_note_is_refused()
+    {
+        $trainer = $this->trainer();
+        $record = $trainer->clientRecords()->create(['name' => 'Marco']);
+
+        $this->actingAs($trainer->user)
+            ->post(route('trainer.clients.notes.store', $record), ['body' => '   '])
+            ->assertSessionHasErrors('body');
+
+        $this->assertSame(0, $record->clientNotes()->count());
+    }
+
+    public function test_a_trainer_cannot_touch_the_notes_of_another_trainer()
+    {
+        $record = $this->trainer()->clientRecords()->create(['name' => 'Marco']);
+        $note = $record->clientNotes()->create(['body' => 'Privata']);
+        $other = $this->trainer();
+        $mine = $other->clientRecords()->create(['name' => 'Luca']);
+
+        $this->actingAs($other->user)->post(route('trainer.clients.notes.store', $record), ['body' => 'x'])->assertNotFound();
+        $this->patch(route('trainer.clients.notes.update', [$record, $note]), ['body' => 'x'])->assertNotFound();
+        // Their own client in the address, but a note of someone else.
+        $this->delete(route('trainer.clients.notes.destroy', [$mine, $note]))->assertNotFound();
+
+        $this->assertSame('Privata', $note->fresh()->body);
+
+        $this->assertNull($record->fresh()->contact_hidden_at);
     }
 }

@@ -27,7 +27,7 @@ class AreaNavigationTest extends TestCase
     private const TRAINER_PAGES = [
         'trainer.today', 'trainer.requests', 'trainer.calendar', 'trainer.clients',
         'trainer.availability', 'trainer.services', 'trainer.events', 'trainer.gyms',
-        'trainer.profile.edit', 'trainer.reviews', 'trainer.share', 'trainer.settings',
+        'trainer.profile', 'trainer.profile.edit', 'trainer.reviews', 'trainer.share', 'trainer.settings',
     ];
 
     private const GYM_PAGES = [

@@ -1,5 +1,5 @@
 import { xsrfToken } from '@/lib/notifications';
-import { older, poll, store } from '@/routes/messages';
+import { older, poll, store, typing } from '@/routes/messages';
 import type { ChatMessage } from '@/types';
 
 /** How often the open conversation asks for new messages. */
@@ -51,11 +51,18 @@ async function json<T>(response: Response): Promise<T> {
     throw new ChatError('Non siamo riusciti a inviare. Riprova tra poco.');
 }
 
-/** The messages after `after`, oldest first, and when the other person last read. */
+export type PollResult = {
+    messages: ChatMessage[];
+    otherReadAt: string | null;
+    /** "Sta scrivendo…". */
+    otherTyping: boolean;
+};
+
+/** The messages after `after`, oldest first, when the other person last read and whether they are typing. */
 export async function fetchNewMessages(
     recordId: number,
     after: number,
-): Promise<{ messages: ChatMessage[]; otherReadAt: string | null }> {
+): Promise<PollResult> {
     const response = await fetch(
         poll.url(recordId, { query: { after: String(after) } }),
         { credentials: 'same-origin', headers },
@@ -63,9 +70,14 @@ export async function fetchNewMessages(
     const data = await json<{
         messages: ChatMessage[];
         otherReadAt?: string | null;
+        otherTyping?: boolean;
     }>(response);
 
-    return { messages: data.messages, otherReadAt: data.otherReadAt ?? null };
+    return {
+        messages: data.messages,
+        otherReadAt: data.otherReadAt ?? null,
+        otherTyping: data.otherTyping === true,
+    };
 }
 
 /** The page before `before`, oldest first. */
@@ -217,4 +229,16 @@ export function formatFileSize(bytes: number | null): string {
     }
 
     return `${(bytes / 1024 / 1024).toLocaleString('it-IT', { maximumFractionDigits: 1 })} MB`;
+}
+
+/** "Sta scrivendo…": tell the other side at most this often while typing. */
+export const TYPING_EVERY_MS = 4000;
+
+/** "Sta scrivendo…": fire and forget, a failed call only hides the dots. */
+export function sendTyping(recordId: number): void {
+    void fetch(typing.url(recordId), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { ...headers, 'X-XSRF-TOKEN': xsrfToken() },
+    }).catch(() => {});
 }

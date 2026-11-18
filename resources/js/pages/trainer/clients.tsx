@@ -1,167 +1,182 @@
-import { Head, usePage } from '@inertiajs/react';
-import { Search, Users } from 'lucide-react';
-import { useState } from 'react';
-import EmptyState from '@/components/states/empty-state';
-import AddClients from '@/components/trainer/area/add-clients';
-import ClientCard from '@/components/trainer/area/client-card';
-import type { ClientFilter } from '@/components/trainer/area/client-filters';
-import ClientFilters, {
+import { Head, router, usePoll } from '@inertiajs/react';
+import { useEffect, useMemo, useState } from 'react';
+import AddSessionDialog from '@/components/trainer/area/add-session-dialog';
+import AddClientDialog from '@/components/trainer/clients/add-client-dialog';
+import ClientsDesktop from '@/components/trainer/clients/clients-desktop';
+import ClientsMobile from '@/components/trainer/clients/clients-mobile';
+import {
     clientFilters,
-} from '@/components/trainer/area/client-filters';
-import ClientList from '@/components/trainer/area/client-list';
-import type { ClientInvite } from '@/components/trainer/area/invite-clients';
-import InviteClients from '@/components/trainer/area/invite-clients';
-import PageHeading from '@/components/trainer/area/page-heading';
-import { Button } from '@/components/ui/button';
-import { sessionsLabel } from '@/lib/calendar';
-import type { SeriesService, TrainerClient } from '@/types';
+    neverWritten,
+} from '@/components/trainer/clients/filters';
+import type {
+    ClientFilter,
+    ClientsProps,
+} from '@/components/trainer/clients/types';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { romeParts } from '@/lib/calendar';
+import { LIST_POLL_MS } from '@/lib/chat';
+import { clients as clientsPage } from '@/routes/trainer';
+import {
+    hide as hideToContact,
+    restore as restoreToContact,
+} from '@/routes/trainer/clients/to-contact';
+import type { TrainerClient } from '@/types';
 
-type ClientsProps = {
-    clients: TrainerClient[];
-    /** From "?cliente=37" (Panoramica, Calendario): the client to open first. */
-    selectedId: number | null;
-    /** "Invita i tuoi clienti": null until the profile is in the search. */
-    invite: ClientInvite | null;
-    /** The sessions that can be repeated every week ("Sedute fisse"). */
-    seriesServices: SeriesService[];
+/** The props a change of client reloads. */
+const OPEN_PROPS = [
+    'selectedId',
+    'selectedRecordId',
+    'chat',
+    'thread',
+    'chats',
+    'trainerArea',
+];
+
+/** "Ancora da contattare": saved on the account, the list reloads. */
+const HIDE_OPTIONS = {
+    only: ['clients'],
+    preserveScroll: true,
+    preserveState: true,
 };
 
-/** "Clienti" (docs/design/trainer-clienti.html): list on the left, card on the right. */
-export default function Clients({
-    clients,
-    selectedId: initialId,
-    invite,
-    seriesServices,
-}: ClientsProps) {
-    // "Marco ti ha invitato": the first word of the name, as on the profile.
-    // Without a public profile there is no personal link to send yet.
-    const profileReady = invite !== null;
-    const firstName = usePage().props.auth.user?.name.split(' ')[0] ?? '';
-    const [query, setQuery] = useState('');
+/**
+ * "Clienti": the clients and their messages in one page (what "Clienti" and
+ * "Messaggi" were). The card of a client and its conversation open in place.
+ * Desktop and phones have two different drawings on the same data.
+ */
+export default function Clients(props: ClientsProps) {
+    const {
+        clients,
+        chats,
+        selectedRecordId,
+        query,
+        messageMatches,
+        invite,
+        sessionOptions,
+    } = props;
+    const isMobile = useIsMobile();
+    const [search, setSearch] = useState(query);
     const [filter, setFilter] = useState<ClientFilter>('all');
-    // "?cliente=" is the account; the page selects the row of the list.
-    const [selectedId, setSelectedId] = useState(
-        clients.find((client) => client.id === initialId)?.recordId ??
-            clients[0]?.recordId ??
-            null,
-    );
+    const [adding, setAdding] = useState(false);
+    const [booking, setBooking] = useState<TrainerClient | null>(null);
+    const today = romeParts(new Date()).date;
 
-    const current =
-        clientFilters.find((item) => item.value === filter) ?? clientFilters[0];
-    const visible = clients
-        .filter(current.matches)
-        .filter((client) =>
-            client.name.toLowerCase().includes(query.trim().toLowerCase()),
+    // New messages and the unread dots, every 20 seconds.
+    usePoll(LIST_POLL_MS, { only: ['chats', 'trainerArea'] });
+
+    // The words are searched in the messages too, on the server, after a pause.
+    useEffect(() => {
+        const words = search.trim();
+
+        if (words === query || (words.length < 2 && query === '')) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            router.reload({
+                data: { q: words.length < 2 ? undefined : words },
+                only: ['query', 'messageMatches'],
+            });
+        }, 350);
+
+        return () => window.clearTimeout(timer);
+    }, [search, query]);
+
+    const visible = useMemo(() => {
+        const current =
+            clientFilters.find((item) => item.value === filter) ??
+            clientFilters[0];
+        const words = search.trim().toLowerCase();
+
+        return clients
+            .filter((client) => current.matches(client, chats))
+            .filter(
+                (client) =>
+                    words === '' ||
+                    client.name.toLowerCase().includes(words) ||
+                    (query.toLowerCase() === words &&
+                        messageMatches.includes(client.recordId)),
+            );
+    }, [clients, chats, filter, search, query, messageMatches]);
+
+    // The client of the address; on desktop the first of the list otherwise.
+    const chosen =
+        clients.find((client) => client.recordId === selectedRecordId) ?? null;
+    const selected = chosen ?? (isMobile ? null : (visible[0] ?? null));
+
+    const open = (client: TrainerClient | null, chat = false) => {
+        router.get(
+            clientsPage.url({
+                query:
+                    client === null
+                        ? {}
+                        : {
+                              con: client.recordId,
+                              ...(chat ? { chat: 1 } : {}),
+                          },
+            }),
+            {},
+            {
+                only: OPEN_PROPS,
+                preserveState: true,
+                preserveScroll: !isMobile,
+            },
         );
-    // The card follows the list: the first visible client when the selected one is hidden.
-    const selected =
-        visible.find((client) => client.recordId === selectedId) ?? visible[0];
+    };
 
-    const active = clients.filter((client) => client.upcomingCount > 0).length;
-    const upcoming = clients.reduce(
-        (total, client) => total + client.upcomingCount,
-        0,
+    const toContact = clients.filter(
+        (client) => neverWritten(client, chats) && !client.contactHidden,
     );
+    const hiddenCount = clients.filter(
+        (client) => neverWritten(client, chats) && client.contactHidden,
+    ).length;
 
-    const reset = () => {
-        setQuery('');
-        setFilter('all');
+    const view = {
+        ...props,
+        visible,
+        filter,
+        onFilter: setFilter,
+        search,
+        onSearch: setSearch,
+        selected,
+        open,
+        onBook: setBooking,
+        onAdd: () => setAdding(true),
+        toContact,
+        hiddenCount,
+        onHide: (client: TrainerClient) =>
+            router.post(hideToContact.url(client.recordId), {}, HIDE_OPTIONS),
+        onRestore: () => router.delete(restoreToContact.url(), HIDE_OPTIONS),
     };
 
     return (
         <>
             <Head title="Clienti" />
 
-            <PageHeading
-                title="Clienti"
-                description={`${active === 1 ? '1 cliente attivo' : `${active} clienti attivi`} · ${upcoming === 0 ? 'nessuna seduta in programma' : `${sessionsLabel(upcoming)} in programma`}`}
-                action={
-                    clients.length > 0 && (
-                        <label className="flex h-11.5 w-full items-center gap-2.5 rounded-xl border bg-card px-3.5 focus-within:border-foreground focus-within:ring-[3px] focus-within:ring-foreground/10 md:w-80">
-                            <Search
-                                aria-hidden="true"
-                                className="size-4.5 text-muted-foreground"
-                            />
-                            <span className="sr-only">
-                                Cerca un cliente per nome
-                            </span>
-                            <input
-                                type="search"
-                                placeholder="Cerca per nome"
-                                value={query}
-                                onChange={(event) =>
-                                    setQuery(event.target.value)
-                                }
-                                className="h-full min-w-0 flex-1 bg-transparent text-[15px] outline-none"
-                            />
-                        </label>
-                    )
-                }
+            <AddClientDialog
+                open={adding}
+                onOpenChange={setAdding}
+                invite={invite}
             />
 
-            {invite && <InviteClients invite={invite} firstName={firstName} />}
-
-            {clients.length > 0 && profileReady && (
-                <div className="flex">
-                    <AddClients />
-                </div>
+            {sessionOptions && (
+                <AddSessionDialog
+                    open={booking !== null}
+                    onOpenChange={(next) => !next && setBooking(null)}
+                    options={sessionOptions}
+                    date={today}
+                    today={today}
+                    clientId={booking?.recordId}
+                />
             )}
 
-            {clients.length === 0 ? (
-                <>
-                    <EmptyState
-                        icon={Users}
-                        title="Ancora nessun cliente"
-                        description="Chi prenota da te compare qui da solo. Aggiungi subito i clienti che hai già: gli mandi un link personale e ritrovi tutto in un posto."
-                        bordered
-                        className="rounded-[20px] bg-card"
-                    />
-                    {profileReady && <AddClients defaultOpen />}
-                </>
+            {isMobile ? (
+                <ClientsMobile {...view} />
             ) : (
-                <>
-                    <ClientFilters
-                        clients={clients}
-                        value={filter}
-                        onChange={setFilter}
-                    />
-                    <div className="flex flex-wrap items-start gap-5">
-                        <ClientList
-                            clients={visible}
-                            selectedId={selected?.recordId ?? null}
-                            onSelect={setSelectedId}
-                            empty={
-                                <div className="flex flex-col items-center gap-1.5 px-4 py-10 text-center">
-                                    <span className="text-[15px] leading-5.5 font-semibold">
-                                        Nessun cliente trovato
-                                    </span>
-                                    <span className="text-sm text-muted-foreground">
-                                        Prova con un altro nome o togli il
-                                        filtro.
-                                    </span>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={reset}
-                                        className="mt-1.5 h-10 rounded-[10px]"
-                                    >
-                                        Mostra tutti
-                                    </Button>
-                                </div>
-                            }
-                        />
-                        {selected && (
-                            <ClientCard
-                                key={selected.recordId}
-                                client={selected}
-                                seriesServices={seriesServices}
-                            />
-                        )}
-                    </div>
-                </>
+                <ClientsDesktop {...view} />
             )}
         </>
     );
 }
 
-Clients.layout = { section: 'clients' };
+Clients.layout = { section: 'clients', fill: true };

@@ -126,7 +126,13 @@ export type CalendarItem = {
     fromTrainer: boolean;
     /** With someone without an account. */
     offApp: boolean;
+    /** "Chiama". */
+    phone: string | null;
+    /** "Seduta 2 di 10"; null for a single session. */
+    package: { position: number; total: number } | null;
+    guestNames: string[];
     inviteLink: string | null;
+    trainerNote: string | null;
 };
 
 /** The bookings of the server as calendar items, in Rome time. */
@@ -154,6 +160,10 @@ export function calendarItems(events: CalendarEvent[]): CalendarItem[] {
             fromTrainer: event.fromTrainer,
             offApp: event.offApp,
             inviteLink: event.inviteLink,
+            trainerNote: event.trainerNote,
+            phone: event.phone,
+            package: event.package,
+            guestNames: event.guestNames,
         };
     });
 }

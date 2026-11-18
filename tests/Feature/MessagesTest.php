@@ -4,15 +4,19 @@ namespace Tests\Feature;
 
 use App\Actions\Account\DeleteUser;
 use App\Actions\Trainer\DeleteTrainerProfile;
+use App\Http\Controllers\MessagesController;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\TrainerClient;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Notifications\MessageReceived;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
+use NotificationChannels\WebPush\WebPushChannel;
 use Tests\TestCase;
 
 /** "Messaggi" between a trainer and their clients with an account. */
@@ -71,13 +75,29 @@ class MessagesTest extends TestCase
             ->assertCreated();
 
         $this->actingAs($this->trainerOf($record))
-            ->get(route('trainer.messages', ['con' => $record->id]))
+            ->get(route('trainer.clients', ['con' => $record->id, 'chat' => 1]))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('trainer/messages')
-                ->where('conversations.0.recordId', $record->id)
-                ->where('conversations.0.lastMessage.text', 'Perfetto!')
-                ->where('selected.name', $this->clientOf($record)->name)
-                ->has('selected.messages', 2));
+                ->component('trainer/clients')
+                ->where('selectedRecordId', $record->id)
+                ->where('chat', true)
+                ->where("chats.{$record->id}.recordId", $record->id)
+                ->where("chats.{$record->id}.lastMessage.text", 'Perfetto!')
+                ->where('thread.name', $this->clientOf($record)->name)
+                ->has('thread.messages', 2));
+    }
+
+    /** The messages of the trainer live in "Clienti": the old address opens the conversation there. */
+    public function test_the_old_messages_page_of_the_trainer_opens_clienti()
+    {
+        $record = $this->pair();
+
+        $this->actingAs($this->trainerOf($record))
+            ->get(route('trainer.messages', ['con' => $record->id]))
+            ->assertRedirect(route('trainer.clients', ['con' => $record->id, 'chat' => 1]));
+
+        $this->actingAs($this->trainerOf($record))
+            ->get(route('trainer.messages'))
+            ->assertRedirect(route('trainer.clients'));
     }
 
     public function test_the_list_shows_new_messages_until_the_conversation_is_opened()
@@ -86,14 +106,14 @@ class MessagesTest extends TestCase
         $this->actingAs($this->clientOf($record))->postJson(route('messages.store', $record), ['body' => 'Ciao']);
 
         $this->actingAs($this->trainerOf($record))
-            ->get(route('trainer.messages'))
-            ->assertInertia(fn (Assert $page) => $page->where('conversations.0.unread', true)->where('selected', null));
+            ->get(route('trainer.clients'))
+            ->assertInertia(fn (Assert $page) => $page->where("chats.{$record->id}.unread", true)->where('thread', null)->where('trainerArea.unreadChats', 1));
 
-        $this->actingAs($this->trainerOf($record))->get(route('trainer.messages', ['con' => $record->id]));
+        $this->actingAs($this->trainerOf($record))->get(route('trainer.clients', ['con' => $record->id, 'chat' => 1]));
 
         $this->actingAs($this->trainerOf($record))
-            ->get(route('trainer.messages'))
-            ->assertInertia(fn (Assert $page) => $page->where('conversations.0.unread', false));
+            ->get(route('trainer.clients'))
+            ->assertInertia(fn (Assert $page) => $page->where("chats.{$record->id}.unread", false)->where('trainerArea.unreadChats', 0));
     }
 
     public function test_the_client_page_lists_their_trainers()
@@ -131,8 +151,8 @@ class MessagesTest extends TestCase
         $firstShown = (int) $conversation->messages()->orderByDesc('id')->skip(Message::PAGE - 1)->value('id');
 
         $this->actingAs($this->trainerOf($record))
-            ->get(route('trainer.messages', ['con' => $record->id]))
-            ->assertInertia(fn (Assert $page) => $page->has('selected.messages', Message::PAGE)->where('selected.hasOlder', true));
+            ->get(route('trainer.clients', ['con' => $record->id, 'chat' => 1]))
+            ->assertInertia(fn (Assert $page) => $page->has('thread.messages', Message::PAGE)->where('thread.hasOlder', true));
 
         $this->actingAs($this->trainerOf($record))
             ->getJson(route('messages.older', ['record' => $record, 'before' => $firstShown]))
@@ -166,8 +186,8 @@ class MessagesTest extends TestCase
 
         $this->actingAs($profile->user)->postJson(route('messages.store', $record), ['body' => 'Ciao'])->assertNotFound();
         $this->actingAs($profile->user)
-            ->get(route('trainer.messages'))
-            ->assertInertia(fn (Assert $page) => $page->has('conversations', 0));
+            ->get(route('trainer.clients', ['con' => $record->id, 'chat' => 1]))
+            ->assertInertia(fn (Assert $page) => $page->has('chats', 0)->where('chat', false)->where('thread', null));
     }
 
     public function test_a_pdf_is_sent_and_downloaded_with_its_name()
@@ -258,10 +278,10 @@ class MessagesTest extends TestCase
         ])->assertCreated();
 
         $this->actingAs($this->trainerOf($record))
-            ->get(route('trainer.messages'))
+            ->get(route('trainer.clients'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('conversations.0.lastMessage.text', 'Foto')
-                ->where('conversations.0.lastMessage.attachment', 'photo'));
+                ->where("chats.{$record->id}.lastMessage.text", 'Foto')
+                ->where("chats.{$record->id}.lastMessage.attachment", 'photo'));
     }
 
     public function test_the_photo_of_another_conversation_is_not_found()
@@ -401,5 +421,128 @@ class MessagesTest extends TestCase
         Storage::disk(Message::DISK)->assertMissing($path);
         // The trainer keeps their record of the client.
         $this->assertNotNull($record->fresh());
+    }
+
+    /** A new message rings the other person once every few minutes, never with its text. */
+    public function test_a_new_message_sends_one_push_to_the_other_person()
+    {
+        Notification::fake();
+        $record = $this->pair();
+        $trainer = $this->trainerOf($record);
+        // A phone with "Attiva le notifiche": only then there is a push to send.
+        $trainer->updatePushSubscription('https://fcm.googleapis.com/fcm/send/abc', 'key', 'token', 'aes128gcm');
+
+        $this->actingAs($this->clientOf($record))->postJson(route('messages.store', $record), ['body' => 'Domani alle 18?']);
+        $this->actingAs($this->clientOf($record))->postJson(route('messages.store', $record), ['body' => 'Va bene?']);
+
+        Notification::assertSentToTimes($trainer, MessageReceived::class, 1);
+        Notification::assertNotSentTo($this->clientOf($record), MessageReceived::class);
+
+        $notification = Notification::sent($trainer, MessageReceived::class)->first();
+        $push = $notification->toWebPush($trainer)->toArray();
+        $this->assertSame('Ti ha scritto un messaggio.', $push['body']);
+        $this->assertStringNotContainsString('Domani', json_encode($push, JSON_THROW_ON_ERROR));
+        $this->assertSame(route('trainer.clients', ['con' => $record->id, 'chat' => 1]), $push['data']['url']);
+
+        // After a while, a new message rings again.
+        $this->travel(MessagesController::PUSH_EVERY_MINUTES + 1)->minutes();
+        $this->actingAs($this->clientOf($record))->postJson(route('messages.store', $record), ['body' => 'Ci sei?']);
+        Notification::assertSentToTimes($trainer, MessageReceived::class, 2);
+    }
+
+    /** With the conversation open the poll keeps it read: no push. */
+    public function test_no_push_while_the_conversation_is_open()
+    {
+        Notification::fake();
+        $record = $this->pair();
+        $trainer = $this->trainerOf($record);
+        $trainer->updatePushSubscription('https://fcm.googleapis.com/fcm/send/abc', 'key', 'token', 'aes128gcm');
+
+        // The first message rings: the trainer wasn't in the conversation.
+        $this->actingAs($this->clientOf($record))->postJson(route('messages.store', $record), ['body' => 'Ciao']);
+        Notification::assertSentToTimes($trainer, MessageReceived::class, 1);
+
+        // Later, with the conversation open (the poll reads it every few seconds): no new push.
+        $this->travel(MessagesController::PUSH_EVERY_MINUTES + 1)->minutes();
+        $this->actingAs($trainer)->getJson(route('messages.poll', ['record' => $record, 'after' => 0]));
+        $this->actingAs($this->clientOf($record))->postJson(route('messages.store', $record), ['body' => 'Ci sei?']);
+
+        Notification::assertSentToTimes($trainer, MessageReceived::class, 1);
+    }
+
+    /** "Online" / "Ultimo accesso": when the other person last used the site, inside the conversation. */
+    public function test_the_conversation_says_when_the_other_person_was_last_active()
+    {
+        $record = $this->pair();
+        $client = $this->clientOf($record);
+        $client->forceFill(['last_active_at' => null])->saveQuietly();
+
+        $this->actingAs($this->trainerOf($record))
+            ->get(route('trainer.clients', ['con' => $record->id, 'chat' => 1]))
+            ->assertInertia(fn (Assert $page) => $page->where('thread.otherLastActiveAt', null));
+
+        $client->forceFill(['last_active_at' => now()->subMinutes(2)])->saveQuietly();
+
+        $this->actingAs($this->trainerOf($record))
+            ->get(route('trainer.clients', ['con' => $record->id, 'chat' => 1]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('thread.otherLastActiveAt', now()->subMinutes(2)->utc()->format('Y-m-d\TH:i:s\Z')));
+    }
+
+    /** Push only: without a device or with "Messaggi" off nothing is sent. */
+    public function test_the_push_of_a_message_needs_a_device_and_the_switch_on()
+    {
+        $record = $this->pair();
+        $trainer = $this->trainerOf($record);
+        $message = Conversation::query()->create(['trainer_client_id' => $record->id])
+            ->messages()->create(['sender_id' => $record->user_id, 'body' => 'Ciao']);
+
+        $this->assertSame([], (new MessageReceived($record, $message))->via($trainer));
+
+        $trainer->updatePushSubscription('https://fcm.googleapis.com/fcm/send/abc', 'key', 'token', 'aes128gcm');
+        $this->assertSame([WebPushChannel::class], (new MessageReceived($record, $message))->via($trainer->fresh()));
+
+        $this->actingAs($trainer)->patch(route('account.notifications.update'), ['push' => ['messages' => false]]);
+        $this->assertSame([], (new MessageReceived($record, $message))->via($trainer->fresh()));
+    }
+
+    public function test_the_poll_says_when_the_other_person_is_typing()
+    {
+        $record = $this->pair();
+        $poll = route('messages.poll', ['record' => $record, 'after' => 0]);
+
+        // Before the first message too: the conversation does not exist yet.
+        $this->actingAs($this->clientOf($record))->postJson(route('messages.typing', $record))->assertNoContent();
+
+        $this->actingAs($this->trainerOf($record))->getJson($poll)->assertJsonPath('otherTyping', true);
+        // Not to the one who types.
+        $this->actingAs($this->clientOf($record))->getJson($poll)->assertJsonPath('otherTyping', false);
+
+        // It fades a few seconds after the last key.
+        $this->travel(MessagesController::TYPING_SECONDS + 1)->seconds();
+        $this->actingAs($this->trainerOf($record))->getJson($poll)->assertJsonPath('otherTyping', false);
+    }
+
+    public function test_sending_the_message_ends_typing()
+    {
+        $record = $this->pair();
+        $poll = route('messages.poll', ['record' => $record, 'after' => 0]);
+
+        $this->actingAs($this->clientOf($record))->postJson(route('messages.typing', $record));
+        $this->actingAs($this->clientOf($record))->postJson(route('messages.store', $record), ['body' => 'Arrivo!'])->assertCreated();
+
+        $this->actingAs($this->trainerOf($record))->getJson($poll)
+            ->assertJsonPath('messages.0.body', 'Arrivo!')
+            ->assertJsonPath('otherTyping', false);
+    }
+
+    public function test_only_the_two_people_can_say_they_are_typing()
+    {
+        $record = $this->pair();
+
+        $this->actingAs(User::factory()->create())->postJson(route('messages.typing', $record))->assertNotFound();
+        $this->actingAs($this->trainerOf($record))
+            ->getJson(route('messages.poll', ['record' => $record, 'after' => 0]))
+            ->assertJsonPath('otherTyping', false);
     }
 }

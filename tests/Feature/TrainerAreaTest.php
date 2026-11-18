@@ -21,6 +21,7 @@ class TrainerAreaTest extends TestCase
         'trainer.availability' => 'trainer/availability',
         'trainer.reviews' => 'trainer/reviews',
         'trainer.settings' => 'trainer/settings',
+        'trainer.profile' => 'trainer/profile-hub',
     ];
 
     public function test_guests_are_redirected_to_the_login_page()
@@ -64,7 +65,8 @@ class TrainerAreaTest extends TestCase
         $this->actingAs(User::factory()->trainer()->create())
             ->get(route('trainer.calendar'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('view', 'week')
+                // The day hour by hour is the default view.
+                ->where('view', 'day')
                 ->where('focus', now('Europe/Rome')->toDateString())
                 ->has('events', 0)
                 ->missing('syncs')

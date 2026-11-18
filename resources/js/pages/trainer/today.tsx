@@ -1,174 +1,130 @@
-import { Head, Link } from '@inertiajs/react';
-import { Bell, Clock } from 'lucide-react';
-import { useState } from 'react';
-import AppNotificationsCard from '@/components/pwa/app-notifications-card';
-import PageHeading from '@/components/trainer/area/page-heading';
-import ActivePackages from '@/components/trainer/dashboard/active-packages';
-import NextSessionCard from '@/components/trainer/dashboard/next-session-card';
-import PastWeekSessions from '@/components/trainer/dashboard/past-week-sessions';
-import PendingRequestsSummary from '@/components/trainer/dashboard/pending-requests-summary';
-import type { StatCard } from '@/components/trainer/dashboard/stat-cards';
-import StatCards from '@/components/trainer/dashboard/stat-cards';
-import WeekAgenda from '@/components/trainer/dashboard/week-agenda';
-import { Button } from '@/components/ui/button';
-import { romeParts } from '@/lib/calendar';
-import { formatDayLong } from '@/lib/format';
-import {
-    availability,
-    requests as requestsPage,
-    services,
-    share,
-} from '@/routes/trainer';
-import type {
-    TrainerBookingRequest,
-    TrainerPackage,
-    TrainerPastSession,
-    TrainerSession,
-    TrainerStats,
-} from '@/types';
+import { Head, router } from '@inertiajs/react';
+import { useMemo, useState } from 'react';
+import HomeDesktop from '@/components/trainer/home/home-desktop';
+import HomeMobile from '@/components/trainer/home/home-mobile';
+import type { HomeProps } from '@/components/trainer/home/types';
+import { useRequestAnswer } from '@/components/trainer/home/use-request-answer';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { addHours } from '@/lib/format';
+import { today as todayPage } from '@/routes/trainer';
+import type { TrainerStatsPeriod } from '@/types';
 
-type TodayProps = {
-    firstName: string;
-    /** The confirmed session going on now, or the next one. */
-    next: TrainerSession | null;
-    /** Confirmed and waiting, from today to the 7th day. */
-    agenda: TrainerSession[];
-    /** The first requests waiting: all of them are in "Richieste". */
-    requests: TrainerBookingRequest[];
-    packages: TrainerPackage[];
-    /** Over in the last 7 days, before today; the most recent first. */
-    past: TrainerPastSession[];
-    stats: TrainerStats;
-};
+/** The props a change of day reloads. */
+const DAY_PROPS = ['day', 'week', 'daySessions', 'next'];
 
-/** "Panoramica": the trainer's dashboard (docs/design/trainer-dashboard.html). */
-export default function Today({
-    firstName,
-    next,
-    agenda,
-    requests,
-    packages,
-    past,
-    stats,
-}: TodayProps) {
+/**
+ * "Home" of the trainer: the requests to confirm (what "Richieste" was in
+ * the menu) and the overview of the day. Desktop and phones have two
+ * different drawings (home-desktop.tsx, home-mobile.tsx) on the same data.
+ */
+export default function Today(props: HomeProps) {
+    const isMobile = useIsMobile();
     const [now] = useState(() => new Date());
-    const parts = romeParts(now);
+    const { busyId, answer } = useRequestAnswer([
+        'requests',
+        'week',
+        'daySessions',
+        'next',
+    ]);
+    // The first session of today not over yet is open at first.
+    const nextId = useMemo(() => {
+        if (props.day !== props.today) {
+            return null;
+        }
 
-    const statCards: StatCard[] = [
-        {
-            label: 'Richieste da confermare',
-            value: String(stats.pending),
-            detail: stats.pending > 0 && (
-                <Link
-                    href={requestsPage()}
-                    className="font-semibold text-foreground underline"
-                >
-                    Rispondi entro 24 ore
-                </Link>
-            ),
-        },
-        {
-            label: 'Sedute nei prossimi 7 giorni',
-            value: String(stats.weekSessions),
-        },
-    ];
+        return (
+            props.daySessions.find(
+                (session) =>
+                    session.kind === 'confirmed' &&
+                    new Date(addHours(session.start, session.hours)) > now,
+            )?.id ?? null
+        );
+    }, [props.day, props.today, props.daySessions, now]);
+    const [openId, setOpenId] = useState<number | null>(nextId);
+
+    // `?giorno=` and `?periodo=` stay in the address: a reload keeps them.
+    const query = (extra: Record<string, string | undefined>) => {
+        const current = new URLSearchParams(window.location.search);
+        const params: Record<string, string> = {};
+
+        current.forEach((value, key) => {
+            params[key] = value;
+        });
+
+        Object.entries(extra).forEach(([key, value]) => {
+            if (value === undefined) {
+                delete params[key];
+            } else {
+                params[key] = value;
+            }
+        });
+
+        return params;
+    };
+
+    const pickDay = (date: string) => {
+        router.get(
+            todayPage.url({
+                query: query({
+                    giorno: date === props.today ? undefined : date,
+                }),
+            }),
+            {},
+            {
+                only: DAY_PROPS,
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                onSuccess: (page) => {
+                    const sessions = (page.props as unknown as HomeProps)
+                        .daySessions;
+                    setOpenId(sessions[0]?.id ?? null);
+                },
+            },
+        );
+    };
+
+    const changePeriod = (
+        period: TrainerStatsPeriod,
+        from?: string,
+        to?: string,
+    ) => {
+        router.get(
+            todayPage.url({
+                query: query({
+                    periodo: period === '7' ? undefined : period,
+                    dal: period === 'intervallo' ? from : undefined,
+                    al: period === 'intervallo' ? to : undefined,
+                }),
+            }),
+            {},
+            {
+                only: ['stats'],
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
+    };
+
+    const view = {
+        ...props,
+        now,
+        busyId,
+        onAnswer: answer,
+        onPickDay: pickDay,
+        onPeriod: changePeriod,
+        openId,
+        onToggle: (id: number) => setOpenId(openId === id ? null : id),
+        nextId,
+    };
 
     return (
         <>
-            <Head title="Panoramica" />
-
-            <PageHeading
-                eyebrow={formatDayLong(parts.date)}
-                title={`${greeting(parts.hour)}, ${firstName}`}
-                action={
-                    <div className="hidden flex-wrap gap-2 md:flex">
-                        <Button
-                            asChild
-                            variant="outline"
-                            size="icon"
-                            className="relative size-11 rounded-xl bg-card"
-                        >
-                            <Link
-                                href={requestsPage()}
-                                aria-label={`Richieste da confermare: ${stats.pending}`}
-                            >
-                                <Bell aria-hidden="true" className="size-4.5" />
-                                {stats.pending > 0 && (
-                                    <span className="absolute -top-1 -right-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground tabular-nums">
-                                        {stats.pending}
-                                    </span>
-                                )}
-                            </Link>
-                        </Button>
-                        <Button
-                            asChild
-                            className="h-11 rounded-xl px-4.5 font-semibold"
-                        >
-                            <Link href={availability()}>
-                                <Clock aria-hidden="true" />
-                                Gestisci disponibilità
-                            </Link>
-                        </Button>
-                    </div>
-                }
-            />
-
-            {/* Phones: the shortcuts of the buttons above, which are desktop only. */}
-            <nav
-                aria-label="Scorciatoie"
-                className="-mt-2 flex [scrollbar-width:none] gap-2 overflow-x-auto md:hidden"
-            >
-                {[
-                    { label: 'Disponibilità', href: availability.url() },
-                    { label: 'Servizi e prezzi', href: services.url() },
-                    { label: 'Condividi profilo', href: share.url() },
-                ].map((link) => (
-                    <Link
-                        key={link.label}
-                        href={link.href}
-                        className="inline-flex h-9 shrink-0 items-center rounded-full border bg-card px-3.5 text-sm font-medium"
-                    >
-                        {link.label}
-                    </Link>
-                ))}
-            </nav>
-
-            <AppNotificationsCard
-                title="Ricevi subito le nuove richieste"
-                description="Una notifica sul telefono appena un cliente prenota: chi risponde prima conferma più sedute."
-                dismissKey="trainer-today"
-            />
-
-            <div className="flex flex-wrap gap-4">
-                <NextSessionCard session={next} now={now} />
-                <StatCards stats={statCards} />
-            </div>
-
-            {/* Stretch: Agenda as tall as the column next to it, no gap below. */}
-            <div className="flex flex-wrap items-stretch gap-4">
-                <WeekAgenda sessions={agenda} today={parts.date} />
-
-                <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-4">
-                    <PendingRequestsSummary
-                        requests={requests}
-                        total={stats.pending}
-                    />
-                    <ActivePackages packages={packages} />
-                </div>
-            </div>
-
-            <PastWeekSessions sessions={past} />
+            <Head title="Home" />
+            {isMobile ? <HomeMobile {...view} /> : <HomeDesktop {...view} />}
         </>
     );
-}
-
-/** "Buongiorno" until 13, "Buon pomeriggio" until 18, then "Buonasera" (Rome time). */
-function greeting(hour: number): string {
-    if (hour < 13) {
-        return 'Buongiorno';
-    }
-
-    return hour < 18 ? 'Buon pomeriggio' : 'Buonasera';
 }
 
 Today.layout = { section: 'today' };

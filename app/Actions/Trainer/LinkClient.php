@@ -79,6 +79,7 @@ class LinkClient
                 'private_notes' => collect([$mine->private_notes, $record->private_notes])->filter()->implode("\n\n") ?: null,
             ])->save();
             $record->payments()->update(['trainer_client_id' => $mine->id]);
+            $record->clientNotes()->update(['trainer_client_id' => $mine->id]);
             $record->delete();
         });
     }

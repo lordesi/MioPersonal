@@ -31,7 +31,7 @@ import { destroy } from '@/routes/trainer/calendar/sessions';
  * Someone without an account: their personal link, so the sessions become
  * theirs when they sign up.
  */
-function OffAppInvite({ name, link }: { name: string; link: string }) {
+export function OffAppInvite({ name, link }: { name: string; link: string }) {
     const [copied, copy] = useClipboard();
     const firstName = name.split(' ')[0];
     const message = `Ciao ${firstName}! Ho messo in calendario le nostre sedute su Miopersonal: iscriviti da qui per vederle, ricevere i promemoria e prenotare da solo/a. ${link}`;

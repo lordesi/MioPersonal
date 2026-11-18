@@ -32,11 +32,13 @@ use Illuminate\Support\Str;
  * @property string|null $shared_note
  * @property CarbonImmutable|null $shared_note_at
  * @property CarbonImmutable|null $invite_prompt_dismissed_at "Non chiedermelo più": no "Invita su Miopersonal" after adding a session
+ * @property CarbonImmutable|null $contact_hidden_at "Ancora da contattare": taken out of the list
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  * @property-read TrainerProfile $trainerProfile
  * @property-read User|null $user
  * @property-read Collection<int, ClientPayment> $payments
+ * @property-read Collection<int, TrainerClientNote> $clientNotes
  * @property-read Conversation|null $conversation
  */
 #[Fillable(['user_id', 'name', 'email', 'phone', 'goal', 'private_notes', 'shared_note', 'shared_note_at'])]
@@ -58,6 +60,7 @@ class TrainerClient extends Model
             'progress_shared_at' => 'datetime',
             'shared_note_at' => 'datetime',
             'invite_prompt_dismissed_at' => 'datetime',
+            'contact_hidden_at' => 'datetime',
         ];
     }
 
@@ -148,5 +151,15 @@ class TrainerClient extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(ClientPayment::class)->orderByDesc('paid_on')->orderByDesc('id');
+    }
+
+    /**
+     * "Note": the trainer's dated notes, the most recent first.
+     *
+     * @return HasMany<TrainerClientNote, $this>
+     */
+    public function clientNotes(): HasMany
+    {
+        return $this->hasMany(TrainerClientNote::class)->orderByDesc('created_at')->orderByDesc('id');
     }
 }

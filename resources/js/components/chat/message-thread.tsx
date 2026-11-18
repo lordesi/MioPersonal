@@ -30,7 +30,8 @@ import {
     mergeMessages,
     sameGroup,
 } from '@/lib/chat';
-import { formatDateLong, formatTime } from '@/lib/format';
+import { romeParts } from '@/lib/calendar';
+import { formatDateLong, formatDayMonthShort, formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { ChatMessage, ChatThread } from '@/types';
 
@@ -59,6 +60,8 @@ export default function MessageThread({
     const [hasOlder, setHasOlder] = useState(thread.hasOlder);
     const [loadingOlder, setLoadingOlder] = useState(false);
     const [otherReadAt, setOtherReadAt] = useState(thread.otherReadAt);
+    // "Sta scrivendo…", from the poll.
+    const [otherTyping, setOtherTyping] = useState(false);
     const [viewing, setViewing] = useState<number | null>(null);
     // Messages arrived while reading further up: the "Nuovi messaggi" button.
     const [unseen, setUnseen] = useState(0);
@@ -94,13 +97,23 @@ export default function MessageThread({
         onActivity();
     };
 
-    useChatPolling(thread.recordId, lastId, (incoming, readAt) => {
-        setOtherReadAt(readAt);
+    useChatPolling(
+        thread.recordId,
+        lastId,
+        ({ messages: incoming, otherReadAt: readAt, otherTyping: typing }) => {
+            setOtherReadAt(readAt);
 
-        if (incoming.length > 0) {
-            add(incoming, false);
-        }
-    });
+            if (typing && !otherTyping && nearBottom()) {
+                anchor.current = 'bottom';
+            }
+
+            setOtherTyping(typing);
+
+            if (incoming.length > 0) {
+                add(incoming, false);
+            }
+        },
+    );
 
     useLayoutEffect(() => {
         const element = scroller.current;
@@ -245,12 +258,20 @@ export default function MessageThread({
                         <span className="truncate text-[15px] leading-5 font-semibold group-hover:underline">
                             {thread.name}
                         </span>
-                        <span className="truncate text-xs text-muted-foreground">
-                            {thread.subtitle} · Vedi{' '}
-                            {thread.subtitle === 'Cliente'
-                                ? 'scheda'
-                                : 'profilo'}
-                        </span>
+                        {otherTyping ? (
+                            <span className="truncate text-xs font-semibold text-primary">
+                                sta scrivendo…
+                            </span>
+                        ) : (
+                            <span className="truncate text-xs text-muted-foreground">
+                                {presenceOf(thread.otherLastActiveAt) ??
+                                    thread.subtitle}{' '}
+                                · Vedi{' '}
+                                {thread.subtitle === 'Cliente'
+                                    ? 'scheda'
+                                    : 'profilo'}
+                            </span>
+                        )}
                     </span>
                 </Link>
             </header>
@@ -335,6 +356,22 @@ export default function MessageThread({
                         </div>
                     );
                 })}
+                {otherTyping && (
+                    <div
+                        role="status"
+                        aria-label={`${firstName} sta scrivendo`}
+                        className="mt-2 flex h-9 w-16 items-center justify-center gap-1 self-start rounded-[18px] rounded-bl-md bg-card shadow-sm"
+                    >
+                        {[0, 150, 300].map((delay) => (
+                            <span
+                                key={delay}
+                                aria-hidden="true"
+                                style={{ animationDelay: `${delay}ms` }}
+                                className="size-1.5 animate-bounce rounded-full bg-muted-foreground motion-reduce:animate-none"
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
 
             {awayFromBottom && (
@@ -595,4 +632,39 @@ function dayLabel(iso: string): string {
     }
 
     return formatDateLong(iso);
+}
+
+/** Active in the last minutes: "Online". */
+const ONLINE_MINUTES = 5;
+
+/**
+ * "Online", "Ultimo accesso oggi alle 10:02", "… ieri alle 18:40",
+ * "… il 3 nov": from when the other person last used the site; null when
+ * never (the subtitle stays).
+ */
+function presenceOf(lastActiveAt: string | null): string | null {
+    if (lastActiveAt === null) {
+        return null;
+    }
+
+    const now = new Date();
+    const minutes = (now.getTime() - new Date(lastActiveAt).getTime()) / 60000;
+
+    if (minutes < ONLINE_MINUTES) {
+        return 'Online';
+    }
+
+    const day = romeParts(lastActiveAt).date;
+    const today = romeParts(now).date;
+    const yesterday = romeParts(new Date(now.getTime() - 86400000)).date;
+
+    if (day === today) {
+        return `Ultimo accesso oggi alle ${formatTime(lastActiveAt)}`;
+    }
+
+    if (day === yesterday) {
+        return `Ultimo accesso ieri alle ${formatTime(lastActiveAt)}`;
+    }
+
+    return `Ultimo accesso il ${formatDayMonthShort(day)}`;
 }
