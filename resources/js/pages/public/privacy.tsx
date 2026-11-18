@@ -56,7 +56,7 @@ const sections: LegalSection[] = [
                         '«Messaggi» tra te e i tuoi trainer: il testo, le foto e i PDF allegati (per esempio le schede di allenamento, che teniamo 10 giorni), la data di invio e quando hai aperto la conversazione.',
                         'Messaggi che ci invii dalla pagina Contatti.',
                         'Dati tecnici: indirizzo IP, tipo di browser, registri di accesso, data dell’ultima attività e giorni in cui hai usato il sito, cookie tecnici.',
-                        'Statistiche anonime, non collegate a te: le pagine viste e le visite di ogni giorno con il canale da cui arrivano (per esempio Google o Instagram), le ricerche fatte (città, discipline, filtri usati e numero di risultati) e quante volte ogni giorno viene aperto il profilo di un trainer. Per contare i visitatori unici usiamo un cookie nostro, «mp_vid», con un codice casuale: sui nostri server ne salviamo solo una versione cifrata, non collegata al tuo account né al tuo indirizzo IP, che non salviamo (vedi la cookie policy).',
+                        'Statistiche anonime, non collegate a te: le ricerche fatte (città, discipline, filtri usati e numero di risultati) e quante volte ogni giorno viene aperto il profilo di un trainer. Le visite al sito e le pagine viste le conta Cloudflare Web Analytics, senza cookie e senza riconoscerti da una visita all’altra: a noi arrivano solo i totali (per esempio quante visite in un giorno e da quale sito sono arrivate).',
                         'Da dove sei arrivato quando ti sei iscritto: il canale (per esempio Google, Instagram o il nome di una campagna) e la prima pagina vista.',
                         'Le tue scelte sui cookie, con data e versione della cookie policy, per poter dimostrare il consenso.',
                         'Solo nel tuo browser, mai sui nostri server: la bozza della registrazione trainer, finché la invii o ricominci.',
@@ -155,7 +155,7 @@ const sections: LegalSection[] = [
                         'Il team di MioPersonal, solo per verificare i profili dei trainer, rispondere alle tue richieste e gestire le segnalazioni.',
                         'Se usi «Continua con Google», Google sa che hai fatto l’accesso a MioPersonal: per quella parte è un titolare autonomo, con la sua informativa.',
                         'Se sei un trainer e colleghi Google Calendar, Google riceve le sedute che scriviamo nel tuo calendario «MioPersonal» (servizio, nome del cliente, luogo, data e orario): per il tuo account Google è un titolare autonomo, con la sua informativa.',
-                        'I fornitori che ci aiutano a far funzionare il servizio, nominati responsabili del trattamento: Hetzner Online GmbH (Germania) per i server, Brevo (Sendinblue SAS, Francia) per l’invio delle email e Sentry (Functional Software Inc., USA) per la segnalazione degli errori tecnici. A Sentry arrivano solo i dettagli dell’errore (pagina, browser, punto del codice in cui si è verificato), senza nome, email o indirizzo IP e senza cookie.',
+                        'I fornitori che ci aiutano a far funzionare il servizio, nominati responsabili del trattamento: Hetzner Online GmbH (Germania) per i server, Brevo (Sendinblue SAS, Francia) per l’invio delle email, Cloudflare (Cloudflare Inc., USA) per la rete che porta il sito fino a te, la protezione dagli attacchi e il conteggio anonimo delle visite, e Sentry (Functional Software Inc., USA) per la segnalazione degli errori tecnici. A Sentry arrivano solo i dettagli dell’errore (pagina, browser, punto del codice in cui si è verificato), senza nome, email o indirizzo IP e senza cookie.',
                     ]}
                 />
                 <LegalParagraph>
@@ -172,10 +172,10 @@ const sections: LegalSection[] = [
             <LegalParagraph>
                 I dati sono conservati su server di Hetzner situati nell’Unione
                 europea. Anche le segnalazioni di errore restano nella regione
-                europea di Sentry; Sentry però è una società statunitense,
-                quindi per un eventuale accesso dagli Stati Uniti valgono le
-                garanzie previste dal GDPR: il Data Privacy Framework UE-USA e
-                le clausole contrattuali standard.
+                europea di Sentry. Sentry e Cloudflare però sono società
+                statunitensi, quindi per un eventuale accesso dagli Stati Uniti
+                valgono le garanzie previste dal GDPR: il Data Privacy Framework
+                UE-USA e le clausole contrattuali standard.
             </LegalParagraph>
         ),
     },
@@ -257,7 +257,7 @@ export default function Privacy() {
             pageName="Privacy policy"
             title="Informativa sulla privacy"
             intro="Come MioPersonal raccoglie e usa i tuoi dati quando cerchi un trainer, prenoti una seduta o ti iscrivi come personal trainer."
-            updatedOn="12 novembre 2026"
+            updatedOn="18 novembre 2026"
             summary={[
                 'Raccogliamo solo i dati che servono a farti trovare un trainer e a gestire le prenotazioni.',
                 'Email e telefono arrivano al trainer solo dopo che ha confermato una tua prenotazione.',

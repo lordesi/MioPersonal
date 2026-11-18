@@ -41,6 +41,15 @@ return [
         'key' => env('INDEXNOW_KEY'),
     ],
 
+    // Visits to the site: the beacon in app.blade.php (analytics_token, public) and the
+    // numbers of "Admin · Statistiche" (App\Support\CloudflareAnalytics). See .env.example.
+    'cloudflare' => [
+        'analytics_token' => env('CLOUDFLARE_ANALYTICS_TOKEN'),
+        'site_tag' => env('CLOUDFLARE_SITE_TAG'),
+        'account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
+        'api_token' => env('CLOUDFLARE_API_TOKEN'),
+    ],
+
     // "Continua con Google" (Laravel Socialite): see "Accesso con Google" in the README.
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),

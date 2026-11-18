@@ -7,10 +7,10 @@ use App\Http\Middleware\EnsureUsernameChosen;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ProtectStaging;
 use App\Http\Middleware\RedirectLegacySlug;
+use App\Http\Middleware\RememberAcquisition;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\ThrottleSignups;
 use App\Http\Middleware\TrackLastActivity;
-use App\Http\Middleware\TrackVisit;
 use App\Support\Cloudflare;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -55,7 +55,7 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureUsernameChosen::class,
             AddLinkHeadersForPreloadedAssets::class,
             TrackLastActivity::class,
-            TrackVisit::class,
+            RememberAcquisition::class,
             ThrottleSignups::class,
         ]);
         // First, so its headers are on every response of the group (429s included).

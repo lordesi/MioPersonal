@@ -8,11 +8,12 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Counts the pages people open (App\Support\Stats::recordPageView): only
- * pages that opened fine, both the first load and the Inertia navigations.
- * Not the forms sent, files, the sitemap or the errors.
+ * On the first page of a session, keeps in the session the channel the visit
+ * came from (Stats::rememberAcquisition), for whoever signs up later. Only
+ * pages that opened fine: not the forms sent, files, the sitemap or the errors.
+ * The visits themselves are counted by Cloudflare Web Analytics.
  */
-class TrackVisit
+class RememberAcquisition
 {
     /**
      * @param  Closure(Request): (Response)  $next
@@ -22,12 +23,7 @@ class TrackVisit
         $response = $next($request);
 
         if ($request->isMethod('GET') && $response->getStatusCode() === 200 && $this->isPage($response)) {
-            Stats::recordPageView($request);
-        }
-
-        // A new visitor: the anonymous code goes in its cookie (see Stats::visitorId).
-        if (is_string($id = $request->attributes->get(Stats::NEW_VISITOR_ATTRIBUTE))) {
-            $response->headers->setCookie(cookie(Stats::VISITOR_COOKIE, $id, Stats::VISITOR_COOKIE_MINUTES, httpOnly: true, sameSite: 'lax'));
+            Stats::rememberAcquisition($request);
         }
 
         return $response;

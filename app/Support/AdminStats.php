@@ -24,8 +24,9 @@ use Illuminate\Support\Facades\DB;
 /**
  * The numbers of "Admin · Statistiche": growth, traffic, channels, funnel,
  * retention and churn, marketplace and demand. From the tables of the app and
- * the history collected by App\Support\Stats (visits and activity only from
- * the day it was switched on: `since` says when).
+ * the history collected by App\Support\Stats (activity and searches only from
+ * the day it was switched on: `since` says when). The visits to the site come
+ * from Cloudflare Web Analytics (CloudflareAnalytics).
  *
  * Days and months are Rome days and months. "Last 30 days" includes today;
  * the deltas compare with the 30 days before.
@@ -61,11 +62,20 @@ final class AdminStats
     /** First day of the 30 days before. */
     private CarbonImmutable $previousFrom;
 
+    /**
+     * The visits from Cloudflare (CloudflareAnalytics::traffic()); null without
+     * the keys or if Cloudflare didn't answer.
+     *
+     * @var array{current: array{visits: int, pageViews: int}, previous: array{visits: int, pageViews: int}, daily: array<string, array{visits: int, pageViews: int}>, monthly: array<string, int>, sources: array<string, int>}|null
+     */
+    private ?array $traffic;
+
     public function __construct(?CarbonImmutable $now = null)
     {
         $this->now = ($now ?? CarbonImmutable::now())->setTimezone(TrainerSlots::TIMEZONE);
         $this->from = $this->now->startOfDay()->subDays(self::DAYS - 1);
         $this->previousFrom = $this->from->subDays(self::DAYS);
+        $this->traffic = CloudflareAnalytics::traffic($this->from, $this->previousFrom, $this->now);
     }
 
     /**
@@ -74,7 +84,9 @@ final class AdminStats
     public function all(): array
     {
         return [
-            'since' => DB::table('visitor_days')->min('day'),
+            'since' => DB::table('user_activity_days')->min('day'),
+            // false: the visits are missing (no keys, or Cloudflare didn't answer).
+            'traffic' => $this->traffic !== null,
             'kpis' => $this->kpis(),
             'daily' => $this->daily(),
             'monthly' => $this->monthly(),
@@ -93,22 +105,23 @@ final class AdminStats
     /**
      * The tiles on top: value of the last 30 days and of the 30 days before.
      *
-     * @return list<array{key: string, label: string, value: int, previous: int|null, format: string}>
+     * The visits are null when Cloudflare's numbers are missing.
+     *
+     * @return list<array{key: string, label: string, value: int|null, previous: int|null, format: string}>
      */
     private function kpis(): array
     {
         $periods = [[$this->from, $this->now->endOfDay()], [$this->previousFrom, $this->from->subSecond()]];
         $both = fn (callable $count) => array_map(fn (array $period) => (int) $count(...$period), $periods);
+        $traffic = fn (string $key) => [$this->traffic['current'][$key] ?? null, $this->traffic['previous'][$key] ?? null];
 
         $tile = function (string $key, string $label, array $values, string $format = 'number') {
             return ['key' => $key, 'label' => $label, 'value' => $values[0], 'previous' => $values[1], 'format' => $format];
         };
 
         return [
-            $tile('visitors', 'Visitatori unici (30 giorni)', $both(fn ($from, $to) => $this->uniqueVisitors($from, $to))),
-            // Since the stats began: no comparison.
-            $tile('allVisitors', 'Visitatori unici da sempre', [DB::table('visitor_days')->distinct()->count('visitor'), null]),
-            $tile('visits', 'Visite', $both(fn ($from, $to) => $this->dayTable('visit_days', $from, $to)->sum('visits'))),
+            $tile('visits', 'Visite al sito (30 giorni)', $traffic('visits')),
+            $tile('pageViews', 'Pagine viste', $traffic('pageViews')),
             $tile('clients', 'Nuovi clienti', $both(fn ($from, $to) => $this->newUsers(UserRole::Client, $from, $to))),
             $tile('trainers', 'Nuovi trainer', $both(fn ($from, $to) => $this->newUsers(UserRole::Trainer, $from, $to))),
             $tile('gyms', 'Nuove palestre', $both(fn ($from, $to) => $this->newUsers(UserRole::Gym, $from, $to))),
@@ -136,13 +149,12 @@ final class AdminStats
     /**
      * Day by day, the last 30 days.
      *
-     * @return list<array{day: string, visitors: int, visits: int, signups: int, requests: int}>
+     * @return list<array{day: string, visits: int, pageViews: int, signups: int, requests: int}>
      */
     private function daily(): array
     {
         $to = $this->now->endOfDay();
-        $visitors = $this->dayTable('visitor_days', $this->from, $to)->selectRaw('day, count(*) as total')->groupBy('day')->pluck('total', 'day');
-        $visits = $this->dayTable('visit_days', $this->from, $to)->selectRaw('day, sum(visits) as total')->groupBy('day')->pluck('total', 'day');
+        $traffic = $this->traffic['daily'] ?? [];
         $signups = $this->romeDays(User::query()->where('role', '!=', UserRole::Admin)->whereBetween('created_at', [$this->from->utc(), $to->utc()])->pluck('created_at'));
         $requests = $this->romeDays(Booking::query()->whereBetween('created_at', [$this->from->utc(), $to->utc()])->pluck('created_at'));
 
@@ -152,8 +164,8 @@ final class AdminStats
             $key = $day->toDateString();
             $days[] = [
                 'day' => $key,
-                'visitors' => (int) ($this->dateValue($visitors, $key) ?? 0),
-                'visits' => (int) ($this->dateValue($visits, $key) ?? 0),
+                'visits' => $traffic[$key]['visits'] ?? 0,
+                'pageViews' => $traffic[$key]['pageViews'] ?? 0,
                 'signups' => $signups[$key] ?? 0,
                 'requests' => $requests[$key] ?? 0,
             ];
@@ -165,7 +177,9 @@ final class AdminStats
     /**
      * Month by month, the last 12 (the current one is still going).
      *
-     * @return list<array{month: string, visitors: int, clients: int, trainers: int, activeClients: int, activeTrainers: int, requests: int, sessions: int, gmvCents: int}>
+     * The visits only for Cloudflare's last 6 months: 0 before.
+     *
+     * @return list<array{month: string, visits: int, clients: int, trainers: int, activeClients: int, activeTrainers: int, requests: int, sessions: int, gmvCents: int}>
      */
     private function monthly(): array
     {
@@ -188,7 +202,7 @@ final class AdminStats
             $end = $month->endOfMonth();
             $months[] = [
                 'month' => $key,
-                'visitors' => $this->uniqueVisitors($month, $end),
+                'visits' => $this->traffic['monthly'][$key] ?? 0,
                 'clients' => $clients[$key] ?? 0,
                 'trainers' => $trainers[$key] ?? 0,
                 'activeClients' => $this->activeUsers(UserRole::Client, $month, $end),
@@ -209,11 +223,7 @@ final class AdminStats
      */
     private function channels(): array
     {
-        $visits = $this->dayTable('visit_days', $this->from, $this->now->endOfDay())
-            ->selectRaw('source, sum(visits) as total')
-            ->groupBy('source')
-            ->pluck('total', 'source')
-            ->map(fn ($total) => (int) $total);
+        $visits = collect($this->traffic['sources'] ?? []);
 
         $signups = User::query()
             ->where('role', '!=', UserRole::Admin)
@@ -225,7 +235,7 @@ final class AdminStats
     }
 
     /**
-     * Last 30 days, step by step: from the visitors to the sessions done.
+     * Last 30 days, step by step: from the visits to the sessions done.
      *
      * @return list<array{label: string, count: int}>
      */
@@ -235,7 +245,7 @@ final class AdminStats
         $between = [$this->from->utc(), $to->utc()];
 
         return [
-            ['label' => 'Visitatori unici', 'count' => $this->uniqueVisitors($this->from, $to)],
+            ['label' => 'Visite al sito', 'count' => $this->traffic['current']['visits'] ?? 0],
             ['label' => 'Visite a profili trainer', 'count' => (int) $this->dayTable('trainer_profile_views', $this->from, $to)->sum('views')],
             ['label' => 'Nuovi clienti', 'count' => $this->newUsers(UserRole::Client, $this->from, $to)],
             ['label' => 'Clienti con una richiesta', 'count' => Booking::query()->whereBetween('created_at', $between)->distinct()->count('client_id')],
@@ -727,12 +737,6 @@ final class AdminStats
             ->pluck('user_id');
     }
 
-    /** The same browser counts once in the period, however many days it came back. */
-    private function uniqueVisitors(CarbonImmutable $from, CarbonImmutable $to): int
-    {
-        return $this->dayTable('visitor_days', $from, $to)->distinct()->count('visitor');
-    }
-
     private function dayTable(string $table, CarbonImmutable $from, CarbonImmutable $to): Builder
     {
         return DB::table($table)->whereBetween('day', [$from->toDateString(), $to->toDateString()]);
@@ -767,15 +771,5 @@ final class AdminStats
     private function romeMonths(Collection $dates): array
     {
         return $dates->filter()->countBy(fn ($date) => CarbonImmutable::parse($date)->setTimezone(TrainerSlots::TIMEZONE)->format('Y-m'))->all();
-    }
-
-    /**
-     * SQLite gives "2026-11-06", PostgreSQL may give "2026-11-06 00:00:00".
-     *
-     * @param  Collection<array-key, mixed>  $values
-     */
-    private function dateValue(Collection $values, string $day): mixed
-    {
-        return $values->first(fn ($value, $key) => str_starts_with((string) $key, $day));
     }
 }

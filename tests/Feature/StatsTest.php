@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\TrainerProfile;
 use App\Models\User;
-use App\Support\AdminStats;
 use App\Support\Stats;
 use Database\Seeders\CatalogSeeder;
 use Database\Seeders\DemoTrainerSeeder;
@@ -80,54 +79,42 @@ class StatsTest extends TestCase
         $this->assertSame(9, (int) $log->results);
     }
 
-    public function test_page_views_visitors_and_visits_are_counted()
+    public function test_pages_keep_only_the_channel_of_the_visit_in_the_session()
     {
         $this->withHeader('Referer', 'https://www.google.it/')->get(route('home'))
-            ->assertCookie(Stats::VISITOR_COOKIE);
-        $this->get(route('trainers.search'));
-        $this->withHeader('X-Inertia', 'true')->get(route('trainers.show', 'marco-bianchi'));
-        // Not pages: the sitemap, a missing page, a bot.
-        $this->get(route('sitemap'));
-        $this->get('/pagina-che-non-esiste');
-        $this->withHeader('User-Agent', 'Googlebot/2.1')->get(route('home'));
+            ->assertCookieMissing('mp_vid')
+            ->assertSessionHas(Stats::ACQUISITION_KEY.'.source', 'google');
+        // The first page of the session decides.
+        $this->withHeader('Referer', 'https://l.instagram.com/')->get(route('trainers.search'))
+            ->assertSessionHas(Stats::ACQUISITION_KEY.'.source', 'google');
 
-        $this->assertSame(3, (int) DB::table('page_view_days')->where('section', 'public')->value('views'));
-        // The same browser: one visitor, one visit (from Google).
-        $this->assertSame(1, DB::table('visitor_days')->count());
-        $this->assertSame(['google' => 1], DB::table('visit_days')->pluck('visits', 'source')->map(fn ($visits) => (int) $visits)->all());
-        // The code is not the IP nor the browser.
-        $this->assertSame(64, strlen((string) DB::table('visitor_days')->value('visitor')));
+        // The visits are Cloudflare's: nothing saved here.
+        $this->assertSame(0, DB::table('visitor_days')->count());
+        $this->assertSame(0, DB::table('visit_days')->count());
+        $this->assertSame(0, DB::table('page_view_days')->count());
     }
 
-    public function test_the_same_browser_is_one_unique_visitor_across_days()
+    public function test_bots_get_no_channel_in_the_session()
     {
-        // Both days in the same month.
-        $this->travelTo(now('Europe/Rome')->setDate(2026, 11, 10)->setTime(12, 0));
-        $id = str_repeat('a', 40);
+        $this->withHeader('User-Agent', 'Googlebot/2.1')->get(route('home'))
+            ->assertSessionMissing(Stats::ACQUISITION_KEY);
+    }
 
-        $this->withCookie(Stats::VISITOR_COOKIE, $id)->get(route('home'))
-            ->assertCookieMissing(Stats::VISITOR_COOKIE);
-        $this->travel(1)->days();
-        // Another network or a new session: the cookie decides.
-        $this->flushSession();
-        $this->withCookie(Stats::VISITOR_COOKIE, $id)->withServerVariables(['REMOTE_ADDR' => '10.0.0.9'])->get(route('home'));
-        // Someone else.
-        $this->flushSession();
-        $this->withCookie(Stats::VISITOR_COOKIE, str_repeat('b', 40))->get(route('home'));
+    public function test_the_cloudflare_beacon_is_on_the_page_only_with_its_token()
+    {
+        $this->get(route('home'))->assertDontSee('cloudflareinsights', false);
 
-        // One row a day for each.
-        $this->assertSame(3, DB::table('visitor_days')->count());
+        config(['services.cloudflare.analytics_token' => 'abc123']);
 
-        $kpis = collect((new AdminStats)->all()['kpis'])->keyBy('key');
-        $this->assertSame(2, $kpis['visitors']['value']);
-        $this->assertSame(2, $kpis['allVisitors']['value']);
-        $this->assertSame(2, collect((new AdminStats)->all()['monthly'])->last()['visitors']);
+        $this->get(route('home'))
+            ->assertSee('https://static.cloudflareinsights.com/beacon.min.js', false)
+            ->assertSee('&quot;token&quot;:&quot;abc123&quot;', false);
     }
 
     public function test_stats_reset_empties_the_history()
     {
-        $this->get(route('home'));
-        $this->assertSame(1, DB::table('visitor_days')->count());
+        $this->get(route('trainers.search'));
+        $this->assertSame(1, DB::table('search_logs')->count());
 
         $this->artisan('stats:reset')->expectsConfirmation('Delete all the visits, page views, searches, profile views and activity days collected so far?', 'yes')->assertSuccessful();
 
@@ -151,6 +138,10 @@ class StatsTest extends TestCase
         $this->assertSame('direct', $channel('/', 'https://miopersonal.test/personal-trainer')['source']);
         $this->assertSame('direct', $channel('/trainer/marco-bianchi')['source']);
         $this->assertSame('/trainer/marco-bianchi', $channel('/trainer/marco-bianchi')['landing']);
+
+        // The same names for Cloudflare's referrers.
+        $this->assertSame('google', Stats::channel('www.google.it'));
+        $this->assertSame('direct', Stats::channel(''));
     }
 
     public function test_a_new_user_keeps_the_channel_of_the_visit()
