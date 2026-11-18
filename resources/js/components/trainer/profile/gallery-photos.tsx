@@ -2,7 +2,8 @@ import { router } from '@inertiajs/react';
 import { Plus, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import TrainerPhotoController from '@/actions/App/Http/Controllers/TrainerPhotoController';
-import NumberedSection from '@/components/trainer/area/numbered-section';
+import { Section } from '@/components/onboarding/dark-fields';
+import { Counter } from '@/components/onboarding/trainer/dark-bits';
 import { Spinner } from '@/components/ui/spinner';
 import { shrinkImage } from '@/lib/image';
 
@@ -66,18 +67,17 @@ export default function GalleryPhotos({ photos, max }: GalleryPhotosProps) {
         });
 
     return (
-        <NumberedSection
-            step={2}
+        <Section
             title="Foto della galleria"
             description="JPG o PNG, almeno 800 × 500 px."
-            action={
-                <span className="inline-flex h-6.5 items-center rounded-full bg-secondary px-2.5 text-xs font-semibold tabular-nums">
+            aside={
+                <Counter>
                     {photos.length} di {max}
-                </span>
+                </Counter>
             }
         >
             {message && (
-                <p role="alert" className="text-sm text-destructive">
+                <p role="alert" className="text-[15px] text-destructive">
                     {message}
                 </p>
             )}
@@ -86,7 +86,7 @@ export default function GalleryPhotos({ photos, max }: GalleryPhotosProps) {
                 {photos.map((photo, index) => (
                     <li
                         key={photo.id}
-                        className="relative aspect-8/5 overflow-hidden rounded-[14px] bg-sidebar-accent"
+                        className="relative aspect-8/5 overflow-hidden rounded-[20px] bg-[#262626]"
                     >
                         <img
                             src={photo.url}
@@ -98,7 +98,7 @@ export default function GalleryPhotos({ photos, max }: GalleryPhotosProps) {
                             type="button"
                             aria-label={`Rimuovi foto ${index + 1}`}
                             onClick={() => remove(photo)}
-                            className="absolute top-1.5 right-1.5 flex size-8 items-center justify-center rounded-full bg-background text-foreground shadow-sm hover:bg-secondary"
+                            className="absolute top-1.5 right-1.5 flex size-8 items-center justify-center rounded-full bg-[rgba(10,10,10,0.7)] text-foreground shadow-[inset_0_0_0_1px_var(--field)] hover:bg-[#0a0a0a]"
                         >
                             <X aria-hidden="true" className="size-3.5" />
                         </button>
@@ -124,7 +124,7 @@ export default function GalleryPhotos({ photos, max }: GalleryPhotosProps) {
                             type="button"
                             disabled={uploading}
                             onClick={() => fileInput.current?.click()}
-                            className="flex aspect-8/5 w-full flex-col items-center justify-center gap-1.5 rounded-[14px] border-[1.5px] border-dashed border-input bg-muted/50 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-foreground hover:text-foreground disabled:cursor-default"
+                            className="flex aspect-8/5 w-full flex-col items-center justify-center gap-1.5 rounded-[20px] border border-dashed border-field bg-transparent text-[15px] font-semibold text-foreground transition-colors hover:border-brand hover:text-brand disabled:cursor-default"
                         >
                             {uploading ? (
                                 <Spinner />
@@ -142,6 +142,6 @@ export default function GalleryPhotos({ photos, max }: GalleryPhotosProps) {
                     I profili con più di una foto ricevono più visite.
                 </p>
             )}
-        </NumberedSection>
+        </Section>
     );
 }

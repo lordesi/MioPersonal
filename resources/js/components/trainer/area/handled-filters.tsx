@@ -43,7 +43,7 @@ export default function HandledFilters({
                         className={cn(
                             'inline-flex h-10 items-center gap-2 rounded-full border pr-2 pl-3.5 text-sm font-medium disabled:opacity-40',
                             active
-                                ? 'border-foreground bg-foreground text-background'
+                                ? 'border-brand bg-transparent text-brand'
                                 : 'bg-card enabled:hover:bg-secondary',
                         )}
                     >

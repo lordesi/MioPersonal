@@ -10,19 +10,23 @@ import {
     stepOfField,
     toProfilePayload,
 } from '@/components/onboarding/trainer/draft';
-import { usePhotoPreview } from '@/components/onboarding/trainer/step-profile';
+import StepCertifications from '@/components/onboarding/trainer/step-certifications';
+import StepErrors from '@/components/onboarding/trainer/step-errors';
+import StepPlaces from '@/components/onboarding/trainer/step-places';
+import StepProfile, {
+    usePhotoPreview,
+} from '@/components/onboarding/trainer/step-profile';
 import ConfirmDialog from '@/components/shared/confirm-dialog';
-import PageHeading from '@/components/trainer/area/page-heading';
-import SeeAlso from '@/components/trainer/area/see-also';
-import CertificationsSection from '@/components/trainer/profile/certifications-section';
 import GalleryPhotos from '@/components/trainer/profile/gallery-photos';
 import type { GalleryPhoto } from '@/components/trainer/profile/gallery-photos';
 import ProfilePreview, {
     profileChecks,
 } from '@/components/trainer/profile/profile-preview';
-import PublicProfileSection from '@/components/trainer/profile/public-profile-section';
-import SearchSection from '@/components/trainer/profile/search-section';
-import type { GymOption } from '@/components/trainer/profile/search-section';
+import ProfilePage, {
+    ProfileSection,
+    SaveBar,
+} from '@/components/trainer/profile-pages/profile-page';
+import type { GymOption } from '@/components/onboarding/trainer/draft';
 import { register } from '@/routes/trainer';
 import type { CatalogOption, CityOption } from '@/types';
 
@@ -57,32 +61,38 @@ export default function Profile({
         <>
             <Head title="Modifica profilo" />
 
-            <PageHeading title="Modifica profilo" />
-            <SeeAlso current="profile" />
-
-            {draft === null || rating === null ? (
-                <p className="text-sm text-muted-foreground">
-                    Finché il profilo non è approvato lo modifichi dalla{' '}
-                    <Link
-                        href={register()}
-                        className="font-medium text-foreground underline underline-offset-4"
-                    >
-                        registrazione da trainer
-                    </Link>
-                    .
-                </p>
-            ) : (
-                <ProfileForm
-                    saved={draft}
-                    locked={!editable}
-                    disciplines={disciplines}
-                    cities={cities}
-                    gyms={gyms}
-                    gallery={gallery}
-                    maxGalleryPhotos={maxGalleryPhotos}
-                    rating={rating}
-                />
-            )}
+            <ProfilePage
+                title={
+                    <>
+                        Modifica <strong>profilo</strong>
+                    </>
+                }
+                intro="Quello che i clienti vedono di te quando ti cercano. Le modifiche sono subito sul profilo."
+            >
+                {draft === null || rating === null ? (
+                    <p className="text-[15px] text-muted-foreground">
+                        Finché il profilo non è approvato lo modifichi dalla{' '}
+                        <Link
+                            href={register()}
+                            className="font-semibold text-brand underline-offset-4 hover:underline"
+                        >
+                            registrazione da trainer
+                        </Link>
+                        .
+                    </p>
+                ) : (
+                    <ProfileForm
+                        saved={draft}
+                        locked={!editable}
+                        disciplines={disciplines}
+                        cities={cities}
+                        gyms={gyms}
+                        gallery={gallery}
+                        maxGalleryPhotos={maxGalleryPhotos}
+                        rating={rating}
+                    />
+                )}
+            </ProfilePage>
         </>
     );
 }
@@ -181,15 +191,16 @@ function ProfileForm({
         });
     };
 
-    // null when nothing changed: the preview shows no status.
-    let status: string | null = 'Modifiche non salvate';
+    let status: string | undefined;
 
     if (locked) {
         status = 'Prima di poter modificare il profilo, deve essere approvato.';
-    } else if (form.processing) {
-        status = 'Salvataggio…';
-    } else if (!changed) {
-        status = null;
+    } else if (form.hasErrors) {
+        status = 'Controlla i campi segnati';
+    } else if (changed) {
+        status = complete
+            ? 'Modifiche non salvate'
+            : 'Completa i campi obbligatori per salvare';
     }
 
     return (
@@ -197,37 +208,50 @@ function ProfileForm({
             <form
                 noValidate
                 onSubmit={askToSave}
-                className="flex flex-wrap items-start gap-5"
+                className="flex flex-col gap-10 md:gap-12"
             >
                 {/* Disabled: the browser turns off every field and button inside. */}
                 <fieldset
                     disabled={locked}
-                    className="flex min-w-0 flex-[3_1_560px] flex-col gap-4"
+                    className="flex min-w-0 flex-col gap-10 md:gap-12"
                 >
-                    <PublicProfileSection
-                        draft={draft}
-                        update={update}
-                        photo={photo}
-                        userName={userName}
-                        errors={errorsOf(2)}
-                    />
+                    <div className="flex flex-col gap-4">
+                        <StepErrors
+                            errors={errorsOf(2)}
+                            title="Da sistemare nel profilo:"
+                        />
+                        <StepProfile
+                            draft={draft}
+                            update={update}
+                            name={userName}
+                            photo={photo}
+                        />
+                    </div>
                     {/* Its buttons don't submit this form: each action is saved right away. */}
                     <GalleryPhotos photos={gallery} max={maxGalleryPhotos} />
-                    <SearchSection
-                        draft={draft}
-                        update={update}
-                        disciplines={disciplines}
-                        cities={cities}
-                        errors={errorsOf(3)}
-                        gymOptions={gyms}
-                    />
-                    <CertificationsSection
-                        draft={draft}
-                        update={update}
-                        errors={errorsOf(6)}
-                    />
+                    <div className="flex flex-col gap-4">
+                        <StepErrors
+                            errors={errorsOf(3)}
+                            title="Da sistemare in discipline e luoghi:"
+                        />
+                        <StepPlaces
+                            draft={draft}
+                            update={update}
+                            disciplines={disciplines}
+                            cities={cities}
+                            gymOptions={gyms}
+                        />
+                    </div>
+                    <div className="flex flex-col gap-4">
+                        <StepErrors
+                            errors={errorsOf(6)}
+                            title="Da sistemare nelle certificazioni:"
+                        />
+                        <StepCertifications draft={draft} update={update} />
+                    </div>
                 </fieldset>
-                <aside className="min-w-0 flex-[2_1_320px] lg:sticky lg:top-6">
+
+                <ProfileSection title="Anteprima">
                     <ProfilePreview
                         draft={draft}
                         userName={userName}
@@ -236,12 +260,14 @@ function ProfileForm({
                         disciplines={disciplines}
                         cities={cities}
                         checks={profileChecks(draft, photo, gallery.length)}
-                        status={status}
-                        changed={changed}
-                        canSave={changed && complete}
-                        saving={form.processing}
                     />
-                </aside>
+                </ProfileSection>
+
+                <SaveBar
+                    status={status}
+                    disabled={locked || !changed || !complete}
+                    saving={form.processing}
+                />
             </form>
             <ConfirmDialog
                 open={confirming}

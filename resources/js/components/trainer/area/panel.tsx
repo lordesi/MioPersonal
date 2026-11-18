@@ -12,8 +12,8 @@ type PanelProps = Omit<ComponentProps<'section'>, 'title'> & {
 };
 
 /**
- * The white card of the trainer area (docs/design): border, 20 px corners.
- * Every page puts its content in one or more of these.
+ * The card of the client and gym areas (docs/design): border, 20 px
+ * corners. In the trainer area it is the dark card of "Diventa trainer".
  */
 export default function Panel({
     title,
@@ -30,6 +30,8 @@ export default function Panel({
             aria-labelledby={title ? titleId : undefined}
             className={cn(
                 'flex flex-col gap-4 rounded-[20px] border bg-card p-5 md:p-6',
+                // The trainer area: a card of "Diventa trainer", no outline.
+                'in-[.trainer-area]:rounded-[26px] in-[.trainer-area]:border-0 md:in-[.trainer-area]:rounded-[20px] md:in-[.trainer-area]:bg-transparent md:in-[.trainer-area]:shadow-[inset_0_0_0_1px_var(--border)]',
                 className,
             )}
             {...props}
@@ -43,7 +45,7 @@ export default function Panel({
                                 'font-semibold',
                                 titleSize === 'lg'
                                     ? 'text-xl tracking-[-0.02em]'
-                                    : 'text-[17px] leading-6',
+                                    : 'text-[17px] leading-6 in-[.trainer-area]:text-xl in-[.trainer-area]:tracking-[-0.45px]',
                             )}
                         >
                             {title}

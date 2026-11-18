@@ -1,6 +1,14 @@
-import { ChevronLeft, ChevronRight, Plus, Search, Users } from 'lucide-react';
+import {
+    BookUser,
+    ChevronLeft,
+    ChevronRight,
+    Plus,
+    Search,
+    Users,
+} from 'lucide-react';
 import ClientChat from '@/components/trainer/clients/client-chat';
 import ClientDetail from '@/components/trainer/clients/client-detail';
+import ClientRubrica from '@/components/trainer/clients/client-rubrica';
 import FilterChips from '@/components/trainer/clients/filters';
 import {
     previewOf,
@@ -20,8 +28,9 @@ import { cn } from '@/lib/utils';
 
 /**
  * "Clienti" on phones, one screen at a time: the list with the last
- * messages (Clienti Filtri 1), the card of a client (Scheda 1) and the
- * conversation (Chat 2). The address keeps the screen: "Indietro" works.
+ * messages (Clienti Filtri 1), the "Rubrica" A–Z (Rubrica 2), the card of a
+ * client (Scheda 1) and the conversation (Chat 2). The address keeps the
+ * card and the chat: "Indietro" works; from a card the Rubrica comes back.
  */
 export default function ClientsMobile(props: ClientsViewProps) {
     const {
@@ -45,6 +54,8 @@ export default function ClientsMobile(props: ClientsViewProps) {
         hiddenCount,
         onHide,
         onRestore,
+        view,
+        onView,
     } = props;
     const now = new Date();
 
@@ -81,6 +92,84 @@ export default function ClientsMobile(props: ClientsViewProps) {
         );
     }
 
+    // "Rubrica" (design Rubrica 2): every client A–Z, "Ancora da contattare" on top.
+    if (view === 'rubrica') {
+        const words = search.trim().toLowerCase();
+        const found = clients.filter(
+            (client) =>
+                words === '' || client.name.toLowerCase().includes(words),
+        );
+
+        return (
+            <>
+                <header className="flex min-h-13 items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => onView('chat')}
+                        aria-label="Torna ai clienti"
+                        className={cn(roundOutlineClassName, 'border-white/35')}
+                    >
+                        <ChevronLeft aria-hidden="true" className="size-5.5" />
+                    </button>
+                    <div className="mr-auto flex min-w-0 flex-col">
+                        <h1 className={pageTitleClassName}>Rubrica</h1>
+                        <span className="text-[13px] text-muted-foreground">
+                            {clients.length === 1
+                                ? '1 cliente'
+                                : `${clients.length} clienti`}
+                        </span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onAdd}
+                        aria-label="Aggiungi cliente"
+                        className={cn(brandButtonClassName, 'size-11 px-0')}
+                    >
+                        <Plus
+                            aria-hidden="true"
+                            className="size-5"
+                            strokeWidth={2.5}
+                        />
+                    </button>
+                </header>
+
+                <label className="-mt-2 flex h-12.5 items-center gap-2.5 rounded-2xl bg-card px-4 text-[#8a8a8a] focus-within:ring-[3px] focus-within:ring-ring/50">
+                    <Search aria-hidden="true" className="size-5" />
+                    <span className="sr-only">Cerca nella rubrica</span>
+                    <input
+                        type="search"
+                        inputMode="search"
+                        autoComplete="off"
+                        placeholder="Cerca per nome"
+                        value={search}
+                        onChange={(event) => onSearch(event.target.value)}
+                        className="h-full min-w-0 flex-1 bg-transparent text-[17px] text-foreground outline-none placeholder:text-[#8a8a8a]"
+                    />
+                </label>
+
+                {words === '' && (
+                    <ToContact
+                        clients={toContact}
+                        hiddenCount={hiddenCount}
+                        onWrite={(client) => open(client, true)}
+                        onOpen={(client) => open(client)}
+                        onHide={onHide}
+                        onRestore={onRestore}
+                        variant="cards"
+                        limit={3}
+                    />
+                )}
+
+                <ClientRubrica
+                    clients={found}
+                    chats={chats}
+                    onOpen={(client) => open(client)}
+                    size="lg"
+                />
+            </>
+        );
+    }
+
     return (
         <>
             <header className="flex min-h-13 items-center gap-3">
@@ -106,19 +195,34 @@ export default function ClientsMobile(props: ClientsViewProps) {
                 </button>
             </header>
 
-            <label className="-mt-2 flex h-12.5 items-center gap-2.5 rounded-2xl bg-card px-4 text-[#8a8a8a] focus-within:ring-[3px] focus-within:ring-ring/50">
-                <Search aria-hidden="true" className="size-5" />
-                <span className="sr-only">Cerca cliente o messaggio</span>
-                <input
-                    type="search"
-                    inputMode="search"
-                    autoComplete="off"
-                    placeholder="Cerca cliente o messaggio"
-                    value={search}
-                    onChange={(event) => onSearch(event.target.value)}
-                    className="h-full min-w-0 flex-1 bg-transparent text-[17px] text-foreground outline-none placeholder:text-[#8a8a8a]"
-                />
-            </label>
+            <div className="-mt-2 flex gap-2">
+                <label className="flex h-12.5 min-w-0 flex-1 items-center gap-2.5 rounded-2xl bg-card px-4 text-[#8a8a8a] focus-within:ring-[3px] focus-within:ring-ring/50">
+                    <Search aria-hidden="true" className="size-5" />
+                    <span className="sr-only">Cerca cliente o messaggio</span>
+                    <input
+                        type="search"
+                        inputMode="search"
+                        autoComplete="off"
+                        placeholder="Cerca cliente o messaggio"
+                        value={search}
+                        onChange={(event) => onSearch(event.target.value)}
+                        className="h-full min-w-0 flex-1 bg-transparent text-[17px] text-foreground outline-none placeholder:text-[#8a8a8a]"
+                    />
+                </label>
+                <button
+                    type="button"
+                    onClick={() => {
+                        onSearch('');
+                        onView('rubrica');
+                        window.scrollTo({ top: 0 });
+                    }}
+                    aria-label="Apri la rubrica dei clienti"
+                    title="Rubrica"
+                    className="flex size-12.5 shrink-0 items-center justify-center rounded-2xl bg-card text-foreground outline-none hover:bg-[#232323] focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                >
+                    <BookUser aria-hidden="true" className="size-5" />
+                </button>
+            </div>
 
             <FilterChips
                 clients={clients}
@@ -127,18 +231,6 @@ export default function ClientsMobile(props: ClientsViewProps) {
                 onChange={onFilter}
                 className="-mx-4 -mt-2 px-4"
             />
-
-            {filter === 'all' && search === '' && (
-                <ToContact
-                    clients={toContact}
-                    hiddenCount={hiddenCount}
-                    onWrite={(client) => open(client, true)}
-                    onOpen={(client) => open(client)}
-                    onHide={onHide}
-                    onRestore={onRestore}
-                    variant="cards"
-                />
-            )}
 
             {clients.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 rounded-[26px] bg-[#121212] px-6 py-12 text-center shadow-[inset_0_0_0_1px_#2c2c2c]">

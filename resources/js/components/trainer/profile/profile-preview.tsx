@@ -8,8 +8,6 @@ import {
 } from '@/components/onboarding/trainer/draft';
 import RatingSummary from '@/components/trainer/rating-summary';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import { useInitials } from '@/hooks/use-initials';
 import { trainingGoals } from '@/lib/goals';
 import { cn } from '@/lib/utils';
@@ -65,17 +63,11 @@ type ProfilePreviewProps = {
     disciplines: CatalogOption[];
     cities: CatalogOption[];
     checks: ProfileCheck[];
-    /** "Modifiche non salvate", "Salvataggio…", why it is locked; null when nothing changed. */
-    status: string | null;
-    changed: boolean;
-    canSave: boolean;
-    saving: boolean;
 };
 
 /**
- * "Anteprima": the black panel of "Modifica profilo" with the card at the size
- * of the search and home cards (TrainerCard), how complete the profile is,
- * and the save button of the page (a submit button of its form).
+ * "Anteprima" of "Modifica profilo": the card at the size of the search and
+ * home cards (TrainerCard) and how complete the profile is.
  */
 export default function ProfilePreview({
     draft,
@@ -85,10 +77,6 @@ export default function ProfilePreview({
     disciplines,
     cities,
     checks,
-    status,
-    changed,
-    canSave,
-    saving,
 }: ProfilePreviewProps) {
     const getInitials = useInitials();
     const nameOf = (options: CatalogOption[], value: string) =>
@@ -115,19 +103,12 @@ export default function ProfilePreview({
 
     return (
         <section
-            aria-labelledby="profile-preview-title"
-            className="flex flex-col gap-4.5 rounded-3xl bg-sidebar p-5.5 text-sidebar-foreground"
+            aria-label="Anteprima del profilo"
+            className="flex flex-col gap-4.5 rounded-[26px] bg-card p-4 md:rounded-[20px] md:bg-transparent md:p-5 md:shadow-[inset_0_0_0_1px_var(--border)]"
         >
-            <h2
-                id="profile-preview-title"
-                className="text-xs font-semibold tracking-[0.08em] text-sidebar-muted-foreground"
-            >
-                ANTEPRIMA
-            </h2>
-
             {/* The width of a home card on phones, close to a search result. */}
-            <div className="mx-auto w-full max-w-76 overflow-hidden rounded-[20px] bg-card text-card-foreground">
-                <div className="relative flex aspect-4/3 items-center justify-center overflow-hidden bg-sidebar-accent">
+            <div className="mx-auto w-full max-w-76 overflow-hidden rounded-[20px] bg-[#141414] text-card-foreground shadow-[inset_0_0_0_1px_var(--border)]">
+                <div className="relative flex aspect-4/3 items-center justify-center overflow-hidden bg-[#262626]">
                     {photo ? (
                         <img
                             src={photo}
@@ -135,7 +116,7 @@ export default function ProfilePreview({
                             className="size-full object-cover"
                         />
                     ) : (
-                        <span className="text-[46px] leading-[50px] font-bold tracking-[-0.03em] text-sidebar-foreground">
+                        <span className="text-[46px] leading-[50px] font-bold tracking-[-0.03em] text-foreground">
                             {getInitials(userName)}
                         </span>
                     )}
@@ -187,7 +168,7 @@ export default function ProfilePreview({
                             {draft.disciplines.slice(0, 3).map((slug) => (
                                 <span
                                     key={slug}
-                                    className="inline-flex h-6.5 items-center rounded-full bg-secondary px-2.5 text-xs font-medium"
+                                    className="inline-flex h-6.5 items-center rounded-full bg-[#262626] px-2.5 text-xs font-medium"
                                 >
                                     {nameOf(disciplines, slug)}
                                 </span>
@@ -221,10 +202,10 @@ export default function ProfilePreview({
                     aria-valuenow={percent}
                     aria-valuemin={0}
                     aria-valuemax={100}
-                    className="h-2 overflow-hidden rounded-full bg-sidebar-border"
+                    className="h-2 overflow-hidden rounded-full bg-[#2a2a2a]"
                 >
                     <div
-                        className="h-full rounded-full bg-sidebar-primary transition-[width]"
+                        className="h-full rounded-full bg-brand transition-[width]"
                         style={{ width: `${percent}%` }}
                     />
                 </div>
@@ -239,7 +220,7 @@ export default function ProfilePreview({
                                 className={cn(
                                     'flex size-5 flex-none items-center justify-center rounded-full',
                                     check.done
-                                        ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                                        ? 'bg-brand text-[#0a0a0a]'
                                         : 'border-[1.5px] border-dashed border-muted-foreground text-transparent',
                                 )}
                             >
@@ -251,8 +232,8 @@ export default function ProfilePreview({
                             <span
                                 className={cn(
                                     check.done
-                                        ? 'text-sidebar-foreground/90'
-                                        : 'font-semibold text-sidebar-primary',
+                                        ? 'text-foreground/90'
+                                        : 'font-semibold text-brand',
                                 )}
                             >
                                 {check.label}
@@ -263,37 +244,6 @@ export default function ProfilePreview({
                         </li>
                     ))}
                 </ul>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sidebar-border pt-4">
-                {/* Always in the page, so screen readers hear the changes. */}
-                <span
-                    role="status"
-                    className="flex items-center gap-2 text-[13px] leading-4.5 text-sidebar-foreground/80 empty:hidden"
-                >
-                    {status && (
-                        <>
-                            <span
-                                aria-hidden="true"
-                                className={cn(
-                                    'size-2 rounded-full',
-                                    changed
-                                        ? 'bg-sidebar-primary'
-                                        : 'bg-muted-foreground',
-                                )}
-                            />
-                            {status}
-                        </>
-                    )}
-                </span>
-                <Button
-                    type="submit"
-                    disabled={!canSave || saving}
-                    className="ml-auto h-11 rounded-xl bg-sidebar-primary px-4.5 font-semibold text-sidebar-primary-foreground hover:bg-sidebar-primary/90 disabled:bg-sidebar-border disabled:text-muted-foreground disabled:opacity-100"
-                >
-                    {saving && <Spinner />}
-                    Salva modifiche
-                </Button>
             </div>
         </section>
     );

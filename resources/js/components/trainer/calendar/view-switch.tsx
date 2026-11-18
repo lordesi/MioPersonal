@@ -30,7 +30,7 @@ export default function ViewSwitch({
                     className={cn(
                         'h-9 rounded-full px-3.5 text-[15px] font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
                         view === item.value
-                            ? 'bg-foreground text-background'
+                            ? 'text-brand shadow-[inset_0_0_0_1.5px_var(--brand)]'
                             : 'text-muted-foreground hover:text-foreground',
                     )}
                 >

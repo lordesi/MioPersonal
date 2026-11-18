@@ -20,7 +20,7 @@ export default function PastWeekSummary({ summary }: { summary: Summary }) {
     return (
         <aside
             aria-labelledby={titleId}
-            className="flex min-w-0 flex-[2_1_300px] flex-col gap-4.5 rounded-3xl bg-sidebar p-5.5 text-sidebar-foreground lg:sticky lg:top-6"
+            className="flex min-w-0 flex-[2_1_300px] flex-col gap-4.5 rounded-[26px] bg-card p-4 text-foreground md:rounded-[20px] md:bg-transparent md:p-5 md:shadow-[inset_0_0_0_1px_var(--border)]"
         >
             <div className="flex flex-col gap-1.5">
                 <h2

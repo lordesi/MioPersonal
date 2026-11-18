@@ -606,3 +606,6 @@ const fieldSteps: [prefix: string, step: number][] = [
 export function stepOfField(field: string): number {
     return fieldSteps.find(([prefix]) => field.startsWith(prefix))?.[1] ?? 1;
 }
+
+/** "In palestra": an approved gym of MioPersonal the trainer can choose. */
+export type GymOption = { id: number; name: string; city: string };

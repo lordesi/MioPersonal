@@ -1,15 +1,18 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import TrainerAvailabilityController from '@/actions/App/Http/Controllers/TrainerAvailabilityController';
-import NumberedSection from '@/components/trainer/area/numbered-section';
-import PageHeading from '@/components/trainer/area/page-heading';
-import SeeAlso from '@/components/trainer/area/see-also';
+import { initialDraft } from '@/components/onboarding/trainer/draft';
+import StepErrors from '@/components/onboarding/trainer/step-errors';
+import StepHours from '@/components/onboarding/trainer/step-hours';
+import ProfilePage, {
+    ProfileSection,
+    SaveBar,
+} from '@/components/trainer/profile-pages/profile-page';
 import AvailabilitySummary from '@/components/trainer/hours/availability-summary';
-import BookingRulesFields from '@/components/trainer/hours/booking-rules-fields';
+import { bookingRuleOptions } from '@/components/trainer/hours/booking-rules-fields';
 import DayOverrideDialog from '@/components/trainer/hours/day-override-dialog';
 import DayOverrides from '@/components/trainer/hours/day-overrides';
-import WeeklyHoursGrid from '@/components/trainer/hours/weekly-hours-grid';
-import { Button } from '@/components/ui/button';
+import { brandButtonClassName } from '@/components/trainer/ui/styles';
 import { register } from '@/routes/trainer';
 import type { TrainerAvailability, TrainerDayOverrideBlock } from '@/types';
 
@@ -31,62 +34,62 @@ export default function Availability({
         <>
             <Head title="Le tue disponibilità" />
 
-            <PageHeading title="Le tue disponibilità" />
-            <SeeAlso current="availability" />
+            <ProfilePage
+                title={
+                    <>
+                        Le tue <strong>disponibilità</strong>
+                    </>
+                }
+                intro="Gli orari in cui i clienti possono prenotarti e le regole delle prenotazioni."
+            >
+                {availability === null ? (
+                    <p className="text-[15px] text-muted-foreground">
+                        Scegli i tuoi orari nella{' '}
+                        <Link
+                            href={register()}
+                            className="font-semibold text-brand underline-offset-4 hover:underline"
+                        >
+                            registrazione da trainer
+                        </Link>
+                        : poi potrai cambiarli da qui.
+                    </p>
+                ) : (
+                    <>
+                        <AvailabilityForm availability={availability} />
 
-            {availability === null ? (
-                <p className="text-sm text-muted-foreground">
-                    Scegli i tuoi orari nella{' '}
-                    <Link
-                        href={register()}
-                        className="font-medium text-foreground underline underline-offset-4"
-                    >
-                        registrazione da trainer
-                    </Link>
-                    : poi potrai cambiarli da qui.
-                </p>
-            ) : (
-                <>
-                    <AvailabilityForm availability={availability} />
-
-                    {/* Outside the form above: saved on its own, right away. */}
-                    <div className="flex flex-wrap gap-5">
-                        <NumberedSection
-                            step={3}
+                        {/* Outside the form above: saved on its own, right away. */}
+                        <ProfileSection
                             title="Giorni e settimane diverse"
                             description="Ferie, un giorno libero o una settimana con altri orari: vale solo per quei giorni."
-                            className="min-w-0 flex-[3_1_600px]"
                         >
                             <DayOverrides blocks={overrides} />
                             <DayOverrideDialog
                                 baseHours={availability.hours}
                                 today={today}
                                 trigger={
-                                    <Button
+                                    <button
                                         type="button"
-                                        className="h-11 self-start rounded-[10px] px-4 font-semibold"
+                                        className={`${brandButtonClassName} self-start`}
                                     >
-                                        <Plus aria-hidden="true" />
+                                        <Plus
+                                            aria-hidden="true"
+                                            className="size-4.5"
+                                        />
                                         Modifica un giorno o una settimana
-                                    </Button>
+                                    </button>
                                 }
                             />
-                        </NumberedSection>
-                        {/* Keeps the column as wide as the one above. */}
-                        <div
-                            aria-hidden="true"
-                            className="hidden flex-[2_1_320px] lg:block"
-                        />
-                    </div>
-                </>
-            )}
+                        </ProfileSection>
+                    </>
+                )}
+            </ProfilePage>
         </>
     );
 }
 
 /**
- * The same fields as step 5 of "Diventa trainer" on the left, the summary
- * for the clients with "Salva modifiche" on the right.
+ * Step 5 of "Diventa trainer" ("Orari e regole"), the summary for the
+ * clients and "Salva modifiche".
  */
 function AvailabilityForm({
     availability,
@@ -99,6 +102,11 @@ function AvailabilityForm({
     const hoursError = Object.entries(errors).find(([field]) =>
         field.startsWith('hours'),
     )?.[1];
+    // The rules show their messages on top: the menus of the step have none.
+    const ruleErrors = bookingRuleOptions
+        .map((rule) => errors[rule.field])
+        .concat(errors.auto_confirm)
+        .filter((message): message is string => Boolean(message));
 
     const submit = (event: React.FormEvent) => {
         event.preventDefault();
@@ -119,54 +127,54 @@ function AvailabilityForm({
         });
     };
 
-    // Nothing to save: no status, only the button.
     let status: string | undefined;
 
-    if (form.processing) {
-        status = 'Salvataggio…';
-    } else if (form.hasErrors) {
+    if (form.hasErrors) {
         status = 'Controlla i campi segnati';
     } else if (form.isDirty) {
         status = 'Modifiche non salvate';
     }
 
     return (
-        <form onSubmit={submit} className="flex flex-wrap items-start gap-5">
-            <div className="flex min-w-0 flex-[3_1_600px] flex-col gap-4">
-                <NumberedSection
-                    step={1}
-                    title="Orari di base"
-                    description="Valgono ogni settimana, tranne i giorni che modifichi più in basso."
-                >
-                    <WeeklyHoursGrid
-                        hours={form.data.hours}
-                        onChange={(hours) => form.setData('hours', hours)}
-                    />
-                    {hoursError && (
-                        <p className="text-sm text-destructive">{hoursError}</p>
-                    )}
-                </NumberedSection>
-
-                <NumberedSection step={2} title="Regole di prenotazione">
-                    <BookingRulesFields
-                        rules={form.data.rules}
-                        autoConfirm={form.data.autoConfirm}
-                        onChange={(changes) =>
-                            form.setData({ ...form.data, ...changes })
-                        }
-                        errors={errors}
-                    />
-                </NumberedSection>
-            </div>
-
-            <aside className="min-w-0 flex-[2_1_320px] lg:sticky lg:top-6">
-                <AvailabilitySummary
-                    availability={form.data}
-                    status={status}
-                    changed={form.isDirty}
-                    saving={form.processing}
+        <form onSubmit={submit} className="flex flex-col gap-10 md:gap-12">
+            {/* Step 5 of "Diventa trainer": the ranges of each day and the rules. */}
+            {(hoursError || ruleErrors.length > 0) && (
+                <StepErrors
+                    errors={[
+                        ...(hoursError ? [hoursError] : []),
+                        ...ruleErrors,
+                    ]}
+                    title="Da sistemare:"
                 />
-            </aside>
+            )}
+            <StepHours
+                draft={{
+                    ...initialDraft,
+                    hours: form.data.hours,
+                    rules: form.data.rules,
+                    autoConfirm: form.data.autoConfirm,
+                }}
+                update={(changes) =>
+                    form.setData({
+                        ...form.data,
+                        ...(changes.hours ? { hours: changes.hours } : {}),
+                        ...(changes.rules ? { rules: changes.rules } : {}),
+                        ...(changes.autoConfirm !== undefined
+                            ? { autoConfirm: changes.autoConfirm }
+                            : {}),
+                    })
+                }
+            />
+
+            <ProfileSection title="Così funziona per i clienti">
+                <AvailabilitySummary availability={form.data} />
+            </ProfileSection>
+
+            <SaveBar
+                status={status}
+                disabled={!form.isDirty}
+                saving={form.processing}
+            />
         </form>
     );
 }

@@ -3,7 +3,7 @@ import { PencilLine } from 'lucide-react';
 import { useId, useState } from 'react';
 import { toast } from 'sonner';
 import {
-    brandButtonClassName,
+    brandFilledButtonClassName,
     outlineButtonClassName,
     softButtonClassName,
 } from '@/components/trainer/ui/styles';
@@ -119,7 +119,7 @@ export default function SessionNote({
                 <button
                     type="submit"
                     disabled={saving}
-                    className={cn(brandButtonClassName, 'h-10')}
+                    className={cn(brandFilledButtonClassName, 'h-10')}
                 >
                     Salva nota
                 </button>

@@ -129,10 +129,10 @@ export default function WeekGrid({
                                 className={cn(
                                     'flex size-8.5 items-center justify-center rounded-full text-base font-bold tabular-nums',
                                     date === today &&
-                                        'bg-foreground text-background',
+                                        'text-brand shadow-[inset_0_0_0_1.5px_var(--brand)]',
                                     date !== today &&
                                         date === selectedDay &&
-                                        'border-[1.5px] border-foreground',
+                                        'border-[1.5px] border-brand',
                                 )}
                             >
                                 {formatDayNumber(date)}

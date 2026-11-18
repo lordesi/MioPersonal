@@ -14,10 +14,8 @@ import { formatDuration, formatPrice } from '@/lib/format';
 /** "Prima seduta per nuovi clienti": not offered, free or at a lower price. */
 export type FirstSessionMode = 'off' | 'free' | 'paid';
 
-/** The chips of the first session and of the packages, as in the design. */
-export const FIRST_SESSION_MINUTES = [30, 60];
+/** The chips of the sessions of a package, as in the design. */
 export const PACKAGE_SESSION_OPTIONS = [5, 10, 20];
-export const PACKAGE_MINUTES = [60, 90, 120];
 
 /** The name of a kind of session still without one. */
 export const NEW_SESSION_NAME = 'Nuovo tipo di seduta';
@@ -41,17 +39,6 @@ export function firstSessionMode(pricing: Pricing): FirstSessionMode {
     }
 
     return pricing.firstSession.priceCents === 0 ? 'free' : 'paid';
-}
-
-/** The columns at the start: every duration with a price, "1 h" when none. */
-export function initialColumns(pricing: Pricing): number[] {
-    const minutes = new Set(
-        pricing.sessions.flatMap((session) =>
-            session.prices.map((price) => price.minutes),
-        ),
-    );
-
-    return minutes.size > 0 ? [...minutes].sort((a, b) => a - b) : [60];
 }
 
 /**
@@ -216,13 +203,3 @@ export function previewRows(
 
     return rows;
 }
-
-/**
- * Phones: the prices side by side under the name, each with its duration.
- * From sm, "contents" drops these wrappers and the cells are table columns.
- */
-export const priceCellsClassName =
-    'grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-2 sm:contents';
-export const priceCellClassName = 'flex flex-col gap-1 sm:contents';
-export const cellLabelClassName =
-    'text-xs font-semibold text-muted-foreground sm:hidden';

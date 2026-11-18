@@ -13,6 +13,8 @@ type ToContactProps = {
     onRestore: () => void;
     /** Phones: three cards in a row; desktop: rows in a grid. */
     variant: 'cards' | 'rows';
+    /** Shown at most: hiding one with the X brings in the next. */
+    limit?: number;
 };
 
 /**
@@ -27,7 +29,10 @@ export default function ToContact({
     onHide,
     onRestore,
     variant,
+    limit = 6,
 }: ToContactProps) {
+    const shown = clients.slice(0, limit);
+
     if (clients.length === 0 && hiddenCount === 0) {
         return null;
     }
@@ -56,7 +61,7 @@ export default function ToContact({
 
             {variant === 'cards' ? (
                 <div className="grid grid-cols-3 gap-2">
-                    {clients.slice(0, 6).map((client) => (
+                    {shown.map((client) => (
                         <div
                             key={client.recordId}
                             className="relative flex flex-col items-center gap-2 rounded-[20px] bg-[#121212] px-2 pt-4 pb-3 text-center shadow-[inset_0_0_0_1px_#2c2c2c]"
@@ -92,7 +97,7 @@ export default function ToContact({
                 </div>
             ) : (
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2">
-                    {clients.map((client) => (
+                    {shown.map((client) => (
                         <div
                             key={client.recordId}
                             className="flex items-center gap-2.5 rounded-[18px] border border-border bg-[#141414] py-2.5 pr-1.5 pl-3"

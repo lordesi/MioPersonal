@@ -180,7 +180,8 @@ function Overview({ me, visibility, counts }: ProfileHubProps) {
                             onClick={copy}
                             className={cn(
                                 brandButtonClassName,
-                                copied && 'bg-[#30d158] hover:bg-[#30d158]',
+                                copied &&
+                                    'text-[#30d158] shadow-[inset_0_0_0_1.5px_#30d158]',
                             )}
                         >
                             {copied ? (

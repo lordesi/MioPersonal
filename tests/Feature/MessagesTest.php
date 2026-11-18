@@ -473,6 +473,8 @@ class MessagesTest extends TestCase
     /** "Online" / "Ultimo accesso": when the other person last used the site, inside the conversation. */
     public function test_the_conversation_says_when_the_other_person_was_last_active()
     {
+        // A second passing between the save and the check must not matter.
+        $this->freezeSecond();
         $record = $this->pair();
         $client = $this->clientOf($record);
         $client->forceFill(['last_active_at' => null])->saveQuietly();

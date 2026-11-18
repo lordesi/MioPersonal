@@ -63,6 +63,8 @@ type MonthCalendarProps = {
     /** The arrows next to the title; left out = an empty space. */
     previous?: Arrow;
     next?: Arrow;
+    /** A span of days ("Intervallo personalizzato"): both ends outlined, the days between filled. */
+    range?: { from: string; to: string | null };
     className?: string;
 };
 
@@ -79,6 +81,7 @@ export default function MonthCalendar({
     day,
     previous,
     next,
+    range,
     className,
 }: MonthCalendarProps) {
     const title = monthTitle(year, month);
@@ -131,7 +134,14 @@ export default function MonthCalendar({
 
                     const info = day(date);
                     const isToday = date === today;
-                    const pressed = date === selected;
+                    const pressed =
+                        date === selected ||
+                        date === range?.from ||
+                        date === range?.to;
+                    const between =
+                        range?.to != null &&
+                        date > range.from &&
+                        date < range.to;
 
                     return (
                         <button
@@ -151,6 +161,7 @@ export default function MonthCalendar({
                                     'shadow-[inset_0_0_0_1px_var(--field)]',
                                 pressed &&
                                     'font-bold shadow-[inset_0_0_0_1.5px_var(--brand)]',
+                                between && 'bg-brand-soft text-brand',
                             )}
                         >
                             {Number(date.slice(8))}

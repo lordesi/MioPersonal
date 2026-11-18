@@ -42,10 +42,10 @@ export default function OutcomeFilters({
                         preserveScroll
                         aria-current={active ? 'page' : undefined}
                         className={cn(
-                            'inline-flex h-9.5 items-center gap-2 rounded-full border py-0 pr-1.5 pl-3.5 text-sm font-medium',
+                            'inline-flex h-10 items-center gap-2 rounded-full border py-0 pr-1.5 pl-4 text-[15px] font-semibold',
                             active
-                                ? 'border-primary bg-primary text-primary-foreground'
-                                : 'bg-card text-foreground hover:bg-secondary',
+                                ? 'border-brand bg-transparent text-brand'
+                                : 'border-field bg-transparent text-foreground hover:bg-white/5',
                         )}
                     >
                         {filter.label}
@@ -53,8 +53,8 @@ export default function OutcomeFilters({
                             className={cn(
                                 'inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1.75 text-xs font-bold tabular-nums',
                                 active
-                                    ? 'bg-primary-foreground text-primary'
-                                    : 'bg-secondary text-muted-foreground',
+                                    ? 'bg-brand-soft text-brand'
+                                    : 'bg-[#262626] text-muted-foreground',
                             )}
                         >
                             {counts[filter.value]}

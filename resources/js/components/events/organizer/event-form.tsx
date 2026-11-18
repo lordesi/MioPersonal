@@ -562,6 +562,7 @@ export default function OrganizerEventForm({
                 <div className="flex flex-wrap items-center gap-3">
                     <Button
                         type="submit"
+                        data-fill
                         className="h-11 px-6"
                         disabled={form.processing}
                     >

@@ -230,7 +230,7 @@ function PasswordForm({
                                             className={cn(
                                                 'h-1 rounded-full',
                                                 index < met
-                                                    ? 'bg-foreground'
+                                                    ? 'bg-foreground in-[.trainer-area]:bg-brand'
                                                     : 'bg-border',
                                             )}
                                         />

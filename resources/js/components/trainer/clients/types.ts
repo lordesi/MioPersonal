@@ -40,8 +40,13 @@ export type ClientFilter =
     | 'package'
     | 'inactive';
 
+/** "Chat": the list with the last messages; "Rubrica": every client A–Z. */
+export type ClientsView = 'chat' | 'rubrica';
+
 /** What the desktop and the phone drawings get from the page. */
 export type ClientsViewProps = ClientsProps & {
+    view: ClientsView;
+    onView: (view: ClientsView) => void;
     /** The clients of the filter and of the search. */
     visible: TrainerClient[];
     filter: ClientFilter;

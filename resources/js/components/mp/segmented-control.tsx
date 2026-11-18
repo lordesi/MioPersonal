@@ -81,7 +81,8 @@ export default function SegmentedControl<T extends string>({
                         className={cn(
                             'min-w-0 flex-1 truncate rounded-full px-3 text-[15px] text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
                             tone === 'white'
-                                ? 'min-h-9 font-semibold aria-checked:bg-foreground aria-checked:text-background aria-checked:shadow-[0_2px_6px_0_rgba(0,0,0,0.3)]'
+                                ? // The trainer area has no white buttons: turquoise outline there.
+                                  'min-h-9 font-semibold aria-checked:bg-foreground aria-checked:text-background aria-checked:shadow-[0_2px_6px_0_rgba(0,0,0,0.3)] in-[.trainer-area]:aria-checked:bg-transparent in-[.trainer-area]:aria-checked:text-brand in-[.trainer-area]:aria-checked:shadow-[inset_0_0_0_1.5px_var(--brand)]'
                                 : 'min-h-10 font-normal aria-checked:font-semibold aria-checked:text-brand aria-checked:shadow-[inset_0_0_0_1.5px_var(--brand)]',
                         )}
                     >

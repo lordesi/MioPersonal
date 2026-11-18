@@ -45,10 +45,15 @@ export default function TrainerLayout({
     const unread = trainerArea?.unreadChats ?? 0;
 
     // Dialogs, menus and toasts open in a portal outside the page: dark too.
+    // "trainer-area": the buttons of the area as in "Diventa trainer" (app.css).
     useEffect(() => {
-        document.documentElement.classList.add('theme-dark');
+        document.documentElement.classList.add('theme-dark', 'trainer-area');
 
-        return () => document.documentElement.classList.remove('theme-dark');
+        return () =>
+            document.documentElement.classList.remove(
+                'theme-dark',
+                'trainer-area',
+            );
     }, []);
 
     const notice = trainerArea?.profile && (
@@ -64,7 +69,8 @@ export default function TrainerLayout({
     if (isMobile) {
         return (
             <div className="theme-dark relative min-h-dvh bg-background">
-                <Glow />
+                {/* The pages of "Profilo": black as "Diventa trainer". */}
+                {!inProfile && <Glow />}
                 <main className="relative flex flex-col gap-6 px-4 pt-3 pb-32">
                     {inProfile && (
                         <Link
@@ -92,7 +98,7 @@ export default function TrainerLayout({
 
     return (
         <div className="theme-dark relative flex min-h-dvh gap-6 bg-background p-4">
-            <Glow />
+            {!inProfile && <Glow />}
             <TrainerSidebar
                 current={current}
                 pendingCount={pending}
@@ -101,7 +107,8 @@ export default function TrainerLayout({
                 userName={auth?.user?.name ?? ''}
                 avatar={auth?.user?.avatar}
             />
-            {current === 'profile' && (
+            {/* Inside a page of "Profilo" only "‹ Profilo" goes back: no second column. */}
+            {current === 'profile' && !inProfile && (
                 <section
                     aria-label="Sezioni del profilo"
                     className={cn(
@@ -119,7 +126,8 @@ export default function TrainerLayout({
                 className={cn(
                     'relative flex min-w-0 flex-1 flex-col gap-6',
                     fill ? 'h-[calc(100dvh-2rem)]' : 'pt-2 pb-12',
-                    current === 'profile' && 'max-w-240 pt-6 pr-4',
+                    current === 'profile' &&
+                        (inProfile ? 'pt-6 pr-4' : 'max-w-240 pt-6 pr-4'),
                 )}
             >
                 {notice}

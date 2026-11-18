@@ -54,7 +54,7 @@ export default function ReviewReplyCard({
     return (
         <article
             aria-labelledby={nameId}
-            className="flex flex-col gap-4.5 rounded-3xl border bg-card p-5 md:p-6"
+            className="flex flex-col gap-4.5 rounded-[26px] bg-card p-4 md:rounded-[20px] md:bg-transparent md:p-6 md:shadow-[inset_0_0_0_1px_var(--border)]"
         >
             <div className="flex flex-wrap items-center gap-3">
                 <UserAvatar
@@ -72,7 +72,7 @@ export default function ReviewReplyCard({
                     </span>
                 </span>
                 {review.fromSession && (
-                    <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-secondary px-2.5 text-xs font-semibold">
+                    <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-[#262626] px-2.5 text-xs font-semibold">
                         <Check
                             aria-hidden="true"
                             className="size-3.25"
@@ -91,7 +91,7 @@ export default function ReviewReplyCard({
             </div>
 
             {review.reply ? (
-                <div className="flex flex-col gap-2 rounded-2xl bg-sidebar px-4.5 py-4 text-sidebar-foreground">
+                <div className="flex flex-col gap-2 rounded-[18px] bg-[#262626] px-4.5 py-4 text-foreground md:bg-card">
                     <span className="flex items-center gap-2">
                         <span
                             aria-hidden="true"
@@ -108,7 +108,7 @@ export default function ReviewReplyCard({
                     </p>
                 </div>
             ) : formOpen ? (
-                <div className="flex flex-col gap-2.5 rounded-2xl bg-secondary p-4">
+                <div className="flex flex-col gap-2.5 rounded-[20px] bg-[#262626] p-4">
                     <Label
                         htmlFor={replyId}
                         className="text-[13px] leading-4.5"
@@ -127,7 +127,7 @@ export default function ReviewReplyCard({
                             setError(undefined);
                         }}
                         aria-invalid={error ? true : undefined}
-                        className="rounded-xl bg-card px-3.5 py-3 text-sm leading-5.25"
+                        className="rounded-[18px] border-0 bg-transparent px-4 py-3 text-[15px] leading-5.25 shadow-[inset_0_0_0_1px_var(--field)] focus-visible:shadow-[inset_0_0_0_1.5px_var(--brand)] focus-visible:ring-0"
                     />
                     <InputError message={error} />
                     <div className="flex flex-wrap items-center justify-between gap-2.5">
@@ -149,7 +149,8 @@ export default function ReviewReplyCard({
                             </Button>
                             <Button
                                 type="button"
-                                className="h-10 rounded-[10px] px-4 font-semibold"
+                                data-fill
+                                className="h-10 px-4 font-semibold"
                                 disabled={draft.trim() === '' || sending}
                                 onClick={publish}
                             >

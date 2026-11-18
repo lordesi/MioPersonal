@@ -11,6 +11,7 @@ import {
 import type {
     ClientFilter,
     ClientsProps,
+    ClientsView,
 } from '@/components/trainer/clients/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { romeParts } from '@/lib/calendar';
@@ -57,6 +58,7 @@ export default function Clients(props: ClientsProps) {
     const isMobile = useIsMobile();
     const [search, setSearch] = useState(query);
     const [filter, setFilter] = useState<ClientFilter>('all');
+    const [listView, setListView] = useState<ClientsView>('chat');
     const [adding, setAdding] = useState(false);
     const [booking, setBooking] = useState<TrainerClient | null>(null);
     const today = romeParts(new Date()).date;
@@ -133,6 +135,8 @@ export default function Clients(props: ClientsProps) {
 
     const view = {
         ...props,
+        view: listView,
+        onView: setListView,
         visible,
         filter,
         onFilter: setFilter,

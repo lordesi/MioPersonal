@@ -2,7 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { Check, Copy, Download, Share } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import PageHeading from '@/components/trainer/area/page-heading';
+import ProfilePage from '@/components/trainer/profile-pages/profile-page';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useClipboard } from '@/hooks/use-clipboard';
@@ -29,7 +29,8 @@ type ShareProps = {
     reason: 'missing' | 'review' | 'hidden' | null;
 };
 
-const section = 'flex flex-col gap-4 rounded-2xl border bg-card p-5 md:p-6';
+const section =
+    'flex flex-col gap-4 rounded-[26px] bg-card p-4 md:rounded-[20px] md:bg-transparent md:p-6 md:shadow-[inset_0_0_0_1px_var(--border)]';
 
 /**
  * "Condividi profilo": the link for the Instagram bio, the QR code and the
@@ -41,19 +42,24 @@ export default function SharePage({ card, reason }: ShareProps) {
         <>
             <Head title="Condividi profilo" />
 
-            <PageHeading title="Condividi il tuo profilo" />
-
-            {card === null ? (
-                <NotYet reason={reason} />
-            ) : (
-                <div className="flex flex-wrap items-start gap-5">
-                    <div className="flex min-w-0 flex-[3_1_480px] flex-col gap-5">
+            <ProfilePage
+                title={
+                    <>
+                        Condividi il tuo <strong>profilo</strong>
+                    </>
+                }
+                intro="Il link per la bio di Instagram, il codice QR e l'immagine per le storie."
+            >
+                {card === null ? (
+                    <NotYet reason={reason} />
+                ) : (
+                    <div className="flex flex-col gap-5">
                         <BioLink card={card} />
                         <QrCode card={card} />
+                        <StoryImage card={card} />
                     </div>
-                    <StoryImage card={card} />
-                </div>
-            )}
+                )}
+            </ProfilePage>
         </>
     );
 }
@@ -61,7 +67,9 @@ export default function SharePage({ card, reason }: ShareProps) {
 function NotYet({ reason }: { reason: ShareProps['reason'] }) {
     return (
         <section className={section}>
-            <h2 className="text-lg font-semibold">Non ancora</h2>
+            <h2 className="text-xl leading-6.25 font-semibold tracking-[-0.45px]">
+                Non ancora
+            </h2>
             <p className="text-sm text-muted-foreground">
                 {reason === 'hidden' ? (
                     <>
@@ -69,7 +77,7 @@ function NotYet({ reason }: { reason: ShareProps['reason'] }) {
                         link non porterebbe a prenotare. Riattivalo dalle{' '}
                         <Link
                             href={settings()}
-                            className="font-medium text-foreground underline underline-offset-4"
+                            className="font-semibold text-brand underline-offset-4 hover:underline"
                         >
                             impostazioni
                         </Link>
@@ -81,7 +89,7 @@ function NotYet({ reason }: { reason: ShareProps['reason'] }) {
                         Intanto puoi completarlo da{' '}
                         <Link
                             href={editProfile()}
-                            className="font-medium text-foreground underline underline-offset-4"
+                            className="font-semibold text-brand underline-offset-4 hover:underline"
                         >
                             Modifica profilo
                         </Link>
@@ -112,7 +120,10 @@ function BioLink({ card }: { card: ShareCard }) {
     return (
         <section className={section} aria-labelledby="share-link-title">
             <div className="flex flex-col gap-1">
-                <h2 id="share-link-title" className="text-lg font-semibold">
+                <h2
+                    id="share-link-title"
+                    className="text-xl leading-6.25 font-semibold tracking-[-0.45px]"
+                >
                     Link per la bio di Instagram
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -127,7 +138,7 @@ function BioLink({ card }: { card: ShareCard }) {
                     value={link}
                     aria-label="Link al tuo profilo"
                     onFocus={(event) => event.currentTarget.select()}
-                    className="h-11 min-w-0 flex-[1_1_260px] rounded-[10px] border bg-muted px-3 text-sm"
+                    className="h-12.5 min-w-0 flex-[1_1_260px] rounded-full border-0 bg-transparent px-5 text-[15px] shadow-[inset_0_0_0_1px_var(--field)]"
                 />
                 <Button
                     type="button"
@@ -178,7 +189,10 @@ function QrCode({ card }: { card: ShareCard }) {
     return (
         <section className={section} aria-labelledby="share-qr-title">
             <div className="flex flex-col gap-1">
-                <h2 id="share-qr-title" className="text-lg font-semibold">
+                <h2
+                    id="share-qr-title"
+                    className="text-xl leading-6.25 font-semibold tracking-[-0.45px]"
+                >
                     QR code
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -191,10 +205,10 @@ function QrCode({ card }: { card: ShareCard }) {
                     <img
                         src={src}
                         alt="QR code del tuo profilo"
-                        className="size-40 rounded-xl border"
+                        className="size-40 rounded-[18px] bg-white p-2"
                     />
                 ) : (
-                    <span className="flex size-40 items-center justify-center rounded-xl border">
+                    <span className="flex size-40 items-center justify-center rounded-[18px] shadow-[inset_0_0_0_1px_var(--field)]">
                         <Spinner />
                     </span>
                 )}
@@ -272,11 +286,14 @@ function StoryImage({ card }: { card: ShareCard }) {
 
     return (
         <section
-            className={`${section} flex-[2_1_300px] items-center`}
+            className={`${section} items-center`}
             aria-labelledby="share-story-title"
         >
             <div className="flex flex-col gap-1 self-stretch">
-                <h2 id="share-story-title" className="text-lg font-semibold">
+                <h2
+                    id="share-story-title"
+                    className="text-xl leading-6.25 font-semibold tracking-[-0.45px]"
+                >
                     Immagine per le storie
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -288,7 +305,7 @@ function StoryImage({ card }: { card: ShareCard }) {
                 ref={canvas}
                 role="img"
                 aria-label={`Anteprima: ${card.name}, ${card.city}, con il QR code per prenotare`}
-                className="aspect-[9/16] w-full max-w-67.5 rounded-2xl border bg-sidebar"
+                className="aspect-[9/16] w-full max-w-67.5 rounded-[20px] bg-[#262626]"
             />
             <div className="flex flex-wrap justify-center gap-2">
                 <Button
