@@ -11,6 +11,7 @@ use Database\Seeders\DemoTrainerSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
@@ -88,9 +89,9 @@ class StatsTest extends TestCase
         $this->withHeader('Referer', 'https://l.instagram.com/')->get(route('trainers.search'))
             ->assertSessionHas(Stats::ACQUISITION_KEY.'.source', 'google');
 
-        // The visits are Cloudflare's: nothing saved here.
-        $this->assertSame(0, DB::table('visitor_days')->count());
-        $this->assertSame(0, DB::table('visit_days')->count());
+        // The visits are Cloudflare's: nothing saved here, the old tables are gone.
+        $this->assertFalse(Schema::hasTable('visitor_days'));
+        $this->assertFalse(Schema::hasTable('visit_days'));
         $this->assertSame(0, DB::table('page_view_days')->count());
     }
 

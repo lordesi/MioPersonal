@@ -28,7 +28,9 @@ class AdminSettingsController extends Controller
             'adminArea' => $this->adminArea(),
             'team' => User::query()
                 ->where('role', UserRole::Admin)
-                ->orderBy('name')
+                // `name` is not a column (User::name() joins first and last name).
+                ->orderBy('first_name')
+                ->orderBy('last_name')
                 ->get()
                 ->map(fn (User $admin) => [
                     'id' => $admin->id,

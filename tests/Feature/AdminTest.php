@@ -80,13 +80,16 @@ class AdminTest extends TestCase
     public function test_settings_list_the_team_and_the_activity_log()
     {
         $admin = User::factory()->admin()->create(['name' => 'Giulia Team']);
+        // Added later, first in alphabetical order.
+        User::factory()->admin()->create(['name' => 'Andrea Rossi']);
         User::factory()->trainer()->create();
 
         $this->actingAs($admin)
             ->get(route('admin.settings'))
             ->assertInertia(fn (Assert $page) => $page
-                ->has('team', 1)
-                ->where('team.0.name', 'Giulia Team')
+                ->has('team', 2)
+                ->where('team.0.name', 'Andrea Rossi')
+                ->where('team.1.name', 'Giulia Team')
                 ->has('activity', 0)
                 ->missing('defaults')
             );
