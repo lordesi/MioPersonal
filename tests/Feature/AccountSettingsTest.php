@@ -44,7 +44,7 @@ class AccountSettingsTest extends TestCase
                 ->where('account.notifications.reminders', true)
                 ->where('account.notifications.push.0.key', 'bookings')
                 ->where('account.notifications.push.0.enabled', true)
-                ->has('account.notifications.push', 4)
+                ->has('account.notifications.push', 6)
             );
     }
 

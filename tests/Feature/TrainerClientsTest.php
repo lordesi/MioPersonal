@@ -131,4 +131,54 @@ class TrainerClientsTest extends TestCase
             ->get('/area-trainer/clienti/'.$booking->client_id)
             ->assertNotFound();
     }
+
+    /** The card: the last sessions over ("Svolte") and whether a request waits ("Richieste"). */
+    public function test_the_card_has_the_sessions_over_and_the_waiting_request()
+    {
+        $trainer = TrainerProfile::factory()->approved()->create();
+        $client = User::factory()->create();
+        $older = Booking::factory()->for($trainer)->for($client, 'client')->confirmed()->at($this->now->subDays(9)->setTime(10, 0))->create();
+        $recent = Booking::factory()->for($trainer)->for($client, 'client')->confirmed()->at($this->now->subDays(2)->setTime(10, 0))->create(['no_show_at' => now()]);
+        Booking::factory()->for($trainer)->for($client, 'client')->at($this->now->addDays(2)->setTime(10, 0))->create();
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.clients', ['cliente' => $client->id]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('selectedId', $client->id)
+                ->where('chat', false)
+                ->where('thread', null)
+                ->has('clients.0.past', 2)
+                ->where('clients.0.past.0.id', $recent->id)
+                ->where('clients.0.past.0.noShow', true)
+                ->where('clients.0.past.1.id', $older->id)
+                ->where('clients.0.hasRequest', true)
+                // "Prenota": the same options of "Aggiungi seduta".
+                ->has('sessionOptions.clients', 1)
+            );
+    }
+
+    /** "Cerca cliente o messaggio": the clients whose conversation has the words. */
+    public function test_the_search_finds_the_words_in_the_messages()
+    {
+        $trainer = TrainerProfile::factory()->approved()->create();
+        $marco = User::factory()->create(['name' => 'Marco Verdi']);
+        $anna = User::factory()->create(['name' => 'Anna Neri']);
+        Booking::factory()->for($trainer)->for($marco, 'client')->confirmed()->at($this->now->subDay()->setTime(10, 0))->create();
+        Booking::factory()->for($trainer)->for($anna, 'client')->confirmed()->at($this->now->subDay()->setTime(12, 0))->create();
+        $this->actingAs($trainer->user)->get(route('trainer.clients'));
+        $record = $trainer->clientRecords()->where('user_id', $marco->id)->sole();
+
+        $this->actingAs($marco)->postJson(route('messages.store', $record), ['body' => 'Porto le fasce per la boxe?'])->assertCreated();
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.clients', ['q' => 'fasce']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('query', 'fasce')
+                ->where('messageMatches', [$record->id])
+            );
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.clients', ['q' => 'f']))
+            ->assertInertia(fn (Assert $page) => $page->where('messageMatches', []));
+    }
 }

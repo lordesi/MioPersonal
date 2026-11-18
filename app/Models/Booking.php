@@ -52,6 +52,7 @@ use Illuminate\Support\Str;
  * @property CarbonImmutable|null $no_show_at set by the trainer: the client didn't come
  * @property string|null $client_note
  * @property string|null $cancel_note the trainer's message to the client when cancelling
+ * @property string|null $trainer_note "Aggiungi nota": the trainer's own, never shown to the client
  * @property CarbonImmutable|null $proposed_starts_at "Sposta": the new start the trainer proposes
  * @property CarbonImmutable|null $proposal_expires_at after this the proposal lapses and the old time holds
  * @property CarbonImmutable|null $reminded_day_before_at the day-before reminder was handled (SendSessionReminders)

@@ -1,12 +1,16 @@
-import { Head, router } from '@inertiajs/react';
-import { Check } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { Check, ChevronLeft } from 'lucide-react';
 import { useId, useState } from 'react';
-import { toast } from 'sonner';
 import HandledRequests from '@/components/trainer/area/handled-requests';
-import PageHeading from '@/components/trainer/area/page-heading';
-import RequestCard from '@/components/trainer/area/request-card';
-import SegmentedTabs from '@/components/trainer/area/segmented-tabs';
-import { accept, decline } from '@/routes/trainer/requests';
+import RequestCard from '@/components/trainer/home/request-card';
+import { useRequestAnswer } from '@/components/trainer/home/use-request-answer';
+import { CountChip } from '@/components/trainer/ui/bits';
+import {
+    pageTitleClassName,
+    roundOutlineClassName,
+} from '@/components/trainer/ui/styles';
+import { cn } from '@/lib/utils';
+import { today } from '@/routes/trainer';
 import type { TrainerBookingRequest, TrainerHandledRequest } from '@/types';
 
 type RequestsProps = {
@@ -20,114 +24,115 @@ type RequestsProps = {
 
 type Tab = 'pending' | 'done';
 
-/** "Richieste": confirm or decline the bookings waiting for an answer. */
+/**
+ * "Richieste": every request waiting for an answer and the ones already
+ * answered ("Gestite"). "Home" shows the same requests; the notifications of
+ * a new request open this page.
+ */
 export default function Requests({
     requests,
     handled,
     autoConfirm,
 }: RequestsProps) {
     const listId = useId();
-    const [tab, setTab] = useState<Tab>('pending');
-    // The request whose answer is being saved.
-    const [busyId, setBusyId] = useState<number | null>(null);
+    const [tab, setTab] = useState<Tab>(
+        requests.length === 0 && handled.length > 0 ? 'done' : 'pending',
+    );
+    const { busyId, answer } = useRequestAnswer(['requests', 'handled']);
 
-    const answer = (
-        request: TrainerBookingRequest,
-        value: 'confirmed' | 'declined',
-        weekly = false,
-    ) => {
-        const action = value === 'confirmed' ? accept : decline;
-
-        router.post(action.url(request.id), weekly ? { weekly: true } : {}, {
-            preserveScroll: true,
-            // The request moves to "Gestite"; the badge of the menu follows.
-            only: ['requests', 'handled', 'trainerArea'],
-            onStart: () => setBusyId(request.id),
-            onFinish: () => setBusyId(null),
-            onSuccess: () => {
-                // "Accetta ogni settimana": the server says how many sessions are set.
-                if (weekly) {
-                    return;
-                }
-
-                toast.success(
-                    value === 'confirmed'
-                        ? `Confermata: ${request.clientName} riceve i tuoi contatti.`
-                        : 'Rifiutata: lo slot è di nuovo libero.',
-                );
-            },
-            // Expired or cancelled meanwhile: say it and show the real list.
-            onError: (errors) => {
-                toast.error(errors.booking ?? 'Riprova tra poco.');
-                router.reload({
-                    only: ['requests', 'handled', 'trainerArea'],
-                });
-            },
-        });
-    };
+    const tabs: { value: Tab; label: string; count: number }[] = [
+        { value: 'pending', label: 'Da confermare', count: requests.length },
+        { value: 'done', label: 'Gestite', count: handled.length },
+    ];
 
     return (
-        <>
+        <div className="flex max-w-260 flex-col gap-5">
             <Head title="Richieste" />
 
-            <PageHeading
-                title="Richieste"
-                action={
-                    <SegmentedTabs
-                        label="Filtra richieste"
-                        controls={listId}
-                        value={tab}
-                        onChange={setTab}
-                        tabs={[
-                            {
-                                value: 'pending',
-                                label: 'In attesa',
-                                count: requests.length,
-                            },
-                            {
-                                value: 'done',
-                                label: 'Gestite',
-                                count: handled.length,
-                            },
-                        ]}
-                    />
-                }
-            />
+            <header className="flex flex-wrap items-center gap-3">
+                <Link
+                    href={today()}
+                    aria-label="Torna alla Home"
+                    className={roundOutlineClassName}
+                >
+                    <ChevronLeft aria-hidden="true" className="size-5.5" />
+                </Link>
+                <h1 className={cn(pageTitleClassName, 'mr-auto')}>Richieste</h1>
+                <div
+                    role="tablist"
+                    aria-label="Filtra richieste"
+                    className="grid grid-cols-2 rounded-full bg-card p-1"
+                >
+                    {tabs.map((item) => (
+                        <button
+                            key={item.value}
+                            type="button"
+                            role="tab"
+                            aria-selected={tab === item.value}
+                            aria-controls={listId}
+                            onClick={() => setTab(item.value)}
+                            className={cn(
+                                'flex h-10 items-center justify-center gap-2 rounded-full px-4 text-[15px] font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                                tab === item.value
+                                    ? 'bg-foreground text-background'
+                                    : 'text-muted-foreground',
+                            )}
+                        >
+                            {item.label}
+                            <span className="tabular-nums">{item.count}</span>
+                        </button>
+                    ))}
+                </div>
+            </header>
 
-            <div id={listId} role="tabpanel" className="flex flex-col gap-3.5">
+            <div id={listId} role="tabpanel" className="flex flex-col gap-3">
                 {tab === 'pending' &&
                     (requests.length === 0 ? (
                         <div
                             role="status"
-                            className="flex flex-col items-center gap-2.5 rounded-3xl border bg-card px-6 py-14 text-center"
+                            className="flex flex-col items-center gap-2.5 rounded-[26px] bg-[#121212] px-6 py-14 text-center shadow-[inset_0_0_0_1px_#2c2c2c]"
                         >
-                            <span className="flex size-13 items-center justify-center rounded-2xl bg-sidebar text-sidebar-foreground">
+                            <span className="flex size-13 items-center justify-center rounded-full bg-brand-soft text-brand">
                                 <Check
                                     aria-hidden="true"
                                     className="size-6"
                                     strokeWidth={2.5}
                                 />
                             </span>
-                            <span className="text-lg leading-6.5 font-semibold">
+                            <span className="text-lg font-semibold">
                                 Non hai richieste in attesa
                             </span>
-                            <span className="max-w-105 text-sm text-foreground/70">
-                                Quando un cliente chiede una seduta la trovi
-                                qui.
+                            <span className="max-w-105 text-[15px] text-muted-foreground">
+                                Quando un cliente chiede una seduta la trovi qui
+                                e in Home.
                             </span>
                         </div>
                     ) : (
-                        requests.map((request) => (
-                            <RequestCard
-                                key={request.id}
-                                request={request}
-                                busy={busyId !== null}
-                                onConfirm={(weekly) =>
-                                    answer(request, 'confirmed', weekly)
-                                }
-                                onDecline={() => answer(request, 'declined')}
-                            />
-                        ))
+                        <>
+                            <span className="flex items-center gap-2 text-[15px] text-muted-foreground">
+                                <CountChip
+                                    count={requests.length}
+                                    tone="brand"
+                                />
+                                Rispondi entro la scadenza: dopo, lo slot torna
+                                libero.
+                            </span>
+                            <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3">
+                                {requests.map((request) => (
+                                    <RequestCard
+                                        key={request.id}
+                                        request={request}
+                                        busy={busyId !== null}
+                                        onConfirm={(weekly) =>
+                                            answer(request, 'confirmed', weekly)
+                                        }
+                                        onDecline={() =>
+                                            answer(request, 'declined')
+                                        }
+                                    />
+                                ))}
+                            </div>
+                        </>
                     ))}
 
                 {tab === 'done' && (
@@ -137,7 +142,7 @@ export default function Requests({
                     />
                 )}
             </div>
-        </>
+        </div>
     );
 }
 

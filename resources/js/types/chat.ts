@@ -58,4 +58,6 @@ export type ChatThread = {
     hasOlder: boolean;
     /** When the other person last opened it (ISO UTC): "Visto". */
     otherReadAt: string | null;
+    /** When the other person last used the site (ISO UTC): "Online", "Ultimo accesso". */
+    otherLastActiveAt: string | null;
 };

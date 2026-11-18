@@ -1,27 +1,22 @@
 import {
     Building2,
-    Calendar,
-    CalendarDays,
+    Eye,
     CircleHelp,
     Clock,
     Compass,
-    Eye,
     House,
-    Inbox,
-    MessageCircle,
+    Bell,
     Settings,
     Share2,
+    ShieldCheck,
     Star,
     Tag,
-    User,
+    Ticket,
     Users,
+    Calendar,
+    User,
 } from 'lucide-react';
-import type {
-    AreaNavGroup,
-    AreaNavItem,
-    SheetLink,
-} from '@/components/layout/area-nav';
-import { withActive } from '@/components/layout/area-nav';
+import type { LucideIcon } from 'lucide-react';
 import { home } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
 import {
@@ -30,8 +25,7 @@ import {
     clients,
     events,
     gyms,
-    messages,
-    requests,
+    profile,
     reviews,
     services,
     settings,
@@ -40,12 +34,18 @@ import {
 } from '@/routes/trainer';
 import { edit as editProfile } from '@/routes/trainer/profile';
 
+/**
+ * The page a trainer page belongs to, set with `Page.layout = { section }`.
+ * The menu has four places: Home, Calendario, Clienti and Profilo; every
+ * other page lights up the one it lives in (navSection).
+ */
 export type TrainerSection =
     | 'today'
     | 'requests'
     | 'calendar'
     | 'clients'
     | 'messages'
+    | 'profile-hub'
     | 'availability'
     | 'services'
     | 'events'
@@ -55,100 +55,183 @@ export type TrainerSection =
     | 'share'
     | 'settings';
 
-/** The sections with a tab of their own on mobile; the rest is in "Altro". */
-export const TRAINER_TABS: TrainerSection[] = [
-    'today',
-    'calendar',
-    'requests',
-    'clients',
-];
+/** The four places of the menu (sidebar on desktop, tab bar on phones). */
+export type TrainerNavSection = 'home' | 'calendar' | 'clients' | 'profile';
 
-/**
- * The trainer area: the daily work first, then what the clients book
- * ("Offerta"), then what they see ("Profilo").
- */
-export function trainerNavGroups(
-    current?: TrainerSection,
-    pendingCount = 0,
-): AreaNavGroup[] {
-    const item = (
-        section: TrainerSection,
-        title: string,
-        icon: AreaNavItem['icon'],
-        href: string,
-        extra: Partial<AreaNavItem> = {},
-    ): AreaNavItem => ({ section, title, icon, href, ...extra });
-
-    return withActive(
-        [
-            {
-                items: [
-                    item('today', 'Panoramica', House, today.url()),
-                    item('requests', 'Richieste', Inbox, requests.url(), {
-                        badge: pendingCount,
-                    }),
-                    item('calendar', 'Calendario', Calendar, calendar.url()),
-                    item('clients', 'Clienti', Users, clients.url()),
-                    item('messages', 'Messaggi', MessageCircle, messages.url()),
-                ],
-            },
-            {
-                label: 'OFFERTA',
-                items: [
-                    item(
-                        'availability',
-                        'Disponibilità',
-                        Clock,
-                        availability.url(),
-                    ),
-                    item('services', 'Servizi e prezzi', Tag, services.url(), {
-                        shortTitle: 'Servizi',
-                    }),
-                    item('events', 'Eventi', CalendarDays, events.url()),
-                    item('gyms', 'Palestre', Building2, gyms.url()),
-                ],
-            },
-            {
-                label: 'PROFILO',
-                items: [
-                    item(
-                        'profile',
-                        'Modifica profilo',
-                        User,
-                        editProfile.url(),
-                    ),
-                    item('reviews', 'Recensioni', Star, reviews.url()),
-                    item('share', 'Condividi profilo', Share2, share.url()),
-                ],
-            },
-        ],
-        current,
-    );
+/** Which of the four places a page lights up. */
+export function navSection(section?: TrainerSection): TrainerNavSection | null {
+    switch (section) {
+        case undefined:
+            return null;
+        case 'today':
+        case 'requests':
+            return 'home';
+        case 'calendar':
+            return 'calendar';
+        case 'clients':
+        case 'messages':
+            return 'clients';
+        default:
+            return 'profile';
+    }
 }
 
-/** The links after the groups in the "Altro" sheet. */
-export function trainerSheetLinks(publicProfileHref?: string): SheetLink[] {
+export type TrainerNavItem = {
+    section: TrainerNavSection;
+    title: string;
+    icon: LucideIcon;
+    href: string;
+};
+
+/** Home, Calendario, Clienti; Profilo is drawn apart (avatar on desktop, 4th tab on phones). */
+export function trainerNavItems(): TrainerNavItem[] {
     return [
-        ...(publicProfileHref
-            ? [
-                  {
-                      title: 'Vedi profilo pubblico',
-                      href: publicProfileHref,
-                      icon: Eye,
-                  },
-              ]
-            : []),
-        { title: 'Impostazioni account', href: settings.url(), icon: Settings },
+        { section: 'home', title: 'Home', icon: House, href: today.url() },
         {
-            title: 'Esplora il sito',
-            href: home.url(),
-            icon: Compass,
-            hint: 'Trainer, palestre, corsi ed eventi',
+            section: 'calendar',
+            title: 'Calendario',
+            icon: Calendar,
+            href: calendar.url(),
         },
         {
-            title: 'Centro assistenza',
-            href: contactPage.url(),
-            icon: CircleHelp,
+            section: 'clients',
+            title: 'Clienti',
+            icon: Users,
+            href: clients.url(),
         },
     ];
 }
+
+export const profileNavItem = (): TrainerNavItem => ({
+    section: 'profile',
+    title: 'Profilo',
+    icon: User,
+    href: profile.url(),
+});
+
+/** A row of the "Profilo" list. */
+export type ProfileLink = {
+    /** The page it opens, to mark it on desktop. */
+    section?: TrainerSection;
+    title: string;
+    /** Under the title, e.g. "Dati personali, email e password". */
+    hint?: string;
+    icon: LucideIcon;
+    href: string;
+    /** Opens outside the trainer area (the public profile, the site). */
+    external?: boolean;
+};
+
+export type ProfileGroup = { label: string; links: ProfileLink[] };
+
+/**
+ * The groups of "Profilo": what the clients book (ATTIVITÀ), what they see
+ * (VETRINA), the account and the help.
+ */
+export function profileGroups(
+    publicProfileHref: string | null,
+): ProfileGroup[] {
+    return [
+        {
+            label: 'ATTIVITÀ',
+            links: [
+                {
+                    section: 'services',
+                    title: 'Servizi e prezzi',
+                    icon: Tag,
+                    href: services.url(),
+                },
+                {
+                    section: 'availability',
+                    title: 'Orari',
+                    hint: 'Disponibilità e regole di prenotazione',
+                    icon: Clock,
+                    href: availability.url(),
+                },
+                {
+                    section: 'events',
+                    title: 'Eventi',
+                    icon: Ticket,
+                    href: events.url(),
+                },
+                {
+                    section: 'gyms',
+                    title: 'Palestre',
+                    icon: Building2,
+                    href: gyms.url(),
+                },
+            ],
+        },
+        {
+            label: 'VETRINA',
+            links: [
+                ...(publicProfileHref
+                    ? [
+                          {
+                              title: 'Vedi profilo pubblico',
+                              icon: Eye,
+                              href: publicProfileHref,
+                              external: true,
+                          },
+                      ]
+                    : []),
+                {
+                    section: 'share',
+                    title: 'Condividi profilo',
+                    icon: Share2,
+                    href: share.url(),
+                },
+                {
+                    section: 'reviews',
+                    title: 'Recensioni',
+                    icon: Star,
+                    href: reviews.url(),
+                },
+            ],
+        },
+        {
+            label: 'ACCOUNT',
+            links: [
+                {
+                    section: 'settings',
+                    title: 'Impostazioni account',
+                    hint: 'Dati personali, email, password e notifiche',
+                    icon: Settings,
+                    href: settings.url(),
+                },
+                {
+                    title: 'Notifiche',
+                    icon: Bell,
+                    href: `${settings.url()}#notifiche`,
+                },
+                {
+                    title: 'Privacy e visibilità',
+                    icon: ShieldCheck,
+                    href: `${settings.url()}#visibilita`,
+                },
+            ],
+        },
+        {
+            label: 'SUPPORTO',
+            links: [
+                {
+                    title: 'Centro assistenza',
+                    hint: 'Domande frequenti e contatti',
+                    icon: CircleHelp,
+                    href: contactPage.url(),
+                    external: true,
+                },
+                {
+                    title: 'Esplora il sito',
+                    hint: 'Trainer, palestre, corsi ed eventi',
+                    icon: Compass,
+                    href: home.url(),
+                    external: true,
+                },
+            ],
+        },
+    ];
+}
+
+/** "Modifica profilo": the card at the top of "Profilo". */
+export const editProfileHref = (): string => editProfile.url();

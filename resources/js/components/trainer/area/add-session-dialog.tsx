@@ -41,6 +41,8 @@ type AddSessionDialogProps = {
     date: string;
     /** "YYYY-MM-DD", Rome. */
     today: string;
+    /** "Prenota" from a client's card: the row of the list chosen at first. */
+    clientId?: number;
 };
 
 /**
@@ -55,6 +57,7 @@ export default function AddSessionDialog({
     options,
     date,
     today,
+    clientId,
 }: AddSessionDialogProps) {
     const [invite, setInvite] = useState<InvitePrompt | null>(null);
 
@@ -74,10 +77,11 @@ export default function AddSessionDialog({
                 ) : (
                     <SessionForm
                         // A fresh form each time the dialog opens on another day.
-                        key={date}
+                        key={date + String(clientId ?? '')}
                         options={options}
                         date={date < today ? today : date}
                         today={today}
+                        clientId={clientId}
                         onCancel={() => close(false)}
                         onSaved={(prompt) =>
                             prompt ? setInvite(prompt) : close(false)
@@ -93,18 +97,24 @@ function SessionForm({
     options,
     date: initialDate,
     today,
+    clientId,
     onCancel,
     onSaved,
 }: {
     options: SessionOptions;
     date: string;
     today: string;
+    clientId?: number;
     onCancel: () => void;
     onSaved: (invite: InvitePrompt | null) => void;
 }) {
     const { clients, services, places } = options;
     const [client, setClient] = useState(
-        clients[0] ? String(clients[0].id) : NEW_CLIENT,
+        clientId !== undefined && clients.some((item) => item.id === clientId)
+            ? String(clientId)
+            : clients[0]
+              ? String(clients[0].id)
+              : NEW_CLIENT,
     );
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');

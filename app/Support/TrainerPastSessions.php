@@ -98,6 +98,8 @@ final class TrainerPastSessions
             'canChangeNoShow' => $booking->canChangeNoShow(),
             // "Modificabile fino a gio 29 ott".
             'noShowUntil' => $booking->ends_at->addDays(Booking::NO_SHOW_DAYS)->utc()->format('Y-m-d\TH:i:s\Z'),
+            // "Aggiungi nota": the trainer's own.
+            'trainerNote' => $booking->trainer_note,
         ];
     }
 
@@ -120,7 +122,7 @@ final class TrainerPastSessions
      *
      * @return array{position: int, total: int}|null
      */
-    private static function packageProgress(Booking $booking): ?array
+    public static function packageProgress(Booking $booking): ?array
     {
         $position = BookingLabels::position($booking);
 

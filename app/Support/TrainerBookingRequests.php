@@ -50,6 +50,8 @@ final class TrainerBookingRequests
             ->map(fn (Booking $booking) => [
                 ...TrainerSessions::row($booking),
                 'note' => $booking->client_note,
+                // The total, for all the people of the session.
+                'priceCents' => $booking->price_cents,
                 // "Ripeti ogni settimana": "Ogni martedì alle 18:00", or null.
                 'repeatWeekly' => $booking->repeat_weekly ? CreateBookingSeries::label($booking->starts_at->toImmutable()) : null,
                 // "Sul cliente": what the client wrote in "Su di te", to decide.

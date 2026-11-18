@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { fetchNewMessages, POLL_MS } from '@/lib/chat';
-import type { ChatMessage } from '@/types';
+import type { PollResult } from '@/lib/chat';
 
 /**
  * Asks for the new messages of the open conversation every few seconds.
@@ -10,14 +10,14 @@ import type { ChatMessage } from '@/types';
 export function useChatPolling(
     recordId: number,
     lastId: number,
-    onMessages: (messages: ChatMessage[], otherReadAt: string | null) => void,
+    onPoll: (result: PollResult) => void,
 ): void {
     const last = useRef(lastId);
-    const handler = useRef(onMessages);
+    const handler = useRef(onPoll);
 
     useEffect(() => {
         last.current = lastId;
-        handler.current = onMessages;
+        handler.current = onPoll;
     });
 
     useEffect(() => {
@@ -32,14 +32,11 @@ export function useChatPolling(
             busy = true;
 
             try {
-                const { messages, otherReadAt } = await fetchNewMessages(
-                    recordId,
-                    last.current,
-                );
+                const result = await fetchNewMessages(recordId, last.current);
 
-                // Also without new messages: "Visto" can change on its own.
+                // Also without new messages: "Visto" and "sta scrivendo…" change on their own.
                 if (!stopped) {
-                    handler.current(messages, otherReadAt);
+                    handler.current(result);
                 }
             } catch {
                 // Offline for a moment: the next tick tries again.

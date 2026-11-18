@@ -12,12 +12,6 @@ import MinimalHeader from '@/components/layout/minimal-header';
 import MobileTabBar from '@/components/layout/mobile-tab-bar';
 import PublicFooter from '@/components/layout/public-footer';
 import PublicHeader from '@/components/layout/public-header';
-import TrainerHeader from '@/components/layout/trainer-header';
-import type { TrainerSection } from '@/components/layout/trainer-nav';
-import {
-    TRAINER_TABS,
-    trainerNavGroups,
-} from '@/components/layout/trainer-nav';
 import ChoiceChips from '@/components/shared/choice-chips';
 import FavoriteButton from '@/components/shared/favorite-button';
 import ProgressBar from '@/components/shared/progress-bar';
@@ -232,17 +226,6 @@ export default function DevComponents() {
                     </Showcase>
 
                     <Showcase
-                        title="Header area trainer"
-                        screens="Dashboard trainer (tutte le schede)"
-                        flush
-                    >
-                        <TrainerHeader
-                            userName="Giulia Rossi"
-                            publicProfileHref="#"
-                        />
-                    </Showcase>
-
-                    <Showcase
                         title="Header area cliente (mobile)"
                         screens="Le mie prenotazioni mobile"
                         flush
@@ -252,19 +235,8 @@ export default function DevComponents() {
 
                     <Showcase
                         title="Barre di schede in basso (mobile)"
-                        screens="Dashboard trainer mobile, Le mie prenotazioni mobile"
+                        screens="Le mie prenotazioni mobile"
                     >
-                        <MobileTabBar
-                            label="Area trainer"
-                            items={trainerNavGroups('today', 3)
-                                .flatMap((group) => group.items)
-                                .filter((item) =>
-                                    TRAINER_TABS.includes(
-                                        item.section as TrainerSection,
-                                    ),
-                                )}
-                            className="static max-w-sm rounded-lg border md:grid"
-                        />
                         <MobileTabBar
                             label="Navigazione principale"
                             items={clientTabGroups('bookings').flatMap(

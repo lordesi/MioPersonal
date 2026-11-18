@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\PushCategory;
 use App\Models\Booking;
 use App\Models\User;
+use App\Notifications\BookingChanged;
 use App\Notifications\BookingConfirmed;
 use App\Notifications\BookingRequested;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -134,6 +135,50 @@ class PushNotificationsTest extends TestCase
         $this->assertTrue($client->wantsReminders());
         // The bell inside the site stays.
         $this->assertSame(['database'], (new BookingConfirmed($booking))->via($client));
+    }
+
+    public function test_cancellations_have_their_own_switch()
+    {
+        $booking = Booking::factory()->confirmed()->create();
+        /** @var User $client */
+        $client = $booking->client;
+        $client->updatePushSubscription(self::ENDPOINT, 'key', 'token', 'aes128gcm');
+
+        $this->actingAs($client)
+            ->patch(route('account.notifications.update'), ['push' => ['cancellations' => false]])
+            ->assertSessionHasNoErrors();
+
+        $client = $client->fresh();
+        // A cancellation: only the email and the bell.
+        $this->assertSame(['mail', 'database'], (new BookingChanged($booking, 'cancelled-by-trainer'))->via($client));
+        // The other changes still reach the phone.
+        $this->assertContains(WebPushChannel::class, (new BookingChanged($booking, 'proposed'))->via($client));
+    }
+
+    public function test_the_trainer_turns_off_the_cancellations_of_the_clients()
+    {
+        $booking = Booking::factory()->confirmed()->create();
+        $trainer = $booking->trainerProfile->user;
+        $trainer->updatePushSubscription(self::ENDPOINT, 'key', 'token', 'aes128gcm');
+
+        $this->actingAs($trainer)
+            ->patch(route('account.notifications.update'), ['push' => ['cancellations' => false]])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(['database'], (new BookingChanged($booking, 'cancelled-by-client'))->via($trainer->fresh()));
+        $this->assertContains(WebPushChannel::class, (new BookingChanged($booking, 'proposal-accepted'))->via($trainer->fresh()));
+    }
+
+    public function test_cancellations_follow_bookings_until_chosen()
+    {
+        $client = User::factory()->create(['notification_settings' => ['push' => ['bookings' => false]]]);
+
+        $this->assertFalse($client->wantsPush(PushCategory::Cancellations));
+
+        $client->forceFill(['notification_settings' => ['push' => ['bookings' => false, 'cancellations' => true]]])->save();
+
+        $this->assertTrue($client->fresh()->wantsPush(PushCategory::Cancellations));
+        $this->assertTrue(User::factory()->create()->wantsPush(PushCategory::Cancellations));
     }
 
     public function test_only_the_kinds_of_the_role_can_be_saved()

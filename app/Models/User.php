@@ -136,7 +136,12 @@ class User extends Authenticatable implements MustVerifyEmail
     /** "Cosa ricevere sul dispositivo" in the settings: on until turned off. */
     public function wantsPush(PushCategory $category): bool
     {
-        return ($this->notification_settings['push'][$category->value] ?? true) === true;
+        $push = $this->notification_settings['push'] ?? [];
+
+        // "Cancellazioni" came out of "Prenotazioni": until chosen, it follows that switch.
+        $fallback = $category === PushCategory::Cancellations ? ($push[PushCategory::Bookings->value] ?? true) : true;
+
+        return ($push[$category->value] ?? $fallback) === true;
     }
 
     /** At least one device with "Attiva le notifiche" on (HasPushSubscriptions). */

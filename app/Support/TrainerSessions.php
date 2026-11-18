@@ -17,7 +17,7 @@ final class TrainerSessions
     public const WITH = ['client', 'trainerClient', 'clientPackage.bookings', 'guests.user'];
 
     /**
-     * @return array{id: int, clientId: int|null, clientName: string, start: string, end: string, hours: float, serviceName: string, placeLabel: string, noShow: bool, kind: string, people: int, guestNames: list<string>, canChange: bool, proposedStart: string|null}
+     * @return array{id: int, clientId: int|null, clientName: string, start: string, end: string, hours: float, serviceName: string, placeLabel: string, noShow: bool, kind: string, people: int, guestNames: list<string>, trainerNote: string|null, canChange: bool, proposedStart: string|null}
      */
     public static function row(Booking $booking): array
     {
@@ -40,6 +40,8 @@ final class TrainerSessions
             // "Invita un amico": who comes with the client.
             'people' => $booking->people,
             'guestNames' => BookingLabels::guestNames($booking),
+            // "Aggiungi nota": the trainer's own, never shown to the client.
+            'trainerNote' => $booking->trainer_note,
         ];
     }
 

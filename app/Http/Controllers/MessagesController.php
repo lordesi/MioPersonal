@@ -8,12 +8,16 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\TrainerClient;
 use App\Models\User;
+use App\Notifications\MessageReceived;
 use App\Support\ClientBookingData;
 use App\Support\SafeImage;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -35,30 +39,70 @@ class MessagesController extends Controller
     /** The poll gives at most these many messages at once. */
     public const POLL_MAX = 100;
 
-    /** "Messaggi" of the trainer area or of the client area; "?con=12" opens a conversation. */
-    public function index(Request $request): Response
+    /** "Ti ha scritto un messaggio": at most one push per conversation in this time. */
+    public const PUSH_EVERY_MINUTES = 5;
+
+    /** "Sta scrivendo…" lasts this long after the last key (the composer calls every few seconds). */
+    public const TYPING_SECONDS = 6;
+
+    /**
+     * "Messaggi" of the client area; "?con=12" opens a conversation. The
+     * trainer's messages live in "Clienti" (the list with the last messages,
+     * the conversation in place of the card): the old address goes there.
+     */
+    public function index(Request $request): Response|RedirectResponse
     {
         /** @var User $user */
         $user = $request->user();
-        $trainer = $user->role === UserRole::Trainer;
+
+        if ($user->role === UserRole::Trainer) {
+            return to_route('trainer.clients', $request->integer('con') > 0 ? ['con' => $request->integer('con'), 'chat' => 1] : []);
+        }
+
         $records = $this->records($user);
         $selected = $records->firstWhere('id', $request->integer('con'));
 
-        return Inertia::render($trainer ? 'trainer/messages' : 'client/messages', [
-            ...($trainer ? ['trainerArea' => $this->trainerArea()] : []),
+        return Inertia::render('client/messages', [
             'conversations' => fn () => $records->map(fn (TrainerClient $record) => $this->summary($record, $user))->values()->all(),
             'selected' => fn () => $selected === null ? null : $this->thread($selected, $user),
         ]);
     }
 
-    /** The messages after `?after=`, oldest first. Marks the conversation as read. */
+    /**
+     * "Sta scrivendo…": the composer calls it while the user types (at most
+     * every few seconds); the other side reads it with the poll. Only in the
+     * cache, for TYPING_SECONDS: nothing is saved.
+     */
+    public function typing(Request $request, TrainerClient $record): HttpResponse
+    {
+        $user = $this->authorizeRecord($request, $record);
+
+        Cache::put($this->typingKey($record, $user), true, now()->addSeconds(self::TYPING_SECONDS));
+
+        return response()->noContent();
+    }
+
+    private function typingKey(TrainerClient $record, User $user): string
+    {
+        return "chat-typing:{$record->id}:{$user->id}";
+    }
+
+    private function otherTyping(TrainerClient $record, User $user): bool
+    {
+        return Cache::has($this->typingKey($record, $this->other($record, $user)));
+    }
+
+    /**
+     * The messages after `?after=`, oldest first, and whether the other
+     * person is typing. Marks the conversation as read.
+     */
     public function poll(Request $request, TrainerClient $record): JsonResponse
     {
         $user = $this->authorizeRecord($request, $record);
         $conversation = $record->conversation;
 
         if ($conversation === null) {
-            return response()->json(['messages' => []]);
+            return response()->json(['messages' => [], 'otherTyping' => $this->otherTyping($record, $user)]);
         }
 
         $conversation->setRelation('trainerClient', $record);
@@ -75,6 +119,7 @@ class MessagesController extends Controller
         return response()->json([
             'messages' => $messages->map(fn (Message $message) => $this->message($message, $record, $user))->all(),
             'otherReadAt' => $this->otherReadAt($conversation, $user),
+            'otherTyping' => $this->otherTyping($record, $user),
         ]);
     }
 
@@ -183,7 +228,34 @@ class MessagesController extends Controller
             throw $exception;
         }
 
+        // Sent: no more "sta scrivendo…" on the other side.
+        Cache::forget($this->typingKey($record, $user));
+        $this->notifyOther($record, $user, $message);
+
         return response()->json(['message' => $this->message($message, $record, $user)], 201);
+    }
+
+    /**
+     * The push to the other person: not while they have the conversation
+     * open (the poll marks it read every few seconds), and at most one every
+     * PUSH_EVERY_MINUTES per conversation, so a burst of messages rings once.
+     */
+    private function notifyOther(TrainerClient $record, User $sender, Message $message): void
+    {
+        $other = $this->other($record, $sender);
+        $conversation = $message->conversation;
+        $conversation->setRelation('trainerClient', $record);
+        $readAt = $conversation->isTrainer($other) ? $conversation->trainer_read_at : $conversation->client_read_at;
+
+        if ($readAt !== null && $readAt->greaterThan(now()->subMinute())) {
+            return;
+        }
+
+        if (! Cache::add("chat-push:{$conversation->id}:{$other->id}", true, now()->addMinutes(self::PUSH_EVERY_MINUTES))) {
+            return;
+        }
+
+        $other->notify(new MessageReceived($record, $message));
     }
 
     /** The PDF or the photo of a message, with the name it was sent with. */
@@ -270,7 +342,7 @@ class MessagesController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function summary(TrainerClient $record, User $user): array
+    public function summary(TrainerClient $record, User $user): array
     {
         $other = $this->other($record, $user);
         $conversation = $record->conversation;
@@ -297,7 +369,7 @@ class MessagesController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function thread(TrainerClient $record, User $user): array
+    public function thread(TrainerClient $record, User $user): array
     {
         $other = $this->other($record, $user);
         $conversation = $record->conversation;
@@ -324,6 +396,8 @@ class MessagesController extends Controller
             'messages' => $messages->take(Message::PAGE)->reverse()->map(fn (Message $message) => $this->message($message, $record, $user))->values()->all(),
             'hasOlder' => $messages->count() > Message::PAGE,
             'otherReadAt' => $conversation === null ? null : $this->otherReadAt($conversation, $user),
+            // "Online" or "Ultimo accesso": only to the two people of the conversation.
+            'otherLastActiveAt' => $other->last_active_at === null ? null : ClientBookingData::iso($other->last_active_at),
         ];
     }
 

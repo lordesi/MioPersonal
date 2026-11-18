@@ -78,6 +78,7 @@ use App\Http\Controllers\TrainerPastSessionsController;
 use App\Http\Controllers\TrainerPhotoController;
 use App\Http\Controllers\TrainerProfileController;
 use App\Http\Controllers\TrainerProfileEditController;
+use App\Http\Controllers\TrainerProfileHubController;
 use App\Http\Controllers\TrainerProfileSettingsController;
 use App\Http\Controllers\TrainerRegistrationController;
 use App\Http\Controllers\TrainerRequestsController;
@@ -86,6 +87,7 @@ use App\Http\Controllers\TrainerSearchController;
 use App\Http\Controllers\TrainerSeriesController;
 use App\Http\Controllers\TrainerServicesController;
 use App\Http\Controllers\TrainerSessionChangeController;
+use App\Http\Controllers\TrainerSessionNoteController;
 use App\Http\Controllers\TrainerSettingsController;
 use App\Http\Controllers\TrainerShareController;
 use App\Http\Controllers\TrainerSocialController;
@@ -335,6 +337,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('nuovi', 'poll')->middleware('throttle:120,1')->name('poll');
         Route::get('precedenti', 'older')->middleware('throttle:60,1')->name('older');
         Route::post('/', 'store')->middleware('throttle:30,1')->name('store');
+        // "Sta scrivendo…": called every few seconds while typing.
+        Route::post('scrivendo', 'typing')->middleware('throttle:40,1')->name('typing');
         Route::get('allegati/{message}', 'download')->whereNumber('message')->middleware('throttle:60,1')->name('download');
         // Many photos on one page: a higher limit.
         Route::get('foto/{message}', 'photo')->whereNumber('message')->middleware('throttle:300,1')->name('photo');
@@ -373,6 +377,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('sposta', 'propose')->name('sessions.reschedule');
             Route::delete('sposta', 'withdraw')->name('sessions.reschedule.withdraw');
         });
+        // "Aggiungi nota" on a confirmed session: only for the trainer.
+        Route::patch('sedute/{booking}/nota', [TrainerSessionNoteController::class, 'update'])->whereNumber('booking')->name('sessions.note');
         Route::get('calendario', TrainerCalendarController::class)->name('calendar');
         // "Aggiungi seduta": with someone of the list, also without an account.
         Route::controller(TrainerManualSessionController::class)->group(function () {
@@ -390,6 +396,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('{client}', 'destroy')->whereNumber('client')->name('destroy');
             Route::post('{client}/incassi', 'storePayment')->whereNumber('client')->name('payments.store');
             Route::delete('{client}/incassi/{payment}', 'destroyPayment')->whereNumber(['client', 'payment'])->name('payments.destroy');
+            // "Note": the trainer's dated notes on the client.
+            Route::post('{client}/note', 'storeNote')->whereNumber('client')->middleware('throttle:60,1')->name('notes.store');
+            Route::patch('{client}/note/{note}', 'updateNote')->whereNumber(['client', 'note'])->name('notes.update');
+            Route::delete('{client}/note/{note}', 'destroyNote')->whereNumber(['client', 'note'])->name('notes.destroy');
+            // "Ancora da contattare": hide one, show them all again.
+            Route::post('{client}/da-contattare/nascondi', 'hideToContact')->whereNumber('client')->name('to-contact.hide');
+            Route::delete('da-contattare/nascosti', 'restoreToContact')->name('to-contact.restore');
         });
         // "Sedute fisse" (ogni martedì alle 18): made from the card of a client, ended from it.
         Route::controller(TrainerSeriesController::class)->prefix('clienti')->name('clients.series.')->group(function () {
@@ -408,9 +421,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('servizi', 'show')->name('services');
             Route::put('servizi', 'update')->name('services.update');
         });
+        // "Profilo": everything about the offer, the showcase and the account, in one list.
+        Route::get('profilo', TrainerProfileHubController::class)->name('profile');
         // "Modifica profilo": public right away, without a new review.
         Route::controller(TrainerProfileEditController::class)->group(function () {
-            Route::get('profilo', 'show')->name('profile.edit');
+            Route::get('profilo/modifica', 'show')->name('profile.edit');
             Route::put('profilo', 'update')->name('profile.update');
         });
         // "Foto della galleria" of "Modifica profilo": each action is saved right away.

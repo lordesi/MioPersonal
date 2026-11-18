@@ -6,13 +6,10 @@ import TrainerClientRecordsController from '@/actions/App/Http/Controllers/Train
 import FormField from '@/components/auth/form-field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { formatDateMedium, formatPrice } from '@/lib/format';
 import { whatsAppUrl } from '@/lib/whatsapp';
 import type { TrainerClient } from '@/types';
-
-const NOTES_MAX = 2000;
 
 type Errors = Partial<Record<string, string>>;
 
@@ -27,7 +24,7 @@ function today(): string {
 
 /**
  * "Scheda del cliente" in the card of "Clienti": what only the trainer sees.
- * Goal and private notes, the contacts of who has no account yet, the
+ * Goal (the notes are in ClientNotes), the contacts of who has no account yet, the
  * personal link to send, and the payments noted by hand (a register: no
  * money goes through the site).
  */
@@ -54,7 +51,6 @@ export default function ClientRecord({ client }: { client: TrainerClient }) {
 
 function NotesForm({ client }: { client: TrainerClient }) {
     const [goal, setGoal] = useState(client.goal ?? '');
-    const [notes, setNotes] = useState(client.notes ?? '');
     const [name, setName] = useState(client.name);
     const [email, setEmail] = useState(client.contacts.email);
     const [phone, setPhone] = useState(client.contacts.phone ?? '');
@@ -63,7 +59,6 @@ function NotesForm({ client }: { client: TrainerClient }) {
 
     const dirty =
         goal !== (client.goal ?? '') ||
-        notes !== (client.notes ?? '') ||
         (!client.registered &&
             (name !== client.name ||
                 email !== client.contacts.email ||
@@ -74,7 +69,6 @@ function NotesForm({ client }: { client: TrainerClient }) {
             TrainerClientRecordsController.update.url(client.recordId),
             {
                 goal,
-                notes,
                 ...(client.registered ? {} : { name, email, phone }),
             },
             {
@@ -151,25 +145,6 @@ function NotesForm({ client }: { client: TrainerClient }) {
                         aria-describedby={describedBy}
                         aria-invalid={!!errors.goal}
                         className="h-11 rounded-xl px-3.5 text-[15px] md:text-[15px]"
-                    />
-                )}
-            </FormField>
-            <FormField
-                label="Note private"
-                error={errors.notes}
-                counter={{ length: notes.length, max: NOTES_MAX }}
-            >
-                {({ id, describedBy }) => (
-                    <Textarea
-                        id={id}
-                        rows={4}
-                        maxLength={NOTES_MAX}
-                        placeholder="Infortuni, preferenze, cosa avete fatto l’ultima volta…"
-                        value={notes}
-                        onChange={(event) => setNotes(event.target.value)}
-                        aria-describedby={describedBy}
-                        aria-invalid={!!errors.notes}
-                        className="rounded-xl px-3.5 py-3 text-[15px] leading-5.5 md:text-[15px]"
                     />
                 )}
             </FormField>

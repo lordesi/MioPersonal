@@ -13,6 +13,7 @@ use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\BookingLabels;
+use App\Support\TrainerPastSessions;
 use App\Support\TrainerSessions;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -51,8 +52,8 @@ class TrainerCalendarController extends Controller
 
         $view = match ($request->query('vista')) {
             'mese' => 'month',
-            'giorno' => 'day',
-            default => 'week',
+            'settimana' => 'week',
+            default => 'day',
         };
         // A day outside the limits shows the first or the last one.
         $focus = $this->focus($request->query('giorno'), $today)->max($minDate)->min($maxDate);
@@ -89,20 +90,45 @@ class TrainerCalendarController extends Controller
                     // "Invita un amico": who comes with the client.
                     'guestNames' => BookingLabels::guestNames($booking),
                     'placeLabel' => $booking->place_label,
+                    // "Chiama": the client's phone, or the one the trainer wrote.
+                    'phone' => $booking->client->phone ?? $booking->trainerClient?->phone,
+                    // "Seduta 2 di 10"; null for a single session.
+                    'package' => TrainerPastSessions::packageProgress($booking),
                     'kind' => $booking->status === BookingStatus::Confirmed ? 'confirmed' : 'pending',
                     // "Aggiungi seduta": waiting for the client, not for the trainer.
                     'fromTrainer' => $booking->requested_by === BookingActor::Trainer,
                     // Someone without an account: only in this calendar, with their personal link.
                     'offApp' => $booking->isOffApp(),
                     'inviteLink' => $booking->isOffApp() && $published ? $booking->trainerClient?->inviteLink($profile) : null,
+                    // "Aggiungi nota": the trainer's own.
+                    'trainerNote' => $booking->trainer_note,
                     ...TrainerSessions::change($booking),
                 ])
                 ->all(),
+            // The dots of the small month: how many sessions each day of the month of focus has.
+            'monthCounts' => $profile === null ? (object) [] : $this->monthCounts($profile, $focus),
             // "Aggiungi seduta": who, what and where.
             'sessionOptions' => $profile === null ? null : $this->sessionOptions($profile),
             // "Sposta": the free times, only when the dialog asks for them.
             'rescheduleSlots' => Inertia::optional(fn () => TrainerSessions::rescheduleSlots($profile, $request->integer('sposta'))),
         ]);
+    }
+
+    /**
+     * How many sessions each day of the month of `$focus` has, for the dots
+     * of the small month: {"2026-11-17": 3}. Days without sessions are left out.
+     *
+     * @return array<string, int>|object
+     */
+    private function monthCounts(TrainerProfile $profile, CarbonImmutable $focus): array|object
+    {
+        $counts = $this->sessions($profile, $focus->startOfMonth(), $focus->startOfMonth()->addMonth())
+            ->get(['starts_at'])
+            ->countBy(fn (Booking $booking) => $booking->starts_at->timezone('Europe/Rome')->toDateString())
+            ->all();
+
+        // An empty month goes as {} (an object), not as [].
+        return $counts === [] ? (object) [] : $counts;
     }
 
     /**
@@ -128,7 +154,7 @@ class TrainerCalendarController extends Controller
      *
      * @return array{clients: list<array{id: int, name: string, registered: bool}>, services: list<array{id: int, name: string, minutes: int, priceCents: int}>, places: list<array{id: int, label: string}>}
      */
-    private function sessionOptions(TrainerProfile $profile): array
+    public function sessionOptions(TrainerProfile $profile): array
     {
         return [
             'clients' => array_values($profile->clientRecords()->with('user')->get()

@@ -115,8 +115,9 @@ class TrainerNoShowTest extends TestCase
         $this->actingAs($trainer->user)
             ->get(route('trainer.today'))
             ->assertInertia(fn (Assert $page) => $page
-                // Today's sessions are in the agenda, the finished ones too.
-                ->where('agenda.0.noShow', true)
+                // Today's sessions are in the day of Home, the finished ones too.
+                ->where('daySessions.0.noShow', true)
+                ->where('daySessions.0.over', true)
                 ->where('requests.0.attendance', [
                     'platform' => ['rate' => 0, 'sessions' => 1],
                     'withYou' => ['rate' => 0, 'sessions' => 1],

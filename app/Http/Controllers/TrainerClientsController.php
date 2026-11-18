@@ -9,13 +9,16 @@ use App\Models\Booking;
 use App\Models\BookingSeries;
 use App\Models\ClientPackage;
 use App\Models\ClientPayment;
+use App\Models\Message;
 use App\Models\Service;
 use App\Models\TrainerClient;
+use App\Models\TrainerClientNote;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\ClientAbout;
 use App\Support\ClientAttendance;
 use App\Support\ClientProgress;
+use App\Support\TrainerPastSessions;
 use App\Support\TrainerSessions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -34,6 +37,12 @@ class TrainerClientsController extends Controller
 {
     use BuildsPlaceholderData;
 
+    /** "Svolte" of the card: the last sessions over. */
+    public const PAST_SESSIONS = 10;
+
+    /** @var list<int> the clients with a request waiting for the trainer */
+    private array $requesting = [];
+
     public function __invoke(Request $request): Response
     {
         /** @var User $trainer */
@@ -44,14 +53,29 @@ class TrainerClientsController extends Controller
             ? self::invite($profile)
             : null;
         $clients = $profile === null ? [] : $this->clients($profile, $invite);
+        // "?cliente=37" (the account, from Home and Calendario) or "?con=12" (the row of the list).
+        $record = $profile === null ? null : $this->selectedRecord($profile, $request);
+        // "?chat=1": the conversation of that client open, instead of the card.
+        $chat = $request->boolean('chat') && $record?->user_id !== null;
+        $query = trim($request->string('q')->toString());
 
         return Inertia::render('trainer/clients', [
             'trainerArea' => $this->trainerArea(),
             // No profile yet (registration not sent): nobody could book.
             'clients' => $clients,
-            // "?cliente=37" from Panoramica and Calendario: the account whose card opens first.
-            'selectedId' => $request->integer('cliente') ?: null,
+            'selectedId' => $record->user_id ?? ($request->integer('cliente') ?: null),
+            'selectedRecordId' => $record?->id,
+            'chat' => $chat,
+            // The open conversation: marked as read when it is sent.
+            'thread' => fn () => $chat ? app(MessagesController::class)->thread($record, $trainer) : null,
+            // The last message and the unread dot of each client with an account, by row; polled.
+            'chats' => fn () => $profile === null ? (object) [] : $this->chats($profile, $trainer),
+            // "Cerca cliente o messaggio": the rows whose messages have the words.
+            'query' => $query,
+            'messageMatches' => $profile === null || mb_strlen($query) < 2 ? [] : $this->messageMatches($profile, $query),
             'invite' => $invite,
+            // "Prenota" of the card: the same "Aggiungi seduta" of Calendario.
+            'sessionOptions' => $profile === null ? null : app(TrainerCalendarController::class)->sessionOptions($profile),
             // The sessions the trainer can repeat every week ("Rendi fissa").
             'seriesServices' => $profile === null ? [] : $profile->services()
                 ->where('is_active', true)->where('kind', 'session')->where('fixed_duration', false)
@@ -63,6 +87,56 @@ class TrainerClientsController extends Controller
                     'priceCents' => $service->price_cents,
                 ])->all(),
         ]);
+    }
+
+    /** The row of `?con=` (the list) or of `?cliente=` (the account), of this trainer. */
+    private function selectedRecord(TrainerProfile $profile, Request $request): ?TrainerClient
+    {
+        if ($request->integer('con') > 0) {
+            return $profile->clientRecords()->whereKey($request->integer('con'))->first();
+        }
+
+        return $request->integer('cliente') > 0
+            ? $profile->clientRecords()->where('user_id', $request->integer('cliente'))->first()
+            : null;
+    }
+
+    /**
+     * The conversation of each client with an account, by row of the list:
+     * the last message and whether there are new ones.
+     *
+     * @return array<int, array<string, mixed>>|object
+     */
+    private function chats(TrainerProfile $profile, User $trainer): array|object
+    {
+        $messages = app(MessagesController::class);
+        $chats = $profile->clientRecords()
+            ->whereNotNull('user_id')
+            ->with(['user', 'trainerProfile.user', 'conversation.latestMessage'])
+            ->get()
+            ->mapWithKeys(fn (TrainerClient $record) => [$record->id => $messages->summary($record, $trainer)])
+            ->all();
+
+        // None yet goes as {} (an object), not as [].
+        return $chats === [] ? (object) [] : $chats;
+    }
+
+    /**
+     * The rows whose conversation has a message with these words.
+     *
+     * @return list<int>
+     */
+    private function messageMatches(TrainerProfile $profile, string $query): array
+    {
+        return array_values(Message::query()
+            // % and _ would be wildcards: they are not searched.
+            ->whereLike('messages.body', '%'.str_replace(['%', '_'], '', $query).'%')
+            ->whereHas('conversation.trainerClient', fn ($record) => $record->where('trainer_profile_id', $profile->id))
+            ->join('conversations', 'conversations.id', '=', 'messages.conversation_id')
+            ->distinct()
+            ->pluck('conversations.trainer_client_id')
+            ->map(fn ($id) => (int) $id)
+            ->all());
     }
 
     /**
@@ -100,7 +174,7 @@ class TrainerClientsController extends Controller
         $now = CarbonImmutable::now();
         app(LinkClient::class)->backfill($profile);
 
-        $records = $profile->clientRecords()->with(['user.clientPreference', 'payments'])->get();
+        $records = $profile->clientRecords()->with(['user.clientPreference', 'payments', 'clientNotes'])->get();
         $bookings = $profile->bookings()
             ->where('status', BookingStatus::Confirmed)
             // Deleted accounts: the past sessions stay, but there is nobody to show.
@@ -111,6 +185,8 @@ class TrainerClientsController extends Controller
             ->get()
             ->groupBy(fn (Booking $booking) => $booking->client_id ?? 'record-'.$booking->trainer_client_id);
         $attendance = ClientAttendance::forClients($records->pluck('user_id'), $profile);
+        $this->requesting = array_values($profile->bookings()->awaitingAnswer()->fromClient()
+            ->whereNotNull('client_id')->distinct()->pluck('client_id')->map(fn ($id) => (int) $id)->all());
         $packages = $this->packages($profile);
         // "Sedute fisse" still going, with how many sessions are in the calendar.
         $series = BookingSeries::query()->active()
@@ -219,7 +295,15 @@ class TrainerClientsController extends Controller
             'sharedNoteAt' => $record->shared_note_at === null ? null : $this->iso($record->shared_note_at),
             // The trainer's own: never shown to the client.
             'goal' => $record->goal,
+            // The old single note: shown as the first, undated, while it has text.
             'notes' => $record->private_notes,
+            // "Note": the dated ones, the most recent first.
+            'datedNotes' => $record->clientNotes->map(fn (TrainerClientNote $note) => [
+                'id' => $note->id,
+                'body' => $note->body,
+                'createdAt' => $this->iso($note->created_at ?? $now),
+                'edited' => $note->updated_at !== null && $note->created_at !== null && $note->updated_at->gt($note->created_at),
+            ])->all(),
             'payments' => $record->payments->map(fn (ClientPayment $payment) => [
                 'id' => $payment->id,
                 'amountCents' => $payment->amount_cents,
@@ -246,6 +330,12 @@ class TrainerClientsController extends Controller
             ],
             // Every session still to come.
             'upcoming' => $upcoming->map(TrainerSessions::row(...))->all(),
+            // "Svolte": the last ones over, the most recent first.
+            'past' => $past->reverse()->take(self::PAST_SESSIONS)->map(TrainerPastSessions::row(...))->values()->all(),
+            // Taken out of "Ancora da contattare" with the X.
+            'contactHidden' => $record->contact_hidden_at !== null,
+            // A request of this client waiting for the trainer: the filter "Richieste".
+            'hasRequest' => $record->user_id !== null && in_array($record->user_id, $this->requesting, true),
         ];
     }
 }
