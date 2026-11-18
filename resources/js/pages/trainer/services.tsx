@@ -1,25 +1,32 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { Eye } from 'lucide-react';
 import { useState } from 'react';
 import TrainerServicesController from '@/actions/App/Http/Controllers/TrainerServicesController';
-import type { Pricing } from '@/components/onboarding/trainer/draft';
+import type {
+    PlaceType,
+    Pricing,
+    TrainerDraft,
+} from '@/components/onboarding/trainer/draft';
 import {
+    initialDraft,
     isPricingValid,
     toServicesPayload,
 } from '@/components/onboarding/trainer/draft';
-import PageHeading from '@/components/trainer/area/page-heading';
-import SeeAlso from '@/components/trainer/area/see-also';
-import ClientPreview from '@/components/trainer/services/client-preview';
-import FirstSessionSection from '@/components/trainer/services/first-session-section';
-import GroupPricesSection from '@/components/trainer/services/group-prices-section';
-import OnlinePricesSection from '@/components/trainer/services/online-prices-section';
-import PackagesSection from '@/components/trainer/services/packages-section';
-import PriceListSection from '@/components/trainer/services/price-list-section';
-import type { FirstSessionMode } from '@/components/trainer/services/pricing';
+import { Counter } from '@/components/onboarding/trainer/dark-bits';
+import StepServices from '@/components/onboarding/trainer/step-services';
+import ProfilePage, {
+    ProfileSection,
+    SaveBar,
+} from '@/components/trainer/profile-pages/profile-page';
+import { ServiceRows } from '@/components/trainer/services/client-preview';
 import {
     firstSessionMode,
-    initialColumns,
     previewRows,
 } from '@/components/trainer/services/pricing';
+import {
+    stepListClassName,
+    stepRowClassName,
+} from '@/components/trainer/ui/styles';
 import { register } from '@/routes/trainer';
 
 type ServicesProps = {
@@ -40,117 +47,75 @@ export default function Services({
         <>
             <Head title="Servizi e prezzi" />
 
-            <PageHeading title="Servizi e prezzi" />
-            <SeeAlso current="services" />
-
-            {booked.length > 0 && (
-                <section
-                    aria-labelledby="booked-title"
-                    className="flex flex-col gap-2.5 rounded-2xl border bg-card p-4"
-                >
-                    <h2 id="booked-title" className="text-sm font-semibold">
-                        Prenotazioni degli ultimi 90 giorni
-                    </h2>
-                    <ul className="flex flex-col gap-1.5 text-sm">
-                        {booked.map((row) => (
-                            <li
-                                key={row.label}
-                                className="flex justify-between gap-3"
-                            >
-                                <span>{row.label}</span>
-                                <span className="font-semibold tabular-nums">
-                                    {row.count}
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-            )}
-
-            {pricing === null ? (
-                <p className="text-sm text-muted-foreground">
-                    Scegli i tuoi servizi nella{' '}
-                    <Link
-                        href={register()}
-                        className="font-medium text-foreground underline underline-offset-4"
-                    >
-                        registrazione da trainer
-                    </Link>
-                    : poi potrai cambiarli da qui.
-                </p>
-            ) : (
-                <ServicesForm
-                    saved={pricing}
-                    asksOnlinePrice={asksOnlinePrice}
-                />
-            )}
+            <ProfilePage
+                title={
+                    <>
+                        Servizi e <strong>prezzi</strong>
+                    </>
+                }
+                intro="Quanto durano le sedute, quanto costano e gli extra per i clienti. Le modifiche sono subito sul profilo."
+            >
+                {pricing === null ? (
+                    <p className="text-[15px] text-muted-foreground">
+                        Scegli i tuoi servizi nella{' '}
+                        <Link
+                            href={register()}
+                            className="font-semibold text-brand underline-offset-4 hover:underline"
+                        >
+                            registrazione da trainer
+                        </Link>
+                        : poi potrai cambiarli da qui.
+                    </p>
+                ) : (
+                    <ServicesForm
+                        saved={pricing}
+                        asksOnlinePrice={asksOnlinePrice}
+                        booked={booked}
+                    />
+                )}
+            </ProfilePage>
         </>
     );
 }
 
-/** The pricing with the first session as the chosen mode says (free = 0 €). */
-function withFirstMode(pricing: Pricing, mode: FirstSessionMode): Pricing {
-    return {
-        ...pricing,
-        firstSession: {
-            ...pricing.firstSession,
-            enabled: mode !== 'off',
-            priceCents: mode === 'free' ? 0 : pricing.firstSession.priceCents,
-        },
-    };
-}
-
 /**
- * The cards of "Servizi e prezzi" on the left, the preview with "Salva" on
- * the right. Everything is saved with one button, public right away.
+ * The fields of step 4 of "Diventa trainer" on the prices of the profile,
+ * the preview for the clients and "Salva modifiche". Everything is saved
+ * with one button, public right away.
  */
 function ServicesForm({
     saved,
     asksOnlinePrice,
+    booked,
 }: {
     saved: Pricing;
     asksOnlinePrice: boolean;
+    booked: ServicesProps['booked'];
 }) {
     const [pricing, setPricing] = useState(saved);
-    const [columns, setColumns] = useState(() => initialColumns(saved));
-    const [firstMode, setFirstMode] = useState(() => firstSessionMode(saved));
     const [changed, setChanged] = useState(false);
     // Only the request: the fields live in `pricing`.
     const form = useForm({});
 
+    // Step 4 asks the online prices from the places: online and somewhere else.
+    const places: PlaceType[] = asksOnlinePrice ? ['online', 'home'] : [];
+    const draft: TrainerDraft = { ...initialDraft, places, pricing };
+
     const ownOnline = asksOnlinePrice && !pricing.onlineSamePrice;
-    const toSave = withFirstMode(pricing, firstMode);
+    const firstMode = firstSessionMode(pricing);
     // "A prezzo ridotto" is at least 1 €: 0 is "Gratuita".
     const complete =
-        isPricingValid(toSave, ownOnline) &&
+        isPricingValid(pricing, ownOnline) &&
         (firstMode !== 'paid' || (pricing.firstSession.priceCents ?? 0) >= 100);
 
-    const update = (changes: Partial<Pricing>) => {
-        setPricing({ ...pricing, ...changes });
-        setChanged(true);
-    };
-
-    const changeFirstMode = (mode: FirstSessionMode) => {
-        setFirstMode(mode);
-        setChanged(true);
-
-        // From "Gratuita" (0 €) to a lower price: the price to write.
-        if (mode === 'paid' && pricing.firstSession.priceCents === 0) {
-            setPricing({
-                ...pricing,
-                firstSession: { ...pricing.firstSession, priceCents: null },
-            });
+    const update = (changes: Partial<TrainerDraft>) => {
+        if (changes.pricing) {
+            setPricing(changes.pricing);
+            setChanged(true);
         }
     };
 
-    const errorsOf = (matches: (field: string) => boolean) =>
-        Object.entries(form.errors as Record<string, string>)
-            .filter(([field]) => matches(field))
-            .map(([, message]) => message);
-    const isOnlineField = (field: string) =>
-        field.startsWith('sessions.') && field.includes('.online');
-    const isGroupField = (field: string) =>
-        field.startsWith('sessions.') && field.includes('.group_prices');
+    const errors = Object.values(form.errors as Record<string, string>);
 
     const save = (event: React.FormEvent) => {
         event.preventDefault();
@@ -159,7 +124,7 @@ function ServicesForm({
             return;
         }
 
-        form.transform(() => toServicesPayload(toSave, ownOnline));
+        form.transform(() => toServicesPayload(pricing, ownOnline));
         form.put(TrainerServicesController.update.url(), {
             preserveScroll: true,
             // Start again from what was saved.
@@ -168,7 +133,6 @@ function ServicesForm({
 
                 if (next) {
                     setPricing(next);
-                    setFirstMode(firstSessionMode(next));
                 }
 
                 setChanged(false);
@@ -176,16 +140,10 @@ function ServicesForm({
         });
     };
 
-    // "Online" (only for who trains both ways) comes right after the price list,
-    // then "Invita un amico".
-    const groupStep = asksOnlinePrice ? 3 : 2;
-    const firstStep = groupStep + 1;
-
-    // Nothing to save: no status, only the button.
     let status: string | undefined;
 
-    if (form.processing) {
-        status = 'Salvataggio…';
+    if (errors.length > 0) {
+        status = 'Controlla i campi segnati';
     } else if (changed) {
         status = complete
             ? 'Modifiche non salvate'
@@ -193,78 +151,60 @@ function ServicesForm({
     }
 
     return (
-        <form
-            noValidate
-            onSubmit={save}
-            className="flex flex-wrap items-start gap-5"
-        >
-            <div className="flex min-w-0 flex-[3_1_560px] flex-col gap-4">
-                <PriceListSection
-                    sessions={pricing.sessions}
-                    onChange={(sessions) => update({ sessions })}
-                    columns={columns}
-                    onColumnsChange={setColumns}
-                    errors={errorsOf(
-                        (field) =>
-                            field.startsWith('sessions') &&
-                            !isOnlineField(field) &&
-                            !isGroupField(field),
-                    )}
+        <form noValidate onSubmit={save} className="flex flex-col gap-10">
+            {errors.length > 0 && (
+                <ul
+                    role="alert"
+                    className="flex flex-col gap-1 rounded-[20px] p-4 text-[15px] text-destructive shadow-[inset_0_0_0_1.5px_var(--destructive)]"
+                >
+                    {errors.map((message) => (
+                        <li key={message}>{message}</li>
+                    ))}
+                </ul>
+            )}
+
+            <StepServices draft={draft} update={update} />
+
+            <ProfileSection
+                title="Così ti vedono i clienti"
+                aside={
+                    <Counter>
+                        <Eye aria-hidden="true" className="size-4.5" />
+                    </Counter>
+                }
+            >
+                <ServiceRows
+                    rows={previewRows(pricing, firstMode, ownOnline)}
+                    empty="Scrivi i prezzi per vedere come appaiono i tuoi servizi sul profilo."
                 />
-                {asksOnlinePrice && (
-                    <OnlinePricesSection
-                        step={2}
-                        sessions={pricing.sessions}
-                        onChange={(sessions) => update({ sessions })}
-                        samePrice={pricing.onlineSamePrice}
-                        onSamePriceChange={(onlineSamePrice) =>
-                            update({ onlineSamePrice })
-                        }
-                        columns={columns}
-                        errors={errorsOf(isOnlineField)}
-                    />
-                )}
-                <GroupPricesSection
-                    step={groupStep}
-                    sessions={pricing.sessions}
-                    onChange={(sessions) => update({ sessions })}
-                    columns={columns}
-                    errors={errorsOf(isGroupField)}
-                />
-                <FirstSessionSection
-                    step={firstStep}
-                    mode={firstMode}
-                    onModeChange={changeFirstMode}
-                    firstSession={pricing.firstSession}
-                    onChange={(changes) =>
-                        update({
-                            firstSession: {
-                                ...pricing.firstSession,
-                                ...changes,
-                            },
-                        })
-                    }
-                    errors={errorsOf((field) =>
-                        field.startsWith('first_session'),
-                    )}
-                />
-                <PackagesSection
-                    step={firstStep + 1}
-                    packages={pricing.packages}
-                    onChange={(packages) => update({ packages })}
-                    sessions={pricing.sessions}
-                    errors={errorsOf((field) => field.startsWith('packages'))}
-                />
-            </div>
-            <aside className="min-w-0 flex-[2_1_320px] lg:sticky lg:top-6">
-                <ClientPreview
-                    rows={previewRows(toSave, firstMode, ownOnline)}
-                    status={status}
-                    changed={changed}
-                    canSave={changed && complete}
-                    saving={form.processing}
-                />
-            </aside>
+            </ProfileSection>
+
+            {booked.length > 0 && (
+                <ProfileSection
+                    title="Prenotazioni degli ultimi 90 giorni"
+                    description="Le sedute confermate, dal servizio più prenotato."
+                >
+                    <ul className={stepListClassName}>
+                        {booked.map((row) => (
+                            <li
+                                key={row.label}
+                                className={`${stepRowClassName} flex items-center justify-between gap-3 text-[17px]`}
+                            >
+                                <span className="min-w-0">{row.label}</span>
+                                <span className="font-semibold tabular-nums">
+                                    {row.count}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </ProfileSection>
+            )}
+
+            <SaveBar
+                status={status}
+                disabled={!changed || !complete}
+                saving={form.processing}
+            />
         </form>
     );
 }

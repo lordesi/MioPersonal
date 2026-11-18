@@ -151,8 +151,8 @@ export default function ProfileVisibilitySection({
         cn(
             'inline-flex h-10 items-center gap-2 rounded-full border px-3.5 text-sm font-medium',
             active
-                ? 'border-foreground bg-foreground text-background'
-                : 'bg-background hover:bg-accent',
+                ? 'border-foreground bg-foreground text-background in-[.trainer-area]:border-brand in-[.trainer-area]:bg-transparent in-[.trainer-area]:text-brand'
+                : 'bg-background hover:bg-accent in-[.trainer-area]:border-field in-[.trainer-area]:bg-transparent',
         );
 
     return (

@@ -1,4 +1,4 @@
-import { Check, ChevronDown } from 'lucide-react';
+import { CalendarRange, ChevronDown } from 'lucide-react';
 import { useId, useState } from 'react';
 import {
     DropdownMenu,
@@ -7,6 +7,7 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import RangeSheet from '@/components/trainer/home/range-sheet';
 import { blockTitleClassName } from '@/components/trainer/ui/styles';
 import { formatDayMonthShort } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -47,8 +48,8 @@ export default function StatsBlock({
     size = 'sm',
 }: StatsBlockProps) {
     const titleId = useId();
-    const [from, setFrom] = useState(stats.from);
-    const [to, setTo] = useState(stats.to);
+    // "Intervallo personalizzato": the calendar of "Scegli data", from and to.
+    const [choosing, setChoosing] = useState(false);
     const custom = stats.period === 'intervallo';
     const label = custom
         ? `${formatDayMonthShort(stats.from)} – ${formatDayMonthShort(stats.to)}`
@@ -99,9 +100,8 @@ export default function StatsBlock({
                             onValueChange={(value) => {
                                 const period = value as TrainerStatsPeriod;
 
-                                if (period === 'intervallo') {
-                                    onChange(period, from, to);
-                                } else {
+                                // "Intervallo personalizzato" opens the calendar (onSelect below).
+                                if (period !== 'intervallo') {
                                     onChange(period);
                                 }
                             }}
@@ -110,6 +110,15 @@ export default function StatsBlock({
                                 <DropdownMenuRadioItem
                                     key={period.value}
                                     value={period.value}
+                                    onSelect={() => {
+                                        // After the menu has closed: a dialog opened while it closes loses its focus.
+                                        if (period.value === 'intervallo') {
+                                            window.setTimeout(
+                                                () => setChoosing(true),
+                                                0,
+                                            );
+                                        }
+                                    }}
                                     className="h-10 rounded-xl text-[15px]"
                                 >
                                     {period.label}
@@ -121,35 +130,26 @@ export default function StatsBlock({
             </div>
 
             {custom && (
-                <form
-                    className="grid grid-cols-[1fr_1fr_auto] items-end gap-2"
-                    onSubmit={(event) => {
-                        event.preventDefault();
-                        onChange('intervallo', from, to);
-                    }}
+                <button
+                    type="button"
+                    onClick={() => setChoosing(true)}
+                    className="chip self-start"
                 >
-                    <DateField
-                        label="Dal"
-                        value={from}
-                        max={to}
-                        onChange={setFrom}
-                    />
-                    <DateField
-                        label="Al"
-                        value={to}
-                        max={today}
-                        onChange={setTo}
-                    />
-                    <button
-                        type="submit"
-                        aria-label="Applica l’intervallo"
-                        title="Applica"
-                        className="flex size-12 items-center justify-center rounded-2xl bg-brand text-[#0a0a0a] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                    >
-                        <Check aria-hidden="true" className="size-5" />
-                    </button>
-                </form>
+                    <CalendarRange aria-hidden="true" className="size-4" />
+                    {formatDayMonthShort(stats.from)} –{' '}
+                    {formatDayMonthShort(stats.to)}
+                    <span className="text-brand">Cambia</span>
+                </button>
             )}
+
+            <RangeSheet
+                open={choosing}
+                onOpenChange={setChoosing}
+                today={today}
+                from={stats.from}
+                to={stats.to}
+                onApply={(from, to) => onChange('intervallo', from, to)}
+            />
 
             <div className="grid grid-cols-2 gap-2.5">
                 {tiles.map((tile) => (
@@ -217,37 +217,6 @@ function Delta({
         >
             {sign}
             {Math.abs(change)}% {compared}
-        </span>
-    );
-}
-
-function DateField({
-    label,
-    value,
-    max,
-    onChange,
-}: {
-    label: string;
-    value: string;
-    max: string;
-    onChange: (value: string) => void;
-}) {
-    const id = useId();
-
-    return (
-        <span className="flex flex-col gap-1 rounded-2xl bg-card px-3.5 py-1.5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
-            <label htmlFor={id} className="text-[11px] text-muted-foreground">
-                {label}
-            </label>
-            <input
-                id={id}
-                type="date"
-                value={value}
-                max={max}
-                required
-                onChange={(event) => onChange(event.target.value)}
-                className="w-full bg-transparent text-[15px] font-semibold [color-scheme:dark] outline-none"
-            />
         </span>
     );
 }

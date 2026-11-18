@@ -119,7 +119,7 @@ export default function StepHours({ draft, update }: StepProps) {
     );
 }
 
-function WorkingHours({
+export function WorkingHours({
     hours,
     onChange,
     total,

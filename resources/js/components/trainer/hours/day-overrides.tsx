@@ -3,6 +3,10 @@ import { CalendarOff, Clock, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import TrainerAvailabilityController from '@/actions/App/Http/Controllers/TrainerAvailabilityController';
 import { dayRanges } from '@/components/trainer/hours/availability-summary';
+import {
+    stepListClassName,
+    stepRowClassName,
+} from '@/components/trainer/ui/styles';
 import { Button } from '@/components/ui/button';
 import { sessionsLabel } from '@/lib/calendar';
 import {
@@ -11,6 +15,7 @@ import {
     formatWeekdayShort,
     formatDayNumber,
 } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import type { TrainerDayOverrideBlock } from '@/types';
 
 /**
@@ -42,7 +47,7 @@ export default function DayOverrides({
         });
 
     return (
-        <ul className="flex flex-col gap-2.5">
+        <ul className={stepListClassName}>
             {blocks.map((block) => {
                 const when =
                     block.from === block.to
@@ -53,11 +58,14 @@ export default function DayOverrides({
                 return (
                     <li
                         key={block.from}
-                        className="flex flex-col gap-2.5 rounded-2xl border bg-card p-4"
+                        className={cn(
+                            stepRowClassName,
+                            'flex flex-col gap-2.5',
+                        )}
                     >
                         <div className="flex flex-wrap items-start justify-between gap-3">
                             <span className="flex min-w-0 items-start gap-3">
-                                <span className="flex size-9 flex-none items-center justify-center rounded-full bg-secondary">
+                                <span className="flex size-9 flex-none items-center justify-center rounded-full bg-brand-soft text-brand">
                                     <Icon
                                         aria-hidden="true"
                                         className="size-4"
@@ -80,7 +88,7 @@ export default function DayOverrides({
                                 variant="outline"
                                 disabled={restoring === block.from}
                                 onClick={() => restore(block)}
-                                className="h-9 rounded-[10px] px-3 text-[13px]"
+                                className="h-9 px-3.5 text-[13px]"
                             >
                                 Ripristina orari di base
                             </Button>
@@ -105,7 +113,7 @@ export default function DayOverrides({
                         )}
 
                         {block.bookings > 0 && (
-                            <p className="flex items-start gap-2 rounded-lg bg-secondary px-3 py-2 text-[13px]">
+                            <p className="flex items-start gap-2 rounded-[14px] px-3 py-2 text-[13px] text-[#ff9230] shadow-[inset_0_0_0_1px_#ff9230]">
                                 <TriangleAlert
                                     aria-hidden="true"
                                     className="mt-0.5 size-3.5 flex-none"

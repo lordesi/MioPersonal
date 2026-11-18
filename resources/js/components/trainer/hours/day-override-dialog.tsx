@@ -2,7 +2,9 @@ import { useForm } from '@inertiajs/react';
 import { useId, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import TrainerAvailabilityController from '@/actions/App/Http/Controllers/TrainerAvailabilityController';
-import WeeklyHoursGrid from '@/components/trainer/hours/weekly-hours-grid';
+import { pillFieldClassName } from '@/components/onboarding/dark-fields';
+import { weeklyHours } from '@/components/onboarding/trainer/draft';
+import { WorkingHours } from '@/components/onboarding/trainer/step-hours';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -35,7 +37,7 @@ const NOTE_MAX = 60;
 const allHours = Array.from({ length: 18 }, (_, index) => 6 + index);
 
 const pill =
-    'h-10 rounded-full border bg-card px-3.5 text-sm font-medium first:rounded-full last:rounded-full hover:bg-secondary data-[state=on]:border-foreground data-[state=on]:bg-foreground data-[state=on]:text-background data-[state=on]:hover:bg-foreground/90';
+    'chip h-10 px-3.5 text-sm first:rounded-full last:rounded-full hover:bg-white/5';
 
 /** 0 = Monday … 6 = Sunday, as in the grid. */
 const weekdayOf = (date: string) =>
@@ -156,7 +158,7 @@ export default function DayOverrideDialog({
     return (
         <Dialog open={open} onOpenChange={changeOpen}>
             <DialogTrigger asChild>{trigger}</DialogTrigger>
-            <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
+            <DialogContent className="max-h-[92vh] overflow-y-auto rounded-[26px] sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>
                         Modifica un giorno o una settimana
@@ -206,7 +208,7 @@ export default function DayOverrideDialog({
                                     changeFrom(event.target.value)
                                 }
                                 aria-invalid={!!errors.from}
-                                className="h-11"
+                                className={pillFieldClassName}
                             />
                         </div>
                         {kind === 'period' && (
@@ -225,7 +227,7 @@ export default function DayOverrideDialog({
                                         setData('to', event.target.value)
                                     }
                                     aria-invalid={!!errors.to}
-                                    className="h-11"
+                                    className={pillFieldClassName}
                                 />
                             </div>
                         )}
@@ -250,17 +252,17 @@ export default function DayOverrideDialog({
                             value !== '' &&
                             setData('closed', value === 'closed')
                         }
-                        className="grid grid-cols-2 gap-1 rounded-[14px] bg-secondary p-1"
+                        className="grid grid-cols-2 gap-1 rounded-full p-1 shadow-[inset_0_0_0_1px_var(--field)]"
                     >
                         <ToggleGroupItem
                             value="closed"
-                            className="h-10.5 rounded-[10px] first:rounded-[10px] data-[state=on]:bg-foreground data-[state=on]:font-semibold data-[state=on]:text-background"
+                            className="h-10.5 rounded-full first:rounded-full data-[state=on]:bg-transparent data-[state=on]:font-semibold data-[state=on]:text-brand data-[state=on]:shadow-[inset_0_0_0_1.5px_var(--brand)]"
                         >
                             Chiuso
                         </ToggleGroupItem>
                         <ToggleGroupItem
                             value="hours"
-                            className="h-10.5 rounded-[10px] last:rounded-[10px] data-[state=on]:bg-foreground data-[state=on]:font-semibold data-[state=on]:text-background"
+                            className="h-10.5 rounded-full last:rounded-full data-[state=on]:bg-transparent data-[state=on]:font-semibold data-[state=on]:text-brand data-[state=on]:shadow-[inset_0_0_0_1.5px_var(--brand)]"
                         >
                             Orari diversi
                         </ToggleGroupItem>
@@ -270,9 +272,10 @@ export default function DayOverrideDialog({
                         (kind === 'day' ? (
                             <DayHours hours={dayHours} onChange={setDayHours} />
                         ) : (
-                            <WeeklyHoursGrid
+                            <WorkingHours
                                 hours={data.hours}
                                 onChange={(hours) => setData('hours', hours)}
+                                total={weeklyHours(data.hours)}
                             />
                         ))}
                     {!data.closed && kind === 'period' && (
@@ -301,7 +304,7 @@ export default function DayOverrideDialog({
                             onChange={(event) =>
                                 setData('note', event.target.value)
                             }
-                            className="h-11"
+                            className={pillFieldClassName}
                         />
                     </div>
 
@@ -309,7 +312,8 @@ export default function DayOverrideDialog({
                         <Button
                             type="submit"
                             disabled={form.processing}
-                            className="h-11 px-5 font-semibold"
+                            data-fill
+                            className="h-12 px-6 font-semibold"
                         >
                             Salva
                         </Button>
@@ -350,10 +354,10 @@ function DayHours({
                             )
                         }
                         className={cn(
-                            'h-9 rounded-lg border text-[13px] font-medium tabular-nums',
+                            'h-9 rounded-full border text-[13px] font-medium tabular-nums',
                             on
-                                ? 'border-foreground bg-foreground text-background'
-                                : 'border-dashed border-ring bg-card hover:border-foreground',
+                                ? 'border-brand bg-transparent text-brand'
+                                : 'border-dashed border-field bg-transparent hover:border-brand',
                         )}
                     >
                         {hourLabel(hour)}

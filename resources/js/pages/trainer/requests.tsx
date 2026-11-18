@@ -74,7 +74,7 @@ export default function Requests({
                             className={cn(
                                 'flex h-10 items-center justify-center gap-2 rounded-full px-4 text-[15px] font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
                                 tab === item.value
-                                    ? 'bg-foreground text-background'
+                                    ? 'text-brand shadow-[inset_0_0_0_1.5px_var(--brand)]'
                                     : 'text-muted-foreground',
                             )}
                         >

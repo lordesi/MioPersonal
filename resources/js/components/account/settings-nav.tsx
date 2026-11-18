@@ -83,7 +83,7 @@ export default function SettingsNav({
                     'flex h-9 flex-none items-center gap-2.5 rounded-full border px-3 text-[13px] whitespace-nowrap',
                     layout.link,
                     active
-                        ? 'border-foreground bg-foreground font-semibold text-background'
+                        ? 'border-foreground bg-foreground font-semibold text-background in-[.trainer-area]:border-brand in-[.trainer-area]:bg-transparent in-[.trainer-area]:text-brand'
                         : cn(
                               'bg-background font-medium hover:bg-accent',
                               layout.idle,

@@ -39,7 +39,7 @@ import {
     placeOptions,
 } from '@/components/onboarding/trainer/draft';
 import OptionsMenu from '@/components/search/options-menu';
-import type { GymOption } from '@/components/trainer/profile/search-section';
+import type { GymOption } from '@/components/onboarding/trainer/draft';
 import { trainingGoals } from '@/lib/goals';
 import { cn } from '@/lib/utils';
 import type { CatalogOption, CityOption } from '@/types';

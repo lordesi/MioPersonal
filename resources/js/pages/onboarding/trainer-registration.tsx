@@ -50,7 +50,7 @@ import StepServices, {
 import Submitted, {
     submittedIntro,
 } from '@/components/onboarding/trainer/submitted';
-import type { GymOption } from '@/components/trainer/profile/search-section';
+import type { GymOption } from '@/components/onboarding/trainer/draft';
 import { Spinner } from '@/components/ui/spinner';
 import { home, login } from '@/routes';
 import { home as clientHome } from '@/routes/client';

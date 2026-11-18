@@ -3,7 +3,12 @@ import type { OrganizerEventProps } from '@/components/events/organizer/event-ma
 
 /** An event of the trainer area: places, clients, organizers. */
 export default function TrainerEvent(props: OrganizerEventProps) {
-    return <OrganizerEvent {...props} />;
+    // The column of the pages of "Profilo".
+    return (
+        <div className="flex w-full flex-col gap-6 md:mx-auto md:max-w-240 md:pt-4">
+            <OrganizerEvent {...props} />
+        </div>
+    );
 }
 
 TrainerEvent.layout = { section: 'events' };

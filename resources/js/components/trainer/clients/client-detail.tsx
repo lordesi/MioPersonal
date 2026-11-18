@@ -60,7 +60,7 @@ type ClientDetailProps = {
 };
 
 /**
- * The card of a client: who, the four quick actions (Scrivi, Chiama,
+ * The card of a client: who, the quick actions (Scrivi, Chiama only with a number,
  * Prenota, Pacchetto) and three tabs. "Sedute": in programma, svolte and the
  * fixed weekly sessions. "Dati": contacts, "Su di te", progress, payments and
  * the personal link. "Note": the private notes and the note for the client.
@@ -89,12 +89,16 @@ export default function ClientDetail({
                     : undefined,
             disabled: !client.registered && !phone,
         },
-        {
-            label: 'Chiama',
-            icon: Phone,
-            call: phone,
-            disabled: !phone,
-        },
+        // Without a number there is nothing to call: no button.
+        ...(phone
+            ? [
+                  {
+                      label: 'Chiama',
+                      icon: Phone,
+                      call: phone,
+                  },
+              ]
+            : []),
         {
             label: 'Prenota',
             icon: Calendar,
@@ -132,7 +136,12 @@ export default function ClientDetail({
                 <MoreMenu client={client} />
             </header>
 
-            <div className="grid grid-cols-4 gap-2">
+            <div
+                className={cn(
+                    'grid gap-2',
+                    actions.length === 4 ? 'grid-cols-4' : 'grid-cols-3',
+                )}
+            >
                 {actions.map((action) => {
                     const className = cn(
                         'flex h-16 flex-col items-center justify-center gap-1 rounded-[18px] text-[13px] font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-disabled:pointer-events-none aria-disabled:opacity-40',
@@ -257,7 +266,7 @@ export default function ClientDetail({
                         className={cn(
                             'h-9 rounded-full text-[15px] font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
                             tab === value
-                                ? 'bg-foreground text-background'
+                                ? 'text-brand shadow-[inset_0_0_0_1.5px_var(--brand)]'
                                 : 'text-muted-foreground',
                         )}
                     >

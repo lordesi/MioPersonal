@@ -330,7 +330,7 @@ function RescheduleDialog({
                                         className={cn(
                                             'flex w-14 flex-none flex-col items-center rounded-xl border py-2 text-xs',
                                             on
-                                                ? 'border-foreground bg-foreground text-background'
+                                                ? 'border-brand bg-transparent text-brand'
                                                 : 'bg-card hover:border-foreground',
                                         )}
                                     >
@@ -359,7 +359,7 @@ function RescheduleDialog({
                                     className={cn(
                                         'h-10 rounded-lg border text-sm font-medium tabular-nums',
                                         chosen === time
-                                            ? 'border-foreground bg-foreground text-background'
+                                            ? 'border-brand bg-transparent text-brand'
                                             : 'bg-card hover:border-foreground',
                                     )}
                                 >

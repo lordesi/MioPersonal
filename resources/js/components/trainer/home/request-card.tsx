@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import ClientAbout from '@/components/trainer/area/client-about';
 import { Initials } from '@/components/trainer/ui/bits';
 import {
-    brandButtonClassName,
+    brandFilledButtonClassName,
     outlineButtonClassName,
     roundOutlineClassName,
     softButtonClassName,
@@ -239,7 +239,7 @@ export default function RequestCard({
                         onClick={() => onConfirm(request.repeatWeekly !== null)}
                         aria-label={`Accetta la richiesta di ${request.clientName}`}
                         className={cn(
-                            brandButtonClassName,
+                            brandFilledButtonClassName,
                             'flex-1 text-[17px]',
                         )}
                     >

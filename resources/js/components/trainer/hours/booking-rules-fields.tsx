@@ -109,7 +109,7 @@ export default function BookingRulesFields({
                 className={cn(
                     'flex w-full items-center justify-between gap-4 rounded-2xl border px-4.5 py-4 text-left transition-colors',
                     autoConfirm
-                        ? 'border-foreground bg-foreground text-background'
+                        ? 'border-brand bg-transparent text-brand'
                         : 'bg-secondary/60 hover:bg-secondary',
                 )}
             >

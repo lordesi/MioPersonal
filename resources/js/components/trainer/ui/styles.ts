@@ -19,17 +19,31 @@ export const cardClassName = 'rounded-[22px] bg-card';
 export const outlineCardClassName =
     'rounded-[26px] bg-[#121212] shadow-[inset_0_0_0_1px_#2c2c2c]';
 
-/** The turquoise button: "Accetta", "Apri scheda", "Aggiungi cliente". */
+/**
+ * The turquoise button, as "Continua" of "Diventa trainer": the page behind,
+ * turquoise outline and text. "Apri scheda", "Aggiungi cliente", "Copia link".
+ */
 export const brandButtonClassName =
+    'btn-brand h-11 px-5 text-[15px] disabled:pointer-events-none disabled:opacity-60';
+
+/**
+ * Filled turquoise: only the final action of a page or a card, as "Invia
+ * per approvazione". "Accetta", "Salva modifiche", "Salva nota".
+ */
+export const brandFilledButtonClassName =
     'inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-brand px-5 text-[15px] font-semibold text-[#0a0a0a] shadow-[0_8px_24px_0_rgba(66,215,217,0.28)] outline-none transition-colors hover:bg-[#7fe6e7] focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-60';
 
 /** The grey outline button: "Rifiuta", "Aggiungi nota". */
 export const outlineButtonClassName =
     'inline-flex h-11 items-center justify-center gap-1.5 rounded-full border border-[#707070] bg-transparent px-4 text-[15px] font-semibold text-foreground outline-none transition-colors hover:bg-white/5 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-60';
 
-/** The dark filled button: "Oggi", "Annulla". */
+/** The quiet button: "Oggi", "Annulla". The page behind, a grey outline. */
 export const softButtonClassName =
-    'inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-secondary px-4 text-[15px] font-semibold text-foreground outline-none transition-colors hover:bg-[#333] focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-60';
+    'inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-transparent px-4 text-[15px] font-semibold text-foreground shadow-[inset_0_0_0_1px_var(--field)] outline-none transition-colors hover:bg-white/5 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-60';
+
+/** A tab or a segment ("Sedute · Dati · Note", "Scheda · Chat"): turquoise outline when chosen. */
+export const segmentClassName =
+    'rounded-full text-[15px] font-semibold text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:text-brand aria-pressed:shadow-[inset_0_0_0_1.5px_var(--brand)] aria-selected:text-brand aria-selected:shadow-[inset_0_0_0_1.5px_var(--brand)]';
 
 /** A round icon button with the grey outline (44px). */
 export const roundOutlineClassName =
@@ -50,10 +64,24 @@ export const blockTitleClassName = 'text-[22px] leading-7 font-bold';
 export const pageTitleClassName =
     'text-[28px] leading-8.5 font-bold tracking-[0.38px]';
 
-/** A chip of the filters: grey outline, white when chosen (aria-pressed). */
+/** A chip of the filters: grey outline, turquoise when chosen (aria-pressed). */
 export const filterChipClassName =
-    'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[#3a3a3a] bg-transparent px-3 text-[13px] font-semibold whitespace-nowrap text-[#d4d4d4] outline-none transition-colors hover:bg-white/5 focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:border-transparent aria-pressed:bg-foreground aria-pressed:text-background';
+    'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[#3a3a3a] bg-transparent px-3 text-[13px] font-semibold whitespace-nowrap text-[#d4d4d4] outline-none transition-colors hover:bg-white/5 focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:border-brand aria-pressed:text-brand';
 
 /** A row that lights up under the mouse. */
 export const pressableRowClassName =
     'transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 [@media(hover:hover)]:hover:bg-white/5';
+
+/**
+ * A list as in "Diventa trainer": a dark card on phones, rows split by thin
+ * lines on the page on desktop. The rows take `stepRowClassName`.
+ */
+export const stepListClassName =
+    'flex flex-col rounded-[26px] bg-card px-4 md:rounded-none md:bg-transparent md:px-0';
+
+export const stepRowClassName =
+    'border-b border-separator py-4 last:border-b-0 md:border-border';
+
+/** A box as in "Diventa trainer": a dark card on phones, a thin outline on desktop. */
+export const stepBoxClassName =
+    'rounded-[26px] bg-card p-4 md:rounded-[20px] md:bg-transparent md:p-5 md:shadow-[inset_0_0_0_1px_var(--border)]';

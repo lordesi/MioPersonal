@@ -19,7 +19,7 @@ import GoogleCalendarSection from '@/components/account/trainer/google-calendar-
 import ClientContactsSection from '@/components/account/trainer/client-contacts-section';
 import CloseTrainerProfileSection from '@/components/account/trainer/close-trainer-profile-section';
 import ProfileVisibilitySection from '@/components/account/trainer/profile-visibility-section';
-import PageHeading from '@/components/trainer/area/page-heading';
+import ProfilePage from '@/components/trainer/profile-pages/profile-page';
 import type {
     AccountSettings,
     TrainerGoogleCalendar,
@@ -69,41 +69,50 @@ export default function TrainerSettings({
         <>
             <Head title="Impostazioni account" />
 
-            <PageHeading title="Impostazioni account" />
-
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-5">
-                <SettingsNav sections={sections} columnFrom="xl" />
-                <div className="flex min-w-0 flex-1 flex-col gap-4">
-                    <PersonalDataSection
-                        firstName={account.firstName}
-                        lastName={account.lastName}
-                        phone={account.phone}
-                    />
-                    {contacts && <ClientContactsSection {...contacts} />}
-                    <AccessSection
-                        email={account.email}
-                        hasPassword={account.hasPassword}
-                        passwordChangedAt={account.passwordChangedAt}
-                        providers={account.providers}
-                    />
-                    {googleCalendar && (
-                        <GoogleCalendarSection {...googleCalendar} />
-                    )}
-                    <NotificationsSection
-                        role="trainer"
-                        reminders={account.notifications.reminders}
-                        push={account.notifications.push}
-                    />
-                    {visibility && <ProfileVisibilitySection {...visibility} />}
-                    <CloseTrainerProfileSection
-                        canPause={visibility !== null}
-                    />
-                    <DeleteAccountSection
-                        description="Cancelliamo account, profilo, preferiti e recensioni dopo 30 giorni, il tempo per ripensarci. Le sedute future vengono annullate subito."
-                        hasPassword={account.hasPassword}
-                    />
+            <ProfilePage
+                title={
+                    <>
+                        Impostazioni <strong>account</strong>
+                    </>
+                }
+                intro="I tuoi dati, l'accesso, le notifiche e la visibilità del profilo."
+            >
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-5">
+                    <SettingsNav sections={sections} columnFrom="xl" />
+                    <div className="flex min-w-0 flex-1 flex-col gap-4">
+                        <PersonalDataSection
+                            firstName={account.firstName}
+                            lastName={account.lastName}
+                            phone={account.phone}
+                        />
+                        {contacts && <ClientContactsSection {...contacts} />}
+                        <AccessSection
+                            email={account.email}
+                            hasPassword={account.hasPassword}
+                            passwordChangedAt={account.passwordChangedAt}
+                            providers={account.providers}
+                        />
+                        {googleCalendar && (
+                            <GoogleCalendarSection {...googleCalendar} />
+                        )}
+                        <NotificationsSection
+                            role="trainer"
+                            reminders={account.notifications.reminders}
+                            push={account.notifications.push}
+                        />
+                        {visibility && (
+                            <ProfileVisibilitySection {...visibility} />
+                        )}
+                        <CloseTrainerProfileSection
+                            canPause={visibility !== null}
+                        />
+                        <DeleteAccountSection
+                            description="Cancelliamo account, profilo, preferiti e recensioni dopo 30 giorni, il tempo per ripensarci. Le sedute future vengono annullate subito."
+                            hasPassword={account.hasPassword}
+                        />
+                    </div>
                 </div>
-            </div>
+            </ProfilePage>
         </>
     );
 }

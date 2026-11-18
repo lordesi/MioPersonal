@@ -38,6 +38,7 @@ import SegmentedControl from '@/components/mp/segmented-control';
 import type { FirstSessionMode } from '@/components/trainer/services/pricing';
 import {
     firstSessionMode,
+    packageComparison,
     PACKAGE_SESSION_OPTIONS,
     removeDuration,
     shortDuration,
@@ -763,6 +764,7 @@ function Packages({
                             className="w-32"
                         />
                     </div>
+                    <PackageSavings item={item} sessions={pricing.sessions} />
                 </DarkCard>
             ))}
             {pricing.packages.length < MAX_PACKAGES && (
@@ -788,5 +790,32 @@ function Packages({
                 </AddButton>
             )}
         </div>
+    );
+}
+
+/** "Separate costerebbero 450 € · Il cliente risparmia 50 € (10%)". */
+function PackageSavings({
+    item,
+    sessions,
+}: {
+    item: Pricing['packages'][number];
+    sessions: Pricing['sessions'];
+}) {
+    const { separateCents, savingCents, percent } = packageComparison(
+        item,
+        sessions,
+    );
+
+    return (
+        <p className="text-[13px] leading-4.5 text-muted-foreground">
+            {separateCents !== null
+                ? `Separate costerebbero ${formatPrice(separateCents)}`
+                : `Imposta il prezzo da ${shortDuration(item.minutes)} nel listino per calcolare il risparmio`}
+            {savingCents > 0 && (
+                <span className="font-semibold text-brand">
+                    {` · Il cliente risparmia ${formatPrice(savingCents)} (${percent}%)`}
+                </span>
+            )}
+        </p>
     );
 }

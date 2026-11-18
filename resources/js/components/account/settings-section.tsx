@@ -29,8 +29,10 @@ export default function SettingsSection({
             id={id}
             aria-labelledby={titleId}
             className={cn(
-                'flex scroll-mt-6 flex-col gap-4.5 rounded-3xl bg-card p-4 md:p-6',
-                danger ? 'border-[1.5px] border-foreground' : 'border',
+                'flex scroll-mt-6 flex-col gap-4.5 rounded-3xl bg-card p-4 in-[.trainer-area]:rounded-[26px] md:p-6 md:in-[.trainer-area]:rounded-[20px] md:in-[.trainer-area]:bg-transparent md:in-[.trainer-area]:shadow-[inset_0_0_0_1px_var(--border)]',
+                danger
+                    ? 'border-[1.5px] border-foreground in-[.trainer-area]:border-destructive'
+                    : 'border in-[.trainer-area]:border-0',
             )}
         >
             <div className="flex gap-3.5">
@@ -40,7 +42,7 @@ export default function SettingsSection({
                         'flex size-8 flex-none items-center justify-center rounded-full',
                         danger
                             ? 'border-[1.5px] border-foreground'
-                            : 'bg-foreground text-background',
+                            : 'bg-foreground text-background in-[.trainer-area]:bg-transparent in-[.trainer-area]:text-brand in-[.trainer-area]:shadow-[inset_0_0_0_1.5px_var(--brand)]',
                     )}
                 >
                     <Icon className="size-4" />

@@ -1,6 +1,14 @@
-import { MessageCircle, Plus, Search, UserRound, Users } from 'lucide-react';
+import {
+    BookUser,
+    MessageCircle,
+    Plus,
+    Search,
+    UserRound,
+    Users,
+} from 'lucide-react';
 import ClientChat from '@/components/trainer/clients/client-chat';
 import ClientDetail from '@/components/trainer/clients/client-detail';
+import ClientRubrica from '@/components/trainer/clients/client-rubrica';
 import FilterChips from '@/components/trainer/clients/filters';
 import {
     previewOf,
@@ -12,6 +20,7 @@ import type { ClientsViewProps } from '@/components/trainer/clients/types';
 import { Initials } from '@/components/trainer/ui/bits';
 import {
     brandButtonClassName,
+    filterChipClassName,
     pageTitleClassName,
     panelClassName,
     pressableRowClassName,
@@ -22,10 +31,14 @@ import { cn } from '@/lib/utils';
 const COLUMNS =
     'grid-cols-[minmax(200px,1.3fr)_minmax(140px,0.8fr)_minmax(200px,2fr)_72px]';
 
+/** With the conversation open: no "Pacchetto o stato". */
+const COLUMNS_NARROW = 'grid-cols-[minmax(160px,1fr)_minmax(140px,1.6fr)_64px]';
+
 /**
- * "Clienti" on desktop (Clienti B and Messaggi A): the list with the last
- * message of each client on the left, and on the right the card of the
- * client or the conversation ("Scheda" · "Chat").
+ * "Clienti" on desktop (Clienti B and Messaggi A). On the left two views:
+ * "Chat", the list with the last message of each client, and "Rubrica",
+ * every client A–Z with "Ancora da contattare" on top. On the right the card
+ * of the client or the conversation ("Scheda" · "Chat"), wider for the chat.
  */
 export default function ClientsDesktop(props: ClientsViewProps) {
     const {
@@ -49,8 +62,13 @@ export default function ClientsDesktop(props: ClientsViewProps) {
         onHide,
         onRestore,
         messageMatches,
+        view,
+        onView,
     } = props;
     const now = new Date();
+    // The conversation open: the panel on the right grows, the table loses a column.
+    const wide = Boolean(selected?.registered && chat && thread);
+    const columns = wide ? COLUMNS_NARROW : COLUMNS;
 
     return (
         <div className="flex h-full min-h-0 gap-4">
@@ -95,16 +113,6 @@ export default function ClientsDesktop(props: ClientsViewProps) {
                     </button>
                 </header>
 
-                <ToContact
-                    clients={toContact}
-                    hiddenCount={hiddenCount}
-                    onWrite={(client) => open(client, true)}
-                    onOpen={(client) => open(client)}
-                    onHide={onHide}
-                    onRestore={onRestore}
-                    variant="rows"
-                />
-
                 <div
                     className={cn(
                         panelClassName,
@@ -117,131 +125,198 @@ export default function ClientsDesktop(props: ClientsViewProps) {
                             chats={chats}
                             value={filter}
                             onChange={onFilter}
+                            exclude={['all', 'inactive']}
+                            leading={(
+                                [
+                                    ['chat', 'Chat', MessageCircle],
+                                    ['rubrica', 'Rubrica', BookUser],
+                                ] as const
+                            ).map(([value, label, Icon]) => (
+                                <button
+                                    key={value}
+                                    type="button"
+                                    aria-pressed={view === value}
+                                    onClick={() => onView(value)}
+                                    className={filterChipClassName}
+                                >
+                                    <Icon
+                                        aria-hidden="true"
+                                        className="size-3.5"
+                                    />
+                                    {label}
+                                </button>
+                            ))}
                         />
                     </div>
-                    <div
-                        aria-hidden="true"
-                        className={cn(
-                            'grid gap-4 px-7 pt-2.5 pb-1.5 text-xs font-semibold text-[#8a8a8a]',
-                            COLUMNS,
-                        )}
-                    >
-                        <span>CLIENTE</span>
-                        <span>PACCHETTO O STATO</span>
-                        <span>ULTIMO MESSAGGIO</span>
-                        <span className="text-right">QUANDO</span>
-                    </div>
-                    <div className="flex min-h-0 flex-1 [scrollbar-width:none] flex-col gap-0.5 overflow-y-auto px-3 pb-3">
-                        {clients.length === 0 ? (
-                            <Empty onAdd={onAdd} />
-                        ) : visible.length === 0 ? (
-                            <p className="my-6 text-center text-[15px] text-muted-foreground">
-                                Nessun cliente in questo filtro.
-                            </p>
-                        ) : (
-                            visible.map((client) => {
-                                const conversation = chats[client.recordId];
-                                const unread = conversation?.unread === true;
-                                const status = statusOf(client);
-                                const preview = previewOf(client, conversation);
-                                const matched = messageMatches.includes(
-                                    client.recordId,
-                                );
-                                const current =
-                                    selected?.recordId === client.recordId;
+                    {view === 'rubrica' ? (
+                        <div className="flex min-h-0 flex-1 [scrollbar-width:none] flex-col gap-3 overflow-y-auto px-3 pt-3 pb-3">
+                            {clients.length === 0 ? (
+                                <Empty onAdd={onAdd} />
+                            ) : (
+                                <>
+                                    {filter === 'all' && search === '' && (
+                                        <ToContact
+                                            clients={toContact}
+                                            hiddenCount={hiddenCount}
+                                            onWrite={(client) =>
+                                                open(client, true)
+                                            }
+                                            onOpen={(client) => open(client)}
+                                            onHide={onHide}
+                                            onRestore={onRestore}
+                                            variant="rows"
+                                            limit={3}
+                                        />
+                                    )}
+                                    <ClientRubrica
+                                        clients={visible}
+                                        chats={chats}
+                                        onOpen={(client) => open(client)}
+                                        selectedId={selected?.recordId}
+                                        size="sm"
+                                    />
+                                </>
+                            )}
+                        </div>
+                    ) : (
+                        <>
+                            <div
+                                aria-hidden="true"
+                                className={cn(
+                                    'grid gap-4 px-7 pt-2.5 pb-1.5 text-xs font-semibold text-[#8a8a8a]',
+                                    columns,
+                                )}
+                            >
+                                <span>CLIENTE</span>
+                                {!wide && <span>PACCHETTO O STATO</span>}
+                                <span>ULTIMO MESSAGGIO</span>
+                                <span className="text-right">QUANDO</span>
+                            </div>
+                            <div className="flex min-h-0 flex-1 [scrollbar-width:none] flex-col gap-0.5 overflow-y-auto px-3 pb-3">
+                                {clients.length === 0 ? (
+                                    <Empty onAdd={onAdd} />
+                                ) : visible.length === 0 ? (
+                                    <p className="my-6 text-center text-[15px] text-muted-foreground">
+                                        Nessun cliente in questo filtro.
+                                    </p>
+                                ) : (
+                                    visible.map((client) => {
+                                        const conversation =
+                                            chats[client.recordId];
+                                        const unread =
+                                            conversation?.unread === true;
+                                        const status = statusOf(client);
+                                        const preview = previewOf(
+                                            client,
+                                            conversation,
+                                        );
+                                        const matched = messageMatches.includes(
+                                            client.recordId,
+                                        );
+                                        const current =
+                                            selected?.recordId ===
+                                            client.recordId;
 
-                                return (
-                                    <button
-                                        key={client.recordId}
-                                        type="button"
-                                        onClick={() => open(client)}
-                                        aria-current={current}
-                                        className={cn(
-                                            'grid items-center gap-4 rounded-[14px] px-4 py-2.5 text-left',
-                                            COLUMNS,
-                                            pressableRowClassName,
-                                            current && 'bg-brand-soft',
-                                        )}
-                                    >
-                                        <span className="flex min-w-0 items-center gap-3">
-                                            <Initials
-                                                name={client.name}
-                                                size={36}
-                                                tone={
-                                                    !client.registered
-                                                        ? 'outline'
-                                                        : status.tone ===
-                                                            'muted'
-                                                          ? 'muted'
-                                                          : undefined
-                                                }
-                                            />
-                                            <span
+                                        return (
+                                            <button
+                                                key={client.recordId}
+                                                type="button"
+                                                onClick={() => open(client)}
+                                                aria-current={current}
                                                 className={cn(
-                                                    'truncate text-[15px]',
-                                                    unread
-                                                        ? 'font-bold'
-                                                        : 'font-semibold',
-                                                    status.tone === 'muted' &&
-                                                        'text-muted-foreground',
+                                                    'grid items-center gap-4 rounded-[14px] px-4 py-2.5 text-left',
+                                                    columns,
+                                                    pressableRowClassName,
+                                                    current && 'bg-brand-soft',
                                                 )}
                                             >
-                                                {client.name}
-                                            </span>
-                                        </span>
-                                        <span
-                                            className={cn(
-                                                'truncate text-[13px]',
-                                                status.tone === 'brand'
-                                                    ? 'text-brand'
-                                                    : status.tone === 'muted'
-                                                      ? 'text-[#8a8a8a]'
-                                                      : 'text-[#d4d4d4]',
-                                            )}
-                                        >
-                                            {status.text}
-                                        </span>
-                                        <span className="flex min-w-0 items-center gap-2">
-                                            <span
-                                                className={cn(
-                                                    'truncate text-[13px]',
-                                                    preview.empty
-                                                        ? 'text-[#707070] italic'
-                                                        : unread
-                                                          ? 'text-foreground'
-                                                          : 'text-muted-foreground',
-                                                )}
-                                            >
-                                                {matched && !preview.empty && (
-                                                    <MessageCircle
-                                                        aria-label="Trovato nei messaggi"
-                                                        className="mr-1 inline size-3.5 text-brand"
+                                                <span className="flex min-w-0 items-center gap-3">
+                                                    <Initials
+                                                        name={client.name}
+                                                        size={36}
+                                                        tone={
+                                                            !client.registered
+                                                                ? 'outline'
+                                                                : status.tone ===
+                                                                    'muted'
+                                                                  ? 'muted'
+                                                                  : undefined
+                                                        }
                                                     />
+                                                    <span
+                                                        className={cn(
+                                                            'truncate text-[15px]',
+                                                            unread
+                                                                ? 'font-bold'
+                                                                : 'font-semibold',
+                                                            status.tone ===
+                                                                'muted' &&
+                                                                'text-muted-foreground',
+                                                        )}
+                                                    >
+                                                        {client.name}
+                                                    </span>
+                                                </span>
+                                                {!wide && (
+                                                    <span
+                                                        className={cn(
+                                                            'truncate text-[13px]',
+                                                            status.tone ===
+                                                                'brand'
+                                                                ? 'text-brand'
+                                                                : status.tone ===
+                                                                    'muted'
+                                                                  ? 'text-[#8a8a8a]'
+                                                                  : 'text-[#d4d4d4]',
+                                                        )}
+                                                    >
+                                                        {status.text}
+                                                    </span>
                                                 )}
-                                                {preview.text}
-                                            </span>
-                                            {unread && (
+                                                <span className="flex min-w-0 items-center gap-2">
+                                                    <span
+                                                        className={cn(
+                                                            'truncate text-[13px]',
+                                                            preview.empty
+                                                                ? 'text-[#707070] italic'
+                                                                : unread
+                                                                  ? 'text-foreground'
+                                                                  : 'text-muted-foreground',
+                                                        )}
+                                                    >
+                                                        {matched &&
+                                                            !preview.empty && (
+                                                                <MessageCircle
+                                                                    aria-label="Trovato nei messaggi"
+                                                                    className="mr-1 inline size-3.5 text-brand"
+                                                                />
+                                                            )}
+                                                        {preview.text}
+                                                    </span>
+                                                    {unread && (
+                                                        <span
+                                                            className="size-2.5 shrink-0 rounded-full bg-brand"
+                                                            aria-label="Messaggi da leggere"
+                                                        />
+                                                    )}
+                                                </span>
                                                 <span
-                                                    className="size-2.5 shrink-0 rounded-full bg-brand"
-                                                    aria-label="Messaggi da leggere"
-                                                />
-                                            )}
-                                        </span>
-                                        <span
-                                            className={cn(
-                                                'text-right text-xs tabular-nums',
-                                                unread
-                                                    ? 'font-semibold text-brand'
-                                                    : 'text-[#8a8a8a]',
-                                            )}
-                                        >
-                                            {whenOf(conversation, now)}
-                                        </span>
-                                    </button>
-                                );
-                            })
-                        )}
-                    </div>
+                                                    className={cn(
+                                                        'text-right text-xs tabular-nums',
+                                                        unread
+                                                            ? 'font-semibold text-brand'
+                                                            : 'text-[#8a8a8a]',
+                                                    )}
+                                                >
+                                                    {whenOf(conversation, now)}
+                                                </span>
+                                            </button>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </>
+                    )}
                 </div>
             </section>
 
@@ -249,7 +324,8 @@ export default function ClientsDesktop(props: ClientsViewProps) {
                 aria-label={chat ? 'Conversazione' : 'Scheda cliente'}
                 className={cn(
                     panelClassName,
-                    'flex w-110 shrink-0 flex-col gap-4 overflow-hidden p-5',
+                    'flex shrink-0 flex-col gap-4 overflow-hidden p-5 transition-[width] duration-300 motion-reduce:transition-none',
+                    wide ? 'w-[min(760px,58%)]' : 'w-110',
                 )}
             >
                 {selected ? (
@@ -268,7 +344,7 @@ export default function ClientsDesktop(props: ClientsViewProps) {
                                     className={cn(
                                         'flex h-9 items-center justify-center gap-1.5 rounded-full text-[15px] font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
                                         !chat
-                                            ? 'bg-foreground text-background'
+                                            ? 'text-brand shadow-[inset_0_0_0_1.5px_var(--brand)]'
                                             : 'text-muted-foreground',
                                     )}
                                 >
@@ -286,7 +362,7 @@ export default function ClientsDesktop(props: ClientsViewProps) {
                                     className={cn(
                                         'flex h-9 items-center justify-center gap-1.5 rounded-full text-[15px] font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
                                         chat
-                                            ? 'bg-foreground text-background'
+                                            ? 'text-brand shadow-[inset_0_0_0_1.5px_var(--brand)]'
                                             : 'text-muted-foreground',
                                     )}
                                 >

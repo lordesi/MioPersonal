@@ -1,9 +1,8 @@
 import { Check } from 'lucide-react';
 import { weeklyHours } from '@/components/onboarding/trainer/draft';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import { hourLabel } from '@/lib/calendar';
 import { formatHours } from '@/lib/format';
+import { stepBoxClassName } from '@/components/trainer/ui/styles';
 import { cn } from '@/lib/utils';
 import type { TrainerAvailability } from '@/types';
 
@@ -88,22 +87,14 @@ export function ruleSentences({
 
 type AvailabilitySummaryProps = {
     availability: TrainerAvailability;
-    /** "Modifiche non salvate", "Salvataggio…"; none when there is nothing to save. */
-    status?: string;
-    changed: boolean;
-    saving: boolean;
 };
 
 /**
- * "Così funziona per i clienti": the black panel of "Disponibilità" with
- * the week and the rules in words, and the save button of the page (a
- * submit button of its form).
+ * "Così funziona per i clienti" in "Disponibilità": the week and the rules
+ * in words, as the clients read them.
  */
 export default function AvailabilitySummary({
     availability,
-    status,
-    changed,
-    saving,
 }: AvailabilitySummaryProps) {
     const { hours, autoConfirm } = availability;
     const total = weeklyHours(hours);
@@ -111,47 +102,26 @@ export default function AvailabilitySummary({
 
     return (
         <section
-            aria-labelledby="availability-summary-title"
-            className="flex flex-col gap-4.5 rounded-3xl bg-sidebar p-5.5 text-sidebar-foreground"
+            aria-label="Così funziona per i clienti"
+            className={cn(stepBoxClassName, 'flex flex-col gap-4')}
         >
-            <div className="flex flex-col gap-1.5">
-                <h2
-                    id="availability-summary-title"
-                    className="text-xs font-semibold tracking-[0.08em] text-sidebar-muted-foreground"
-                >
-                    COSÌ FUNZIONA PER I CLIENTI
-                </h2>
-                <span className="text-[30px] leading-9 font-bold tracking-[-0.03em] tabular-nums">
+            <div className="flex flex-col gap-1">
+                <span className="text-[28px] leading-8.5 font-bold tracking-[-0.03em] tabular-nums">
                     {formatHours(total)} a settimana
                 </span>
+                <span className="text-[15px] text-muted-foreground tabular-nums">
+                    {activeDays} {activeDays === 1 ? 'giorno' : 'giorni'} su 7 ·
+                    conferma {autoConfirm ? 'automatica' : 'manuale'}
+                </span>
             </div>
-
-            <dl className="grid grid-cols-2 gap-2">
-                <div className="flex flex-col-reverse gap-0.5 rounded-xl bg-sidebar-accent p-3">
-                    <dt className="text-xs text-sidebar-muted-foreground">
-                        Giorni attivi
-                    </dt>
-                    <dd className="text-[22px] leading-7 font-bold tabular-nums">
-                        {activeDays}
-                    </dd>
-                </div>
-                <div className="flex flex-col-reverse gap-0.5 rounded-xl bg-sidebar-accent p-3">
-                    <dt className="text-xs text-sidebar-muted-foreground">
-                        Conferma
-                    </dt>
-                    <dd className="text-[17px] leading-7 font-bold">
-                        {autoConfirm ? 'Automatica' : 'Manuale'}
-                    </dd>
-                </div>
-            </dl>
 
             <ul className="flex flex-col gap-3">
                 {ruleSentences(availability).map((sentence) => (
                     <li
                         key={sentence}
-                        className="flex gap-2.5 text-sm text-sidebar-foreground/90"
+                        className="flex gap-2.5 text-[15px] leading-5 text-foreground/90"
                     >
-                        <span className="flex size-5.5 flex-none items-center justify-center rounded-full bg-sidebar-border">
+                        <span className="flex size-5.5 flex-none items-center justify-center rounded-full text-brand shadow-[inset_0_0_0_1.5px_var(--brand)]">
                             <Check
                                 aria-hidden="true"
                                 className="size-3"
@@ -162,37 +132,6 @@ export default function AvailabilitySummary({
                     </li>
                 ))}
             </ul>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-sidebar-border pt-4">
-                {/* Always there, also empty: screen readers hear the changes. */}
-                <span
-                    role="status"
-                    className="flex items-center gap-2 text-[13px] leading-4.5 text-sidebar-foreground/80"
-                >
-                    {status && (
-                        <>
-                            <span
-                                aria-hidden="true"
-                                className={cn(
-                                    'size-2 rounded-full',
-                                    changed
-                                        ? 'bg-sidebar-primary'
-                                        : 'bg-muted-foreground',
-                                )}
-                            />
-                            {status}
-                        </>
-                    )}
-                </span>
-                <Button
-                    type="submit"
-                    disabled={!changed || saving}
-                    className="h-11 rounded-xl bg-sidebar-primary px-4.5 font-semibold text-sidebar-primary-foreground hover:bg-sidebar-primary/90 disabled:bg-sidebar-border disabled:text-muted-foreground disabled:opacity-100"
-                >
-                    {saving && <Spinner />}
-                    Salva modifiche
-                </Button>
-            </div>
         </section>
     );
 }

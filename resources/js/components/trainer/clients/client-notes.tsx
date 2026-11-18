@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import TrainerClientRecordsController from '@/actions/App/Http/Controllers/TrainerClientRecordsController';
 import {
     brandButtonClassName,
+    brandFilledButtonClassName,
     outlineButtonClassName,
     softButtonClassName,
 } from '@/components/trainer/ui/styles';
@@ -316,7 +317,7 @@ function NoteEditor({
                 <button
                     type="submit"
                     disabled={saving || (blank && !allowEmpty)}
-                    className={cn(brandButtonClassName, 'h-10')}
+                    className={cn(brandFilledButtonClassName, 'h-10')}
                 >
                     Salva nota
                 </button>

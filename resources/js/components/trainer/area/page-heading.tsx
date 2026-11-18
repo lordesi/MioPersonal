@@ -24,7 +24,8 @@ export default function PageHeading({
                         {eyebrow}
                     </span>
                 )}
-                <h1 className="text-[28px] leading-8.5 font-bold tracking-[-0.03em] md:text-[34px] md:leading-10">
+                {/* The trainer area (Eventi): the light title of "Diventa trainer". */}
+                <h1 className="text-[28px] leading-8.5 font-bold tracking-[-0.03em] in-[.trainer-area]:text-[34px] in-[.trainer-area]:leading-[1.12] in-[.trainer-area]:font-light in-[.trainer-area]:tracking-[-0.035em] md:text-[34px] md:leading-10 md:in-[.trainer-area]:text-5xl md:in-[.trainer-area]:leading-[1.1]">
                     {title}
                 </h1>
                 {description && (

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { ClientFilter } from '@/components/trainer/clients/types';
 import { filterChipClassName } from '@/components/trainer/ui/styles';
 import { cn } from '@/lib/utils';
@@ -49,20 +50,30 @@ export function neverWritten(client: TrainerClient, chats: Chats): boolean {
     return client.registered && chats[client.recordId]?.lastMessage == null;
 }
 
-/** The chips of the filters, with how many clients each one has. */
+/**
+ * The chips of the filters, with how many clients each one has. With
+ * `exclude` (desktop: "Tutti" and "Inattivi") the active filter turns off
+ * with a second click; `leading` goes first (the chips "Chat" and "Rubrica").
+ */
 export default function FilterChips({
     clients,
     chats,
     value,
     onChange,
+    exclude = [],
+    leading,
     className,
 }: {
     clients: TrainerClient[];
     chats: Chats;
     value: ClientFilter;
     onChange: (value: ClientFilter) => void;
+    exclude?: ClientFilter[];
+    leading?: ReactNode;
     className?: string;
 }) {
+    const toggles = exclude.includes('all');
+
     return (
         <div
             role="group"
@@ -72,7 +83,20 @@ export default function FilterChips({
                 className,
             )}
         >
+            {leading && (
+                <>
+                    {leading}
+                    <span
+                        aria-hidden="true"
+                        className="mx-1 my-1.5 w-px shrink-0 bg-[#3a3a3a]"
+                    />
+                </>
+            )}
             {clientFilters.map((filter) => {
+                if (exclude.includes(filter.value)) {
+                    return null;
+                }
+
                 const count = clients.filter((client) =>
                     filter.matches(client, chats),
                 ).length;
@@ -87,7 +111,9 @@ export default function FilterChips({
                         key={filter.value}
                         type="button"
                         aria-pressed={on}
-                        onClick={() => onChange(filter.value)}
+                        onClick={() =>
+                            onChange(toggles && on ? 'all' : filter.value)
+                        }
                         className={filterChipClassName}
                     >
                         {filter.label}
@@ -95,7 +121,7 @@ export default function FilterChips({
                             className={cn(
                                 'tabular-nums',
                                 on
-                                    ? 'text-background'
+                                    ? 'text-brand'
                                     : filter.value === 'unread' ||
                                         filter.value === 'never'
                                       ? 'text-brand'

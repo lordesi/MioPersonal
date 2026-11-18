@@ -83,14 +83,14 @@ export default function MonthCalendar({
                                 sideClasses,
                                 'flex flex-col items-start gap-1 bg-card text-left hover:bg-secondary/50',
                                 date === selectedDay &&
-                                    'shadow-[inset_0_0_0_2px_var(--foreground)]',
+                                    'shadow-[inset_0_0_0_2px_var(--brand)]',
                             )}
                         >
                             <span
                                 className={cn(
                                     'flex size-7 items-center justify-center rounded-full text-[13px] font-semibold tabular-nums',
                                     date === today &&
-                                        'bg-foreground text-background',
+                                        'text-brand shadow-[inset_0_0_0_1.5px_var(--brand)]',
                                 )}
                             >
                                 {formatDayNumber(date)}
@@ -123,8 +123,8 @@ export default function MonthCalendar({
                                     className={cn(
                                         'hidden h-5.5 w-full items-center gap-1 overflow-hidden rounded-md px-1.5 text-[11px] leading-3.5 font-semibold whitespace-nowrap sm:flex',
                                         item.kind === 'confirmed'
-                                            ? 'bg-foreground text-background'
-                                            : 'border border-dashed border-foreground',
+                                            ? 'bg-brand-soft text-brand'
+                                            : 'border border-dashed border-brand',
                                     )}
                                 >
                                     <span className="tabular-nums">
