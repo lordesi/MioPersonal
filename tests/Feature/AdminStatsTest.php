@@ -10,7 +10,9 @@ use App\Models\User;
 use App\Support\AdminStats;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -38,7 +40,8 @@ class AdminStatsTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('admin/stats')
-                ->has('stats.kpis', 14)
+                ->has('stats.kpis', 13)
+                ->where('stats.traffic', false)
                 ->has('stats.daily', AdminStats::DAYS)
                 ->has('stats.monthly', 12)
                 ->has('stats.cohorts', 6)
@@ -118,17 +121,13 @@ class AdminStatsTest extends TestCase
         User::factory()->count(3)->create(['created_at' => now()->subDays(3)]);
         User::factory()->create(['created_at' => now()->subDays(40)]);
         User::factory()->create(['role' => UserRole::Trainer, 'created_at' => now()->subDays(2)]);
-        DB::table('visitor_days')->insert([
-            ['day' => '2026-11-19', 'visitor' => str_repeat('a', 64)],
-            ['day' => '2026-11-19', 'visitor' => str_repeat('b', 64)],
-            ['day' => '2026-10-10', 'visitor' => str_repeat('c', 64)],
-        ]);
 
         $kpis = collect((new AdminStats)->all()['kpis'])->keyBy('key');
 
         $this->assertSame([3, 1], [$kpis['clients']['value'], $kpis['clients']['previous']]);
         $this->assertSame(1, $kpis['trainers']['value']);
-        $this->assertSame([2, 1], [$kpis['visitors']['value'], $kpis['visitors']['previous']]);
+        // Without Cloudflare's keys: no visits, no comparison.
+        $this->assertSame([null, null], [$kpis['visits']['value'], $kpis['visits']['previous']]);
     }
 
     public function test_app_opens_and_trainers_with_notifications()
@@ -184,16 +183,11 @@ class AdminStatsTest extends TestCase
         $this->assertNull($september['retention'][3]);
     }
 
-    public function test_searches_without_results_and_channels()
+    public function test_searches_without_results_and_signup_channels()
     {
         DB::table('search_logs')->insert([
             ['city_id' => null, 'disciplines' => '["boxe"]', 'goals' => '[]', 'filters' => '[]', 'results' => 0, 'role' => 'guest', 'created_at' => now()->subDay()],
             ['city_id' => null, 'disciplines' => '[]', 'goals' => '[]', 'filters' => '[]', 'results' => 4, 'role' => 'guest', 'created_at' => now()->subDay()],
-        ]);
-        DB::table('visit_days')->insert([
-            ['day' => '2026-11-18', 'source' => 'instagram', 'visits' => 5],
-            ['day' => '2026-11-19', 'source' => 'instagram', 'visits' => 2],
-            ['day' => '2026-11-19', 'source' => 'direct', 'visits' => 3],
         ]);
         User::factory()->create(['acquisition' => ['source' => 'instagram', 'medium' => null, 'campaign' => null, 'landing' => '/'], 'created_at' => now()->subDay()]);
 
@@ -201,7 +195,78 @@ class AdminStatsTest extends TestCase
 
         $this->assertSame(0.5, $stats['demand']['emptyRate']);
         $this->assertSame([['source' => 'Tutta Italia · boxe', 'count' => 1]], $stats['demand']['empty']);
-        $this->assertSame([['source' => 'instagram', 'count' => 7], ['source' => 'direct', 'count' => 3]], $stats['channels']['visits']);
         $this->assertSame([['source' => 'instagram', 'count' => 1]], $stats['channels']['signups']);
+    }
+
+    private function cloudflare(): void
+    {
+        config(['services.cloudflare' => ['analytics_token' => 'public', 'site_tag' => 'site-tag', 'account_id' => 'account-id', 'api_token' => 'secret']]);
+    }
+
+    /** The visits come from Cloudflare Web Analytics, one request, then cached. */
+    public function test_the_visits_come_from_cloudflare()
+    {
+        $this->cloudflare();
+        $totals = fn (int $visits, int $views) => [['count' => $views, 'sum' => ['visits' => $visits]]];
+        Http::fake(['api.cloudflare.com/*' => Http::response(['data' => ['viewer' => ['accounts' => [[
+            'current' => $totals(12, 40),
+            'previous' => $totals(4, 10),
+            'daily' => [
+                // 23:00 UTC is midnight in Rome: the next day.
+                ['count' => 5, 'sum' => ['visits' => 2], 'dimensions' => ['datetimeHour' => '2026-11-18T23:00:00Z']],
+                ['count' => 3, 'sum' => ['visits' => 1], 'dimensions' => ['datetimeHour' => '2026-11-19T10:00:00Z']],
+            ],
+            'sources' => [
+                ['count' => 9, 'sum' => ['visits' => 6], 'dimensions' => ['refererHost' => '']],
+                ['count' => 5, 'sum' => ['visits' => 3], 'dimensions' => ['refererHost' => 'www.google.it']],
+                ['count' => 2, 'sum' => ['visits' => 2], 'dimensions' => ['refererHost' => 'l.instagram.com']],
+                ['count' => 1, 'sum' => ['visits' => 1], 'dimensions' => ['refererHost' => 'google.com']],
+                // Pages opened from inside the site: not visits.
+                ['count' => 23, 'sum' => ['visits' => 0], 'dimensions' => ['refererHost' => 'miopersonal.it']],
+            ],
+            'm202611' => $totals(9, 30),
+            'm202610' => $totals(5, 12),
+        ]]]], 'errors' => null])]);
+
+        $stats = (new AdminStats)->all();
+        $kpis = collect($stats['kpis'])->keyBy('key');
+
+        $this->assertTrue($stats['traffic']);
+        $this->assertSame([12, 4], [$kpis['visits']['value'], $kpis['visits']['previous']]);
+        $this->assertSame([40, 10], [$kpis['pageViews']['value'], $kpis['pageViews']['previous']]);
+        $day = collect($stats['daily'])->firstWhere('day', '2026-11-19');
+        $this->assertSame([3, 8], [$day['visits'], $day['pageViews']]);
+        $this->assertSame(['direct' => 6, 'google' => 4, 'instagram' => 2], collect($stats['channels']['visits'])->pluck('count', 'source')->all());
+        $this->assertSame([9, 5], [collect($stats['monthly'])->firstWhere('month', '2026-11')['visits'], collect($stats['monthly'])->firstWhere('month', '2026-10')['visits']]);
+        // Older than Cloudflare's 6 months.
+        $this->assertSame(0, collect($stats['monthly'])->firstWhere('month', '2026-01')['visits']);
+        $this->assertSame(12, $stats['funnel'][0]['count']);
+
+        Http::assertSent(fn (Request $request) => $request->hasHeader('Authorization', 'Bearer secret')
+            && str_contains($request['query'], 'accountTag: "account-id"')
+            && str_contains($request['query'], '{siteTag: "site-tag"}')
+            && str_contains($request['query'], 'm202606:'));
+
+        // Kept for 10 minutes: no second request.
+        (new AdminStats)->all();
+        Http::assertSentCount(1);
+    }
+
+    public function test_without_cloudflare_the_page_still_opens()
+    {
+        $this->cloudflare();
+        Http::fake(['api.cloudflare.com/*' => Http::response(['data' => null, 'errors' => [['message' => 'not authorized']]])]);
+
+        $stats = (new AdminStats)->all();
+
+        $this->assertFalse($stats['traffic']);
+        $this->assertNull(collect($stats['kpis'])->firstWhere('key', 'visits')['value']);
+        $this->assertSame(0, $stats['funnel'][0]['count']);
+
+        // After an error, not again at every page.
+        (new AdminStats)->all();
+        Http::assertSentCount(1);
+
+        $this->actingAs(User::factory()->admin()->create())->get(route('admin.stats'))->assertOk();
     }
 }

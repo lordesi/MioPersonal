@@ -88,11 +88,11 @@ GitHub fa girare i test. Il sito non cambia.
 
 ## Come funziona
 
-| Pezzo                                                             | Cosa fa                                                                                                            |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| [`.github/workflows/tests.yml`](../.github/workflows/tests.yml)   | Test, stile, tipi e build SSR su ogni push di ogni branch                                                          |
-| [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) | Dopo i test verdi su `main` entra nel server via SSH e lancia lo script; poi controlla `/up`. Un deploy alla volta |
-| [`scripts/deploy.sh`](../scripts/deploy.sh)                       | Lo script che gira sul server (sotto)                                                                              |
+| Pezzo                                                             | Cosa fa                                                                                                                       |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| [`.github/workflows/tests.yml`](../.github/workflows/tests.yml)   | Test, stile, tipi e build SSR su ogni push di ogni branch                                                                     |
+| [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) | Dopo i test verdi su `main` entra nel server via SSH e lancia lo script; poi controlla `/up` dal server. Un deploy alla volta |
+| [`scripts/deploy.sh`](../scripts/deploy.sh)                       | Lo script che gira sul server (sotto)                                                                                         |
 
 Lo script, sul server come utente `ploi`, nella cartella `/home/ploi/miopersonal.it`:
 
@@ -138,6 +138,38 @@ git show origin/main:scripts/deploy.sh | bash -s -- "$(git rev-parse origin/main
 ```
 
 Usatelo solo se GitHub Actions non funziona: consuma uno dei 5 deploy del mese.
+
+## Cloudflare
+
+Il dominio è su Cloudflare (piano Free). Le visite al sito le conta **Cloudflare Web Analytics**: lo script è
+in `resources/views/app.blade.php`, i numeri arrivano in Admin · Statistiche da
+`App\Support\CloudflareAnalytics`.
+
+| Cosa                                                                   | Dove                                                                                       |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Web Analytics, installazione **manuale** ("Enable with JS Snippet")    | Cloudflare → Observability → Analytics → Web analytics → miopersonal.it → Manage site      |
+| `CLOUDFLARE_ANALYTICS_TOKEN`, `CLOUDFLARE_SITE_TAG`                    | Il token dello snippet (pubblico) e il tag del sito                                        |
+| `CLOUDFLARE_ACCOUNT_ID`                                                | Cloudflare → Domains → miopersonal.it → Overview, riquadro **API**                         |
+| `CLOUDFLARE_API_TOKEN` (solo lettura, token "MioPersonal statistiche") | Cloudflare → My Profile → API Tokens. Se lo rigenerate, aggiornatelo nel `.env` del server |
+
+Senza queste variabili il sito funziona: niente script e "—" al posto delle visite.
+
+### Protezione dagli attacchi
+
+| Cosa                                                                                                 | Dove                                                     |
+| ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Proxy (nuvola arancione) su `miopersonal.it` e `www`                                                 | Cloudflare → DNS → Records                               |
+| SSL **Full (strict)** e **Always Use HTTPS**                                                         | Cloudflare → SSL/TLS                                     |
+| Certificato del server: Cloudflare Origin Certificate (15 anni)                                      | Cloudflare → SSL/TLS → Origin Server; installato in Ploi |
+| **Bot Fight Mode**                                                                                   | Cloudflare → Security → Bots                             |
+| Regola **Flood**: oltre 100 richieste in 10 secondi dallo stesso IP (tranne `/build/` e `/storage/`) | Cloudflare → Security → WAF → Rate limiting rules        |
+| Porte 80 e 443 aperte solo agli IP di Cloudflare; la 22 (SSH) a tutti                                | Hetzner → Firewalls                                      |
+
+- **Sotto attacco**: Cloudflare → Overview → **Under Attack Mode**, finché passa.
+- **Gli IP di Cloudflare** ([cloudflare.com/ips](https://www.cloudflare.com/ips/)) cambiano raramente: se
+  cambiano, aggiornateli in `app/Support/Cloudflare.php` **e** nel firewall di Hetzner.
+- Il deploy entra nel server via SSH con l'IP, non con il dominio: la nuvola arancione non lo tocca. Il
+  controllo di `/up` dopo il deploy si fa dal server stesso.
 
 ## Backup del database
 

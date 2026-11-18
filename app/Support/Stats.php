@@ -8,13 +8,13 @@ use App\Models\TrainerProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Throwable;
 
 /**
  * Collects the history the team's numbers need (see the stats migrations):
- * visits and page views, the days each user was active, the searches, the
- * profile views and where new users came from.
+ * the days each user was active, the searches, the profile views, the app
+ * opened from its icon and where new users came from. The visits to the site
+ * are counted by Cloudflare Web Analytics (CloudflareAnalytics).
  *
  * Only real visits count: no search engines or link previews, no Inertia
  * prefetch (hovering a link) and no partial reloads of the same page.
@@ -46,39 +46,18 @@ final class Stats
     ];
 
     /**
-     * Called by TrackVisit after each page: the page view of the area, the
-     * unique visitor of the day and, on the first page of a session, the visit
-     * with its channel. The visitor is the anonymous VISITOR_COOKIE, put on the
-     * response by TrackVisit.
+     * Called by RememberAcquisition after each page: on the first page of a
+     * session, the channel it came from goes in the session, for the sign-up
+     * (AppServiceProvider::recordAcquisition). The visits themselves are
+     * counted by Cloudflare Web Analytics (CloudflareAnalytics).
      */
-    public static function recordPageView(Request $request): void
+    public static function rememberAcquisition(Request $request): void
     {
-        if (! self::countable($request) || $request->user()?->isAdmin()) {
+        if (! self::countable($request) || ! $request->hasSession() || $request->session()->has(self::ACQUISITION_KEY)) {
             return;
         }
 
-        self::safely(function () use ($request) {
-            $day = self::today();
-
-            DB::table('page_view_days')->upsert(
-                [['day' => $day, 'section' => self::section($request), 'views' => 1]],
-                ['day', 'section'],
-                ['views' => DB::raw('page_view_days.views + 1')],
-            );
-
-            DB::table('visitor_days')->insertOrIgnore(['day' => $day, 'visitor' => self::visitor($request)]);
-
-            if ($request->hasSession() && ! $request->session()->has(self::ACQUISITION_KEY)) {
-                $acquisition = self::acquisition($request);
-                $request->session()->put(self::ACQUISITION_KEY, $acquisition);
-
-                DB::table('visit_days')->upsert(
-                    [['day' => $day, 'source' => $acquisition['source'], 'visits' => 1]],
-                    ['day', 'source'],
-                    ['visits' => DB::raw('visit_days.visits + 1')],
-                );
-            }
-        });
+        $request->session()->put(self::ACQUISITION_KEY, self::acquisition($request));
     }
 
     /**
@@ -108,13 +87,9 @@ final class Stats
 
         if ($source === null) {
             $host = mb_strtolower((string) parse_url((string) $request->headers->get('referer'), PHP_URL_HOST));
-            $host = preg_replace('/^(www\.|m\.|l\.|lm\.)/', '', $host) ?? '';
 
             if ($host !== '' && $host !== $request->getHost()) {
-                // Whole parts of the domain: "google" matches google.it, "x.com" doesn't match box.com.
-                $source = collect(self::CHANNELS)->first(
-                    fn (string $channel, string $name) => preg_match('/(^|\.)'.preg_quote($name, '/').'(\.|$)/', $host) === 1,
-                ) ?? mb_substr($host, 0, 60);
+                $source = self::channel($host);
             }
         }
 
@@ -124,6 +99,24 @@ final class Stats
             'campaign' => $clean($request->query('utm_campaign')),
             'landing' => mb_substr('/'.ltrim($request->path(), '/'), 0, 200),
         ];
+    }
+
+    /**
+     * The channel of the site that linked here: "l.instagram.com" is
+     * "instagram", an unknown site is its domain, no site is "direct".
+     */
+    public static function channel(string $host): string
+    {
+        $host = preg_replace('/^(www\.|m\.|l\.|lm\.)/', '', mb_strtolower(trim($host))) ?? '';
+
+        if ($host === '') {
+            return 'direct';
+        }
+
+        // Whole parts of the domain: "google" matches google.it, "x.com" doesn't match box.com.
+        return collect(self::CHANNELS)->first(
+            fn (string $channel, string $name) => preg_match('/(^|\.)'.preg_quote($name, '/').'(\.|$)/', $host) === 1,
+        ) ?? mb_substr($host, 0, 60);
     }
 
     /** One row per user and Rome day; called by TrackLastActivity. */
@@ -211,78 +204,10 @@ final class Stats
         ));
     }
 
-    /** The area of the site, for the page views. */
-    private static function section(Request $request): string
-    {
-        return match (true) {
-            $request->is('area-trainer*') => 'trainer',
-            $request->is('area-palestra*') => 'gym',
-            $request->is('area-cliente*', 'prenotazioni*', 'preferiti*', 'profilo', 'impostazioni*', 'completa-profilo*') => 'client',
-            default => 'public',
-        };
-    }
-
-    /**
-     * First-party and anonymous: a random code, only to count the same browser
-     * once across days and months. Never shared, never linked to the account.
-     */
-    public const VISITOR_COOKIE = 'mp_vid';
-
-    /** Two years, in minutes. */
-    public const VISITOR_COOKIE_MINUTES = 60 * 24 * 730;
-
-    /** Request attribute with a new code that TrackVisit puts in the cookie. */
-    public const NEW_VISITOR_ATTRIBUTE = 'stats.new-visitor';
-
     /** Every table of the history, emptied by `stats:reset`. */
     public const HISTORY_TABLES = [
-        'visitor_days', 'visit_days', 'page_view_days', 'search_logs',
-        'trainer_profile_views', 'gym_profile_views', 'user_activity_days',
+        'page_view_days', 'search_logs', 'trainer_profile_views', 'gym_profile_views', 'user_activity_days',
     ];
-
-    /**
-     * The code of the browser: from the cookie, otherwise a new one, kept in
-     * the session too so the pages before the cookie comes back count once.
-     */
-    public static function visitorId(Request $request): string
-    {
-        $id = $request->cookie(self::VISITOR_COOKIE);
-
-        if (self::isVisitorId($id)) {
-            return $id;
-        }
-
-        $session = $request->hasSession() ? $request->session() : null;
-        $id = $session?->get(self::VISITOR_COOKIE);
-
-        if (! self::isVisitorId($id)) {
-            $id = Str::random(40);
-            $session?->put(self::VISITOR_COOKIE, $id);
-        }
-
-        $request->attributes->set(self::NEW_VISITOR_ATTRIBUTE, $id);
-
-        return $id;
-    }
-
-    /**
-     * A code made by visitorId(): 40 letters and digits.
-     *
-     * @phpstan-assert-if-true string $id
-     */
-    private static function isVisitorId(mixed $id): bool
-    {
-        return is_string($id) && preg_match('/^[A-Za-z0-9]{40}$/', $id) === 1;
-    }
-
-    /**
-     * What is saved: a keyed hash of the code, so the table alone can't be
-     * matched with the cookie. The IP is never used nor saved.
-     */
-    private static function visitor(Request $request): string
-    {
-        return hash_hmac('sha256', self::visitorId($request), (string) config('app.key'));
-    }
 
     private static function today(): string
     {

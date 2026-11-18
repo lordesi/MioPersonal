@@ -35,5 +35,10 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Never Cloudflare's real API from the tests, whatever the local .env says. -->
+        <env name="CLOUDFLARE_ANALYTICS_TOKEN" value="" force="true"/>
+        <env name="CLOUDFLARE_SITE_TAG" value="" force="true"/>
+        <env name="CLOUDFLARE_ACCOUNT_ID" value="" force="true"/>
+        <env name="CLOUDFLARE_API_TOKEN" value="" force="true"/>
     </php>
 </phpunit>

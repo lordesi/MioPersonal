@@ -81,7 +81,7 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Every sign-up (form, Google, "Diventa trainer") keeps the channel of the
-     * visit it came from, saved in the session by Stats::recordPageView.
+     * visit it came from, saved in the session by Stats::rememberAcquisition.
      */
     protected function recordAcquisition(): void
     {

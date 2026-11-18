@@ -10,7 +10,8 @@ import { cn } from '@/lib/utils';
 /**
  * Every cookie and browser storage of the site: names and durations come from
  * config/session.php, Laravel's remember-me cookie, sidebar.tsx,
- * CookieConsent, Stats::VISITOR_COOKIE and saved-draft.ts. Update the table when one changes.
+ * CookieConsent and saved-draft.ts. Update the table when one changes.
+ * Cloudflare Web Analytics (app.blade.php) sets no cookies.
  */
 const cookies = [
     {
@@ -43,13 +44,6 @@ const cookies = [
         purpose: 'Ricorda le tue scelte sui cookie',
         duration: '6 mesi',
         type: 'Tecnico',
-    },
-    {
-        name: 'mp_vid',
-        purpose:
-            'Statistica anonima di prima parte: un codice casuale per contare i visitatori unici (lo stesso browser una volta sola). Non è collegato al tuo account né condiviso con nessuno',
-        duration: '2 anni',
-        type: 'Analitico anonimo, equiparato ai tecnici',
     },
     {
         name: 'miopersonal:trainer-draft:…',
@@ -190,14 +184,14 @@ const sections: LegalSection[] = [
         content: (
             <>
                 <LegalParagraph>
-                    I cookie tecnici non richiedono consenso, e nemmeno
-                    «mp_vid»: come prevedono le linee guida del Garante Privacy,
-                    un cookie di statistica nostro, anonimo e non incrociato con
-                    altri dati è equiparato ai tecnici. Oggi non usiamo nessun
-                    cookie facoltativo, di profilazione o di marketing. Alla
-                    prima visita il banner ti informa e ti permette di
-                    consultare le preferenze: oggi esistono solo i cookie
-                    necessari, che non si possono disattivare.
+                    I cookie tecnici non richiedono consenso. Per contare le
+                    visite usiamo Cloudflare Web Analytics, che non usa cookie
+                    né salva nulla nel tuo browser e non ti riconosce da una
+                    visita all’altra. Oggi non usiamo nessun cookie facoltativo,
+                    di profilazione o di marketing. Alla prima visita il banner
+                    ti informa e ti permette di consultare le preferenze: oggi
+                    esistono solo i cookie necessari, che non si possono
+                    disattivare.
                 </LegalParagraph>
                 <LegalParagraph>
                     Se aggiungeremo cookie facoltativi, in questa pagina
@@ -249,7 +243,7 @@ export default function Cookies() {
             pageName="Cookie policy"
             title="Cookie policy"
             intro="Quali cookie usa MioPersonal e come puoi gestirli."
-            updatedOn="12 novembre 2026"
+            updatedOn="18 novembre 2026"
             summary={[
                 'Oggi usiamo solo cookie tecnici, necessari a far funzionare il sito, e un cookie anonimo nostro per contare i visitatori.',
                 'Nessun cookie di profilazione o di pubblicità, nessuno strumento di analisi esterno.',

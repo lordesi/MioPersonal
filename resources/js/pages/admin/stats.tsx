@@ -23,25 +23,28 @@ type Step = { label: string; count: number };
 type Share = { count: number; base: number; rate: number | null };
 
 type Stats = {
-    /** First day of the visits history (Y-m-d), null before any visit. */
+    /** First day of the activity history (Y-m-d), null before any. */
     since: string | null;
+    /** False when Cloudflare's visits are missing (no keys, or no answer). */
+    traffic: boolean;
     kpis: {
         key: string;
         label: string;
-        value: number;
+        /** Null: Cloudflare's number is missing. */
+        value: number | null;
         previous: number | null;
         format: 'number' | 'cents';
     }[];
     daily: {
         day: string;
-        visitors: number;
         visits: number;
+        pageViews: number;
         signups: number;
         requests: number;
     }[];
     monthly: {
         month: string;
-        visitors: number;
+        visits: number;
         clients: number;
         trainers: number;
         activeClients: number;
@@ -140,11 +143,12 @@ const euros = (cents: number) => formatPrice(cents);
 
 /**
  * "Statistiche" (AdminStatsController): growth, traffic and channels,
- * funnel, retention and churn, marketplace and demand. Visits and activity
- * are collected since `since`: the earlier months show 0 for them.
+ * funnel, retention and churn, marketplace and demand. Activity and searches
+ * are collected since `since`: the earlier months show 0 for them. The
+ * visits are Cloudflare's (App\Support\CloudflareAnalytics), 6 months back.
  */
 export default function AdminStats({ stats }: { stats: Stats }) {
-    const daily = (key: 'visitors' | 'visits' | 'signups' | 'requests') =>
+    const daily = (key: 'visits' | 'pageViews' | 'signups' | 'requests') =>
         stats.daily.map((day) => ({
             label: formatDay(day.day),
             value: day[key],
@@ -164,13 +168,26 @@ export default function AdminStats({ stats }: { stats: Stats }) {
             <Head title="Admin · Statistiche" />
 
             <p className="text-sm text-muted-foreground">
-                Ultimi 30 giorni, confrontati con i 30 prima. Visite, utenti
-                attivi, ricerche e provenienza si raccolgono{' '}
+                Ultimi 30 giorni, confrontati con i 30 prima. Utenti attivi,
+                ricerche e provenienza degli iscritti si raccolgono{' '}
                 {stats.since
                     ? `dal ${formatDay(stats.since)} ${stats.since.slice(0, 4)}`
-                    : 'da quando arriva la prima visita'}
-                : prima di allora valgono 0.
+                    : 'da quando arriva il primo utente'}
+                : prima di allora valgono 0. Le visite al sito sono di
+                Cloudflare Web Analytics: solo browser veri, senza bot, per gli
+                ultimi 6 mesi.
             </p>
+
+            {!stats.traffic && (
+                <p
+                    role="status"
+                    className="rounded-[14px] border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"
+                >
+                    Dati di Cloudflare non disponibili: visite e pagine viste
+                    mancano. Controlla le chiavi CLOUDFLARE_* nel .env o riprova
+                    tra un minuto.
+                </p>
+            )}
 
             <section
                 aria-label="Numeri principali"
@@ -181,12 +198,23 @@ export default function AdminStats({ stats }: { stats: Stats }) {
                         key={kpi.key}
                         label={kpi.label}
                         value={
-                            kpi.format === 'cents'
-                                ? euros(kpi.value)
-                                : formatNumber(kpi.value)
+                            kpi.value === null
+                                ? '—'
+                                : kpi.format === 'cents'
+                                  ? euros(kpi.value)
+                                  : formatNumber(kpi.value)
                         }
                         detail={
-                            <Delta value={kpi.value} previous={kpi.previous} />
+                            kpi.value === null ? (
+                                <span className="text-xs text-muted-foreground">
+                                    Dato non disponibile
+                                </span>
+                            ) : (
+                                <Delta
+                                    value={kpi.value}
+                                    previous={kpi.previous}
+                                />
+                            )
                         }
                     />
                 ))}
@@ -195,10 +223,10 @@ export default function AdminStats({ stats }: { stats: Stats }) {
             <h2 className="mt-3 text-lg font-bold tracking-tight">Traffico</h2>
             <div className="grid gap-3 lg:grid-cols-2">
                 <AdminPanel
-                    title="Visitatori unici al giorno"
+                    title="Visite al sito al giorno"
                     aside="Ultimi 30 giorni"
                 >
-                    <LineChart points={daily('visitors')} unit="Visitatori" />
+                    <LineChart points={daily('visits')} unit="Visite" />
                 </AdminPanel>
                 <AdminPanel
                     title="Nuovi iscritti al giorno"
@@ -223,10 +251,10 @@ export default function AdminStats({ stats }: { stats: Stats }) {
             <h2 className="mt-3 text-lg font-bold tracking-tight">Crescita</h2>
             <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
                 <AdminPanel
-                    title="Visitatori unici al mese"
-                    aside="Ognuno contato una volta nel mese"
+                    title="Visite al sito al mese"
+                    aside="Ultimi 6 mesi (Cloudflare)"
                 >
-                    <BarChart points={monthly('visitors')} unit="Visitatori" />
+                    <BarChart points={monthly('visits')} unit="Visite" />
                 </AdminPanel>
                 <AdminPanel
                     title="Nuovi clienti al mese"

@@ -24,7 +24,6 @@ const necessaryCookies = [
     ['remember_web_…', 'Resta collegato'],
     ['sidebar_state', 'Barra laterale aperta o chiusa'],
     ['mp_cookie_consent', 'La tua scelta sui cookie'],
-    ['mp_vid', 'Conteggio anonimo dei visitatori'],
 ];
 
 /** "Categoria", "Cookie usati": plain on phones, small capitals on desktop. */

@@ -23,6 +23,11 @@
 
         @fonts
 
+        @if (filled($cloudflareToken = config('services.cloudflare.analytics_token')))
+            {{-- Visits, no cookies (App\Support\CloudflareAnalytics); "spa" counts the Inertia pages too. --}}
+            <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{{ json_encode(['token' => $cloudflareToken, 'spa' => true]) }}"></script>
+        @endif
+
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         <x-inertia::head>

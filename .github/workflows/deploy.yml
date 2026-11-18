@@ -57,10 +57,18 @@ jobs:
             -o ServerAliveInterval=30 \
             "ploi@${DEPLOY_HOST}" "bash -s -- ${SHA}" < scripts/deploy.sh
 
+      # On the server itself: Cloudflare's bot protection may stop a curl from GitHub's datacenters,
+      # and the origin certificate is Cloudflare's (trusted by Cloudflare only), hence -k.
       - name: Check the site answers
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           sleep 5
-          curl --fail --silent --show-error --max-time 20 https://miopersonal.it/up > /dev/null
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "ploi@${DEPLOY_HOST}" \
+            "curl --fail --silent --show-error --insecure --max-time 20 --resolve miopersonal.it:443:127.0.0.1 https://miopersonal.it/up > /dev/null"
           echo "https://miopersonal.it/up answers"
 
       - name: Remove the key
