@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type { MouseEvent } from 'react';
 import { kindNames, shortService } from '@/components/trainer/area/week-grid';
 import type { CalendarItem } from '@/lib/calendar';
 import { hourLabel, romeParts, toneStyle } from '@/lib/calendar';
@@ -187,26 +188,39 @@ export default function TimeGrid({
                                         return null;
                                     }
 
+                                    const add = (
+                                        event: MouseEvent<HTMLButtonElement>,
+                                    ) => {
+                                        const half =
+                                            event.nativeEvent.offsetY >=
+                                            row / 2;
+                                        onPickSlot(
+                                            date,
+                                            hourLabel(hour + (half ? 0.5 : 0)),
+                                            event.currentTarget,
+                                        );
+                                    };
+
                                     return (
                                         <button
                                             key={hour}
                                             type="button"
                                             tabIndex={-1}
                                             aria-label={`Aggiungi seduta: ${formatDayLong(date).toLowerCase()} alle ${hourLabel(hour)}`}
-                                            onClick={(event) => {
-                                                const half =
-                                                    event.nativeEvent.offsetY >=
-                                                    row / 2;
-                                                const time = hourLabel(
-                                                    hour + (half ? 0.5 : 0),
-                                                );
-                                                onPickSlot(
-                                                    date,
-                                                    time,
-                                                    event.currentTarget,
-                                                );
+                                            title="Clic destro: aggiungi seduta"
+                                            // Right click (a long press on phones): a session at that time.
+                                            onContextMenu={(event) => {
+                                                event.preventDefault();
+                                                add(event);
                                             }}
-                                            className="absolute inset-x-0 z-0 cursor-cell outline-none hover:bg-white/[0.03]"
+                                            // Left click: the day is chosen (7 days); on phones
+                                            // (2 days, no right click) a tap adds the session too.
+                                            onClick={(event) =>
+                                                compact && onPickDay
+                                                    ? onPickDay(date)
+                                                    : add(event)
+                                            }
+                                            className="absolute inset-x-0 z-0 outline-none hover:bg-white/[0.03]"
                                             style={{
                                                 top: (hour - firstHour) * row,
                                                 height: row,
