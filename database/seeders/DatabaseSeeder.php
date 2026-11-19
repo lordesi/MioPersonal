@@ -4,13 +4,15 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Support\Staging;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+/**
+ * With the model events on: they fill required fields, like the username
+ * (User::creating), the invite_token of TrainerClient and the slug of
+ * GroupSession.
+ */
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
      */
