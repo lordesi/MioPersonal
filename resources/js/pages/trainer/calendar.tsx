@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AddSessionDialog from '@/components/trainer/area/add-session-dialog';
+import type { PopoverAnchor } from '@/components/trainer/area/add-session-dialog';
 import type { CalendarView } from '@/components/trainer/area/calendar-nav';
 import CalendarDesktop from '@/components/trainer/calendar/calendar-desktop';
 import CalendarMobile from '@/components/trainer/calendar/calendar-mobile';
@@ -54,8 +55,12 @@ export default function Calendar({
     const [selectedDay, setSelectedDay] = useState(focus);
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [shownFocus, setShownFocus] = useState(focus);
-    // "Aggiungi seduta".
-    const [adding, setAdding] = useState(false);
+    // "Aggiungi seduta": the day, the hour clicked in the grid, where it opens.
+    const [adding, setAdding] = useState<{
+        date: string;
+        time?: string;
+        anchor: PopoverAnchor | null;
+    } | null>(null);
 
     if (focus !== shownFocus) {
         setShownFocus(focus);
@@ -101,7 +106,26 @@ export default function Calendar({
         selectedId,
         onSelect: setSelectedId,
         show,
-        onAdd: () => setAdding(true),
+        onAdd: (button?: HTMLElement) =>
+            setAdding({
+                date: selectedDay,
+                anchor: button
+                    ? {
+                          rect: button.getBoundingClientRect(),
+                          placement: 'below',
+                      }
+                    : null,
+            }),
+        onPickSlot: (date: string, time: string, cell: HTMLElement) =>
+            setAdding({
+                date,
+                time,
+                anchor: {
+                    rect: cell.getBoundingClientRect(),
+                    placement: 'side',
+                },
+            }),
+        draft: adding?.time ? { date: adding.date, time: adding.time } : null,
     };
 
     return (
@@ -110,10 +134,12 @@ export default function Calendar({
 
             {sessionOptions && (
                 <AddSessionDialog
-                    open={adding}
-                    onOpenChange={setAdding}
+                    open={adding !== null}
+                    onOpenChange={(next) => !next && setAdding(null)}
                     options={sessionOptions}
-                    date={selectedDay}
+                    date={adding?.date ?? selectedDay}
+                    time={adding?.time}
+                    anchor={adding?.anchor}
                     today={today}
                 />
             )}

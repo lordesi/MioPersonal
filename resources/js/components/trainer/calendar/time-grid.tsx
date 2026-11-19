@@ -32,6 +32,10 @@ type TimeGridProps = {
     row?: number;
     /** The ground under the sticky row of the days: the page or a panel. */
     surface?: 'page' | 'panel';
+    /** A click on a free hour: "Aggiungi seduta" at that time ("HH:00" or "HH:30"). */
+    onPickSlot?: (date: string, time: string, cell: HTMLElement) => void;
+    /** The session being added from the grid: a dashed block. */
+    draft?: { date: string; time: string; minutes?: number } | null;
 };
 
 /**
@@ -50,6 +54,8 @@ export default function TimeGrid({
     onSelect,
     row = 52,
     surface = 'page',
+    onPickSlot,
+    draft = null,
 }: TimeGridProps) {
     const shown = items.filter((item) => days.includes(item.date));
     const firstHour = Math.min(
@@ -153,6 +159,52 @@ export default function TimeGrid({
                                 backgroundImage: `repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px ${row}px)`,
                             }}
                         >
+                            {onPickSlot &&
+                                hours.map((hour) => {
+                                    // Only hours still to come.
+                                    if (
+                                        date < today ||
+                                        (date === today &&
+                                            hour + 1 <= nowParts.hour)
+                                    ) {
+                                        return null;
+                                    }
+
+                                    return (
+                                        <button
+                                            key={hour}
+                                            type="button"
+                                            tabIndex={-1}
+                                            aria-label={`Aggiungi seduta: ${formatDayLong(date).toLowerCase()} alle ${hourLabel(hour)}`}
+                                            onClick={(event) => {
+                                                const half =
+                                                    event.nativeEvent.offsetY >=
+                                                    row / 2;
+                                                const time = hourLabel(
+                                                    hour + (half ? 0.5 : 0),
+                                                );
+                                                onPickSlot(
+                                                    date,
+                                                    time,
+                                                    event.currentTarget,
+                                                );
+                                            }}
+                                            className="absolute inset-x-0 z-0 cursor-cell outline-none hover:bg-white/[0.03]"
+                                            style={{
+                                                top: (hour - firstHour) * row,
+                                                height: row,
+                                            }}
+                                        />
+                                    );
+                                })}
+                            {draft?.date === date && (
+                                <DraftBlock
+                                    time={draft.time}
+                                    minutes={draft.minutes ?? 60}
+                                    firstHour={firstHour}
+                                    row={row}
+                                />
+                            )}
                             {shown
                                 .filter((item) => item.date === date)
                                 .map((item) => (
@@ -194,6 +246,41 @@ export default function TimeGrid({
                     )}
                 </div>
             </div>
+        </div>
+    );
+}
+
+/** "Nuova seduta 18:00 – 19:00": the hour clicked, while the popover is open. */
+function DraftBlock({
+    time,
+    minutes,
+    firstHour,
+    row,
+}: {
+    time: string;
+    minutes: number;
+    firstHour: number;
+    row: number;
+}) {
+    const [hours, mins] = time.split(':').map(Number);
+    const from = hours + mins / 60;
+    const to = Math.min(from + minutes / 60, 24);
+
+    return (
+        <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0.75 z-20 flex flex-col gap-0.5 overflow-hidden rounded-xl border-[1.5px] border-brand bg-brand/20 px-2 py-1.5 shadow-[0_0_0_4px_rgba(66,215,217,0.15)]"
+            style={{
+                top: (from - firstHour) * row + 2,
+                height: Math.max((to - from) * row - 4, 22),
+            }}
+        >
+            <span className="truncate text-[13px] leading-4.5 font-semibold">
+                Nuova seduta
+            </span>
+            <span className="truncate text-xs leading-4 text-muted-foreground tabular-nums">
+                {hourLabel(from)} – {hourLabel(to)}
+            </span>
         </div>
     );
 }

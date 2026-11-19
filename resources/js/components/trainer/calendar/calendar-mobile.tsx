@@ -53,6 +53,8 @@ export default function CalendarMobile(props: CalendarViewProps) {
         onSelect,
         show,
         onAdd,
+        onPickSlot,
+        draft,
     } = props;
     const week = weekDates(mondayOf(selectedDay));
     const month = focus.slice(0, 7);
@@ -84,7 +86,7 @@ export default function CalendarMobile(props: CalendarViewProps) {
                 {sessionOptions && (
                     <button
                         type="button"
-                        onClick={onAdd}
+                        onClick={(event) => onAdd(event.currentTarget)}
                         aria-label="Nuova seduta"
                         className={cn(
                             brandFilledButtonClassName,
@@ -205,6 +207,8 @@ export default function CalendarMobile(props: CalendarViewProps) {
                             selectedDay={selectedDay}
                             selectedId={selectedId}
                             onSelect={(item) => onSelect(item.id)}
+                            onPickSlot={onPickSlot}
+                            draft={draft}
                         />
                     </div>
                 </section>

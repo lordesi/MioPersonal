@@ -53,6 +53,8 @@ export default function CalendarDesktop(props: CalendarViewProps) {
         onSelect,
         show,
         onAdd,
+        onPickSlot,
+        draft,
     } = props;
     const week = weekDates(mondayOf(selectedDay));
     const month = focus.slice(0, 7);
@@ -254,7 +256,7 @@ export default function CalendarDesktop(props: CalendarViewProps) {
                         {sessionOptions && (
                             <button
                                 type="button"
-                                onClick={onAdd}
+                                onClick={(event) => onAdd(event.currentTarget)}
                                 aria-label="Aggiungi seduta"
                                 className={cn(
                                     brandFilledButtonClassName,
@@ -306,6 +308,8 @@ export default function CalendarDesktop(props: CalendarViewProps) {
                             onSelect={(item) => onSelect(item.id)}
                             row={56}
                             surface="panel"
+                            onPickSlot={onPickSlot}
+                            draft={draft}
                         />
                     )}
                     {view === 'month' && (
