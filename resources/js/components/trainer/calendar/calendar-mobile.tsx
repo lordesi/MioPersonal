@@ -1,7 +1,6 @@
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import {
-    OpenHoursCard,
     SessionDetails,
     WeekSummary,
 } from '@/components/trainer/area/calendar-side';
@@ -182,11 +181,14 @@ export default function CalendarMobile(props: CalendarViewProps) {
                                         <span
                                             className={cn(
                                                 'flex h-11 w-full max-w-10.5 items-center justify-center rounded-xl text-[19px] font-semibold tabular-nums',
-                                                isToday
+                                                // The chosen day: a turquoise rounded square; today, turquoise digits.
+                                                date === selectedDay
                                                     ? 'bg-brand text-[#0a0a0a]'
-                                                    : date < today
-                                                      ? 'text-muted-foreground'
-                                                      : 'text-foreground',
+                                                    : isToday
+                                                      ? 'text-brand'
+                                                      : date < today
+                                                        ? 'text-muted-foreground'
+                                                        : 'text-foreground',
                                             )}
                                         >
                                             {formatDayNumber(date)}
@@ -205,6 +207,8 @@ export default function CalendarMobile(props: CalendarViewProps) {
                             selectedDay={selectedDay}
                             selectedId={selectedId}
                             onSelect={(item) => onSelect(item.id)}
+                            // Down to the tab bar: the header, the strip and the bar are above and below.
+                            height="max(22rem, calc(100dvh - 320px))"
                         />
                     </div>
                 </section>
@@ -269,7 +273,6 @@ export default function CalendarMobile(props: CalendarViewProps) {
                     selectedDay={selectedDay}
                 />
             )}
-            <OpenHoursCard />
         </>
     );
 }
