@@ -19,6 +19,8 @@ type MonthCalendarProps = {
     selectedDay: string;
     /** A day of the month opens the "Giorno" view. */
     onOpenDay: (date: string) => void;
+    /** Right click on a day from today on: "Aggiungi seduta" that day. */
+    onAddOnDay?: (date: string, cell: HTMLElement) => void;
 };
 
 /**
@@ -26,7 +28,7 @@ type MonthCalendarProps = {
  * line on top, the number in a rounded square (turquoise today), then the
  * sessions as chips tinted by kind: the first name on phones (2 chips),
  * the time and the name from tablets up (3 chips); the others become "+2".
- * A day opens the "Giorno" view.
+ * A day opens the "Giorno" view; the right click adds a session that day.
  */
 export default function MonthCalendar({
     month,
@@ -34,6 +36,7 @@ export default function MonthCalendar({
     today,
     selectedDay,
     onOpenDay,
+    onAddOnDay,
 }: MonthCalendarProps) {
     const [year, monthNumber] = month.split('-').map(Number);
     const cells = monthCells(year, monthNumber);
@@ -72,6 +75,18 @@ export default function MonthCalendar({
                             aria-label={`${formatDayLong(date)}${isToday ? ', oggi' : ''}, ${sessionsLabel(sessions.length).toLowerCase()}`}
                             aria-current={isToday ? 'date' : undefined}
                             onClick={() => onOpenDay(date)}
+                            onContextMenu={(event) => {
+                                // Past days keep the menu of the browser.
+                                if (onAddOnDay && date >= today) {
+                                    event.preventDefault();
+                                    onAddOnDay(date, event.currentTarget);
+                                }
+                            }}
+                            title={
+                                onAddOnDay && date >= today
+                                    ? 'Clic: apri il giorno · clic destro: aggiungi seduta'
+                                    : undefined
+                            }
                             className={cn(
                                 'flex min-w-0 flex-col items-stretch gap-0.75 overflow-hidden border-t border-border px-0.5 pt-1 text-left transition-colors outline-none hover:bg-white/[0.04] focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset sm:gap-1 sm:px-1.5 sm:pt-1.5',
                                 // The last week of each column closes with a line.

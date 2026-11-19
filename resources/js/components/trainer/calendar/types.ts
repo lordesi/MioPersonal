@@ -24,6 +24,8 @@ export type CalendarViewProps = {
     onAdd: (button?: HTMLElement) => void;
     /** A click on a free hour of the grid: "Aggiungi seduta" at that time. */
     onPickSlot: (date: string, time: string, cell: HTMLElement) => void;
+    /** Right click on a day of the month: "Aggiungi seduta" that day. */
+    onAddOnDay: (date: string, cell: HTMLElement) => void;
     /** The new session being added from the grid, drawn dashed. */
     draft: { date: string; time: string } | null;
 };

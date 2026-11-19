@@ -53,6 +53,7 @@ export default function CalendarDesktop(props: CalendarViewProps) {
         show,
         onAdd,
         onPickSlot,
+        onAddOnDay,
         draft,
     } = props;
     const week = weekDates(mondayOf(selectedDay));
@@ -326,6 +327,7 @@ export default function CalendarDesktop(props: CalendarViewProps) {
                             today={today}
                             selectedDay={selectedDay}
                             onOpenDay={(date) => show('day', date)}
+                            onAddOnDay={sessionOptions ? onAddOnDay : undefined}
                         />
                     )}
                 </section>
