@@ -228,6 +228,8 @@ Route::middleware(['auth', 'throttle:60,1'])
     ->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('lette', 'markAllRead')->name('read');
+        // "Cancella le notifiche precedenti".
+        Route::delete('/', 'destroy')->name('destroy');
     });
 
 // Clients right after sign-up, before the email is verified.

@@ -9,7 +9,8 @@ use Illuminate\Notifications\DatabaseNotification;
 
 /**
  * The bell of the site: the latest notifications of the person who is logged in
- * (the same texts of the push) and "segna tutte come lette".
+ * (the same texts of the push), "segna tutte come lette" and "Cancella le
+ * notifiche precedenti".
  */
 class NotificationController extends Controller
 {
@@ -48,6 +49,25 @@ class NotificationController extends Controller
         $user->unreadNotifications()->update(['read_at' => now()]);
 
         return response()->json(['unread' => 0]);
+    }
+
+    /**
+     * "Cancella le notifiche precedenti": the ones listed, only if they are
+     * the person's. By id: opening the bell already marks the new ones as read.
+     */
+    public function destroy(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'max:'.self::LIMIT],
+            'ids.*' => ['string', 'uuid'],
+        ]);
+
+        $user->notifications()->whereIn('id', $data['ids'])->delete();
+
+        return response()->json(['unread' => $user->unreadNotifications()->count()]);
     }
 
     private function path(string $url): string
