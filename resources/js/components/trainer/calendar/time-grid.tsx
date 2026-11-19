@@ -36,6 +36,13 @@ type TimeGridProps = {
     onPickSlot?: (date: string, time: string, cell: HTMLElement) => void;
     /** The session being added from the grid: a dashed block. */
     draft?: { date: string; time: string; minutes?: number } | null;
+    /** A day of the row on top chosen (7 days): it becomes the selected day. */
+    onPickDay?: (date: string) => void;
+    /**
+     * The height of the grid: "fill" takes all the height of its parent
+     * (desktop panel), a CSS length a fixed one (phones, to the tab bar).
+     */
+    height?: string;
 };
 
 /**
@@ -56,6 +63,8 @@ export default function TimeGrid({
     surface = 'page',
     onPickSlot,
     draft = null,
+    onPickDay,
+    height,
 }: TimeGridProps) {
     const shown = items.filter((item) => days.includes(item.date));
     const firstHour = Math.min(
@@ -106,10 +115,17 @@ export default function TimeGrid({
     return (
         <div
             ref={scroller}
-            className="[scrollbar-width:none] overflow-auto"
-            style={{
-                maxHeight: `min(${56 + VISIBLE_HOURS * row}px, 72svh)`,
-            }}
+            className={cn(
+                '[scrollbar-width:none] overflow-auto',
+                height === 'fill' && 'h-full',
+            )}
+            style={
+                height === undefined
+                    ? { maxHeight: `min(${56 + VISIBLE_HOURS * row}px, 72svh)` }
+                    : height === 'fill'
+                      ? undefined
+                      : { height }
+            }
         >
             <div className={cn(compact && 'min-w-160')}>
                 <div
@@ -127,6 +143,7 @@ export default function TimeGrid({
                             today={today}
                             compact={compact}
                             selected={compact && date === selectedDay}
+                            onPick={onPickDay}
                         />
                     ))}
                 </div>
@@ -290,39 +307,62 @@ function DayHeading({
     today,
     compact,
     selected,
+    onPick,
 }: {
     date: string;
     today: string;
     compact: boolean;
     selected: boolean;
+    onPick?: (date: string) => void;
 }) {
     const isToday = date === today;
 
     if (compact) {
-        return (
-            <div
-                className={cn(
-                    'flex items-center gap-1.5 px-2 pt-1 pb-2.5',
-                    selected && 'bg-white/[0.025]',
-                )}
-            >
+        const content = (
+            <>
                 <span
                     className={cn(
                         'text-[13px]',
-                        isToday ? 'text-brand' : 'text-muted-foreground',
+                        selected || isToday
+                            ? 'text-brand'
+                            : 'text-muted-foreground',
                     )}
                 >
                     {formatWeekdayShort(date)}
                 </span>
+                {/* The chosen day: a turquoise rounded square; today, turquoise digits. */}
                 <span
                     className={cn(
-                        'inline-flex h-8.5 min-w-8.5 items-center justify-center rounded-full text-[20px] leading-none font-bold tabular-nums',
-                        isToday && 'bg-brand px-1.5 text-[#0a0a0a]',
+                        'inline-flex h-8.5 min-w-8.5 items-center justify-center rounded-[10px] px-1.5 text-[20px] leading-none font-bold tabular-nums',
+                        selected
+                            ? 'bg-brand text-[#0a0a0a]'
+                            : isToday && 'text-brand',
                     )}
                 >
                     {formatDayNumber(date)}
                 </span>
-            </div>
+            </>
+        );
+        const className = cn(
+            'flex items-center gap-1.5 px-2 pt-1 pb-2.5',
+            selected && 'bg-white/[0.025]',
+        );
+
+        return onPick ? (
+            <button
+                type="button"
+                aria-pressed={selected}
+                aria-label={`${formatDayLong(date)}${isToday ? ', oggi' : ''}`}
+                onClick={() => onPick(date)}
+                className={cn(
+                    className,
+                    'text-left outline-none hover:bg-white/[0.04] focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',
+                )}
+            >
+                {content}
+            </button>
+        ) : (
+            <div className={className}>{content}</div>
         );
     }
 

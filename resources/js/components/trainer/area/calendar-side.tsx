@@ -1,6 +1,5 @@
 import { Link, router } from '@inertiajs/react';
 import {
-    ArrowRight,
     Check,
     ChevronRight,
     Copy,
@@ -24,7 +23,7 @@ import {
 import { useClipboard } from '@/hooks/use-clipboard';
 import { cn } from '@/lib/utils';
 import { whatsAppUrl } from '@/lib/whatsapp';
-import { availability, clients, requests } from '@/routes/trainer';
+import { clients, requests } from '@/routes/trainer';
 import { destroy } from '@/routes/trainer/calendar/sessions';
 
 /**
@@ -406,31 +405,6 @@ export function DayPanel({
                     ))}
                 </div>
             )}
-        </section>
-    );
-}
-
-/** "I tuoi slot": the way to "Disponibilità". */
-export function OpenHoursCard() {
-    return (
-        <section
-            aria-labelledby="open-hours-title"
-            className="flex flex-col gap-2 rounded-3xl border bg-card p-5.5"
-        >
-            <h2 id="open-hours-title" className="text-base font-semibold">
-                I tuoi slot
-            </h2>
-            <p className="text-sm text-muted-foreground">
-                I clienti possono proporti una seduta solo negli orari scelti da
-                te.
-            </p>
-            <Link
-                href={availability()}
-                className="mt-1.5 inline-flex h-10 items-center gap-2 self-start rounded-[10px] bg-foreground px-3.5 text-sm font-semibold text-background hover:bg-foreground/90"
-            >
-                Modifica orari
-                <ArrowRight aria-hidden="true" className="size-4" />
-            </Link>
         </section>
     );
 }

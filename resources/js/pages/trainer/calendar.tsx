@@ -125,6 +125,14 @@ export default function Calendar({
                     placement: 'side',
                 },
             }),
+        onAddOnDay: (date: string, cell: HTMLElement) =>
+            setAdding({
+                date,
+                anchor: {
+                    rect: cell.getBoundingClientRect(),
+                    placement: 'side',
+                },
+            }),
         draft: adding?.time ? { date: adding.date, time: adding.time } : null,
     };
 
