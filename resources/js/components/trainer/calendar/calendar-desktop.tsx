@@ -1,6 +1,5 @@
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import {
-    OpenHoursCard,
     SessionDetails,
     WeekSummary,
 } from '@/components/trainer/area/calendar-side';
@@ -211,10 +210,15 @@ export default function CalendarDesktop(props: CalendarViewProps) {
                     items={items}
                     selectedDay={selectedDay}
                 />
-                <OpenHoursCard />
             </section>
 
-            <main className="flex min-w-0 flex-1 [scrollbar-width:none] flex-col gap-5 overflow-y-auto pt-6 pr-6 pb-12">
+            <main
+                className={cn(
+                    'flex min-w-0 flex-1 [scrollbar-width:none] flex-col gap-5 overflow-y-auto pt-6 pr-6',
+                    // The week fills the window down to its bottom edge.
+                    view === 'week' ? 'pb-4' : 'pb-12',
+                )}
+            >
                 <header className="flex flex-wrap items-center gap-3">
                     <div className="flex min-w-0 flex-1 basis-60 flex-col gap-0.5">
                         <span className="text-[15px] text-muted-foreground">
@@ -281,7 +285,8 @@ export default function CalendarDesktop(props: CalendarViewProps) {
                     className={cn(
                         panelClassName,
                         view === 'day' && 'px-4 py-2',
-                        view === 'week' && 'overflow-hidden pt-3 pr-3',
+                        view === 'week' &&
+                            'min-h-80 flex-1 overflow-hidden pt-3 pr-3',
                         view === 'month' && 'px-3 pt-2 pb-3',
                     )}
                 >
@@ -310,6 +315,8 @@ export default function CalendarDesktop(props: CalendarViewProps) {
                             surface="panel"
                             onPickSlot={onPickSlot}
                             draft={draft}
+                            height="fill"
+                            onPickDay={(date) => show('week', date)}
                         />
                     )}
                     {view === 'month' && (
