@@ -227,7 +227,7 @@ export function formatPercent(ratio: number): string {
 
 /** 1 → "1 ora", 2 → "2 ore" */
 export function formatHours(hours: number): string {
-    return hours === 1 ? '1 ora' : `${hours} ore`;
+    return hours === 1 ? '1 ora' : `${hours.toLocaleString(LOCALE)} ore`;
 }
 
 /**

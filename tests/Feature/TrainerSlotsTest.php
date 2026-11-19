@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Booking;
+use App\Models\TrainerDayOverride;
 use App\Models\TrainerProfile;
 use App\Support\TrainerSlots;
 use Carbon\CarbonImmutable;
@@ -45,6 +46,42 @@ class TrainerSlotsTest extends TestCase
         ], $days[1]['slots']);
 
         $this->assertSame('2026-10-12T18:00:00Z', TrainerSlots::next($profile, $now)?->utc()->format('Y-m-d\TH:i:s\Z'));
+    }
+
+    public function test_a_range_on_the_half_hour_starts_every_hour_from_its_start()
+    {
+        // Monday 12 October 2026, 06:00 in Rome; Tuesday 07:30–10:00.
+        $now = CarbonImmutable::parse('2026-10-12 06:00', 'Europe/Rome');
+        $profile = $this->profile([[2, '07:30', '10:00']]);
+
+        $days = TrainerSlots::days($profile, 2, $now);
+
+        // 07:30 (2 hours fit), 08:30 (1:30, up to the longest of 2 hours), 09:30 only 30 minutes: no session fits.
+        $this->assertSame([
+            ['start' => '2026-10-13T05:30:00Z', 'maxMinutes' => 120],
+            ['start' => '2026-10-13T06:30:00Z', 'maxMinutes' => 90],
+        ], $days[1]['slots']);
+    }
+
+    public function test_the_days_saved_with_whole_hours_are_still_read()
+    {
+        $now = CarbonImmutable::parse('2026-10-12 06:00', 'Europe/Rome');
+        $profile = $this->profile([[2, '18:00', '21:00']]);
+        // Saved before the half hours: start hours.
+        TrainerDayOverride::query()->insert([
+            'trainer_profile_id' => $profile->id,
+            'date' => '2026-10-13',
+            'hours' => json_encode([7, 8]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $days = TrainerSlots::days($profile->fresh()->load('workingHours'), 2, $now);
+
+        $this->assertSame([
+            ['start' => '2026-10-13T05:00:00Z', 'maxMinutes' => 120],
+            ['start' => '2026-10-13T06:00:00Z', 'maxMinutes' => 60],
+        ], $days[1]['slots']);
     }
 
     public function test_the_same_hour_after_the_clocks_change()

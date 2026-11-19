@@ -139,7 +139,7 @@ class TrainerDayOverrideTest extends TestCase
                 ->where('overrides.0.note', 'Ferie')
                 // Stays valid: the page says so.
                 ->where('overrides.0.bookings', 1)
-                ->where('overrides.1.days.0.hours', [7])
+                ->where('overrides.1.days.0.hours', [['start' => 420, 'end' => 480]])
                 ->where('overrides.1.bookings', 0)
             );
     }

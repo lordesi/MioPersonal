@@ -17,11 +17,12 @@ use Illuminate\Support\Facades\DB;
 final class TrainerDayOverrides
 {
     /**
-     * Every date from `$from` to `$to` gets the hours of its weekday (0 =
-     * Monday … 6 = Sunday), or none when closed. The days already changed in
-     * that period are replaced; the past ones are deleted.
+     * Every date from `$from` to `$to` gets the ranges of its weekday (0 =
+     * Monday … 6 = Sunday), or none when closed, saved as [[450, 720]]
+     * (WorkingRanges). The days already changed in that period are replaced;
+     * the past ones are deleted.
      *
-     * @param  array<int|string, list<int|string>>|null  $hours  null = closed
+     * @param  array<int|string, array<mixed>>|null  $hours  null = closed
      */
     public static function save(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $to, ?array $hours, ?string $note): void
     {
@@ -29,9 +30,7 @@ final class TrainerDayOverrides
         $now = now();
 
         for ($date = $from; $date <= $to; $date = $date->addDay()) {
-            $dayHours = $hours === null ? [] : array_map(intval(...), $hours[$date->dayOfWeekIso - 1] ?? []);
-            $dayHours = array_values(array_unique($dayHours));
-            sort($dayHours);
+            $dayHours = $hours === null ? [] : WorkingRanges::normalize((array) ($hours[$date->dayOfWeekIso - 1] ?? []));
 
             $rows[] = [
                 'trainer_profile_id' => $profile->id,
@@ -61,7 +60,7 @@ final class TrainerDayOverrides
      * and both closed or both open, with the bookings already in those days
      * (they stay valid: the page says so).
      *
-     * @return list<array{from: string, to: string, closed: bool, note: string|null, days: list<array{date: string, hours: list<int>}>, bookings: int}>
+     * @return list<array{from: string, to: string, closed: bool, note: string|null, days: list<array{date: string, hours: list<array{start: int, end: int}>}>, bookings: int}>
      */
     public static function blocks(TrainerProfile $profile): array
     {
@@ -73,7 +72,7 @@ final class TrainerDayOverrides
         $previous = null;
 
         foreach ($overrides as $override) {
-            $day = ['date' => $override->date->toDateString(), 'hours' => array_map(intval(...), $override->hours)];
+            $day = ['date' => $override->date->toDateString(), 'hours' => WorkingRanges::forPage(WorkingRanges::normalize($override->hours))];
 
             $continues = $previous instanceof TrainerDayOverride
                 && $previous->date->addDay()->isSameDay($override->date)

@@ -1,3 +1,4 @@
+import type { HourRange } from '@/lib/hours';
 import type { TrainingGoal } from '@/lib/goals';
 import type { ClientProgressSummary, WeightPoint } from './progress';
 import type { TrainerGym } from './gym';
@@ -504,8 +505,8 @@ export type BookingRules = {
 
 /** Hours and rules of step 5 of "Diventa trainer" and of "Disponibilità". */
 export type TrainerAvailability = {
-    /** Start hours by day (0 = Monday … 6 = Sunday), from 6 to 23. */
-    hours: number[][];
+    /** Ranges by day (0 = Monday … 6 = Sunday), in minutes, on the half hour. */
+    hours: HourRange[][];
     rules: BookingRules;
     autoConfirm: boolean;
 };
@@ -520,8 +521,8 @@ export type TrainerDayOverrideBlock = {
     to: string;
     closed: boolean;
     note: string | null;
-    /** Each day with its start hours ([] = closed). */
-    days: { date: string; hours: number[] }[];
+    /** Each day with its ranges ([] = closed). */
+    days: { date: string; hours: HourRange[] }[];
     /** Sessions already booked in those days: they stay valid. */
     bookings: number;
 };

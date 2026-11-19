@@ -4,6 +4,8 @@ import type { FormEvent, ReactNode } from 'react';
 import TrainerAvailabilityController from '@/actions/App/Http/Controllers/TrainerAvailabilityController';
 import { pillFieldClassName } from '@/components/onboarding/dark-fields';
 import { weeklyHours } from '@/components/onboarding/trainer/draft';
+import type { HourRange } from '@/lib/hours';
+import { dayHours as dayHoursOf } from '@/lib/hours';
 import { WorkingHours } from '@/components/onboarding/trainer/step-hours';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,9 +20,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { addDays, hourLabel, mondayOf } from '@/lib/calendar';
+import { addDays, mondayOf } from '@/lib/calendar';
 import { formatDayLong, formatDayRange } from '@/lib/format';
-import { cn } from '@/lib/utils';
 
 type Kind = 'day' | 'week' | 'period';
 
@@ -33,9 +34,6 @@ const kinds: { value: Kind; label: string }[] = [
 /** As in TrainerDayOverrideRequest. */
 const MAX_DAYS = 92;
 const NOTE_MAX = 60;
-/** Start hours of the grid, 6:00 … 23:00. */
-const allHours = Array.from({ length: 18 }, (_, index) => 6 + index);
-
 const pill =
     'chip h-10 px-3.5 text-sm first:rounded-full last:rounded-full hover:bg-white/5';
 
@@ -45,7 +43,7 @@ const weekdayOf = (date: string) =>
 
 type DayOverrideDialogProps = {
     /** "Orari di base": the starting point of "Orari diversi". */
-    baseHours: number[][];
+    baseHours: HourRange[][];
     /** Rome date: no day before it. */
     today: string;
     trigger: ReactNode;
@@ -130,14 +128,6 @@ export default function DayOverrideDialog({
 
     // One day: the hours of that weekday only.
     const weekday = weekdayOf(data.from);
-    const dayHours = data.hours[weekday] ?? [];
-    const setDayHours = (hours: number[]) =>
-        setData(
-            'hours',
-            data.hours.map((current, index) =>
-                index === weekday ? [...hours].sort((a, b) => a - b) : current,
-            ),
-        );
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -270,7 +260,12 @@ export default function DayOverrideDialog({
 
                     {!data.closed &&
                         (kind === 'day' ? (
-                            <DayHours hours={dayHours} onChange={setDayHours} />
+                            <WorkingHours
+                                hours={data.hours}
+                                onChange={(hours) => setData('hours', hours)}
+                                total={dayHoursOf(data.hours[weekday] ?? [])}
+                                days={[weekday]}
+                            />
                         ) : (
                             <WorkingHours
                                 hours={data.hours}
@@ -321,49 +316,5 @@ export default function DayOverrideDialog({
                 </form>
             </DialogContent>
         </Dialog>
-    );
-}
-
-/** The hours of one day, one button per hour. */
-function DayHours({
-    hours,
-    onChange,
-}: {
-    hours: number[];
-    onChange: (hours: number[]) => void;
-}) {
-    return (
-        <div
-            role="group"
-            aria-label="Orari di quel giorno"
-            className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-1.5"
-        >
-            {allHours.map((hour) => {
-                const on = hours.includes(hour);
-
-                return (
-                    <button
-                        key={hour}
-                        type="button"
-                        aria-pressed={on}
-                        onClick={() =>
-                            onChange(
-                                on
-                                    ? hours.filter((item) => item !== hour)
-                                    : [...hours, hour],
-                            )
-                        }
-                        className={cn(
-                            'h-9 rounded-full border text-[13px] font-medium tabular-nums',
-                            on
-                                ? 'border-brand bg-transparent text-brand'
-                                : 'border-dashed border-field bg-transparent hover:border-brand',
-                        )}
-                    >
-                        {hourLabel(hour)}
-                    </button>
-                );
-            })}
-        </div>
     );
 }
