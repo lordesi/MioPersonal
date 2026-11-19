@@ -95,6 +95,28 @@ class NotificationCenterTest extends TestCase
         $this->assertSame(1, $other->unreadNotifications()->count());
     }
 
+    public function test_the_previous_notifications_can_be_cleared_only_my_own()
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $old = $this->notify($user, 'Letta', now()->toDateTimeString());
+        $kept = $this->notify($user, 'Nuova');
+        $foreign = $this->notify($other, 'Di un altro', now()->toDateTimeString());
+
+        $this->deleteJson(route('notifications.destroy'), ['ids' => [$old->id]])->assertUnauthorized();
+
+        $this->actingAs($user)
+            ->deleteJson(route('notifications.destroy'), ['ids' => [$old->id, $foreign->id]])
+            ->assertOk()
+            ->assertJsonPath('unread', 1);
+
+        $this->assertModelMissing($old);
+        $this->assertModelExists($kept);
+        $this->assertModelExists($foreign);
+
+        $this->actingAs($user)->deleteJson(route('notifications.destroy'), ['ids' => ['non-un-id']])->assertUnprocessable();
+    }
+
     public function test_the_number_on_the_bell_is_shared_with_every_page()
     {
         $user = User::factory()->create();
