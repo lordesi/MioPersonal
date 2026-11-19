@@ -15,6 +15,7 @@ use App\Models\GymProfile;
 use App\Models\Service;
 use App\Models\TrainerProfile;
 use App\Rules\Username;
+use App\Rules\WorkingRange;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -61,11 +62,6 @@ class TrainerProfileRequest extends FormRequest
     public const MAX_PACKAGES = 3;
 
     public const NOTE_MAX = 200;
-
-    /** First and last start hour of the hours grid: from 6:00 to 24:00. */
-    public const FIRST_HOUR = 6;
-
-    public const LAST_HOUR = 23;
 
     /**
      * "Instagram": "@giulia.fit", "instagram.com/giulia.fit/" or the full link
@@ -153,7 +149,8 @@ class TrainerProfileRequest extends FormRequest
         return [
             'hours' => ['array:0,1,2,3,4,5,6'],
             'hours.*' => ['array'],
-            'hours.*.*' => ['integer', 'between:'.self::FIRST_HOUR.','.self::LAST_HOUR],
+            // A range {start, end} in minutes, 06:00–24:00 on the half hour.
+            'hours.*.*' => [new WorkingRange],
             ...array_map(fn (array $options) => ['required', 'integer', Rule::in($options)], self::RULE_OPTIONS),
             'max_sessions_per_day' => ['nullable', 'integer', Rule::in(self::MAX_SESSIONS_OPTIONS)],
             'auto_confirm' => ['required', 'boolean'],
@@ -322,9 +319,8 @@ class TrainerProfileRequest extends FormRequest
     public static function availabilityMessages(): array
     {
         return [
-            'hours.*' => 'Controlla gli orari: si può iniziare dalle 6 alle 23.',
-            'hours.*.*' => 'Controlla gli orari: si può iniziare dalle 6 alle 23.',
-            'hours.*.*.*' => 'Controlla gli orari: si può iniziare dalle 6 alle 23.',
+            'hours.*' => WorkingRange::MESSAGE,
+            'hours.*.*' => WorkingRange::MESSAGE,
             'notice_hours.*' => 'Scegli il preavviso minimo tra le opzioni.',
             'booking_window_days.*' => 'Scegli fino a quando si può prenotare.',
             'break_minutes.*' => 'Scegli la pausa tra due sedute.',

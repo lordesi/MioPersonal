@@ -21,8 +21,10 @@ use Illuminate\Support\Collection;
  * Working hours are in Rome time and every day is converted on its own, so
  * "18:00" stays 18:00 when the clocks change.
  *
- * Start times are on the hour, plus the half hour left free by a 30-minute
- * session (18:00–18:30 booked → 18:30, for 30-minute sessions only).
+ * Working hours are ranges on the half hour (WorkingRanges). Start times are
+ * every hour from the start of a range (07:30–12:00 → 07:30, 08:30 …), plus
+ * the half hour left free by a 30-minute session (18:00–18:30 booked →
+ * 18:30, for 30-minute sessions only).
  *
  * A day in `trainer_day_overrides` ("Giorni e settimane diverse") uses its
  * own hours instead of the weekly ones; no hours = closed (holidays).
@@ -51,7 +53,7 @@ final class TrainerSlots
     public static function days(TrainerProfile $profile, int $days, ?CarbonImmutable $now = null, ?int $exceptBookingId = null): array
     {
         $now = ($now ?? CarbonImmutable::now())->setTimezone(self::TIMEZONE);
-        $hoursByWeekday = self::hoursByWeekday($profile);
+        $rangesByWeekday = self::rangesByWeekday($profile);
         $earliest = self::earliestStart($profile, $now);
         $lastDay = $now->startOfDay()->addDays($profile->booking_window_days);
         $bookings = self::activeBookings($profile, $now, $now->startOfDay()->addDays(min($days, $profile->booking_window_days)), $exceptBookingId);
@@ -74,22 +76,24 @@ final class TrainerSlots
             // "Massimo sedute al giorno": that day is full.
             $full = $profile->max_sessions_per_day !== null && $dayBookings->count() >= $profile->max_sessions_per_day;
 
-            $hours = $date->lessThan($lastDay)
-                ? $overrides[$date->toDateString()] ?? $hoursByWeekday[$date->dayOfWeekIso] ?? []
+            $ranges = $date->lessThan($lastDay)
+                ? $overrides[$date->toDateString()] ?? $rangesByWeekday[$date->dayOfWeekIso] ?? []
                 : [];
 
             if (! $full) {
-                foreach ($hours as $hour) {
-                    $slot = self::slot($profile, $date, $hour, $hours, $earliest, $bookings)
-                        ?? self::halfHourSlot($profile, $date, $hour, $earliest, $bookings);
+                foreach ($ranges as [$from, $to]) {
+                    for ($minute = $from; $minute < $to; $minute += 60) {
+                        $slot = self::slot($profile, $date, $minute, $to, $earliest, $bookings)
+                            ?? self::halfHourSlot($profile, $date, $minute, min($minute + 60, $to), $earliest, $bookings);
 
-                    if ($slot !== null) {
-                        $slots[] = $slot;
+                        if ($slot !== null) {
+                            $slots[] = $slot;
+                        }
                     }
                 }
             }
 
-            $result[] = ['date' => $date->toDateString(), 'closed' => $hours === [], 'slots' => $slots];
+            $result[] = ['date' => $date->toDateString(), 'closed' => $ranges === [], 'slots' => $slots];
         }
 
         return $result;
@@ -153,13 +157,15 @@ final class TrainerSlots
     }
 
     /**
-     * @param  list<int>  $hours  start hours of that day
+     * A start at `$minute` of the day, free until `$rangeEnd` (the end of its
+     * range of working hours), or to the break before the next booking.
+     *
      * @param  Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable, external?: bool}>  $bookings
      * @return array{start: string, maxMinutes: int}|null
      */
-    private static function slot(TrainerProfile $profile, CarbonImmutable $date, int $hour, array $hours, CarbonImmutable $earliest, Collection $bookings): ?array
+    private static function slot(TrainerProfile $profile, CarbonImmutable $date, int $minute, int $rangeEnd, CarbonImmutable $earliest, Collection $bookings): ?array
     {
-        $start = $date->setTime($hour, 0);
+        $start = self::at($date, $minute);
 
         if ($start->lessThan($earliest)) {
             return null;
@@ -171,13 +177,7 @@ final class TrainerSlots
         }
 
         $durations = $profile->session_minutes ?: [60];
-        $hoursInARow = 1;
-
-        while (in_array($hour + $hoursInARow, $hours, true)) {
-            $hoursInARow++;
-        }
-
-        $freeMinutes = self::freeMinutes($profile, $start, $date->setTime($hour + $hoursInARow, 0), $bookings);
+        $freeMinutes = self::freeMinutes($profile, $start, self::at($date, $rangeEnd), $bookings);
 
         // Not even the shortest session fits (e.g. only 2-hour sessions and one free hour).
         if (min($durations) > $freeMinutes) {
@@ -198,10 +198,10 @@ final class TrainerSlots
      * @param  Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable, external?: bool}>  $bookings
      * @return array{start: string, maxMinutes: int}|null
      */
-    private static function halfHourSlot(TrainerProfile $profile, CarbonImmutable $date, int $hour, CarbonImmutable $earliest, Collection $bookings): ?array
+    private static function halfHourSlot(TrainerProfile $profile, CarbonImmutable $date, int $minute, int $hourEnd, CarbonImmutable $earliest, Collection $bookings): ?array
     {
-        $hourStart = $date->setTime($hour, 0);
-        $start = $date->setTime($hour, 30);
+        $hourStart = self::at($date, $minute);
+        $start = self::at($date, $minute + 30);
 
         if (! in_array(30, $profile->session_minutes ?: [60], true) || $start->lessThan($earliest)) {
             return null;
@@ -214,7 +214,7 @@ final class TrainerSlots
             return null;
         }
 
-        if (self::freeMinutes($profile, $start, $date->setTime($hour + 1, 0), $bookings) < 30) {
+        if (self::freeMinutes($profile, $start, self::at($date, $hourEnd), $bookings) < 30) {
             return null;
         }
 
@@ -238,42 +238,41 @@ final class TrainerSlots
         return max(0, (int) $start->diffInMinutes($end));
     }
 
-    /**
-     * Weekday (1 = Monday) => start hours, e.g. 18:00–21:00 → [18, 19, 20].
-     *
-     * @return array<int, list<int>>
-     */
-    private static function hoursByWeekday(TrainerProfile $profile): array
+    /** The time `$minutes` after the start of `$date` (1440 = midnight after). */
+    private static function at(CarbonImmutable $date, int $minutes): CarbonImmutable
     {
-        $hours = [];
-
-        foreach ($profile->workingHours as $range) {
-            $hours[$range->weekday] = [...$hours[$range->weekday] ?? [], ...$range->startHours()];
-        }
-
-        return array_map(function (array $day) {
-            sort($day);
-
-            return array_values(array_unique($day));
-        }, $hours);
+        return $date->setTime(intdiv($minutes, 60), $minutes % 60);
     }
 
     /**
-     * Rome date => start hours of the days with their own hours ([] = closed).
+     * Weekday (1 = Monday) => ranges in minutes, e.g. 18:00–21:00 → [[1080, 1260]].
      *
-     * @return array<string, list<int>>
+     * @return array<int, list<array{int, int}>>
+     */
+    private static function rangesByWeekday(TrainerProfile $profile): array
+    {
+        $ranges = [];
+
+        foreach ($profile->workingHours as $range) {
+            $ranges[$range->weekday][] = $range->range();
+        }
+
+        return array_map(WorkingRanges::normalize(...), $ranges);
+    }
+
+    /**
+     * Rome date => ranges of the days with their own hours ([] = closed).
+     *
+     * @return array<string, list<array{int, int}>>
      */
     private static function overrides(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $to): array
     {
         return $profile->dayOverrides()
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
             ->get(['date', 'hours'])
-            ->mapWithKeys(function (TrainerDayOverride $override) {
-                $hours = array_values(array_unique(array_map(intval(...), $override->hours)));
-                sort($hours);
-
-                return [$override->date->toDateString() => $hours];
-            })
+            ->mapWithKeys(fn (TrainerDayOverride $override) => [
+                $override->date->toDateString() => WorkingRanges::normalize($override->hours),
+            ])
             ->all();
     }
 

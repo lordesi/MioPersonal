@@ -9,31 +9,27 @@ use App\Models\TrainerProfile;
  * Working hours and booking rules of a trainer, shared by step 5 of
  * "Diventa trainer" and by "Disponibilità" in the trainer area.
  *
- * The page uses a grid: for each day (0 = Monday … 6 = Sunday) the whole
- * hours where a session can start. The database keeps ranges in
- * `trainer_working_hours`: 7, 8, 9, 10, 11 → 07:00–12:00.
+ * The page sends, for each day (0 = Monday … 6 = Sunday), ranges in minutes
+ * on the half hour (WorkingRanges): {start: 450, end: 720} is 07:30–12:00.
+ * The database keeps the same ranges in `trainer_working_hours`.
  */
 class TrainerAvailability
 {
     /**
      * The saved hours and rules in the format of the page (TrainerDraft in draft.ts).
      *
-     * @return array{hours: array<int, list<int>>, rules: array{noticeHours: int, bookingWindowDays: int, breakMinutes: int, maxSessionsPerDay: int|null, freeCancellationHours: int}, autoConfirm: bool}
+     * @return array{hours: array<int, list<array{start: int, end: int}>>, rules: array{noticeHours: int, bookingWindowDays: int, breakMinutes: int, maxSessionsPerDay: int|null, freeCancellationHours: int}, autoConfirm: bool}
      */
     public static function fromProfile(TrainerProfile $profile): array
     {
         $hours = array_fill(0, 7, []);
 
         foreach ($profile->workingHours as $range) {
-            $hours[$range->weekday - 1] = [...$hours[$range->weekday - 1], ...$range->startHours()];
+            $hours[$range->weekday - 1][] = $range->range();
         }
 
         return [
-            'hours' => array_map(function (array $day) {
-                sort($day);
-
-                return $day;
-            }, $hours),
+            'hours' => array_map(fn (array $day) => WorkingRanges::forPage(WorkingRanges::normalize($day)), $hours),
             'rules' => [
                 'noticeHours' => $profile->notice_hours,
                 'bookingWindowDays' => $profile->booking_window_days,
@@ -64,34 +60,20 @@ class TrainerAvailability
     }
 
     /**
-     * Replaces the working hours; consecutive hours become one range.
+     * Replaces the working hours; ranges that overlap or touch become one.
      *
-     * @param  array<int|string, list<int|string>>  $hours  0 = Monday … 6 = Sunday
+     * @param  array<int|string, array<mixed>>  $hours  0 = Monday … 6 = Sunday
      */
     public static function saveHours(TrainerProfile $profile, array $hours): void
     {
         $profile->workingHours()->delete();
 
-        foreach ($hours as $day => $dayHours) {
-            $starts = array_unique(array_map(intval(...), $dayHours));
-            sort($starts);
-            $ranges = [];
-
-            foreach ($starts as $hour) {
-                $last = array_key_last($ranges);
-
-                if ($last !== null && $ranges[$last][1] === $hour) {
-                    $ranges[$last][1] = $hour + 1;
-                } else {
-                    $ranges[] = [$hour, $hour + 1];
-                }
-            }
-
-            foreach ($ranges as [$from, $to]) {
+        foreach ($hours as $day => $ranges) {
+            foreach (WorkingRanges::normalize((array) $ranges) as [$from, $to]) {
                 $profile->workingHours()->create([
                     'weekday' => (int) $day + 1,
-                    'starts_at' => sprintf('%02d:00', $from),
-                    'ends_at' => sprintf('%02d:00', $to),
+                    'starts_at' => WorkingRanges::time($from),
+                    'ends_at' => WorkingRanges::time($to),
                 ]);
             }
         }

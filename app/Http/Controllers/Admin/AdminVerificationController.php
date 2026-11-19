@@ -178,7 +178,7 @@ class AdminVerificationController extends Controller
                 'label' => "{$service->name} · {$service->minutes} min",
                 'priceCents' => $service->price_cents,
             ])->values()->all(),
-            'weeklyHours' => $profile->workingHours->sum(fn ($range) => count($range->startHours())),
+            'weeklyHours' => round($profile->workingHours->sum(fn ($range) => $range->range()[1] - $range->range()[0]) / 60, 1),
             'hasIdentityDocument' => false,
             'certifications' => $certificates->map(fn (TrainerDocument $document) => [
                 'id' => $document->id,

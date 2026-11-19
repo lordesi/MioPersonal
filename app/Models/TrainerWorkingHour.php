@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\WorkingRanges;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
@@ -30,12 +31,12 @@ class TrainerWorkingHour extends Model
     }
 
     /**
-     * Whole hours where a session can start: 18:00–21:00 → 18, 19, 20.
+     * The range in minutes from midnight: 07:30–12:00 → [450, 720].
      *
-     * @return list<int>
+     * @return array{int, int}
      */
-    public function startHours(): array
+    public function range(): array
     {
-        return range((int) substr($this->starts_at, 0, 2), (int) substr($this->ends_at, 0, 2) - 1);
+        return [WorkingRanges::fromTime($this->starts_at), WorkingRanges::fromTime($this->ends_at)];
     }
 }

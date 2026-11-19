@@ -632,7 +632,7 @@ class TrainerRegistrationTest extends TestCase
                 ->where('editing', true)
                 ->where('draft.headline', 'Functional training e Pilates')
                 ->where('draft.city', 'milano')
-                ->where('draft.hours.0', [7, 8, 9, 10, 11, 18, 19, 20])
+                ->where('draft.hours.0', [['start' => 420, 'end' => 720], ['start' => 1080, 'end' => 1260]])
                 ->where('draft.certifications.0.hasFile', true)
                 ->where('changeRequest', ['reasons' => ['Bio con contatti o link'], 'message' => 'Togli il numero dalla bio.'])
             );

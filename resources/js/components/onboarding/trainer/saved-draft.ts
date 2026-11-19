@@ -7,6 +7,8 @@ import {
     firstSessionType,
     initialDraft,
 } from '@/components/onboarding/trainer/draft';
+import type { HourRange } from '@/lib/hours';
+import { fromStartHours } from '@/lib/hours';
 
 /**
  * "Salva e continua dopo": the answers of steps 2–6 are kept in this
@@ -83,6 +85,10 @@ export function loadDraft(
                 ...initialDraft,
                 ...saved.draft,
                 pricing: savedPricing(saved.draft.pricing),
+                // Drafts saved before the half hours: start hours per day.
+                hours: (saved.draft.hours ?? initialDraft.hours).map((day) =>
+                    fromStartHours(day as (number | HourRange)[]),
+                ),
                 photo: null,
             },
             step: saved.step,

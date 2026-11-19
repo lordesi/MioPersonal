@@ -9,10 +9,7 @@ import {
     placeOptions,
     weeklyHours,
 } from '@/components/onboarding/trainer/draft';
-import {
-    rangeLabel,
-    toRanges,
-} from '@/components/onboarding/trainer/step-hours';
+import { rangeLabel } from '@/components/onboarding/trainer/step-hours';
 import { shortDuration } from '@/components/trainer/services/pricing';
 import { Checkbox } from '@/components/ui/checkbox';
 import { darkCheckboxClassName } from '@/lib/dark-form';
@@ -178,9 +175,7 @@ export default function StepReview({
                                         {shortDays[day]}
                                     </dt>
                                     <dd className="tabular-nums">
-                                        {toRanges(hours)
-                                            .map(rangeLabel)
-                                            .join(' · ')}
+                                        {hours.map(rangeLabel).join(' · ')}
                                     </dd>
                                 </div>
                             ) : null,
