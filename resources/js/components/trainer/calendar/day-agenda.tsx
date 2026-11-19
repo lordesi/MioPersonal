@@ -18,8 +18,8 @@ type DayAgendaProps = {
     now: Date;
     openId: number | null;
     onToggle: (id: number) => void;
-    /** "Aggiungi seduta" when the day is empty. */
-    emptyHint: string;
+    /** A line above the empty hours when the day has no sessions. */
+    emptyHint?: string;
 };
 
 /**
@@ -54,7 +54,7 @@ export default function DayAgenda({
 
     return (
         <div className="flex flex-col">
-            {items.length === 0 && (
+            {items.length === 0 && emptyHint && (
                 <p className="mb-2 rounded-[18px] border border-dashed border-[#3a3a3a] px-3.5 py-3 text-[13px] text-muted-foreground">
                     {emptyHint}
                 </p>

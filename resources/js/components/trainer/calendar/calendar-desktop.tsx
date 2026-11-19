@@ -1,18 +1,17 @@
-import { Link } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight, Clock, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import {
     OpenHoursCard,
     SessionDetails,
     WeekSummary,
 } from '@/components/trainer/area/calendar-side';
 import MonthCalendar from '@/components/trainer/area/month-calendar';
-import WeekGrid from '@/components/trainer/area/week-grid';
 import DayAgenda from '@/components/trainer/calendar/day-agenda';
 import MiniMonth from '@/components/trainer/calendar/mini-month';
+import TimeGrid from '@/components/trainer/calendar/time-grid';
 import type { CalendarViewProps } from '@/components/trainer/calendar/types';
-import ViewSwitch from '@/components/trainer/calendar/view-switch';
+import ViewMenu from '@/components/trainer/calendar/view-switch';
 import {
-    brandButtonClassName,
+    brandFilledButtonClassName,
     listLabelClassName,
     pageTitleClassName,
     panelClassName,
@@ -31,12 +30,12 @@ import {
 } from '@/lib/calendar';
 import { formatDayLong, formatDayRange } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { availability } from '@/routes/trainer';
 
 /**
  * "Calendario" on desktop (Calendario A): on the left the small month and
  * the sessions of the chosen day; on the right the day hour by hour (or the
- * week, or the month), with "Aggiungi seduta".
+ * week, or the month), with the view menu and "Aggiungi seduta" as on
+ * phones (design "Calendario · Settimana" and "Mese").
  */
 export default function CalendarDesktop(props: CalendarViewProps) {
     const {
@@ -116,7 +115,7 @@ export default function CalendarDesktop(props: CalendarViewProps) {
                 aria-label="Scegli il giorno"
                 className={cn(
                     panelClassName,
-                    'flex w-85 shrink-0 [scrollbar-width:none] flex-col gap-5 overflow-y-auto px-3 py-4',
+                    'flex w-72 shrink-0 [scrollbar-width:none] flex-col gap-5 overflow-y-auto px-3 py-4 xl:w-85',
                 )}
             >
                 <div className="flex items-center justify-between px-2.5 pt-1">
@@ -159,12 +158,7 @@ export default function CalendarDesktop(props: CalendarViewProps) {
                                 {sessionsLabel(dayItems.length)}
                             </span>
                         </div>
-                        {dayItems.length === 0 ? (
-                            <p className="rounded-[18px] border border-dashed border-[#3a3a3a] p-3.5 text-[13px] text-muted-foreground">
-                                Nessuna seduta. Usa “Aggiungi seduta” per
-                                inserirne una.
-                            </p>
-                        ) : (
+                        {dayItems.length > 0 && (
                             <div className="flex flex-col gap-0.5 rounded-[18px] bg-card p-1">
                                 {dayItems.map((item) => (
                                     <button
@@ -220,65 +214,73 @@ export default function CalendarDesktop(props: CalendarViewProps) {
 
             <main className="flex min-w-0 flex-1 [scrollbar-width:none] flex-col gap-5 overflow-y-auto pt-6 pr-6 pb-12">
                 <header className="flex flex-wrap items-center gap-3">
-                    <div className="flex min-w-55 flex-1 flex-col gap-0.5">
+                    <div className="flex min-w-0 flex-1 basis-60 flex-col gap-0.5">
                         <span className="text-[15px] text-muted-foreground">
                             {period.kicker}
                         </span>
                         <h2 className={pageTitleClassName}>{period.title}</h2>
                     </div>
-                    <ViewSwitch
-                        view={view}
-                        onChange={(next) => show(next, selectedDay)}
-                    />
-                    <button
-                        type="button"
-                        disabled={!period.canGoBack}
-                        onClick={() => show(view, period.previous)}
-                        aria-label={`${period.unit} precedente`}
-                        title={`${period.unit} precedente`}
-                        className={roundSoftClassName}
-                    >
-                        <ChevronLeft aria-hidden="true" className="size-4.5" />
-                    </button>
-                    <button
-                        type="button"
-                        disabled={!period.canGoForward}
-                        onClick={() => show(view, period.next)}
-                        aria-label={`${period.unit} successivo`}
-                        title={`${period.unit} successivo`}
-                        className={roundSoftClassName}
-                    >
-                        <ChevronRight aria-hidden="true" className="size-4.5" />
-                    </button>
-                    {sessionOptions && (
+                    <div className="ml-auto flex shrink-0 items-center gap-2">
                         <button
                             type="button"
-                            onClick={onAdd}
-                            className={brandButtonClassName}
+                            disabled={!period.canGoBack}
+                            onClick={() => show(view, period.previous)}
+                            aria-label={`${period.unit} precedente`}
+                            title={`${period.unit} precedente`}
+                            className={roundSoftClassName}
                         >
-                            <Plus
+                            <ChevronLeft
                                 aria-hidden="true"
                                 className="size-4.5"
-                                strokeWidth={2.5}
                             />
-                            Aggiungi seduta
                         </button>
-                    )}
-                    <Link
-                        href={availability()}
-                        aria-label="Gestisci disponibilità"
-                        title="Gestisci disponibilità"
-                        className={roundSoftClassName}
-                    >
-                        <Clock aria-hidden="true" className="size-4.5" />
-                    </Link>
+                        <button
+                            type="button"
+                            disabled={!period.canGoForward}
+                            onClick={() => show(view, period.next)}
+                            aria-label={`${period.unit} successivo`}
+                            title={`${period.unit} successivo`}
+                            className={roundSoftClassName}
+                        >
+                            <ChevronRight
+                                aria-hidden="true"
+                                className="size-4.5"
+                            />
+                        </button>
+                        <ViewMenu
+                            view={view}
+                            onChange={(next) => show(next, selectedDay)}
+                        />
+                        {sessionOptions && (
+                            <button
+                                type="button"
+                                onClick={onAdd}
+                                aria-label="Aggiungi seduta"
+                                className={cn(
+                                    brandFilledButtonClassName,
+                                    'w-11 px-0 xl:w-auto xl:px-5',
+                                )}
+                            >
+                                <Plus
+                                    aria-hidden="true"
+                                    className="size-5 xl:size-4.5"
+                                    strokeWidth={2.5}
+                                />
+                                <span className="hidden xl:inline">
+                                    Aggiungi seduta
+                                </span>
+                            </button>
+                        )}
+                    </div>
                 </header>
 
                 <section
                     aria-label={period.title}
                     className={cn(
                         panelClassName,
-                        view === 'day' ? 'px-4 py-2' : 'overflow-hidden',
+                        view === 'day' && 'px-4 py-2',
+                        view === 'week' && 'overflow-hidden pt-3 pr-3',
+                        view === 'month' && 'px-3 pt-2 pb-3',
                     )}
                 >
                     {view === 'day' && (
@@ -291,17 +293,19 @@ export default function CalendarDesktop(props: CalendarViewProps) {
                             onToggle={(id) =>
                                 onSelect(selectedId === id ? null : id)
                             }
-                            emptyHint="Nessuna seduta in questo giorno. Usa “Aggiungi seduta” per inserirne una."
                         />
                     )}
                     {view === 'week' && (
-                        <WeekGrid
+                        <TimeGrid
                             days={week}
                             items={items}
                             today={today}
+                            now={now}
                             selectedDay={selectedDay}
                             selectedId={selectedId}
                             onSelect={(item) => onSelect(item.id)}
+                            row={56}
+                            surface="panel"
                         />
                     )}
                     {view === 'month' && (

@@ -1,20 +1,19 @@
-import { Link } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight, Clock, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import type { ReactNode } from 'react';
 import {
     OpenHoursCard,
     SessionDetails,
     WeekSummary,
 } from '@/components/trainer/area/calendar-side';
 import MonthCalendar from '@/components/trainer/area/month-calendar';
-import WeekGrid from '@/components/trainer/area/week-grid';
 import DayAgenda from '@/components/trainer/calendar/day-agenda';
+import TimeGrid from '@/components/trainer/calendar/time-grid';
 import type { CalendarViewProps } from '@/components/trainer/calendar/types';
-import ViewSwitch from '@/components/trainer/calendar/view-switch';
-import WeekStrip, { monthLabel } from '@/components/trainer/home/week-strip';
+import ViewMenu from '@/components/trainer/calendar/view-switch';
+import WeekStrip from '@/components/trainer/home/week-strip';
 import {
-    brandButtonClassName,
+    brandFilledButtonClassName,
     pageTitleClassName,
-    roundSoftClassName,
 } from '@/components/trainer/ui/styles';
 import {
     addDays,
@@ -23,14 +22,21 @@ import {
     shiftMonth,
     weekDates,
 } from '@/lib/calendar';
-import { formatDayLong } from '@/lib/format';
+import { formatDayLong, formatDayNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { availability } from '@/routes/trainer';
+
+const weekdayLetters = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
+
+/** "2026-11" → "Novembre 2026". */
+function monthTitle(month: string): string {
+    return monthName(month).replace(/^./u, (letter) => letter.toUpperCase());
+}
 
 /**
- * "Calendario" on phones (Righe 1): the week strip, then the day as rows of
- * one hour with the sessions that open in place. "Settimana" and "Mese"
- * show the grid and the month, with the details of the chosen session.
+ * "Calendario" on phones: the title with the view menu and "+" on the right.
+ * "Giorno" is the day as rows of one hour; "Settimana" the week strip and
+ * two days side by side (design "Settimana A · Due giorni"); "Mese" the
+ * month with the sessions of each day (design "Mese A").
  */
 export default function CalendarMobile(props: CalendarViewProps) {
     const {
@@ -58,6 +64,12 @@ export default function CalendarMobile(props: CalendarViewProps) {
         date,
         count: items.filter((item) => item.date === date).length,
     }));
+    // The chosen day and the next one; on Sunday the Saturday before, so
+    // both days are in the week loaded from the server.
+    const pair =
+        selectedDay === week[6]
+            ? [week[5], week[6]]
+            : [selectedDay, addDays(selectedDay, 1)];
 
     return (
         <>
@@ -65,81 +77,48 @@ export default function CalendarMobile(props: CalendarViewProps) {
                 <h1 className={cn(pageTitleClassName, 'mr-auto')}>
                     Calendario
                 </h1>
-                <Link
-                    href={availability()}
-                    aria-label="Gestisci disponibilità"
-                    className={cn(roundSoftClassName, 'size-11')}
-                >
-                    <Clock aria-hidden="true" className="size-5" />
-                </Link>
+                <ViewMenu
+                    view={view}
+                    onChange={(next) => show(next, selectedDay)}
+                />
                 {sessionOptions && (
                     <button
                         type="button"
                         onClick={onAdd}
-                        aria-label="Aggiungi seduta"
-                        className={cn(brandButtonClassName, 'size-11 px-0')}
+                        aria-label="Nuova seduta"
+                        className={cn(
+                            brandFilledButtonClassName,
+                            'size-11 px-0',
+                        )}
                     >
                         <Plus
                             aria-hidden="true"
-                            className="size-5"
-                            strokeWidth={2.5}
+                            className="size-5.5"
+                            strokeWidth={2.25}
                         />
                     </button>
                 )}
             </header>
 
-            <ViewSwitch
-                view={view}
-                onChange={(next) => show(next, selectedDay)}
-            />
-
-            {view === 'month' ? (
+            {view === 'month' && (
                 <section
-                    aria-label={monthName(month)}
-                    className="flex flex-col gap-3"
+                    aria-label={monthTitle(month)}
+                    className="flex flex-col"
                 >
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-[17px] font-semibold first-letter:uppercase">
-                            {monthName(month)}
-                        </h2>
-                        <div className="flex">
-                            <button
-                                type="button"
-                                disabled={`${month}-01` <= minDate}
-                                onClick={() =>
-                                    show('month', `${shiftMonth(month, -1)}-01`)
-                                }
-                                aria-label="Mese precedente"
-                                className={cn(
-                                    roundSoftClassName,
-                                    'size-11 bg-transparent',
-                                )}
-                            >
-                                <ChevronLeft
-                                    aria-hidden="true"
-                                    className="size-5"
-                                />
-                            </button>
-                            <button
-                                type="button"
-                                disabled={month >= maxDate.slice(0, 7)}
-                                onClick={() =>
-                                    show('month', `${shiftMonth(month, 1)}-01`)
-                                }
-                                aria-label="Mese successivo"
-                                className={cn(
-                                    roundSoftClassName,
-                                    'size-11 bg-transparent',
-                                )}
-                            >
-                                <ChevronRight
-                                    aria-hidden="true"
-                                    className="size-5"
-                                />
-                            </button>
-                        </div>
-                    </div>
-                    <div className="overflow-hidden rounded-[26px] bg-[#121212] shadow-[inset_0_0_0_1px_#2c2c2c]">
+                    <PeriodBar
+                        title={monthTitle(month)}
+                        unit="Mese"
+                        gender="m"
+                        canGoBack={`${month}-01` > minDate}
+                        canGoForward={month < maxDate.slice(0, 7)}
+                        onBack={() =>
+                            show('month', `${shiftMonth(month, -1)}-01`)
+                        }
+                        onForward={() =>
+                            show('month', `${shiftMonth(month, 1)}-01`)
+                        }
+                    />
+                    <div className="-mx-1 mt-2">
                         <MonthCalendar
                             month={month}
                             items={items}
@@ -149,95 +128,130 @@ export default function CalendarMobile(props: CalendarViewProps) {
                         />
                     </div>
                 </section>
-            ) : (
-                <WeekStrip
-                    week={weekDays}
-                    day={selectedDay}
-                    today={today}
-                    minDate={minDate}
-                    maxDate={maxDate}
-                    onPick={(date) => show(view, date)}
-                />
-            )}
-
-            {view === 'day' && (
-                <section
-                    aria-label={formatDayLong(selectedDay)}
-                    className="flex flex-col gap-2"
-                >
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-[22px] leading-7 font-bold">
-                            {selectedDay === today
-                                ? 'Oggi'
-                                : formatDayLong(selectedDay)}
-                        </h2>
-                        <div className="flex">
-                            <button
-                                type="button"
-                                disabled={selectedDay <= minDate}
-                                onClick={() =>
-                                    show('day', addDays(selectedDay, -1))
-                                }
-                                aria-label="Giorno precedente"
-                                className={cn(
-                                    roundSoftClassName,
-                                    'size-11 bg-transparent',
-                                )}
-                            >
-                                <ChevronLeft
-                                    aria-hidden="true"
-                                    className="size-5"
-                                />
-                            </button>
-                            <button
-                                type="button"
-                                disabled={selectedDay >= maxDate}
-                                onClick={() =>
-                                    show('day', addDays(selectedDay, 1))
-                                }
-                                aria-label="Giorno successivo"
-                                className={cn(
-                                    roundSoftClassName,
-                                    'size-11 bg-transparent',
-                                )}
-                            >
-                                <ChevronRight
-                                    aria-hidden="true"
-                                    className="size-5"
-                                />
-                            </button>
-                        </div>
-                    </div>
-                    <DayAgenda
-                        date={selectedDay}
-                        items={dayItems}
-                        today={today}
-                        now={now}
-                        openId={selectedId}
-                        onToggle={(id) =>
-                            onSelect(selectedId === id ? null : id)
-                        }
-                        emptyHint="Nessuna seduta in programma. Tocca + per aggiungerne una."
-                    />
-                </section>
             )}
 
             {view === 'week' && (
                 <section
-                    aria-label={`Settimana di ${monthLabel(week[3])}`}
-                    className="-mx-4 overflow-x-auto px-4"
+                    aria-label={`${formatDayLong(pair[0])} e ${formatDayLong(pair[1]).toLowerCase()}`}
+                    className="flex flex-col"
                 >
-                    <div className="overflow-hidden rounded-[26px] bg-[#121212] shadow-[inset_0_0_0_1px_#2c2c2c]">
-                        <WeekGrid
-                            days={week}
+                    <PeriodBar
+                        title={monthTitle(pair[0].slice(0, 7))}
+                        unit="Giorni"
+                        gender="plural"
+                        canGoBack={pair[0] > minDate}
+                        canGoForward={pair[1] < maxDate}
+                        onBack={() => show('week', addDays(pair[0], -2))}
+                        onForward={() => show('week', addDays(pair[0], 2))}
+                    />
+                    <div className="mt-2 grid grid-cols-7">
+                        {week.map((date, index) => {
+                            const inPair = pair.includes(date);
+                            const isToday = date === today;
+
+                            return (
+                                <div
+                                    key={date}
+                                    className="flex flex-col items-stretch gap-1"
+                                >
+                                    <span
+                                        aria-hidden="true"
+                                        className="text-center text-xs leading-4 text-muted-foreground"
+                                    >
+                                        {weekdayLetters[index]}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        aria-label={`${formatDayLong(date)}${isToday ? ', oggi' : ''}`}
+                                        aria-pressed={inPair}
+                                        disabled={
+                                            date < minDate || date > maxDate
+                                        }
+                                        onClick={() => show('week', date)}
+                                        className={cn(
+                                            'flex h-11 items-center justify-center outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-40',
+                                            inPair && 'bg-white/[0.07]',
+                                            inPair &&
+                                                date === pair[0] &&
+                                                'rounded-l-xl',
+                                            inPair &&
+                                                date === pair[1] &&
+                                                'rounded-r-xl',
+                                        )}
+                                    >
+                                        <span
+                                            className={cn(
+                                                'flex h-11 w-full max-w-10.5 items-center justify-center rounded-xl text-[19px] font-semibold tabular-nums',
+                                                isToday
+                                                    ? 'bg-brand text-[#0a0a0a]'
+                                                    : date < today
+                                                      ? 'text-muted-foreground'
+                                                      : 'text-foreground',
+                                            )}
+                                        >
+                                            {formatDayNumber(date)}
+                                        </span>
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <div className="-mx-4 mt-3 pr-4">
+                        <TimeGrid
+                            days={pair}
                             items={items}
                             today={today}
+                            now={now}
                             selectedDay={selectedDay}
                             selectedId={selectedId}
                             onSelect={(item) => onSelect(item.id)}
                         />
                     </div>
                 </section>
+            )}
+
+            {view === 'day' && (
+                <>
+                    <WeekStrip
+                        week={weekDays}
+                        day={selectedDay}
+                        today={today}
+                        minDate={minDate}
+                        maxDate={maxDate}
+                        onPick={(date) => show('day', date)}
+                    />
+                    <section
+                        aria-label={formatDayLong(selectedDay)}
+                        className="flex flex-col gap-2"
+                    >
+                        <PeriodBar
+                            title={
+                                selectedDay === today
+                                    ? 'Oggi'
+                                    : formatDayLong(selectedDay)
+                            }
+                            unit="Giorno"
+                            gender="m"
+                            canGoBack={selectedDay > minDate}
+                            canGoForward={selectedDay < maxDate}
+                            onBack={() => show('day', addDays(selectedDay, -1))}
+                            onForward={() =>
+                                show('day', addDays(selectedDay, 1))
+                            }
+                            large
+                        />
+                        <DayAgenda
+                            date={selectedDay}
+                            items={dayItems}
+                            today={today}
+                            now={now}
+                            openId={selectedId}
+                            onToggle={(id) =>
+                                onSelect(selectedId === id ? null : id)
+                            }
+                        />
+                    </section>
+                </>
             )}
 
             {selected && view !== 'day' && (
@@ -257,5 +271,66 @@ export default function CalendarMobile(props: CalendarViewProps) {
             )}
             <OpenHoursCard />
         </>
+    );
+}
+
+/** The title of the period with the two arrows on the right. */
+function PeriodBar({
+    title,
+    unit,
+    gender,
+    canGoBack,
+    canGoForward,
+    onBack,
+    onForward,
+    large = false,
+}: {
+    title: ReactNode;
+    unit: string;
+    gender: 'm' | 'plural';
+    canGoBack: boolean;
+    canGoForward: boolean;
+    onBack: () => void;
+    onForward: () => void;
+    large?: boolean;
+}) {
+    const [before, after] =
+        gender === 'plural'
+            ? ['precedenti', 'successivi']
+            : ['precedente', 'successivo'];
+    const arrowClassName =
+        'inline-flex size-11 shrink-0 items-center justify-center rounded-full text-foreground outline-none transition-colors hover:bg-white/5 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-40';
+
+    return (
+        <div className="-mr-2 flex items-center gap-1 pt-2">
+            <h2
+                className={cn(
+                    'mr-auto font-semibold',
+                    large
+                        ? 'text-[22px] leading-7 font-bold'
+                        : 'text-[20px] leading-6.25 tracking-[-0.45px]',
+                )}
+            >
+                {title}
+            </h2>
+            <button
+                type="button"
+                disabled={!canGoBack}
+                onClick={onBack}
+                aria-label={`${unit} ${before}`}
+                className={arrowClassName}
+            >
+                <ChevronLeft aria-hidden="true" className="size-5.5" />
+            </button>
+            <button
+                type="button"
+                disabled={!canGoForward}
+                onClick={onForward}
+                aria-label={`${unit} ${after}`}
+                className={arrowClassName}
+            >
+                <ChevronRight aria-hidden="true" className="size-5.5" />
+            </button>
+        </div>
     );
 }
