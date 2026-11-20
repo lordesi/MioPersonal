@@ -55,6 +55,24 @@ export async function markAllNotificationsRead(): Promise<void> {
     }
 }
 
+/** "Cancella le notifiche precedenti": these ones (NotificationController::destroy). */
+export async function deleteNotifications(ids: string[]): Promise<void> {
+    const response = await fetch(LIST_URL, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: {
+            ...headers,
+            'Content-Type': 'application/json',
+            'X-XSRF-TOKEN': xsrfToken(),
+        },
+        body: JSON.stringify({ ids }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`notifications ${response.status}`);
+    }
+}
+
 const relativeTime = new Intl.RelativeTimeFormat('it', { numeric: 'auto' });
 
 /** "adesso", "5 minuti fa", "ieri", "3 giorni fa". */

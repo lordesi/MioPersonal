@@ -14,7 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property int $trainer_profile_id
  * @property CarbonImmutable $date the Rome date
- * @property list<int> $hours start hours, 6 … 23; [] = closed
+ * @property list<mixed> $hours ranges [[450, 720]] in minutes (WorkingRanges), or the
+ *                              start hours saved before the half hours; [] = closed
  * @property string|null $note
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at

@@ -97,6 +97,18 @@ class TrainerManualSessionTest extends TestCase
         $this->assertSame($record->id, Booking::firstOrFail()->trainer_client_id);
     }
 
+    public function test_a_note_can_be_written_while_adding_the_session()
+    {
+        $this->add(['note' => '  Portare il tappetino  '])->assertSessionHasNoErrors();
+        $this->assertSame('Portare il tappetino', Booking::firstOrFail()->trainer_note);
+
+        Booking::query()->delete();
+        $this->add(['note' => '   '])->assertSessionHasNoErrors();
+        $this->assertNull(Booking::firstOrFail()->trainer_note);
+
+        $this->add(['date' => '2026-10-21', 'note' => str_repeat('a', 1001)])->assertSessionHasErrors('note');
+    }
+
     public function test_the_invite_step_can_be_turned_off_for_a_client()
     {
         $this->actingAs($this->trainer->user)

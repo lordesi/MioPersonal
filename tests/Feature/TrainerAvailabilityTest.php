@@ -46,13 +46,44 @@ class TrainerAvailabilityTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('trainer/availability')
                 ->has('availability.hours', 7)
-                ->where('availability.hours.0', [18, 19, 20])
+                ->where('availability.hours.0', [['start' => 1080, 'end' => 1260]])
                 ->where('availability.hours.1', [])
                 ->where('availability.rules.noticeHours', 6)
                 ->where('availability.rules.maxSessionsPerDay', null)
                 ->missing('availability.sessionMinutes')
                 ->where('availability.autoConfirm', false)
             );
+    }
+
+    public function test_ranges_on_the_half_hour_are_saved_and_joined()
+    {
+        $profile = TrainerProfile::factory()->bookable()->approved()->create();
+
+        $this->actingAs($profile->user)
+            ->put(route('trainer.availability.update'), $this->payload(['hours' => [
+                // 07:30–09:00 and 09:00–12:00 touch: one range.
+                [['start' => 450, 'end' => 540], ['start' => 540, 'end' => 720], ['start' => 1080, 'end' => 1290]],
+                [], [], [], [], [], [],
+            ]]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(
+            [[1, '07:30', '12:00'], [1, '18:00', '21:30']],
+            $profile->workingHours()->orderBy('starts_at')->get()
+                ->map(fn ($range) => [$range->weekday, substr($range->starts_at, 0, 5), substr($range->ends_at, 0, 5)])
+                ->all(),
+        );
+    }
+
+    public function test_a_range_off_the_half_hour_or_outside_the_day_is_refused()
+    {
+        $profile = TrainerProfile::factory()->bookable()->approved()->create();
+
+        foreach ([['start' => 435, 'end' => 600], ['start' => 300, 'end' => 420], ['start' => 600, 'end' => 600], ['start' => 1380, 'end' => 1470]] as $range) {
+            $this->actingAs($profile->user)
+                ->put(route('trainer.availability.update'), $this->payload(['hours' => [[$range], [], [], [], [], [], []]]))
+                ->assertSessionHasErrors('hours.0.0');
+        }
     }
 
     public function test_the_trainer_saves_hours_and_rules_without_a_new_review()

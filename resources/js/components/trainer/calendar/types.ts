@@ -20,7 +20,14 @@ export type CalendarViewProps = {
     onSelect: (id: number | null) => void;
     /** Loads another day or view: `?vista=` and `?giorno=`. */
     show: (view: CalendarView, day: string) => void;
-    onAdd: () => void;
+    /** "Aggiungi seduta" from a button: the popover opens under it on desktop. */
+    onAdd: (button?: HTMLElement) => void;
+    /** A click on a free hour of the grid: "Aggiungi seduta" at that time. */
+    onPickSlot: (date: string, time: string, cell: HTMLElement) => void;
+    /** Right click on a day of the month: "Aggiungi seduta" that day. */
+    onAddOnDay: (date: string, cell: HTMLElement) => void;
+    /** The new session being added from the grid, drawn dashed. */
+    draft: { date: string; time: string } | null;
 };
 
 export const VIEWS: { value: CalendarView; label: string }[] = [

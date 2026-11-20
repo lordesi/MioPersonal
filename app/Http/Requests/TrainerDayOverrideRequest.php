@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\WorkingRange;
 use App\Support\TrainerSlots;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -33,7 +34,7 @@ class TrainerDayOverrideRequest extends FormRequest
             'closed' => ['required', 'boolean'],
             'hours' => ['exclude_if:closed,true', 'required', 'array:0,1,2,3,4,5,6'],
             'hours.*' => ['array'],
-            'hours.*.*' => ['integer', 'between:'.TrainerProfileRequest::FIRST_HOUR.','.TrainerProfileRequest::LAST_HOUR],
+            'hours.*.*' => [new WorkingRange],
             'note' => ['nullable', 'string', 'max:'.self::NOTE_MAX],
         ];
     }
