@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react';
 import { weeklyHours } from '@/components/onboarding/trainer/draft';
-import { hourLabel } from '@/lib/calendar';
+import type { HourRange } from '@/lib/hours';
+import { dayRangesLabel } from '@/lib/hours';
 import { formatHours } from '@/lib/format';
 import { stepBoxClassName } from '@/components/trainer/ui/styles';
 import { cn } from '@/lib/utils';
@@ -8,30 +9,16 @@ import type { TrainerAvailability } from '@/types';
 
 const dayNames = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 
-/** [12, 13, 14, 18] → "12:00–15:00, 18:00–19:00" */
-export function dayRanges(hours: number[]): string {
-    const ranges: string[] = [];
-    let start: number | null = null;
-
-    [...hours]
-        .sort((a, b) => a - b)
-        .forEach((hour, index, sorted) => {
-            start ??= hour;
-
-            if (sorted[index + 1] !== hour + 1) {
-                ranges.push(`${hourLabel(start)}–${hourLabel(hour + 1)}`);
-                start = null;
-            }
-        });
-
-    return ranges.join(', ');
+/** "12:00–15:00, 18:00–19:30" */
+export function dayRanges(ranges: HourRange[]): string {
+    return dayRangesLabel(ranges);
 }
 
 /**
  * The week in one line, days with the same hours together:
  * "Lun–Ven 12:00–18:00 · Sab 09:00–12:00".
  */
-export function weekRangesLabel(hours: number[][]): string {
+export function weekRangesLabel(hours: HourRange[][]): string {
     const groups: { ranges: string; first: number; last: number }[] = [];
 
     hours.forEach((dayHours, day) => {

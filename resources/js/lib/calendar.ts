@@ -135,6 +135,47 @@ export type CalendarItem = {
     trainerNote: string | null;
 };
 
+/** The kind of session, for its color in the calendar. */
+export type SessionTone = 'single' | 'first' | 'package';
+
+/** The colors of the calendar: turquoise single, orange first session, violet package. */
+export const toneColors: Record<SessionTone, string> = {
+    single: '#42d7d9',
+    first: '#ff9230',
+    package: '#6d7cff',
+};
+
+/** "Prima seduta" (Service::FIRST_SESSION_NAME), a package, or a single session. */
+export function sessionTone(
+    item: Pick<CalendarItem, 'package' | 'detail'>,
+): SessionTone {
+    if (item.package !== null) {
+        return 'package';
+    }
+
+    return item.detail.startsWith('Prima seduta') ? 'first' : 'single';
+}
+
+/** The block of a session: tinted when confirmed, dashed outline while waiting. */
+export function toneStyle(
+    item: Pick<CalendarItem, 'package' | 'detail' | 'kind'>,
+    strength = 24,
+): { background: string; border: string; dot: string } {
+    const color = toneColors[sessionTone(item)];
+
+    return item.kind === 'pending'
+        ? {
+              background: 'transparent',
+              border: `1.5px dashed ${color}`,
+              dot: color,
+          }
+        : {
+              background: `color-mix(in srgb, ${color} ${strength}%, var(--card))`,
+              border: '0',
+              dot: color,
+          };
+}
+
 /** The bookings of the server as calendar items, in Rome time. */
 export function calendarItems(events: CalendarEvent[]): CalendarItem[] {
     return events.map((event) => {

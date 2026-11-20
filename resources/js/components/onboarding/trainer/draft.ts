@@ -1,4 +1,5 @@
 import type { TrainingGoal } from '@/lib/goals';
+import type { HourRange } from '@/lib/hours';
 import type { BookingRules } from '@/types';
 
 /**
@@ -31,8 +32,8 @@ export type TrainerDraft = {
     otherCities: string[];
     /** Step 4 "Servizi e prezzi". */
     pricing: Pricing;
-    /** Working hours by day (0 = Monday … 6 = Sunday), start hours from 6 to 23. */
-    hours: number[][];
+    /** Working hours by day (0 = Monday … 6 = Sunday): ranges in minutes, on the half hour. */
+    hours: HourRange[][];
     rules: BookingRules;
     autoConfirm: boolean;
     certifications: Certification[];
@@ -265,12 +266,18 @@ export const initialDraft: TrainerDraft = {
         packages: [],
     },
     hours: [
-        [7, 8, 9, 10, 11, 18, 19, 20],
-        [12, 13, 14, 15, 16, 17, 18, 19, 20],
-        [7, 8, 9, 10, 11, 18, 19, 20],
-        [12, 13, 14, 15, 16, 17, 18, 19, 20],
-        [7, 8, 9, 10, 11, 12],
-        [8, 9, 10, 11, 12, 13],
+        [
+            { start: 7 * 60, end: 12 * 60 },
+            { start: 18 * 60, end: 21 * 60 },
+        ],
+        [{ start: 12 * 60, end: 21 * 60 }],
+        [
+            { start: 7 * 60, end: 12 * 60 },
+            { start: 18 * 60, end: 21 * 60 },
+        ],
+        [{ start: 12 * 60, end: 21 * 60 }],
+        [{ start: 7 * 60, end: 13 * 60 }],
+        [{ start: 8 * 60, end: 14 * 60 }],
         [],
     ],
     rules: {
@@ -402,9 +409,7 @@ export function needsCity(draft: TrainerDraft): boolean {
 }
 
 /** Total working hours in a week. */
-export function weeklyHours(hours: number[][]): number {
-    return hours.reduce((total, day) => total + day.length, 0);
-}
+export { weeklyHours } from '@/lib/hours';
 
 /** Step 2: photo (new or already saved), headline, bio and experience. */
 export function isProfileComplete(draft: TrainerDraft): boolean {

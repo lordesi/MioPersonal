@@ -38,6 +38,8 @@ class TrainerManualSessionController extends Controller
             'time' => ['required', 'date_format:H:i'],
             'minutes' => ['required', 'integer'],
             'place_id' => ['nullable', 'integer'],
+            // "Note per la seduta": the trainer's own, as "Aggiungi nota".
+            'note' => ['nullable', 'string', 'max:'.TrainerSessionNoteController::NOTE_MAX],
         ], [
             'client_record_id.required_without' => 'Scegli il cliente.',
             'new_client.name.required_with' => 'Scrivi il nome del cliente.',
@@ -46,6 +48,7 @@ class TrainerManualSessionController extends Controller
             'service_id.required' => 'Scegli la seduta.',
             'date.*' => 'Scegli il giorno.',
             'time.*' => 'Scegli l’ora.',
+            'note.max' => 'La nota può avere al massimo '.TrainerSessionNoteController::NOTE_MAX.' caratteri.',
         ]);
 
         $service = $profile->services()->find((int) $data['service_id']) ?? throw ValidationException::withMessages(['service_id' => 'Scegli una delle tue sedute.']);
@@ -56,7 +59,12 @@ class TrainerManualSessionController extends Controller
             ? $profile->clientRecords()->findOrFail((int) $data['client_record_id'])
             : $this->newRecord($profile, $data['new_client']);
 
-        $create->handle($profile, $record, $service, $start, (int) $data['minutes'], $place);
+        $booking = $create->handle($profile, $record, $service, $start, (int) $data['minutes'], $place);
+        $note = $this->clean($data['note'] ?? null);
+
+        if ($note !== null) {
+            $booking->forceFill(['trainer_note' => $note])->save();
+        }
 
         if ($record->isRegistered()) {
             Inertia::flash('toast', ['type' => 'success', 'message' => "Proposta inviata: {$record->user?->first_name} riceverà una notifica per accettarla."]);
