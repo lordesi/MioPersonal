@@ -1,134 +1,83 @@
-import {
-    Building2,
-    Calendar,
-    CalendarDays,
-    CalendarHeart,
-    CircleHelp,
-    Compass,
-    Dumbbell,
-    Heart,
-    LayoutDashboard,
-    MessageCircle,
-    Search,
-    Settings,
-    User,
-} from 'lucide-react';
-import type {
-    AreaNavGroup,
-    AreaNavItem,
-    SheetLink,
-} from '@/components/layout/area-nav';
-import { withActive } from '@/components/layout/area-nav';
-import { courseSearchUrl } from '@/lib/course';
-import { gymSearchUrl } from '@/lib/gym';
+import { House, MessageCircle, Search, User } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { searchUrl } from '@/lib/search';
-import { home as publicHome } from '@/routes';
-import { settings } from '@/routes/account';
-import { bookings, favorites, home, messages, profile } from '@/routes/client';
-import { show as contactPage } from '@/routes/contact';
-import { search as eventsSearch } from '@/routes/events';
-import { register as trainerRegister } from '@/routes/trainer';
+import { home, messages, profile } from '@/routes/client';
 
-/** 'explore': the public pages (home and searches) seen by a client. */
+/**
+ * The page a client page belongs to, set with `Page.layout = { section }`.
+ * 'explore': the public pages (home and searches) seen by a client.
+ */
 export type ClientSection =
     | 'explore'
     | 'home'
-    | 'bookings'
-    | 'favorites'
     | 'messages'
     | 'profile'
+    | 'bookings'
+    | 'favorites'
+    | 'edit-profile'
     | 'settings';
 
-/** The sections with a tab of their own on mobile; "Profilo" opens the sheet. */
-export const CLIENT_TABS: ClientSection[] = [
-    'explore',
-    'home',
-    'bookings',
-    'favorites',
-];
+/** The four places of the menu (sidebar on desktop, tab bar on phones). */
+export type ClientNavSection = 'home' | 'search' | 'messages' | 'profile';
 
-const item = (
-    // The searches have a section of their own, never the current one here.
-    section: string,
-    title: string,
-    icon: AreaNavItem['icon'],
-    href: string,
-    extra: Partial<AreaNavItem> = {},
-): AreaNavItem => ({ section, title, icon, href, ...extra });
-
-const mySpace = () => [
-    item('home', 'Panoramica', LayoutDashboard, home.url()),
-    item('bookings', 'Le mie prenotazioni', Calendar, bookings.url(), {
-        shortTitle: 'Prenotazioni',
-    }),
-    item('favorites', 'Preferiti', Heart, favorites.url()),
-    item('messages', 'Messaggi', MessageCircle, messages.url()),
-    item('profile', 'Il mio profilo', User, profile.url()),
-];
-
-/** The side menu: the client's own pages, then the four searches. */
-export function clientNavGroups(current?: ClientSection): AreaNavGroup[] {
-    return withActive(
-        [
-            { label: 'IL MIO SPAZIO', items: mySpace() },
-            {
-                label: 'ESPLORA',
-                items: [
-                    item(
-                        'search-trainers',
-                        'Personal trainer',
-                        Search,
-                        searchUrl(),
-                    ),
-                    item('search-gyms', 'Palestre', Building2, gymSearchUrl()),
-                    item(
-                        'search-courses',
-                        'Corsi',
-                        CalendarDays,
-                        courseSearchUrl(),
-                    ),
-                    item(
-                        'search-events',
-                        'Eventi',
-                        CalendarHeart,
-                        eventsSearch.url(),
-                    ),
-                ],
-            },
-        ],
-        current,
-    );
+/** Which of the four places a page lights up. */
+export function clientNavSection(
+    section?: ClientSection,
+): ClientNavSection | null {
+    switch (section) {
+        case undefined:
+            return null;
+        case 'explore':
+            return 'search';
+        case 'home':
+        case 'messages':
+            return section;
+        default:
+            return 'profile';
+    }
 }
 
-/** The mobile tabs: "Esplora" (the home) first, then the client's pages. */
-export function clientTabGroups(current?: ClientSection): AreaNavGroup[] {
-    return withActive(
-        [
-            {
-                items: [
-                    item('explore', 'Esplora', Compass, publicHome.url()),
-                    ...mySpace(),
-                ],
-            },
-        ],
-        current,
-    );
-}
+/** The pages opened from "Profilo": on phones they show "‹ Profilo". */
+export const inClientProfile = (section?: ClientSection): boolean =>
+    section !== undefined &&
+    section !== 'profile' &&
+    clientNavSection(section) === 'profile';
 
-/** After "Il mio profilo" in the "Profilo" sheet. */
-export function clientSheetLinks(): SheetLink[] {
+export type ClientNavItem = {
+    section: ClientNavSection;
+    title: string;
+    icon: LucideIcon;
+    href: string;
+};
+
+/** Home, Cerca, Messaggi; Profilo is drawn apart (avatar on desktop, 4th tab on phones). */
+export function clientNavItems(): ClientNavItem[] {
     return [
-        { title: 'Impostazioni account', href: settings.url(), icon: Settings },
+        { section: 'home', title: 'Home', icon: House, href: home.url() },
+        { section: 'search', title: 'Cerca', icon: Search, href: searchUrl() },
         {
-            title: 'Centro assistenza',
-            href: contactPage.url(),
-            icon: CircleHelp,
-        },
-        {
-            title: 'Diventa un trainer',
-            href: trainerRegister.url(),
-            icon: Dumbbell,
-            hint: 'Crea il tuo profilo, è gratis',
+            section: 'messages',
+            title: 'Messaggi',
+            icon: MessageCircle,
+            href: messages.url(),
         },
     ];
+}
+
+export const clientProfileNavItem = (): ClientNavItem => ({
+    section: 'profile',
+    title: 'Profilo',
+    icon: User,
+    href: profile.url(),
+});
+
+/** The label of "Messaggi" with the dot: "Messaggi, 2 non letti". */
+export function messagesLabel(unread: number): string {
+    if (unread <= 0) {
+        return 'Messaggi';
+    }
+
+    return unread === 1
+        ? 'Messaggi, 1 conversazione da leggere'
+        : `Messaggi, ${unread} conversazioni da leggere`;
 }

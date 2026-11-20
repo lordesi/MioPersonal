@@ -37,7 +37,7 @@ class AreaNavigationTest extends TestCase
     ];
 
     private const CLIENT_PAGES = [
-        'client.home', 'client.bookings', 'client.favorites', 'client.profile', 'account.settings',
+        'client.home', 'client.bookings', 'client.favorites', 'client.messages', 'client.profile', 'client.profile.edit', 'account.settings',
     ];
 
     protected function setUp(): void

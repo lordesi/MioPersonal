@@ -20,4 +20,6 @@ export type Auth = {
     favoritesCount: number | null;
     /** The same, apart: the "Preferiti" filter of each search. */
     favoriteCounts: { trainers: number; gyms: number } | null;
+    /** The trainer's or the gym's public page; null for clients and guests. */
+    publicProfileHref: string | null;
 };

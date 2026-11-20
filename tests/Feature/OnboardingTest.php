@@ -145,7 +145,7 @@ class OnboardingTest extends TestCase
         $client->clientPreference()->create(['goal' => TrainingGoal::Muscle]);
 
         $this->actingAs($client)
-            ->get(route('client.profile'))
+            ->get(route('client.profile.edit'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('client/edit-profile')
@@ -160,10 +160,10 @@ class OnboardingTest extends TestCase
         $client = User::factory()->create();
 
         $this->actingAs($client)
-            ->from(route('client.profile'))
+            ->from(route('client.profile.edit'))
             ->put(route('client.profile.update'), ['goal' => 'wellbeing', 'mode' => 'online'])
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('client.profile'));
+            ->assertRedirect(route('client.profile.edit'));
 
         $preference = $client->clientPreference()->firstOrFail();
         $this->assertSame(TrainingGoal::Wellbeing, $preference->goal);
@@ -176,7 +176,7 @@ class OnboardingTest extends TestCase
 
         // A name of the old list.
         $this->actingAs($client)
-            ->from(route('client.profile'))
+            ->from(route('client.profile.edit'))
             ->put(route('client.profile.update'), ['goal' => 'fitness'])
             ->assertSessionHasErrors(['goal' => 'Scegli il tuo obiettivo tra quelli proposti.']);
 
@@ -235,9 +235,9 @@ class OnboardingTest extends TestCase
             ->post(route('client.complete-profile.photo'), ['photo' => UploadedFile::fake()->image('io.jpg', 400, 400)]);
         $path = (string) $client->refresh()->avatar_path;
 
-        $this->from(route('client.profile'))
+        $this->from(route('client.profile.edit'))
             ->delete(route('client.complete-profile.photo.destroy'))
-            ->assertRedirect(route('client.profile'));
+            ->assertRedirect(route('client.profile.edit'));
 
         Storage::disk(User::AVATAR_DISK)->assertMissing($path);
         $this->assertNull($client->refresh()->avatar_path);

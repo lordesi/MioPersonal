@@ -1,5 +1,6 @@
 import type { CookieConsent } from '@/lib/cookie-consent';
 import type { Auth } from '@/types/auth';
+import type { ClientAreaData } from '@/types/client';
 
 declare module 'react' {
     interface InputHTMLAttributes<T> {
@@ -17,6 +18,8 @@ declare module '@inertiajs/core' {
             vapidPublicKey: string | null;
             /** null until the cookie banner is answered. */
             cookieConsent: CookieConsent | null;
+            /** The client area's menu; null for guests and the other roles. */
+            clientArea: ClientAreaData | null;
             [key: string]: unknown;
         };
     }

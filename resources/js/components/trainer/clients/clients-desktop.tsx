@@ -428,11 +428,6 @@ function Empty({ onAdd }: { onAdd: () => void }) {
                 <Users aria-hidden="true" className="size-7" />
             </span>
             <span className="text-lg font-semibold">Ancora nessun cliente</span>
-            <span className="max-w-110 text-[15px] text-muted-foreground">
-                Chi prenota da te compare qui da solo. Aggiungi subito i clienti
-                che hai già: gli mandi un link personale e ritrovi tutto in un
-                posto.
-            </span>
             <button
                 type="button"
                 onClick={onAdd}

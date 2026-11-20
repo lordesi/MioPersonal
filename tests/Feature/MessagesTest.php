@@ -128,6 +128,48 @@ class MessagesTest extends TestCase
                 ->where('conversations.0.lastMessage', null));
     }
 
+    public function test_the_client_sees_how_many_messages_are_new_and_the_dot_on_messaggi()
+    {
+        $record = $this->pair();
+        $client = $this->clientOf($record);
+        $trainer = $this->trainerOf($record);
+
+        $this->actingAs($trainer)->postJson(route('messages.store', $record), ['body' => 'Ciao!'])->assertCreated();
+        $this->travel(1)->seconds();
+        $this->actingAs($trainer)->postJson(route('messages.store', $record), ['body' => 'Domani alle 18?'])->assertCreated();
+
+        $this->actingAs($client)
+            ->get(route('client.home'))
+            ->assertInertia(fn (Assert $page) => $page->where('clientArea.unreadChats', 1));
+
+        $this->actingAs($client)
+            ->get(route('client.messages'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('conversations.0.unread', true)
+                ->where('conversations.0.unreadCount', 2)
+                ->where('conversations.0.subtitle', $record->trainerProfile->disciplines->first()?->name));
+
+        // Opened: read, the dot goes away.
+        $this->actingAs($client)
+            ->get(route('client.messages', ['con' => $record->id]))
+            ->assertInertia(fn (Assert $page) => $page->where('conversations.0.unreadCount', 0));
+
+        $this->actingAs($client)
+            ->get(route('client.messages'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('conversations.0.unreadCount', 0)
+                ->where('clientArea.unreadChats', 0));
+    }
+
+    public function test_the_dot_on_messaggi_is_only_for_clients()
+    {
+        $record = $this->pair();
+
+        $this->actingAs($this->trainerOf($record))
+            ->get(route('trainer.clients'))
+            ->assertInertia(fn (Assert $page) => $page->where('clientArea', null));
+    }
+
     public function test_the_poll_gives_only_the_messages_after_the_last_one()
     {
         $record = $this->pair();

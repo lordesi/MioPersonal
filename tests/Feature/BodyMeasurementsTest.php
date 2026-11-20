@@ -4,10 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\BodyMeasurement;
 use App\Models\User;
+use App\Support\ClientProgress;
 use Carbon\CarbonImmutable;
 use Database\Seeders\CatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 /** The weight over time: health data, only with the consent (GDPR art. 9). */
@@ -39,7 +39,7 @@ class BodyMeasurementsTest extends TestCase
             ->assertSessionHasErrors('weight');
         $this->assertSame(0, BodyMeasurement::count());
 
-        $this->get(route('client.home'))->assertInertia(fn (Assert $page) => $page->where('weights', null));
+        $this->assertNull(ClientProgress::weights($client));
     }
 
     public function test_one_weight_a_day_and_the_last_one_goes_to_su_di_te()
@@ -54,12 +54,11 @@ class BodyMeasurementsTest extends TestCase
         $this->assertSame(2, BodyMeasurement::count());
         $this->assertSame(73, $client->clientPreference()->value('weight_kg'));
 
-        $this->get(route('client.home'))->assertInertia(fn (Assert $page) => $page
-            ->has('weights', 2)
-            ->where('weights.0.date', '2026-11-01')
-            ->where('weights.0.kg', 74.4)
-            ->where('weights.1.kg', 72.6)
-        );
+        $weights = ClientProgress::weights($client->refresh()) ?? [];
+        $this->assertCount(2, $weights);
+        $this->assertSame('2026-11-01', $weights[0]['date']);
+        $this->assertSame(74.4, $weights[0]['kg']);
+        $this->assertSame(72.6, $weights[1]['kg']);
     }
 
     public function test_a_client_deletes_only_their_own_weights()

@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { ChevronLeft } from 'lucide-react';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
+import AreaGlow from '@/components/layout/area-glow';
 import ProfileStatusNotice from '@/components/layout/profile-status-notice';
 import TrainerSidebar from '@/components/layout/trainer/trainer-sidebar';
 import TrainerTabBar from '@/components/layout/trainer/trainer-tab-bar';
@@ -70,7 +71,7 @@ export default function TrainerLayout({
         return (
             <div className="theme-dark relative min-h-dvh bg-background">
                 {/* The pages of "Profilo": black as "Diventa trainer". */}
-                {!inProfile && <Glow />}
+                {!inProfile && <AreaGlow />}
                 <main className="relative flex flex-col gap-6 px-4 pt-3 pb-32">
                     {inProfile && (
                         <Link
@@ -98,7 +99,7 @@ export default function TrainerLayout({
 
     return (
         <div className="theme-dark relative flex min-h-dvh gap-6 bg-background p-4">
-            {!inProfile && <Glow />}
+            {!inProfile && <AreaGlow />}
             <TrainerSidebar
                 current={current}
                 pendingCount={pending}
@@ -134,15 +135,5 @@ export default function TrainerLayout({
                 {children}
             </main>
         </div>
-    );
-}
-
-/** The turquoise glow on the left of the page. */
-function Glow() {
-    return (
-        <div
-            aria-hidden="true"
-            className="pointer-events-none fixed inset-0 bg-[radial-gradient(40%_50%_at_0%_25%,rgba(66,215,217,0.22)_0%,rgba(66,215,217,0)_100%),radial-gradient(30%_40%_at_5%_95%,rgba(66,215,217,0.12)_0%,rgba(66,215,217,0)_100%)] max-md:bg-[radial-gradient(90%_40%_at_20%_100%,rgba(66,215,217,0.18)_0%,rgba(66,215,217,0)_100%)]"
-        />
     );
 }

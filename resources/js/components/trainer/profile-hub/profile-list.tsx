@@ -79,9 +79,6 @@ export default function ProfileList({
                     >
                         {auth?.user?.name}
                     </span>
-                    <span className="text-[13px] leading-4.5 text-muted-foreground">
-                        Modifica profilo, foto e presentazione
-                    </span>
                 </span>
                 {large ? (
                     <ChevronRight

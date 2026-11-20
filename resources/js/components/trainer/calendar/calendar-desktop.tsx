@@ -291,7 +291,6 @@ export default function CalendarDesktop(props: CalendarViewProps) {
                             onToggle={(id) =>
                                 onSelect(selectedId === id ? null : id)
                             }
-                            emptyHint="Nessuna seduta in questo giorno. Usa “Aggiungi seduta” per inserirne una."
                         />
                     )}
                     {view === 'week' && (

@@ -63,7 +63,18 @@ class MessagesController extends Controller
         $selected = $records->firstWhere('id', $request->integer('con'));
 
         return Inertia::render('client/messages', [
-            'conversations' => fn () => $records->map(fn (TrainerClient $record) => $this->summary($record, $user))->values()->all(),
+            'conversations' => function () use ($records, $user, $selected) {
+                $unread = $this->unreadCounts($records, $user);
+
+                return $records->map(fn (TrainerClient $record) => [
+                    ...$this->summary($record, $user),
+                    // The number on the row: the trainer's messages not read yet.
+                    // The open one is read now (thread()).
+                    'unreadCount' => $record->is($selected) ? 0 : $unread->get($record->conversation->id ?? 0, 0),
+                    // Under the name: what the trainer teaches, e.g. "Boxe".
+                    'subtitle' => $record->trainerProfile->disciplines->first()?->name,
+                ])->values()->all();
+            },
             'selected' => fn () => $selected === null ? null : $this->thread($selected, $user),
         ]);
     }
@@ -317,7 +328,8 @@ class MessagesController extends Controller
         if ($user->role === UserRole::Trainer) {
             $query->where('trainer_profile_id', $user->trainerProfile->id ?? 0);
         } else {
-            $query->where('user_id', $user->id);
+            // The discipline under the trainer's name.
+            $query->where('user_id', $user->id)->with('trainerProfile.disciplines');
         }
 
         return $query->get()
@@ -328,6 +340,34 @@ class MessagesController extends Controller
             })
             ->values()
             ->toBase();
+    }
+
+    /**
+     * The messages from the trainer after the client last opened each
+     * conversation, by conversation id: one query for the whole list.
+     *
+     * @param  Collection<int, TrainerClient>  $records
+     * @return Collection<int, int>
+     */
+    private function unreadCounts(Collection $records, User $client): Collection
+    {
+        $ids = $records->map(fn (TrainerClient $record) => $record->conversation?->id)->filter()->values()->all();
+
+        if ($ids === []) {
+            return collect();
+        }
+
+        return Message::query()
+            ->join('conversations', 'conversations.id', '=', 'messages.conversation_id')
+            ->whereIn('messages.conversation_id', $ids)
+            ->where('messages.sender_id', '!=', $client->id)
+            ->where(fn ($unread) => $unread
+                ->whereNull('conversations.client_read_at')
+                ->orWhereColumn('messages.created_at', '>', 'conversations.client_read_at'))
+            ->groupBy('messages.conversation_id')
+            ->selectRaw('messages.conversation_id, count(*) as unread')
+            ->pluck('unread', 'messages.conversation_id')
+            ->map(fn ($count) => (int) $count);
     }
 
     /** The other person: the client for the trainer, the trainer for the client. */

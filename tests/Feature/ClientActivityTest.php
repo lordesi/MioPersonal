@@ -6,9 +6,9 @@ use App\Actions\Account\DeleteUser;
 use App\Enums\ActivityKind;
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Support\ClientProgress;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 /** "Segna un allenamento" and the weekly goal, in "Panoramica". */
@@ -42,15 +42,11 @@ class ClientActivityTest extends TestCase
         $this->assertSame(ActivityKind::Running, $log->kind);
         $this->assertSame('2026-11-11', $log->done_on);
 
-        $this->get(route('client.home'))
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('progress.thisWeek', 1)
-                ->where('progress.recent.0.label', 'Corsa · 40 min')
-                ->where('progress.recent.0.source', 'log')
-                ->where('progress.recent.0.logId', $log->id)
-                ->has('activityKinds', count(ActivityKind::cases()))
-                ->where('today', '2026-11-12')
-            );
+        $progress = ClientProgress::for($client)->summary();
+        $this->assertSame(1, $progress['thisWeek']);
+        $this->assertSame('Corsa · 40 min', $progress['recent'][0]['label']);
+        $this->assertSame('log', $progress['recent'][0]['source']);
+        $this->assertSame($log->id, $progress['recent'][0]['logId']);
     }
 
     public function test_only_the_last_sixty_days_and_never_tomorrow()
@@ -90,7 +86,7 @@ class ClientActivityTest extends TestCase
 
         $this->put(route('client.goal.update'), ['sessions_per_week' => 8])->assertSessionHasErrors('sessions_per_week');
 
-        $this->get(route('client.home'))->assertInertia(fn (Assert $page) => $page->where('progress.goal', 3));
+        $this->assertSame(3, ClientProgress::for($client->refresh())->summary()['goal']);
     }
 
     public function test_the_trainings_go_with_the_account()

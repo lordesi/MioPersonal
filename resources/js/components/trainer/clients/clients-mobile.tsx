@@ -240,10 +240,6 @@ export default function ClientsMobile(props: ClientsViewProps) {
                     <span className="text-lg font-semibold">
                         Ancora nessun cliente
                     </span>
-                    <span className="text-[15px] text-muted-foreground">
-                        Chi prenota da te compare qui da solo. Aggiungi i
-                        clienti che hai già con il tuo link personale.
-                    </span>
                 </div>
             ) : visible.length === 0 ? (
                 <p className="py-6 text-center text-[15px] text-muted-foreground">

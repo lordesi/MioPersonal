@@ -8,7 +8,7 @@ import {
     Menu,
 } from 'lucide-react';
 import { useState } from 'react';
-import AccountMenu from '@/components/layout/account-menu';
+import AccountCapsuleMenu from '@/components/layout/account-capsule-menu';
 import BrandLogo from '@/components/layout/brand-logo';
 import NotificationBell from '@/components/layout/notification-bell';
 import type { SearchKind } from '@/components/search/search-kind-toggle';
@@ -141,11 +141,7 @@ export default function PublicHeader({ className }: { className?: string }) {
                                 tone="dark"
                                 className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
                             />
-                            <AccountMenu
-                                variant={variant}
-                                userName={user.name}
-                                headerHeight={16}
-                            />
+                            <AccountCapsuleMenu variant={variant} />
                         </>
                     ) : (
                         <>

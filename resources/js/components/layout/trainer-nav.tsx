@@ -3,7 +3,6 @@ import {
     Eye,
     CircleHelp,
     Clock,
-    Compass,
     House,
     Bell,
     Settings,
@@ -17,7 +16,6 @@ import {
     User,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { home } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
 import {
     availability,
@@ -144,7 +142,6 @@ export function profileGroups(
                 {
                     section: 'availability',
                     title: 'Orari',
-                    hint: 'Disponibilità e regole di prenotazione',
                     icon: Clock,
                     href: availability.url(),
                 },
@@ -195,7 +192,6 @@ export function profileGroups(
                 {
                     section: 'settings',
                     title: 'Impostazioni account',
-                    hint: 'Dati personali, email, password e notifiche',
                     icon: Settings,
                     href: settings.url(),
                 },
@@ -216,16 +212,8 @@ export function profileGroups(
             links: [
                 {
                     title: 'Centro assistenza',
-                    hint: 'Domande frequenti e contatti',
                     icon: CircleHelp,
                     href: contactPage.url(),
-                    external: true,
-                },
-                {
-                    title: 'Esplora il sito',
-                    hint: 'Trainer, palestre, corsi ed eventi',
-                    icon: Compass,
-                    href: home.url(),
                     external: true,
                 },
             ],

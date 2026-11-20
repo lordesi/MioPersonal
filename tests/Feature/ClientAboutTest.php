@@ -63,7 +63,7 @@ class ClientAboutTest extends TestCase
         $this->assertNotNull($preference->body_data_consent_at);
 
         $this->actingAs($client)
-            ->get(route('client.profile'))
+            ->get(route('client.profile.edit'))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('preferences.sex', 'female')
                 ->where('preferences.sports', ['Nuoto', 'Calcio a 5'])

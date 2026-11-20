@@ -6,7 +6,6 @@ use App\Enums\TrainerProfileStatus;
 use App\Models\City;
 use App\Models\GymProfile;
 use App\Models\TrainerProfile;
-use App\Models\User;
 use Database\Seeders\CatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -98,18 +97,6 @@ class NewsTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->missing('news'));
         $this->get(route('gyms.search', $this->milano))
             ->assertInertia(fn (Assert $page) => $page->missing('news'));
-    }
-
-    public function test_the_client_home_shows_the_news_of_the_client_city()
-    {
-        $this->trainer($this->milano, 1);
-        $this->trainer($this->roma, 1);
-        $client = User::factory()->create();
-        $client->clientPreference()->create(['city_id' => $this->roma->id]);
-
-        $this->actingAs($client)
-            ->get(route('client.home'))
-            ->assertInertia(fn (Assert $page) => $page->where('news.city.slug', 'roma')->has('news.trainers', 1));
     }
 
     public function test_the_sitemap_lists_the_news_page()

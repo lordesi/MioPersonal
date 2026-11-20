@@ -83,4 +83,4 @@ export default function EditProfile({
     );
 }
 
-EditProfile.layout = { section: 'profile' };
+EditProfile.layout = { section: 'edit-profile' };

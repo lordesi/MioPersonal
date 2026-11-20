@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
- * "Consigliati per te" in the client's "Panoramica": published trainers that
+ * "Trainer consigliati" in the client's "Home": published trainers that
  * match the answers of "Completa il tuo profilo", first free slot first.
  */
 final class RecommendedTrainers
@@ -20,12 +20,12 @@ final class RecommendedTrainers
 
     /**
      * When the disciplines or the budget leave fewer than three, the others
-     * in the same city and mode fill the row. Favorites are left out: they
+     * in the same city and mode fill the row (`$limit`, three by default). Favorites are left out: they
      * have their own row. TrainerSummary, for the frontend.
      *
      * @return list<array<string, mixed>>
      */
-    public static function for(User $client, ?ClientPreference $preference): array
+    public static function for(User $client, ?ClientPreference $preference, int $limit = self::LIMIT): array
     {
         $base = TrainerProfile::query()
             ->published()
@@ -53,13 +53,13 @@ final class RecommendedTrainers
             ->when($disciplineIds !== [], fn (Builder $query) => $query
                 ->whereHas('disciplines', fn (Builder $discipline) => $discipline->whereIn('disciplines.id', $disciplineIds)))
             ->when($budget !== null, fn (Builder $query) => $query->where('price_from_cents', '<=', $budget))
-            ->limit(self::LIMIT)
+            ->limit($limit)
             ->get();
 
-        if ($trainers->count() < self::LIMIT) {
+        if ($trainers->count() < $limit) {
             $trainers = $trainers->concat((clone $base)
                 ->whereNotIn('id', $trainers->modelKeys())
-                ->limit(self::LIMIT - $trainers->count())
+                ->limit($limit - $trainers->count())
                 ->get());
         }
 

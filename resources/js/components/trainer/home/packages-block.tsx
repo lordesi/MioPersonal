@@ -71,8 +71,7 @@ export default function PackagesBlock({
 
             {packages.length === 0 ? (
                 <p className="rounded-[22px] border border-dashed border-[#3a3a3a] px-4 py-5 text-[15px] text-muted-foreground">
-                    Nessun pacchetto in corso. Quando un cliente ne compra uno
-                    lo vedi qui, con le sedute che restano.
+                    Nessun pacchetto in corso
                 </p>
             ) : variant === 'tiles' ? (
                 <div id={listId} className="grid grid-cols-2 gap-2.5">

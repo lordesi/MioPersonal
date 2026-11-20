@@ -198,11 +198,7 @@ function Delta({
     compared: string;
 }) {
     if (before === 0) {
-        return (
-            <span className="text-xs text-muted-foreground">
-                {value === 0 ? 'Nessun dato ancora' : `Nessun dato ${compared}`}
-            </span>
-        );
+        return null;
     }
 
     const change = Math.round(((value - before) / before) * 100);

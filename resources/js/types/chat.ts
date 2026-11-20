@@ -43,6 +43,10 @@ export type ChatConversation = {
     } | null;
     /** New messages from the other person since the last visit. */
     unread: boolean;
+    /** The client's "Messaggi" only: how many of them, the number on the row. */
+    unreadCount?: number;
+    /** The client's "Messaggi" only: what the trainer teaches, under the name. */
+    subtitle?: string | null;
 };
 
 /** The open conversation. */
