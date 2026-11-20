@@ -12,7 +12,6 @@ use App\Notifications\TrainerNoteShared;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
-use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 /** "Condividi i miei progressi" and "Nota per il cliente", between a client and a trainer. */
@@ -58,14 +57,7 @@ class ProgressSharingTest extends TestCase
 
         $this->assertNull($this->card($trainer, $record->user)['progress']);
 
-        $this->actingAs($record->user)
-            ->get(route('client.home'))
-            ->assertInertia(fn (Assert $page) => $page
-                ->has('sharing', 1)
-                ->where('sharing.0.recordId', $record->id)
-                ->where('sharing.0.shared', false));
-
-        $this->patch(route('client.sharing.update', $record), ['shared' => true])->assertSessionHasNoErrors();
+        $this->actingAs($record->user)->patch(route('client.sharing.update', $record), ['shared' => true])->assertSessionHasNoErrors();
         $this->assertNotNull($record->refresh()->progress_shared_at);
 
         $progress = $this->card($trainer, $record->user)['progress'];
@@ -115,7 +107,7 @@ class ProgressSharingTest extends TestCase
         $this->assertNull($row->refresh()->progress_shared_at);
     }
 
-    public function test_the_note_for_the_client_reaches_the_bell_and_the_overview()
+    public function test_the_note_for_the_client_reaches_the_bell()
     {
         Notification::fake();
         $trainer = $this->trainer();
@@ -131,15 +123,6 @@ class ProgressSharingTest extends TestCase
         // Saving the private notes doesn't send it again.
         $this->patch(route('trainer.clients.update', $record), ['notes' => 'Ginocchio sinistro', 'shared_note' => 'Ottima settimana!']);
         Notification::assertSentToTimes($record->user, TrainerNoteShared::class, 1);
-
-        $this->actingAs($record->user)
-            ->get(route('client.home'))
-            ->assertInertia(fn (Assert $page) => $page
-                ->has('notes', 1)
-                ->where('notes.0.note', 'Ottima settimana!')
-                ->where('notes.0.trainerName', $trainer->user->name)
-                // The private notes stay the trainer's.
-                ->missing('notes.0.private_notes'));
     }
 
     public function test_no_note_for_who_has_no_account()

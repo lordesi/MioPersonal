@@ -8,21 +8,14 @@ type MessagesProps = {
     selected: ChatThread | null;
 };
 
-/** "Messaggi" of the client: the trainers who have them among their clients. */
+/**
+ * "Messaggi" of the client: the trainers who have them among their clients.
+ * The title, the list and the conversation are drawn by ChatView.
+ */
 export default function Messages({ conversations, selected }: MessagesProps) {
     return (
         <>
             <Head title="Messaggi" />
-
-            <h1
-                className={
-                    selected
-                        ? 'hidden text-[28px] leading-8.5 font-bold tracking-[-0.03em] md:block md:text-[34px] md:leading-10'
-                        : 'text-[28px] leading-8.5 font-bold tracking-[-0.03em] md:text-[34px] md:leading-10'
-                }
-            >
-                Messaggi
-            </h1>
 
             <ChatView
                 conversations={conversations}
@@ -35,4 +28,4 @@ export default function Messages({ conversations, selected }: MessagesProps) {
     );
 }
 
-Messages.layout = { section: 'messages' };
+Messages.layout = { section: 'messages', fill: true };

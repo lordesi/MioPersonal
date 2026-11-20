@@ -20,6 +20,8 @@ class RoleAccessTest extends TestCase
         'account.settings',
         'client.complete-profile',
         'client.profile',
+        'client.profile.edit',
+        'client.messages',
     ];
 
     /** @var list<string> */

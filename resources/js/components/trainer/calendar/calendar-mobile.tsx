@@ -217,7 +217,6 @@ export default function CalendarMobile(props: CalendarViewProps) {
                         onToggle={(id) =>
                             onSelect(selectedId === id ? null : id)
                         }
-                        emptyHint="Nessuna seduta in programma. Tocca + per aggiungerne una."
                     />
                 </section>
             )}

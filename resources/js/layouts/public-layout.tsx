@@ -1,6 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
-import ClientTabBar from '@/components/layout/client-tab-bar';
+import ClientTabBar from '@/components/layout/client/client-tab-bar';
 import PublicFooter from '@/components/layout/public-footer';
 import PublicHeader from '@/components/layout/public-header';
 import DarkHeader from '@/components/mp/dark-header';
@@ -59,7 +59,13 @@ export default function PublicLayout({
     const showClientTabs =
         page.props.auth?.user?.role === 'client' &&
         EXPLORE_PAGES.includes(page.component);
-    const tabs = showClientTabs && <ClientTabBar section="explore" />;
+    // Phones only: the pages leave the room at the bottom (pb-28).
+    const tabs = showClientTabs && (
+        <ClientTabBar
+            current={page.component === 'public/home' ? null : 'search'}
+            className="md:hidden"
+        />
+    );
 
     if (DARK_PAGES.includes(page.component)) {
         return (
@@ -70,7 +76,10 @@ export default function PublicLayout({
                     }
                 />
                 <main className="flex flex-1 flex-col">{children}</main>
-                <PublicFooter variant="dark" />
+                <PublicFooter
+                    variant="dark"
+                    className={showClientTabs ? 'max-md:pb-28' : undefined}
+                />
                 {tabs}
             </div>
         );
@@ -82,7 +91,9 @@ export default function PublicLayout({
                 className={hideHeaderOnMobile ? 'hidden md:block' : undefined}
             />
             <main className="flex flex-1 flex-col">{children}</main>
-            <PublicFooter />
+            <PublicFooter
+                className={showClientTabs ? 'max-md:pb-28' : undefined}
+            />
             {tabs}
         </div>
     );

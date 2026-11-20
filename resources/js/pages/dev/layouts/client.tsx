@@ -22,7 +22,5 @@ export default function ClientLayoutPreview() {
 }
 
 ClientLayoutPreview.layout = (page: ReactNode) => (
-    <ClientLayout section="bookings" userName="Luca Moretti">
-        {page}
-    </ClientLayout>
+    <ClientLayout section="home">{page}</ClientLayout>
 );

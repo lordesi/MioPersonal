@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\TrainerProfileStatus;
 use App\Enums\UserRole;
+use App\Models\Conversation;
 use App\Models\CookieConsent;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -101,7 +102,11 @@ class HandleInertiaRequests extends Middleware
                 'favoritesCount' => fn () => ($counts = $this->favoriteCounts($request)) === null ? null : $counts['trainers'] + $counts['gyms'],
                 // The numbers on the "Preferiti" filter of the two searches.
                 'favoriteCounts' => fn () => $this->favoriteCounts($request),
+                // "Vedi profilo pubblico" in the account menu: trainers and gyms only.
+                'publicProfileHref' => fn () => $this->publicProfileHref($request),
             ],
+            // The client area's menu: the dot on "Messaggi" (null for the other roles).
+            'clientArea' => fn () => $this->clientArea($request),
             // For "Attiva le notifiche" (lib/push.ts); null hides it (no keys in the .env).
             'vapidPublicKey' => fn () => $request->user() === null ? null : (config('webpush.vapid.public_key') ?: null),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
@@ -130,5 +135,42 @@ class HandleInertiaRequests extends Middleware
             'trainers' => $user->favoriteTrainers()->where('trainer_profiles.status', TrainerProfileStatus::Approved)->count(),
             'gyms' => $user->favoriteGyms()->approved()->count(),
         ], fn (array $counts) => $request->attributes->set('favoriteCounts', $counts));
+    }
+
+    /**
+     * unreadChats: the conversations with messages from a trainer the client
+     * hasn't read yet.
+     *
+     * @return array{unreadChats: int}|null
+     */
+    private function clientArea(Request $request): ?array
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        if ($user?->role !== UserRole::Client) {
+            return null;
+        }
+
+        return [
+            'unreadChats' => Conversation::query()
+                ->whereNotNull('last_message_at')
+                ->where(fn ($unread) => $unread->whereNull('client_read_at')->orWhereColumn('client_read_at', '<', 'last_message_at'))
+                ->whereHas('trainerClient', fn ($record) => $record->where('user_id', $user->id))
+                ->count(),
+        ];
+    }
+
+    /** The trainer's or the gym's public page (also before it is published: a preview). */
+    private function publicProfileHref(Request $request): ?string
+    {
+        /** @var User|null $user */
+        $user = $request->user();
+
+        return match ($user?->role) {
+            UserRole::Trainer => $user->trainerProfile === null ? null : route('trainers.show', $user->trainerProfile->slug, false),
+            UserRole::Gym => $user->gymProfile === null ? null : route('gyms.show', $user->gymProfile->slug, false),
+            default => null,
+        };
     }
 }

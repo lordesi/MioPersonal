@@ -26,6 +26,7 @@ use App\Http\Controllers\BookingSentController;
 use App\Http\Controllers\ClientBookingsController;
 use App\Http\Controllers\ClientFavoritesController;
 use App\Http\Controllers\ClientHomeController;
+use App\Http\Controllers\ClientProfileController;
 use App\Http\Controllers\ClientProgressController;
 use App\Http\Controllers\ClientRescheduleController;
 use App\Http\Controllers\ClientReviewController;
@@ -299,11 +300,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // A wrong role is sent to its own area (see EnsureUserHasRole).
     Route::middleware('role:client')->group(function () {
-        // "Panoramica", the first page after the login.
+        // "Home", the first page after the login.
         Route::get('area-cliente', ClientHomeController::class)->name('client.home');
         // "Le mie prenotazioni", also the address in the links already sent.
         Route::get('prenotazioni', ClientBookingsController::class)->name('client.bookings');
-        // What the client writes in "Panoramica": trainings, weekly goal, weight.
+        // Trainings, weekly goal and weight (no page shows them for now).
         Route::controller(ClientProgressController::class)->middleware('throttle:30,1')->group(function () {
             Route::post('allenamenti', 'storeActivity')->name('client.activities.store');
             Route::delete('allenamenti/{log}', 'destroyActivity')->whereNumber('log')->name('client.activities.destroy');
@@ -324,9 +325,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('preferiti', ClientFavoritesController::class)->name('client.favorites');
         // "Messaggi" with the client's trainers.
         Route::get('messaggi', [MessagesController::class, 'index'])->name('client.messages');
+        // "Profilo": the client's pages, the account and the help.
+        Route::get('profilo', ClientProfileController::class)->name('client.profile');
         // "Modifica profilo": the answers of "Completa il tuo profilo", inside the client area.
         Route::controller(CompleteProfileController::class)->group(function () {
-            Route::get('profilo', 'edit')->name('client.profile');
+            Route::get('profilo/modifica', 'edit')->name('client.profile.edit');
             Route::put('profilo', 'update')->name('client.profile.update');
         });
         Route::get('impostazioni', [AccountSettingsController::class, 'show'])->name('account.settings');

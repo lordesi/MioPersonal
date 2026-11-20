@@ -6,10 +6,7 @@ import { toast } from 'sonner';
 import BookingStatusBadge from '@/components/booking/booking-status-badge';
 import BookingSummary from '@/components/booking/booking-summary';
 import BrandLogo from '@/components/layout/brand-logo';
-import ClientHeader from '@/components/layout/client-header';
-import { clientTabGroups } from '@/components/layout/client-nav';
 import MinimalHeader from '@/components/layout/minimal-header';
-import MobileTabBar from '@/components/layout/mobile-tab-bar';
 import PublicFooter from '@/components/layout/public-footer';
 import PublicHeader from '@/components/layout/public-header';
 import ChoiceChips from '@/components/shared/choice-chips';
@@ -223,31 +220,6 @@ export default function DevComponents() {
                                 label="Account di Luca Moretti"
                             />
                         </MinimalHeader>
-                    </Showcase>
-
-                    <Showcase
-                        title="Header area cliente (mobile)"
-                        screens="Le mie prenotazioni mobile"
-                        flush
-                    >
-                        <ClientHeader />
-                    </Showcase>
-
-                    <Showcase
-                        title="Barre di schede in basso (mobile)"
-                        screens="Le mie prenotazioni mobile"
-                    >
-                        <MobileTabBar
-                            label="Navigazione principale"
-                            items={clientTabGroups('bookings').flatMap(
-                                (group) => group.items,
-                            )}
-                            className="static max-w-sm rounded-lg border md:grid"
-                        />
-                        <p className="text-sm text-muted-foreground">
-                            Qui sono mostrate sempre; nei layout compaiono solo
-                            sotto i 768 px.
-                        </p>
                     </Showcase>
 
                     <Showcase

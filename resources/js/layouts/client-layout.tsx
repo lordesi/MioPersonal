@@ -1,51 +1,103 @@
-import { usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
+import { ChevronLeft } from 'lucide-react';
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { AreaSidebar } from '@/components/layout/area-nav';
-import ClientHeader from '@/components/layout/client-header';
-import ClientTabBar from '@/components/layout/client-tab-bar';
+import AreaGlow from '@/components/layout/area-glow';
+import ClientSidebar from '@/components/layout/client/client-sidebar';
+import ClientTabBar from '@/components/layout/client/client-tab-bar';
 import type { ClientSection } from '@/components/layout/client-nav';
-import { clientNavGroups } from '@/components/layout/client-nav';
-import { home } from '@/routes';
+import {
+    clientNavSection,
+    inClientProfile,
+} from '@/components/layout/client-nav';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
+import { profile } from '@/routes/client';
 
 type ClientLayoutProps = {
     children: ReactNode;
     /** Set from the page: `Page.layout = { section: 'favorites' }`. */
     section?: ClientSection;
-    /** Defaults to the logged-in user's name. */
-    userName?: string;
+    /**
+     * Pages that draw their own full-height panels (Messaggi on desktop): no
+     * padding at the bottom, the page fills the screen.
+     */
+    fill?: boolean;
 };
 
 /**
- * Client area (docs/design/cliente-dashboard.html). From md up: black side
- * menu and the page on the right (at most 1120 px). On mobile: header on top,
- * tabs at the bottom (the same tabs as on the public pages).
+ * The client area, dark with a turquoise glow like the trainer area. Phones:
+ * the page and the floating tab bar (Home, Cerca, Messaggi, Profilo).
+ * Tablets and desktop: the glass side menu and the page on the right. The
+ * area is never rendered on the server, so the two drawings never mismatch.
  */
 export default function ClientLayout({
     children,
     section,
-    userName,
+    fill = false,
 }: ClientLayoutProps) {
-    const { auth } = usePage().props;
-    const name = userName ?? auth?.user?.name ?? '';
+    const { auth, clientArea } = usePage().props;
+    const isMobile = useIsMobile();
+    const current = clientNavSection(section);
+    // The pages of "Profilo" (bookings, favorites, settings…), not the list itself.
+    const inProfile = inClientProfile(section);
 
-    return (
-        <div className="flex min-h-screen bg-secondary">
-            <AreaSidebar
-                groups={clientNavGroups(section)}
-                label="Principale"
-                homeHref={home.url()}
-                variant="client"
-                userName={name}
-            />
-            <div className="flex min-w-0 flex-1 flex-col">
-                <div className="md:hidden">
-                    <ClientHeader />
-                </div>
-                <main className="mx-auto flex w-full max-w-280 flex-1 flex-col gap-6 px-4 pt-5 pb-8 md:gap-7 md:px-10 md:pt-8 md:pb-12">
+    // Dialogs, menus and toasts open in a portal outside the page: dark too.
+    useEffect(() => {
+        document.documentElement.classList.add('theme-dark');
+
+        return () => document.documentElement.classList.remove('theme-dark');
+    }, []);
+
+    const back = inProfile && (
+        <Link
+            href={profile()}
+            className="-mb-2 inline-flex min-h-11 items-center gap-1 self-start text-[17px] text-brand outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+            <ChevronLeft aria-hidden="true" className="size-5.5" />
+            Profilo
+        </Link>
+    );
+
+    if (isMobile) {
+        return (
+            <div className="theme-dark relative min-h-dvh bg-background text-foreground">
+                {!inProfile && <AreaGlow />}
+                <main
+                    className={cn(
+                        'relative flex flex-col gap-6 px-4 pt-6',
+                        fill ? 'pb-28' : 'pb-32',
+                    )}
+                >
+                    {back}
                     {children}
                 </main>
-                <ClientTabBar section={section} />
+                <ClientTabBar current={current} />
             </div>
+        );
+    }
+
+    return (
+        <div className="theme-dark relative flex min-h-dvh gap-6 bg-background p-4 text-foreground lg:gap-10">
+            {!inProfile && <AreaGlow />}
+            <ClientSidebar
+                current={current}
+                unreadChats={clientArea?.unreadChats ?? 0}
+                userName={auth?.user?.name ?? ''}
+                avatar={auth?.user?.avatar}
+            />
+            <main
+                className={cn(
+                    'relative flex w-full min-w-0 flex-1 flex-col gap-6',
+                    // Full-height pages use the whole width, like "Clienti" of the trainer.
+                    fill
+                        ? 'h-[calc(100dvh-2rem)]'
+                        : 'mx-auto max-w-280 pt-6 pr-2 pb-12 lg:pr-6',
+                )}
+            >
+                {back}
+                {children}
+            </main>
         </div>
     );
 }

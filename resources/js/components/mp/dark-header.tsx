@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import AccountMenu from '@/components/layout/account-menu';
+import AccountCapsuleMenu from '@/components/layout/account-capsule-menu';
 import { BrandMark } from '@/components/layout/brand-logo';
 import NotificationBell from '@/components/layout/notification-bell';
 import { cn } from '@/lib/utils';
@@ -69,11 +69,7 @@ export default function DarkHeader({ className }: { className?: string }) {
                                 tone="dark"
                                 className="text-foreground hover:bg-foreground/10 hover:text-foreground"
                             />
-                            <AccountMenu
-                                variant={variant}
-                                userName={user.name}
-                                headerHeight={16}
-                            />
+                            <AccountCapsuleMenu variant={variant} />
                         </>
                     ) : (
                         <>

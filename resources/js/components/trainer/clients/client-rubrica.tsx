@@ -33,7 +33,7 @@ export default function ClientRubrica({
     if (clients.length === 0) {
         return (
             <p className="py-6 text-center text-[15px] text-muted-foreground">
-                Nessun cliente trovato.
+                Nessun cliente
             </p>
         );
     }

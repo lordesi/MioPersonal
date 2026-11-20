@@ -219,8 +219,11 @@ export default function Bookings({
                 </div>
 
                 <div className="flex min-w-0 flex-[2_1_320px] flex-col gap-5">
+                    {/* "Pacchetti" in "Profilo" opens here. */}
                     {packages.length > 0 && (
-                        <PackageCarousel packages={packages} />
+                        <div id="pacchetti" className="scroll-mt-6">
+                            <PackageCarousel packages={packages} />
+                        </div>
                     )}
 
                     {trainers.length > 0 && (

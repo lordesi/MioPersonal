@@ -18,8 +18,6 @@ type DayAgendaProps = {
     now: Date;
     openId: number | null;
     onToggle: (id: number) => void;
-    /** "Aggiungi seduta" when the day is empty. */
-    emptyHint: string;
 };
 
 /**
@@ -34,7 +32,6 @@ export default function DayAgenda({
     now,
     openId,
     onToggle,
-    emptyHint,
 }: DayAgendaProps) {
     const first = Math.min(
         FIRST_HOUR,
@@ -54,11 +51,6 @@ export default function DayAgenda({
 
     return (
         <div className="flex flex-col">
-            {items.length === 0 && (
-                <p className="mb-2 rounded-[18px] border border-dashed border-[#3a3a3a] px-3.5 py-3 text-[13px] text-muted-foreground">
-                    {emptyHint}
-                </p>
-            )}
             {Array.from({ length: Math.min(last, 24) - first }, (_, index) => {
                 const hour = first + index;
                 const rowItems = items.filter(

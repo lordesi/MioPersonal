@@ -11,7 +11,6 @@ use App\Support\Achievements;
 use App\Support\ClientProgress;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 /** "Traguardi": reached once, shown once, shared with the trainer's link. */
@@ -26,29 +25,29 @@ class AchievementsTest extends TestCase
         $this->travelTo(CarbonImmutable::parse('2026-11-12 10:00', 'Europe/Rome'));
     }
 
-    public function test_the_first_session_is_reached_once_and_shown_once()
+    public function test_the_first_session_is_reached_once()
     {
         $client = User::factory()->create();
         $trainer = TrainerProfile::factory()->approved()->create();
         Booking::factory()->for($trainer)->for($client, 'client')->confirmed()
             ->at(CarbonImmutable::parse('2026-11-10 18:00', 'Europe/Rome'))->create();
 
-        $this->actingAs($client)
-            ->get(route('client.home'))
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('justEarned', ['Prima seduta'])
-                ->has('achievements.earned', 1)
-                ->where('achievements.earned.0.key', 'first_session')
-                ->where('achievements.earned.0.trainer.name', $trainer->user->name)
-                ->where('achievements.earned.0.trainer.link', fn (string $link) => str_contains($link, 'utm_medium=traguardo') && str_contains($link, $trainer->slug))
-                // The closest next one: 1 discipline of 3 beats 1 week of 4 and 1 training of 10.
-                ->where('achievements.next.key', 'disciplines_3')
-                ->where('achievements.next.current', 1)
-                ->where('achievements.next.target', 3));
+        $progress = ClientProgress::for($client);
+        $this->assertSame([Achievement::FirstSession], Achievements::sync($client, $progress));
 
-        $this->get(route('client.home'))
-            ->assertInertia(fn (Assert $page) => $page->where('justEarned', [])->has('achievements.earned', 1));
+        $summary = Achievements::summary($client, $progress);
+        $this->assertCount(1, $summary['earned']);
+        $this->assertSame('first_session', $summary['earned'][0]['key']);
+        $this->assertSame($trainer->user->name, $summary['earned'][0]['trainer']['name']);
+        $link = $summary['earned'][0]['trainer']['link'];
+        $this->assertTrue(str_contains($link, 'utm_medium=traguardo') && str_contains($link, $trainer->slug));
+        // The closest next one: 1 discipline of 3 beats 1 week of 4 and 1 training of 10.
+        $this->assertSame('disciplines_3', $summary['next']['key']);
+        $this->assertSame(1, $summary['next']['current']);
+        $this->assertSame(3, $summary['next']['target']);
 
+        // Reached once: the second time nothing new.
+        $this->assertSame([], Achievements::sync($client, ClientProgress::for($client)));
         $this->assertSame(1, ClientAchievement::count());
     }
 

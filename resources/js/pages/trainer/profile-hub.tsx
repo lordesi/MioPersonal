@@ -329,28 +329,29 @@ function NewClientsSwitch({
                     />
                 </button>
             </div>
-            <p
-                id={noteId}
-                aria-live="polite"
-                className="px-4 text-[13px] leading-4.5 text-muted-foreground"
-            >
-                {on
-                    ? 'I nuovi clienti possono prenotarti dalla tua vetrina.'
-                    : 'Resti nella ricerca, ma solo chi ti conosce già può prenotare.'}
-                {paused && (
-                    <>
-                        {' '}
-                        <Link
-                            href={`${settings.url()}#visibilita`}
-                            className="text-brand"
-                        >
-                            {visibility.pausedUntil
-                                ? `In pausa fino ${formatUntilDay(visibility.pausedUntil)}`
-                                : 'Prenotazioni in pausa'}
-                        </Link>
-                    </>
-                )}
-            </p>
+            {(!on || paused) && (
+                <p
+                    id={noteId}
+                    aria-live="polite"
+                    className="px-4 text-[13px] leading-4.5 text-muted-foreground"
+                >
+                    {!on &&
+                        'Resti nella ricerca, ma solo chi ti conosce già può prenotare.'}
+                    {paused && (
+                        <>
+                            {!on && ' '}
+                            <Link
+                                href={`${settings.url()}#visibilita`}
+                                className="text-brand"
+                            >
+                                {visibility.pausedUntil
+                                    ? `In pausa fino ${formatUntilDay(visibility.pausedUntil)}`
+                                    : 'Prenotazioni in pausa'}
+                            </Link>
+                        </>
+                    )}
+                </p>
+            )}
         </div>
     );
 }
