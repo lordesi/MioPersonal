@@ -11,6 +11,7 @@ use App\Support\TrainerSlots;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -62,7 +63,7 @@ class ClientSessionProposalController extends Controller
         /** @var User $client */
         $client = $request->user();
 
-        abort_unless($booking->client_id === $client->id, 404);
+        Gate::authorize('asClient', $booking);
 
         if (! $booking->isTrainerProposal()) {
             throw ValidationException::withMessages(['booking' => 'Questa proposta non è più valida.']);

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -17,7 +17,7 @@ class TrainerNoShowController extends Controller
 {
     public function store(Request $request, Booking $booking): RedirectResponse
     {
-        $this->ensureCanChange($request, $booking);
+        $this->ensureCanChange($booking);
 
         $booking->forceFill(['no_show_at' => now()])->save();
 
@@ -26,7 +26,7 @@ class TrainerNoShowController extends Controller
 
     public function destroy(Request $request, Booking $booking): RedirectResponse
     {
-        $this->ensureCanChange($request, $booking);
+        $this->ensureCanChange($booking);
 
         $booking->forceFill(['no_show_at' => null])->save();
 
@@ -34,12 +34,9 @@ class TrainerNoShowController extends Controller
     }
 
     /** 404 for another trainer's booking; an error when it is not over or too late. */
-    private function ensureCanChange(Request $request, Booking $booking): void
+    private function ensureCanChange(Booking $booking): void
     {
-        /** @var User $trainer */
-        $trainer = $request->user();
-
-        abort_unless($booking->trainer_profile_id === $trainer->trainerProfile?->id, 404);
+        Gate::authorize('asTrainer', $booking);
 
         if ($booking->canChangeNoShow()) {
             return;

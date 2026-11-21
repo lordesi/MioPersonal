@@ -11,6 +11,7 @@ use App\Notifications\BookingRepeatDeclined;
 use App\Support\TrainerSlots;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -27,7 +28,7 @@ class TrainerBookingRequestController extends Controller
      */
     public function accept(Request $request, Booking $booking, CreateBookingSeries $series): RedirectResponse
     {
-        $this->ensureCanAnswer($request, $booking);
+        $this->ensureCanAnswer($booking);
         $request->validate(['weekly' => ['nullable', 'boolean']]);
         $weekly = $request->boolean('weekly');
 
@@ -63,7 +64,7 @@ class TrainerBookingRequestController extends Controller
     /** The slot is free again on the profile. */
     public function decline(Request $request, Booking $booking): RedirectResponse
     {
-        $this->ensureCanAnswer($request, $booking);
+        $this->ensureCanAnswer($booking);
 
         $booking->forceFill(['status' => BookingStatus::Declined, 'expires_at' => null])->save();
         $booking->record('declined', $request->user());
@@ -76,12 +77,9 @@ class TrainerBookingRequestController extends Controller
      * 404 for another trainer's booking; an error when it is too late to answer.
      * The page shows the confirmation itself, so success needs no message.
      */
-    private function ensureCanAnswer(Request $request, Booking $booking): void
+    private function ensureCanAnswer(Booking $booking): void
     {
-        /** @var User $trainer */
-        $trainer = $request->user();
-
-        abort_unless($booking->trainer_profile_id === $trainer->trainerProfile?->id, 404);
+        Gate::authorize('asTrainer', $booking);
         // "Aggiungi seduta": the client answers, not the trainer (ClientSessionProposalController).
         abort_if($booking->requested_by === BookingActor::Trainer, 404);
 

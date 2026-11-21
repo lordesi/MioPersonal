@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Enums\BookingStatus;
 use App\Models\Booking;
-use App\Models\User;
 use App\Notifications\BookingChanged;
 use App\Support\TrainerSlots;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -79,10 +79,7 @@ class ClientRescheduleController extends Controller
 
     private function ensureCanAnswer(Request $request, Booking $booking): void
     {
-        /** @var User $client */
-        $client = $request->user();
-
-        abort_unless($booking->client_id === $client->id, 404);
+        Gate::authorize('asClient', $booking);
 
         if ($booking->status !== BookingStatus::Confirmed || $booking->proposal() === null) {
             throw ValidationException::withMessages(['booking' => 'Questa proposta non è più valida.']);

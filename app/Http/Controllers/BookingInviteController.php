@@ -14,6 +14,7 @@ use App\Support\Seo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -134,10 +135,7 @@ class BookingInviteController extends Controller
      */
     public function changePeople(Request $request, Booking $booking): RedirectResponse
     {
-        /** @var User $client */
-        $client = $request->user();
-
-        abort_unless($booking->client_id === $client->id, 404);
+        Gate::authorize('asClient', $booking);
 
         $request->validate(['people' => ['required', 'integer', 'between:1,'.Service::MAX_PEOPLE]], [
             'people.*' => 'Scegli quante persone vengono.',
@@ -174,10 +172,8 @@ class BookingInviteController extends Controller
     /** "Nuovo link": the old one stops working; who already joined stays. */
     public function regenerate(Request $request, Booking $booking): RedirectResponse
     {
-        /** @var User $client */
-        $client = $request->user();
-
-        abort_unless($booking->client_id === $client->id && $booking->acceptsGuests(), 404);
+        Gate::authorize('asClient', $booking);
+        abort_unless($booking->acceptsGuests(), 404);
 
         $booking->forceFill(['invite_token' => Booking::newInviteToken()])->save();
 

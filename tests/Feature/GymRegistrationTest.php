@@ -204,6 +204,22 @@ class GymRegistrationTest extends TestCase
         Notification::assertSentTo($gym->user, GymProfileDecided::class);
     }
 
+    public function test_two_admins_deciding_at_the_same_time_make_one_decision()
+    {
+        $gym = GymProfile::factory()->create();
+
+        $this->actingAs(User::factory()->admin()->create())
+            ->post(route('admin.gym-verification.decide', $gym), ['decision' => 'approved'])
+            ->assertSessionHasNoErrors();
+        $this->actingAs(User::factory()->admin()->create())
+            ->post(route('admin.gym-verification.decide', $gym), ['decision' => 'rejected', 'message' => 'No'])
+            ->assertSessionHasErrors('decision');
+
+        $this->assertSame(TrainerProfileStatus::Approved, $gym->fresh()?->status);
+        $this->assertSame(1, $gym->decisions()->count());
+        Notification::assertSentToTimes($gym->user, GymProfileDecided::class, 1);
+    }
+
     public function test_a_rejection_needs_a_message_and_only_admins_decide()
     {
         $gym = GymProfile::factory()->create();

@@ -7,6 +7,7 @@ use App\Models\Review;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -58,11 +59,9 @@ class TrainerReviewsController extends Controller
     /** "Pubblica risposta": shown on the public profile under the review, once. */
     public function reply(Request $request, Review $review): RedirectResponse
     {
-        /** @var User $trainer */
-        $trainer = $request->user();
-
         // Another trainer's review, or hidden by the team: as if it didn't exist.
-        abort_unless($review->trainer_profile_id === $trainer->trainerProfile?->id && $review->hidden_at === null, 404);
+        Gate::authorize('asTrainer', $review);
+        abort_unless($review->hidden_at === null, 404);
 
         $data = $request->validate([
             'reply' => ['required', 'string', 'max:'.self::REPLY_MAX],

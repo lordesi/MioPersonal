@@ -73,20 +73,24 @@ class AdminVerificationController extends Controller
 
         $decision = TrainerReviewDecision::from($data['decision']);
 
-        // Only a decided profile can be undone; only one waiting can be decided.
-        $allowed = $decision === TrainerReviewDecision::Undone
-            ? $profile->status !== TrainerProfileStatus::Review
-            : $profile->status === TrainerProfileStatus::Review;
-
-        if (! $allowed) {
-            return back()->withErrors(['decision' => 'Il profilo è cambiato nel frattempo: ricarica la pagina.']);
-        }
-
         /** @var User $admin */
         $admin = $request->user();
 
         $review = DB::transaction(function () use ($profile, $decision, $data, $admin) {
-            $review = $profile->decisions()->create([
+            // Read again and locked: two admins deciding at the same moment can't
+            // both pass the check (two decisions, two emails to the trainer).
+            $locked = TrainerProfile::whereKey($profile->id)->lockForUpdate()->firstOrFail();
+
+            // Only a decided profile can be undone; only one waiting can be decided.
+            $allowed = $decision === TrainerReviewDecision::Undone
+                ? $locked->status !== TrainerProfileStatus::Review
+                : $locked->status === TrainerProfileStatus::Review;
+
+            if (! $allowed) {
+                return null;
+            }
+
+            $review = $locked->decisions()->create([
                 'admin_id' => $admin->id,
                 'decision' => $decision,
                 'reasons' => $decision === TrainerReviewDecision::Changes ? array_values($data['reasons'] ?? []) : null,
@@ -94,18 +98,24 @@ class AdminVerificationController extends Controller
                 'internal_note' => $data['internal_note'] ?? null,
             ]);
 
-            $profile->forceFill([
+            $locked->forceFill([
                 'status' => $decision->status(),
                 'status_changed_at' => now(),
-                'approved_at' => $decision === TrainerReviewDecision::Approved ? now() : $profile->approved_at,
+                'approved_at' => $decision === TrainerReviewDecision::Approved ? now() : $locked->approved_at,
             ])->save();
 
             if (in_array($decision, [TrainerReviewDecision::Approved, TrainerReviewDecision::Rejected], true)) {
-                $this->deleteCertificateFiles($profile, $decision === TrainerReviewDecision::Approved);
+                $this->deleteCertificateFiles($locked, $decision === TrainerReviewDecision::Approved);
             }
 
             return $review;
         });
+
+        if ($review === null) {
+            return back()->withErrors(['decision' => 'Il profilo è cambiato nel frattempo: ricarica la pagina.']);
+        }
+
+        $profile->refresh();
 
         // The slot saved when the profile was sent may be old by now.
         if ($decision === TrainerReviewDecision::Approved) {

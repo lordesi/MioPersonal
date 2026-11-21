@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -96,7 +97,7 @@ class GymTrainersController extends Controller
 
     private function linkOf(GymTrainerLink $link): GymTrainerLink
     {
-        abort_if($link->gym_profile_id !== $this->gymOrFail()->id, 404);
+        Gate::authorize('asGym', $link);
 
         return $link;
     }

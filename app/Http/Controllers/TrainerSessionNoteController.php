@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Enums\BookingStatus;
 use App\Models\Booking;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * "Aggiungi nota" on a confirmed session (Home, Calendario, the card of a
@@ -19,14 +19,8 @@ class TrainerSessionNoteController extends Controller
 
     public function update(Request $request, Booking $booking): RedirectResponse
     {
-        /** @var User $user */
-        $user = $request->user();
-
-        abort_unless(
-            $booking->trainer_profile_id === $user->trainerProfile?->id
-                && $booking->status === BookingStatus::Confirmed,
-            404,
-        );
+        Gate::authorize('asTrainer', $booking);
+        abort_unless($booking->status === BookingStatus::Confirmed, 404);
 
         $data = $request->validate([
             'note' => ['nullable', 'string', 'max:'.self::NOTE_MAX],

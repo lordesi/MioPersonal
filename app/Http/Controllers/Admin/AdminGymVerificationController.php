@@ -63,19 +63,24 @@ class AdminGymVerificationController extends Controller
 
         $decision = TrainerReviewDecision::from($data['decision']);
 
-        $allowed = $decision === TrainerReviewDecision::Undone
-            ? $gym->status !== TrainerProfileStatus::Review
-            : $gym->status === TrainerProfileStatus::Review;
-
-        if (! $allowed) {
-            return back()->withErrors(['decision' => 'Il profilo è cambiato nel frattempo: ricarica la pagina.']);
-        }
-
         /** @var User $admin */
         $admin = $request->user();
 
         $review = DB::transaction(function () use ($gym, $decision, $data, $admin) {
-            $review = $gym->decisions()->create([
+            // Read again and locked: two admins deciding at the same moment can't
+            // both pass the check (two decisions, two emails to the gym).
+            $locked = GymProfile::whereKey($gym->id)->lockForUpdate()->firstOrFail();
+
+            // Only a decided profile can be undone; only one waiting can be decided.
+            $allowed = $decision === TrainerReviewDecision::Undone
+                ? $locked->status !== TrainerProfileStatus::Review
+                : $locked->status === TrainerProfileStatus::Review;
+
+            if (! $allowed) {
+                return null;
+            }
+
+            $review = $locked->decisions()->create([
                 'admin_id' => $admin->id,
                 'decision' => $decision,
                 'reasons' => $decision === TrainerReviewDecision::Changes ? array_values($data['reasons'] ?? []) : null,
@@ -83,14 +88,20 @@ class AdminGymVerificationController extends Controller
                 'internal_note' => $data['internal_note'] ?? null,
             ]);
 
-            $gym->forceFill([
+            $locked->forceFill([
                 'status' => $decision->status(),
                 'status_changed_at' => now(),
-                'approved_at' => $decision === TrainerReviewDecision::Approved ? now() : $gym->approved_at,
+                'approved_at' => $decision === TrainerReviewDecision::Approved ? now() : $locked->approved_at,
             ])->save();
 
             return $review;
         });
+
+        if ($review === null) {
+            return back()->withErrors(['decision' => 'Il profilo è cambiato nel frattempo: ricarica la pagina.']);
+        }
+
+        $gym->refresh();
 
         if ($decision !== TrainerReviewDecision::Undone) {
             $gym->user->notify(new GymProfileDecided($review, route('gyms.show', $gym->slug)));

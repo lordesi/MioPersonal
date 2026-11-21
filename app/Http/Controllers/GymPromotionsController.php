@@ -9,6 +9,7 @@ use App\Models\GymProfile;
 use App\Models\GymPromotion;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Inertia\Inertia;
@@ -62,7 +63,7 @@ class GymPromotionsController extends Controller
     public function update(Request $request, GymPromotion $promotion): RedirectResponse
     {
         $profile = $this->gymOrFail();
-        abort_if($promotion->gym_profile_id !== $profile->id, 404);
+        Gate::authorize('asGym', $promotion);
 
         $promotion->update($this->validated($request, $profile, $promotion));
 
@@ -73,8 +74,7 @@ class GymPromotionsController extends Controller
 
     public function destroy(GymPromotion $promotion): RedirectResponse
     {
-        $profile = $this->gymOrFail();
-        abort_if($promotion->gym_profile_id !== $profile->id, 404);
+        Gate::authorize('asGym', $promotion);
 
         $promotion->delete();
 
