@@ -38,8 +38,11 @@ Primo caricamento: circa 195 KB di JavaScript e 33 KB di CSS (compressi); ogni p
 
 `db1` in `Server-Timing` è la prima query da sola: Laravel apre la connessione a PostgreSQL lì, quindi il suo tempo la
 comprende. Il 21/11/2026 in produzione era 42-67 ms (le altre query 0,5-3 ms l'una): quasi metà del tempo del server.
-Per un database sulla stessa macchina (`DB_HOST` 127.0.0.1) la connessione non usa più TLS
-([config/database.php](../config/database.php), `sslmode`).
+Per un database sulla stessa macchina (`DB_HOST` 127.0.0.1) ([config/database.php](../config/database.php)):
+
+- la connessione non usa più TLS (`sslmode`): `db1` da 42-67 a 30-47 ms;
+- ogni processo PHP tiene la sua connessione per le pagine successive (`PDO::ATTR_PERSISTENT`): dopo la prima pagina di
+  ogni processo `db1` è circa 1 ms. Per spegnerle: `DB_PERSISTENT=false` nel `.env`.
 
 ## Pagine aperte subito (prefetch)
 
