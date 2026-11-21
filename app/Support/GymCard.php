@@ -34,7 +34,7 @@ final class GymCard
             'href' => route('gyms.show', $gym->slug, false),
             'city' => $gym->city->name,
             'address' => $gym->address,
-            'coverUrl' => $gym->cover?->url(),
+            'coverUrl' => $gym->cover?->url('md'),
             'amenities' => array_map(
                 fn (string $value) => GymAmenity::tryFrom($value)?->label() ?? $value,
                 array_slice($gym->amenities, 0, self::AMENITIES_ON_CARD),

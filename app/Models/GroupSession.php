@@ -9,6 +9,7 @@ use App\Enums\GymLinkStatus;
 use App\Enums\RegistrationStatus;
 use App\Observers\GroupSessionCalendarObserver;
 use App\Observers\IndexNowObserver;
+use App\Support\SafeImage;
 use Carbon\CarbonImmutable;
 use Database\Factories\GroupSessionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -21,7 +22,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Notification as NotificationFacade;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -193,9 +193,10 @@ class GroupSession extends Model
         return max(0, $this->capacity - $this->offline_seats - $this->registeredCount());
     }
 
-    public function coverUrl(): ?string
+    /** @param  'sm'|'md'|'lg'|null  $size  a lighter copy (SafeImage::VARIANTS); null = the original */
+    public function coverUrl(?string $size = null): ?string
     {
-        return $this->cover_path === null ? null : Storage::disk(self::DISK)->url($this->cover_path);
+        return $this->cover_path === null ? null : SafeImage::url(self::DISK, $this->cover_path, $size);
     }
 
     /** "Gratis", "15 €", "12,50 €". */

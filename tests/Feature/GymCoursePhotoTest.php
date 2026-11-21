@@ -54,11 +54,11 @@ class GymCoursePhotoTest extends TestCase
         $this->get(route('gyms.show', $gym->slug))
             ->assertInertia(fn (Assert $page) => $page
                 ->has('gym.courses.0.photos', 2)
-                ->where('gym.courses.0.photos.0', $photos[0]->url())
+                ->where('gym.courses.0.photos.0', $photos[0]->url('lg'))
                 ->where('gym.courses.0.maxPlaces', 14));
 
         $this->get(route('courses.search'))
-            ->assertInertia(fn (Assert $page) => $page->where('courses.0.photoUrl', $photos[0]->url()));
+            ->assertInertia(fn (Assert $page) => $page->where('courses.0.photoUrl', $photos[0]->url('md')));
     }
 
     public function test_a_photo_goes_first()

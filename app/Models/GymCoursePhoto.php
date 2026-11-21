@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Support\SafeImage;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * A photo of a gym's course, on the disk of GymPhoto. The first one (lowest
@@ -30,9 +30,10 @@ class GymCoursePhoto extends Model
         ];
     }
 
-    public function url(): string
+    /** @param  'sm'|'md'|'lg'|null  $size  a lighter copy (SafeImage::VARIANTS); null = the original */
+    public function url(?string $size = null): string
     {
-        return Storage::disk(GymPhoto::DISK)->url($this->path);
+        return SafeImage::url(GymPhoto::DISK, $this->path, $size);
     }
 
     /**

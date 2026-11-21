@@ -49,6 +49,8 @@ class EventController extends Controller
         return Inertia::render('public/event', [
             'event' => [
                 ...$card,
+                // The big photo of the page: the large copy, not the card's.
+                'coverUrl' => $session->coverUrl('lg'),
                 'description' => $session->description,
                 'cancelNote' => $session->cancel_note,
                 'started' => $session->hasStarted(),
@@ -61,7 +63,7 @@ class EventController extends Controller
                     'name' => $host->name(),
                     'href' => $host->href(),
                     'kind' => $host->trainer_profile_id !== null ? 'trainer' : 'gym',
-                    'photoUrl' => $host->trainerProfile?->portrait?->url() ?? $host->gymProfile?->cover?->url(),
+                    'photoUrl' => $host->trainerProfile?->portrait?->url('sm') ?? $host->gymProfile?->cover?->url('sm'),
                 ])->values()->all(),
             ],
             'otherDates' => GroupSessionCard::many($others),

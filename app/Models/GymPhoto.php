@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\SafeImage;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * A photo of a gym, on the public disk: the cover or one of the gallery.
@@ -31,8 +31,9 @@ class GymPhoto extends Model
         ];
     }
 
-    public function url(): string
+    /** @param  'sm'|'md'|'lg'|null  $size  a lighter copy (SafeImage::VARIANTS); null = the original */
+    public function url(?string $size = null): string
     {
-        return Storage::disk(self::DISK)->url($this->path);
+        return SafeImage::url(self::DISK, $this->path, $size);
     }
 }

@@ -73,7 +73,7 @@ class GymAmenitiesTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('gym.amenities.1.value', 'bagno-turco')
                 ->where('gym.amenities.1.description', 'Bagno turco a 45°, incluso in ogni abbonamento.')
-                ->where('gym.amenities.1.photoUrl', $detail->photoUrl())
+                ->where('gym.amenities.1.photoUrl', $detail->photoUrl('md'))
                 ->where('gym.amenities.0.description', null)
             );
     }

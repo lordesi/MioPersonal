@@ -33,7 +33,7 @@ final class TrainerCard
             'priceFromCents' => $profile->price_from_cents ?? 0,
             'nextSlotLabel' => self::slotLabel($profile->next_free_slot_at),
             'online' => self::online($profile),
-            'photoUrl' => $profile->portrait?->url(),
+            'photoUrl' => $profile->portrait?->url('md'),
         ];
     }
 

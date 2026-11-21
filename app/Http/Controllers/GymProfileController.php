@@ -119,7 +119,7 @@ class GymProfileController extends Controller
                 'value' => $amenity->value,
                 'label' => $amenity->label(),
                 'description' => $detail?->description,
-                'photoUrl' => $detail?->photoUrl(),
+                'photoUrl' => $detail?->photoUrl('md'),
             ];
         }, $gym->amenities)));
     }
@@ -152,8 +152,8 @@ class GymProfileController extends Controller
             'openNow' => $hours === array_fill(0, 7, []) ? null : collect($hours[$today])
                 ->contains(fn (array $range) => $range['opens'] <= $time && $time < $range['closes']),
             'openingNotes' => $gym->opening_notes,
-            'coverUrl' => $gym->cover?->url(),
-            'photos' => $gym->galleryPhotos->map(fn (GymPhoto $photo) => $photo->url())->values()->all(),
+            'coverUrl' => $gym->cover?->url('lg'),
+            'photos' => $gym->galleryPhotos->map(fn (GymPhoto $photo) => $photo->url('lg'))->values()->all(),
             // "Corsi": the plan of this week and the next one, and the courses.
             'courses' => GymCourseWeek::courses($gym),
             'courseWeeks' => [

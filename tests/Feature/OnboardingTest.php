@@ -217,7 +217,8 @@ class OnboardingTest extends TestCase
         $first = $client->refresh()->avatar_path;
         $this->assertNotNull($first);
         Storage::disk(User::AVATAR_DISK)->assertExists($first);
-        $this->assertSame(Storage::disk(User::AVATAR_DISK)->url($first), $client->avatar);
+        // Small everywhere: the light copy (SafeImage::VARIANTS).
+        $this->assertSame(Storage::disk(User::AVATAR_DISK)->url($first.'.sm.webp'), $client->avatar);
 
         $this->post(route('client.complete-profile.photo'), ['photo' => UploadedFile::fake()->image('nuova.png', 400, 400)])
             ->assertSessionHasNoErrors();
