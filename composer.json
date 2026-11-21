@@ -3,7 +3,7 @@
     "name": "miopersonal/miopersonal",
     "type": "project",
     "description": "MioPersonal: personal trainer, palestre e prenotazioni (miopersonal.it).",
-    "license": "MIT",
+    "license": "proprietary",
     "require": {
         "php": "^8.4",
         "inertiajs/inertia-laravel": "^3.0",
