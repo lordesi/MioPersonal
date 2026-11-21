@@ -7,7 +7,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 
 /**
- * The fixed accounts to try the staging site with (see docs/staging.md), on
+ * The fixed accounts to try the staging site with, on
  * top of the demo trainers and gyms. All with the password "password".
  * It can run again.
  */

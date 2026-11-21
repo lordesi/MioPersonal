@@ -24,15 +24,10 @@ use App\Support\SafeImage;
 use App\Support\Staging;
 use App\Support\Stats;
 use App\Support\TrainerSlots;
-use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Storage;
-
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
 
 // The only way to become an admin: run it on the server for an existing account.
 Artisan::command('admin:grant {email}', function (string $email) {
@@ -204,7 +199,7 @@ Artisan::command('bookings:extend-series', function (GenerateSeries $generate) {
 Schedule::command('bookings:extend-series')->dailyAt('03:30')->withoutOverlapping();
 
 // Staging only: the database starts again from the seeders (demo trainers and gyms,
-// the accounts of docs/staging.md). Refuses to run anywhere else.
+// the demo accounts). Refuses to run anywhere else.
 Artisan::command('staging:reset', function () {
     if (! Staging::active()) {
         $this->error('Only on the staging site (APP_ENV=staging): nothing was touched.');

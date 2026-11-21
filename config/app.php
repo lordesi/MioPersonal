@@ -22,7 +22,6 @@ return [
 
     /*
     | The staging site (APP_ENV=staging): the user and password that close it.
-    | See docs/staging.md.
     */
 
     'staging_user' => env('STAGING_USER'),
