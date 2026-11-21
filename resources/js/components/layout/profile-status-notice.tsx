@@ -4,6 +4,7 @@ import {
     brandButtonClassName,
     softButtonClassName,
 } from '@/components/trainer/ui/styles';
+import { hoverPrefetch } from '@/lib/prefetch';
 import { cn } from '@/lib/utils';
 import { register } from '@/routes/trainer';
 import type { TrainerAreaData } from '@/types';
@@ -70,9 +71,13 @@ export default function ProfileStatusNotice({
             </span>
             <span className="flex flex-wrap gap-2">
                 {previewHref && status !== 'missing' && (
-                    <a href={previewHref} className={softButtonClassName}>
+                    <Link
+                        href={previewHref}
+                        prefetch={hoverPrefetch}
+                        className={softButtonClassName}
+                    >
                         Vedi l’anteprima
-                    </a>
+                    </Link>
                 )}
                 {action && (
                     <Link
