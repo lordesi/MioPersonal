@@ -33,6 +33,7 @@ In locale le stesse pagine prendono 11-70 ms di server: la produzione è circa 3
 locale: 13-62 ms (Clienti trainer la più lenta, 41 query); ricerca con "fascia oraria" 70 ms e 71 query.
 
 Primo caricamento: circa 195 KB di JavaScript e 33 KB di CSS (compressi); ogni pagina aggiunge 5-25 KB la prima volta.
+Misurati con Sentry, come in produzione, erano 283 KB di JavaScript: i numeri di oggi sono in "Rifiniture (fase 5a)".
 
 ## La connessione al database
 
@@ -104,3 +105,44 @@ Le View Transitions (dissolvenza tra le pagine) sono state scartate: con un camb
 - **Profilo di un trainer** (134 ms in produzione): misurato pezzo per pezzo, non c'è un collo di bottiglia (query in
   tutto circa 20 ms, slot del calendario 7 ms, trainer simili 8 ms…). Lasciato così: si precarica già al passaggio del
   mouse.
+
+## Rifiniture (fase 5a)
+
+JavaScript della prima pagina, compresso (gzip), misurato come in produzione cioè con un `VITE_SENTRY_DSN`
+(`VITE_SENTRY_DSN=https://abc@o1.ingest.de.sentry.io/1 npx vp build`; senza DSN il build toglie Sentry e i numeri
+sembrano più bassi). "In tutto" è la somma dei file che la prima pagina scarica:
+
+|                                 | Chunk `app` | In tutto |
+| ------------------------------- | ----------- | -------- |
+| Prima                           | 81 KB       | 283 KB   |
+| Sentry caricato dopo la pagina  | 49 KB       | 252 KB   |
+| Layout delle aree con le pagine | 33 KB       | 230 KB   |
+
+- **Sentry dopo la pagina** ([lib/sentry.ts](../resources/js/lib/sentry.ts)): parte subito dopo l'avvio, in un file a
+  parte di 31 KB ([lib/sentry-client.ts](../resources/js/lib/sentry-client.ts)); gli errori di quei primi istanti
+  aspettano in una piccola coda. Il messaggio "Qualcosa è andato storto" è nostro
+  ([AppErrorBoundary](../resources/js/components/app-error-boundary.tsx)). Senza DSN nessun file di Sentry.
+- **Layout delle aree** ([lib/inertia-config.tsx](../resources/js/lib/inertia-config.tsx)): trainer, palestra, admin e
+  cliente arrivano insieme alla loro pagina (`resolve()`), che si mostra solo quando ci sono tutti e due: nessun
+  lampo vuoto, e il prefetch li scarica insieme. Il layout pubblico resta nel primo file, perché le pagine con SSR
+  devono essere disegnate subito uguali dal server e dal browser.
+- **Schede aperte durante un deploy** ([lib/stale-build.ts](../resources/js/lib/stale-build.ts)): se una pagina chiede
+  un file del build vecchio, la scheda si ricarica una volta (al massimo una ogni 10 secondi).
+- **Foto del login su telefono**: 129 → 78 KB, stesso aspetto.
+- **Pagina offline** ([offline.html](../public/offline.html), servita da [sw.js](../public/sw.js)): senza connessione,
+  una pagina scura "Sei offline" con "Riprova" al posto dell'errore del browser.
+
+Regole:
+
+- **Errori da segnalare a mano**: `reportError()` di `lib/sentry.ts`, mai `import … from '@sentry/react'` (rimetterebbe
+  Sentry nel primo file).
+- **Un layout nuovo per un'area privata**: in `areaLayouts` di `inertia-config.tsx`, non importato in cima al file.
+- **`offline.html` è l'unica cosa nella cache del service worker**: le pagine private sono `no-store` e una pagina di
+  prenotazioni vecchia sarebbe peggio di nessuna pagina.
+- **Se `offline.html` cambia**, cambiare anche il nome della cache in `sw.js` (`offline-v1` → `offline-v2`…): il
+  service worker nuovo butta via quella vecchia.
+- **`/sw.js` e Cloudflare**: in produzione `/sw.js` esce con `Cache-Control: max-age=14400` e Cloudflare lo tiene in
+  cache fino a 4 ore. Il browser per `sw.js` salta già la propria cache, quindi il problema è solo Cloudflare: serve
+  una regola "Bypass cache" per `/sw.js`, oppure, dopo un deploy che tocca `sw.js`, un purge di
+  `https://miopersonal.it/sw.js` (Cloudflare → Caching → Configuration → Custom Purge). Senza, telefoni e app
+  installate prendono il service worker nuovo fino a 4 ore dopo.
