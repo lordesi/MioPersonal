@@ -46,8 +46,11 @@ Route::prefix('dev')->name('dev.')->group(function () {
         };
 
         if ($mail instanceof MailMessage) {
-            return request()->has('testo')
-                ? response(app(Mailer::class)->render(['text' => $mail->view[1]], $mail->data()))->header('Content-Type', 'text/plain; charset=utf-8')
+            // ['html view', 'text view'] for the emails with a text version.
+            $textView = is_array($mail->view) ? ($mail->view[1] ?? null) : null;
+
+            return request()->has('testo') && $textView !== null
+                ? response(app(Mailer::class)->render(['text' => $textView], $mail->data()))->header('Content-Type', 'text/plain; charset=utf-8')
                 : $mail->render();
         }
 

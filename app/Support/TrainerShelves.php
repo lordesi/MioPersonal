@@ -48,13 +48,18 @@ final class TrainerShelves
             ->get()
             ->keyBy('id');
 
-        return array_map(
-            fn (int $id) => [
-                ...TrainerCard::from($profiles[$id]),
-                'favorite' => in_array($id, $favoriteIds, true),
-            ],
-            array_values(array_filter($ids, fn (int $id) => $profiles->has($id))),
-        );
+        // In the order of $ids; the ones no longer published are left out.
+        $cards = [];
+
+        foreach ($ids as $id) {
+            $profile = $profiles->get($id);
+
+            if ($profile !== null) {
+                $cards[] = [...TrainerCard::from($profile), 'favorite' => in_array($id, $favoriteIds, true)];
+            }
+        }
+
+        return $cards;
     }
 
     /**

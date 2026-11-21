@@ -8,6 +8,7 @@ use App\Enums\PlaceType;
 use App\Models\ClientPackage;
 use App\Models\GroupSession;
 use App\Models\GymCourse;
+use App\Models\GymProfile;
 use App\Models\Review;
 use App\Models\Service;
 use App\Models\TrainerDocument;
@@ -270,7 +271,7 @@ class TrainerProfileController extends Controller
                 ->where('user_id', $viewer->id)->where('trainer_profile_id', $profile->id)
                 ->where('day', '>=', CarbonImmutable::now(TrainerSlots::TIMEZONE)->toDateString())
                 ->orderBy('day')->get()
-                ->map(fn (WaitlistEntry $entry) => $entry->day->toDateString())->all(),
+                ->map(fn (WaitlistEntry $entry) => $entry->day?->toDateString())->filter()->values()->all(),
             'similarTrainers' => $this->similar($profile),
         ];
     }
@@ -559,14 +560,14 @@ class TrainerProfileController extends Controller
     private function gyms(TrainerProfile $profile): array
     {
         return array_values(self::visiblePlaces($profile)
-            ->filter(fn (TrainerPlace $place) => $place->type === PlaceType::Gym && $place->gymProfile !== null)
-            ->map(fn (TrainerPlace $place) => [
-                'slug' => $place->gymProfile->slug,
-                'name' => $place->gymProfile->name,
-                'city' => $place->gymProfile->city->name,
-                'address' => $place->gymProfile->fullAddress(),
-                'coverUrl' => $place->gymProfile->cover?->url('md'),
-                'href' => route('gyms.show', $place->gymProfile->slug, false),
+            ->flatMap(fn (TrainerPlace $place) => $place->type === PlaceType::Gym && $place->gymProfile !== null ? [$place->gymProfile] : [])
+            ->map(fn (GymProfile $gym) => [
+                'slug' => $gym->slug,
+                'name' => $gym->name,
+                'city' => $gym->city->name,
+                'address' => $gym->fullAddress(),
+                'coverUrl' => $gym->cover?->url('md'),
+                'href' => route('gyms.show', $gym->slug, false),
             ])->all());
     }
 

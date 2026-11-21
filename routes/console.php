@@ -360,7 +360,9 @@ Artisan::command('photos:strip-metadata', function () {
 
     User::query()->whereNotNull('avatar_path')->select(['id', 'avatar_path'])->chunkById(100, function ($users) use ($clean, &$done) {
         foreach ($users as $user) {
-            $done += (int) $clean(User::AVATAR_DISK, $user->avatar_path);
+            if ($user->avatar_path !== null) {
+                $done += (int) $clean(User::AVATAR_DISK, $user->avatar_path);
+            }
         }
     });
 

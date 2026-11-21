@@ -57,7 +57,8 @@ class TrainerManualSessionController extends Controller
 
         $service = $profile->services()->find((int) $data['service_id']) ?? throw ValidationException::withMessages(['service_id' => 'Scegli una delle tue sedute.']);
         $place = isset($data['place_id']) ? $profile->places()->find((int) $data['place_id']) : null;
-        $start = CarbonImmutable::createFromFormat('Y-m-d H:i', "{$data['date']} {$data['time']}", 'Europe/Rome');
+        $start = CarbonImmutable::createFromFormat('Y-m-d H:i', "{$data['date']} {$data['time']}", 'Europe/Rome')
+            ?? throw ValidationException::withMessages(['date' => 'Scegli il giorno.']);
 
         $record = isset($data['client_record_id'])
             ? $profile->clientRecords()->findOrFail((int) $data['client_record_id'])

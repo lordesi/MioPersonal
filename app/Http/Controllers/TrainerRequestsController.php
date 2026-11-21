@@ -29,7 +29,7 @@ class TrainerRequestsController extends Controller
         // Not answered in time: to "Gestite" now, without waiting for bookings:expire.
         $overdue = $profile === null ? collect() : $profile->bookings()->overdue()->get();
 
-        if ($overdue->isNotEmpty()) {
+        if ($profile !== null && $overdue->isNotEmpty()) {
             $overdue->each(fn (Booking $booking) => $booking->expire());
             TrainerSlots::refresh($profile);
         }

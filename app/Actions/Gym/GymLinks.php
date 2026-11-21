@@ -169,7 +169,7 @@ class GymLinks
     {
         $count = $trainer->gymLinks()
             ->where('status', '!=', GymLinkStatus::Declined)
-            ->when($ignore?->exists, fn ($query) => $query->whereKeyNot($ignore->id))
+            ->when($ignore?->exists ? $ignore : null, fn ($query, GymTrainerLink $ignore) => $query->whereKeyNot($ignore->id))
             ->count();
 
         if ($count >= self::MAX_GYMS_PER_TRAINER) {
