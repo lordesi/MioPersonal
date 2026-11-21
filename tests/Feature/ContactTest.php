@@ -55,11 +55,13 @@ class ContactTest extends TestCase
             ->assertRedirect(route('contact.show'))
             ->assertSessionHas('status', 'contact-sent');
 
-        Mail::assertSent(ContactMessage::class, fn (ContactMessage $mail) => $mail->hasTo('team@example.com')
+        // Queued: the page doesn't wait for the mail provider.
+        Mail::assertQueued(ContactMessage::class, fn (ContactMessage $mail) => $mail->hasTo('team@example.com')
             && $mail->hasReplyTo('sofia@example.com')
             && $mail->contact['topicLabel'] === 'Verifica e approvazione');
 
-        Mail::assertSentCount(1);
+        Mail::assertQueuedCount(1);
+        Mail::assertNothingSent();
     }
 
     public function test_the_message_to_the_team_uses_the_email_layout_and_escapes_the_text()
@@ -103,7 +105,7 @@ class ContactTest extends TestCase
             ->assertRedirect(route('contact.show'))
             ->assertSessionHas('status', 'contact-sent');
 
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
         $this->assertDatabaseCount('contact_messages', 0);
     }
 
@@ -137,7 +139,7 @@ class ContactTest extends TestCase
         $this->post(route('contact.store'), $this->validForm(['role' => 'client', 'topic' => 'press']))
             ->assertSessionHasErrors('topic');
 
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_the_privacy_consent_and_the_message_are_required()
@@ -147,7 +149,7 @@ class ContactTest extends TestCase
         $this->post(route('contact.store'), $this->validForm(['privacy' => null, 'message' => '']))
             ->assertSessionHasErrors(['privacy', 'message']);
 
-        Mail::assertNothingSent();
+        Mail::assertNothingOutgoing();
     }
 
     public function test_the_message_has_a_maximum_length()
