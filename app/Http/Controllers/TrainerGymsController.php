@@ -17,6 +17,7 @@ use App\Support\GymCourseWeek;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -104,7 +105,7 @@ class TrainerGymsController extends Controller
 
     private function linkOf(Request $request, GymTrainerLink $link): GymTrainerLink
     {
-        abort_if($link->trainer_profile_id !== $this->trainer($request)?->id, 404);
+        Gate::authorize('asTrainer', $link);
 
         return $link;
     }

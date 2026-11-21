@@ -11,6 +11,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -114,7 +115,7 @@ class TrainerSessionChangeController extends Controller
         /** @var User $trainer */
         $trainer = $request->user();
 
-        abort_unless($booking->trainer_profile_id === $trainer->trainerProfile?->id, 404);
+        Gate::authorize('asTrainer', $booking);
 
         if (! $booking->canBeChangedByTrainer()) {
             throw ValidationException::withMessages(['booking' => 'Questa seduta non si può più modificare.']);

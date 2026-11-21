@@ -19,6 +19,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -305,11 +306,7 @@ class MessagesController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        abort_unless(
-            $record->user_id !== null
-                && ($record->user_id === $user->id || $record->trainerProfile->user_id === $user->id),
-            404,
-        );
+        Gate::authorize('converse', $record);
 
         return $user;
     }

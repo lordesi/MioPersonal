@@ -2,7 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Enums\GymLinkSide;
+use App\Enums\GymLinkStatus;
 use App\Models\Booking;
+use App\Models\GymProfile;
+use App\Models\GymTrainerLink;
+use App\Models\TrainerProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -42,6 +47,48 @@ class OwnershipTest extends TestCase
         ], $booking);
 
         $this->assertSame($before, $booking->fresh()?->getAttributes());
+    }
+
+    public function test_a_trainer_cannot_touch_another_trainers_booking()
+    {
+        $booking = Booking::factory()->confirmed()->create();
+        $before = $booking->fresh()?->getAttributes();
+
+        $this->assertEveryActionIsNotFound(TrainerProfile::factory()->approved()->create()->user, [
+            ['post', 'trainer.requests.accept'],
+            ['post', 'trainer.requests.decline'],
+            ['patch', 'trainer.sessions.cancel'],
+            ['patch', 'trainer.sessions.note'],
+            ['post', 'trainer.sessions.no-show'],
+            ['delete', 'trainer.sessions.no-show.destroy'],
+            ['post', 'trainer.sessions.reschedule'],
+            ['delete', 'trainer.sessions.reschedule.withdraw'],
+            ['delete', 'trainer.calendar.sessions.destroy'],
+        ], $booking);
+
+        $this->assertSame($before, $booking->fresh()?->getAttributes());
+    }
+
+    public function test_only_the_two_sides_answer_a_gym_link()
+    {
+        $link = new GymTrainerLink;
+        $link->gym_profile_id = GymProfile::factory()->approved()->create()->id;
+        $link->trainer_profile_id = TrainerProfile::factory()->approved()->create()->id;
+        $link->forceFill(['status' => GymLinkStatus::Pending, 'initiated_by' => GymLinkSide::Gym])->save();
+
+        $this->assertEveryActionIsNotFound(TrainerProfile::factory()->approved()->create()->user, [
+            ['post', 'trainer.gyms.accept'],
+            ['post', 'trainer.gyms.decline'],
+            ['delete', 'trainer.gyms.destroy'],
+        ], $link);
+
+        $this->assertEveryActionIsNotFound(GymProfile::factory()->approved()->create()->user, [
+            ['post', 'gym.trainers.accept'],
+            ['post', 'gym.trainers.decline'],
+            ['delete', 'gym.trainers.destroy'],
+        ], $link);
+
+        $this->assertSame(GymLinkStatus::Pending, $link->fresh()?->status);
     }
 
     /**

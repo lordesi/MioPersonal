@@ -12,6 +12,7 @@ use App\Support\TrainerSlots;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -96,7 +97,7 @@ class TrainerManualSessionController extends Controller
     {
         /** @var User $trainer */
         $trainer = $request->user();
-        abort_unless($booking->trainer_profile_id === $this->profile($request)->id, 404);
+        Gate::authorize('asTrainer', $booking);
 
         if (! $booking->isTrainerProposal() && ! ($booking->isOffApp() && $booking->canBeChangedByTrainer())) {
             throw ValidationException::withMessages(['booking' => 'Questa seduta non si può più togliere.']);
@@ -114,7 +115,7 @@ class TrainerManualSessionController extends Controller
     /** "Non chiedermelo più per Marco". */
     public function dismissInvitePrompt(Request $request, TrainerClient $client): RedirectResponse
     {
-        abort_unless($client->trainer_profile_id === $this->profile($request)->id, 404);
+        Gate::authorize('asTrainer', $client);
 
         $client->forceFill(['invite_prompt_dismissed_at' => now()])->save();
 

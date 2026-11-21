@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Notifications\TrainerNoteShared;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -309,6 +310,6 @@ class TrainerClientRecordsController extends Controller
     /** Only the trainer's own list. */
     private function authorizeRecord(Request $request, TrainerClient $client): void
     {
-        abort_unless($client->trainer_profile_id === $this->profile($request)->id, 404);
+        Gate::authorize('asTrainer', $client);
     }
 }

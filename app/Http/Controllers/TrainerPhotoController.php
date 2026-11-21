@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -77,7 +78,8 @@ class TrainerPhotoController extends Controller
 
     public function destroy(Request $request, TrainerPhoto $photo): RedirectResponse
     {
-        $this->galleryPhotoOf($this->approvedProfile($request), $photo);
+        $this->approvedProfile($request);
+        $this->galleryPhotoOf($photo);
 
         $photo->delete();
         Storage::disk(TrainerPhoto::DISK)->delete($photo->path);
@@ -100,8 +102,9 @@ class TrainerPhotoController extends Controller
     }
 
     /** Someone else's photo, or the profile photo: as if it didn't exist. */
-    private function galleryPhotoOf(TrainerProfile $profile, TrainerPhoto $photo): void
+    private function galleryPhotoOf(TrainerPhoto $photo): void
     {
-        abort_if($photo->trainer_profile_id !== $profile->id || $photo->is_portrait, 404);
+        Gate::authorize('asTrainer', $photo);
+        abort_if($photo->is_portrait, 404);
     }
 }

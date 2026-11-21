@@ -16,6 +16,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -33,7 +34,7 @@ class TrainerSeriesController extends Controller
     public function store(Request $request, TrainerClient $client, CreateBookingSeries $create): RedirectResponse
     {
         $profile = $this->profile($request);
-        abort_unless($client->trainer_profile_id === $profile->id, 404);
+        Gate::authorize('asTrainer', $client);
 
         if ($client->user_id === null) {
             throw ValidationException::withMessages(['series' => 'Il cliente deve prima iscriversi: manda il suo link personale.']);
@@ -93,7 +94,7 @@ class TrainerSeriesController extends Controller
         /** @var User $trainer */
         $trainer = $request->user();
         $profile = $this->profile($request);
-        abort_unless($series->trainer_profile_id === $profile->id, 404);
+        Gate::authorize('asTrainer', $series);
 
         $data = $request->validate(['cancel_future' => ['required', 'boolean']]);
         $cancelled = 0;
