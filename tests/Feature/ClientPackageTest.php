@@ -185,7 +185,7 @@ class ClientPackageTest extends TestCase
         Booking::factory()->for($this->trainer)->for($client, 'client')->for($package)->confirmed()->at(CarbonImmutable::now()->addDay())->create();
         // All done: nothing left.
         $full = ClientPackage::factory()->for($this->trainer)->for($client, 'client')->create(['sessions_total' => 1]);
-        Booking::factory()->for($this->trainer)->for($client, 'client')->for($full)->confirmed()->at(CarbonImmutable::now()->subDay())->create();
+        Booking::factory()->for($this->trainer)->for($client, 'client')->for($full)->confirmed()->at(CarbonImmutable::now()->subDay()->subHours(2))->create();
 
         $this->actingAs($client)
             ->get(route('client.bookings'))

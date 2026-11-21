@@ -105,7 +105,8 @@ class SessionRemindersTest extends TestCase
         $booking = $this->confirmedSession(20 * 60);
         $this->remind();
 
-        $booking->refresh()->update(['starts_at' => $this->now->addHours(22)]);
+        // As "Sposta" does: the end and the blocked time move with the start.
+        $booking->refresh()->update(['starts_at' => $this->now->addHours(22), 'ends_at' => $this->now->addHours(23), 'blocked_until' => $this->now->addHours(23)]);
 
         $this->assertNull($booking->fresh()->reminded_day_before_at);
     }

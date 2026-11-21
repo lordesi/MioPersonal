@@ -60,7 +60,7 @@ class TrainerClientsTest extends TestCase
         $trainer = TrainerProfile::factory()->approved()->create();
         // Waiting for an answer: in "Oggi", not here yet.
         Booking::factory()->for($trainer)->create();
-        Booking::factory()->for($trainer)->expired()->create();
+        Booking::factory()->for($trainer)->expired()->apart(skip: 1)->create();
         Booking::factory()->for($trainer)->status(BookingStatus::Declined)->create();
         Booking::factory()->for($trainer)->confirmed()->status(BookingStatus::Cancelled)->create();
         // Another trainer's client.

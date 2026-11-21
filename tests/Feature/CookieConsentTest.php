@@ -91,7 +91,11 @@ class CookieConsentTest extends TestCase
 
     public function test_the_choices_older_than_a_year_are_deleted()
     {
-        foreach (['old' => 13, 'recent' => 11] as $id => $months) {
+        // The ids of two browsers (uuids, as CookieConsentController makes them).
+        $old = '00000000-0000-4000-8000-000000000013';
+        $recent = '00000000-0000-4000-8000-000000000011';
+
+        foreach ([$old => 13, $recent => 11] as $id => $months) {
             CookieConsent::forceCreate([
                 'consent_id' => $id,
                 'policy_version' => CookieConsent::POLICY_VERSION,
@@ -103,6 +107,6 @@ class CookieConsentTest extends TestCase
 
         $this->artisan('cookie-consents:prune')->assertSuccessful();
 
-        $this->assertSame(['recent'], CookieConsent::pluck('consent_id')->all());
+        $this->assertSame([$recent], CookieConsent::pluck('consent_id')->all());
     }
 }

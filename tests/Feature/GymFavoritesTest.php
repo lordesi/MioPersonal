@@ -189,7 +189,7 @@ class GymFavoritesTest extends TestCase
         foreach ([$plain, $promo, $hidden] as $gym) {
             $gym->photos()->create(['path' => "gyms/{$gym->id}/cover.jpg", 'is_cover' => true]);
         }
-        $promo->promotions()->create(['title' => 'Primo mese gratis', 'discount_percent' => 100]);
+        $promo->promotions()->create(['title' => 'Primo mese a metà prezzo', 'discount_percent' => 50]);
 
         $this->get(route('home'))
             ->assertInertia(fn (Assert $page) => $page

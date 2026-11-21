@@ -19,7 +19,7 @@ class TrainerBookingRequestTest extends TestCase
         $trainer = TrainerProfile::factory()->approved()->create();
         Booking::factory()->for($trainer)->create();
         // Expired: no longer waiting for an answer.
-        Booking::factory()->for($trainer)->expired()->create();
+        Booking::factory()->for($trainer)->expired()->apart(skip: 1)->create();
 
         $this->actingAs($trainer->user)
             ->get(route('trainer.today'))

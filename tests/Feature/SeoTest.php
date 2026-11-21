@@ -199,7 +199,7 @@ class SeoTest extends TestCase
         $profile = TrainerProfile::where('slug', 'marco-bianchi')->firstOrFail();
         $booking = Booking::factory()->create(['trainer_profile_id' => $profile->id]);
         Review::factory()->for($profile, 'trainerProfile')->create(['booking_id' => $booking->id, 'client_id' => $booking->client_id, 'text' => 'Seduta ottima, molto preparato.']);
-        $hidden = Booking::factory()->create(['trainer_profile_id' => $profile->id]);
+        $hidden = Booking::factory()->apart(skip: 1)->create(['trainer_profile_id' => $profile->id]);
         Review::factory()->for($profile, 'trainerProfile')->hidden()->rating(1)->create(['booking_id' => $hidden->id, 'client_id' => $hidden->client_id]);
 
         $this->get(route('trainers.show', 'marco-bianchi'))

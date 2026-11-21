@@ -73,7 +73,7 @@ class ClientReviewTest extends TestCase
     {
         $future = Booking::factory()->for($this->client, 'client')->for($this->trainer)->confirmed()->at(CarbonImmutable::now()->addDay())->create();
         $missed = Booking::factory()->for($this->client, 'client')->for($this->trainer)->confirmed()->at(CarbonImmutable::now()->subDay())->create(['no_show_at' => now()]);
-        $notConfirmed = Booking::factory()->for($this->client, 'client')->for($this->trainer)->at(CarbonImmutable::now()->subDay())->create();
+        $notConfirmed = Booking::factory()->for($this->client, 'client')->for($this->trainer)->at(CarbonImmutable::now()->subDay()->subHours(2))->create();
 
         foreach ([$future, $missed, $notConfirmed] as $booking) {
             $this->actingAs($this->client)
