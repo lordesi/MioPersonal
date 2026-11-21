@@ -46,10 +46,18 @@ final class GymShelves
             ->get()
             ->keyBy('id');
 
-        return GymCard::many(
-            array_values(array_map(fn (int $id) => $gyms[$id], array_filter($ids, fn (int $id) => $gyms->has($id)))),
-            $favoriteIds,
-        );
+        // In the order of $ids; the ones no longer found are left out.
+        $ordered = [];
+
+        foreach ($ids as $id) {
+            $gym = $gyms->get($id);
+
+            if ($gym !== null) {
+                $ordered[] = $gym;
+            }
+        }
+
+        return GymCard::many($ordered, $favoriteIds);
     }
 
     /**

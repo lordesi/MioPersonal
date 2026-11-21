@@ -7,12 +7,12 @@ import ModalSheet, {
 import MonthCalendar, {
     monthsBetween,
     romeToday,
-    shiftMonth,
 } from '@/components/mp/month-calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
 import type { TrainerBooking } from '@/hooks/use-trainer-booking';
 import { freeStarts, weeklyLabel } from '@/lib/booking';
+import { shiftYearMonth } from '@/lib/calendar';
 import { darkCheckboxClassName } from '@/lib/dark-form';
 import {
     formatDayLong,
@@ -90,7 +90,7 @@ function SlotPicker({
     const [offset, setOffset] = useState(() =>
         Math.min(maxOffset, Math.max(0, monthsBetween(today, date ?? first))),
     );
-    const { year, month } = shiftMonth(todayYear, todayMonth, offset);
+    const { year, month } = shiftYearMonth(todayYear, todayMonth, offset);
 
     const chosenDay = date ? days.get(date) : undefined;
     const starts = chosenDay ? freeStarts(chosenDay, minutes) : [];

@@ -5,6 +5,7 @@ import TrainerSeriesController from '@/actions/App/Http/Controllers/TrainerSerie
 import FormField from '@/components/auth/form-field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { deviceToday } from '@/lib/calendar';
 import { formatDateMedium, formatPrice } from '@/lib/format';
 import type { SeriesService, TrainerClient } from '@/types';
 
@@ -29,13 +30,6 @@ const times = Array.from({ length: 33 }, (_, index) => {
 
 const selectClass =
     'h-11 w-full rounded-xl border border-input bg-transparent px-3.5 text-[15px] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive';
-
-/** Today as Y-m-d on the trainer's device. */
-function today(): string {
-    const now = new Date();
-
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
 
 /**
  * "Sedute fisse" in the card of a client: «ogni martedì alle 18». The
@@ -182,7 +176,7 @@ function NewSeries({
     );
     const [weekday, setWeekday] = useState('1');
     const [time, setTime] = useState('18:00');
-    const [startsOn, setStartsOn] = useState(today);
+    const [startsOn, setStartsOn] = useState(deviceToday);
     const [endsOn, setEndsOn] = useState('');
     const [errors, setErrors] = useState<Errors>({});
     const [processing, setProcessing] = useState(false);
@@ -300,7 +294,7 @@ function NewSeries({
                         <Input
                             id={fieldId}
                             type="date"
-                            min={today()}
+                            min={deviceToday()}
                             value={startsOn}
                             onChange={(event) =>
                                 setStartsOn(event.target.value)

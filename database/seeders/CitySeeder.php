@@ -22,13 +22,16 @@ class CitySeeder extends Seeder
             throw new RuntimeException('database/data/cities.csv is missing.');
         }
 
-        $header = fgetcsv($file, escape: '');
+        $header = array_map(
+            fn (?string $column) => $column ?? throw new RuntimeException('database/data/cities.csv: a column has no name.'),
+            fgetcsv($file, escape: '') ?: [],
+        );
         $now = now();
         $rows = [];
 
         while (($line = fgetcsv($file, escape: '')) !== false) {
             /** @var array{name: string, province_code: string, region: string, lat: string, lng: string} $city */
-            $city = array_combine($header ?: [], $line);
+            $city = array_combine($header, $line);
 
             $rows[] = [
                 'name' => $city['name'],

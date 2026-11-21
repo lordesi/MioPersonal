@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -17,7 +17,7 @@ use Inertia\Response;
  */
 class TrainerShareController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     /** How many disciplines the story image shows. */
     private const DISCIPLINES = 3;

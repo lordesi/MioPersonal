@@ -216,13 +216,17 @@ export function formatHoursShort(hours: number): string {
     return `${days} ${days === 1 ? 'giorno' : 'giorni'}`;
 }
 
-/** 0.0577 → "5,8%" */
-export function formatPercent(ratio: number): string {
-    return ratio.toLocaleString(LOCALE, {
-        style: 'percent',
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-    });
+/**
+ * 0.0577 → "5,8%", 0.5 → "50%" (decimals only when they say something);
+ * `decimals` 0: 0.91 → "91%". null (nothing to compare with) → "—".
+ */
+export function formatPercent(ratio: number | null, decimals = 1): string {
+    return ratio === null
+        ? '—'
+        : new Intl.NumberFormat(LOCALE, {
+              style: 'percent',
+              maximumFractionDigits: decimals,
+          }).format(ratio);
 }
 
 /** 1 → "1 ora", 2 → "2 ore" */

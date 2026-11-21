@@ -173,8 +173,13 @@ class Waitlist
             ->delete();
 
         WaitlistEntry::query()->whereNotNull('trainer_profile_id')->get(['trainer_profile_id', 'day'])
-            ->unique(fn (WaitlistEntry $entry) => $entry->trainer_profile_id.'|'.$entry->day->toDateString())
+            ->unique(fn (WaitlistEntry $entry) => $entry->trainer_profile_id.'|'.$entry->day?->toDateString())
             ->each(function (WaitlistEntry $entry) {
+                // A trainer's day always has its day; the events have none.
+                if ($entry->day === null) {
+                    return;
+                }
+
                 $profile = TrainerProfile::query()->with('workingHours')->find($entry->trainer_profile_id);
                 $profile === null ? null : $this->notifyDay($profile, $entry->day->toDateString());
             });

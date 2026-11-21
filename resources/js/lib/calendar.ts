@@ -36,6 +36,17 @@ export function addDays(date: string, days: number): string {
     return day.toISOString().slice(0, 10);
 }
 
+/**
+ * Today as "YYYY-MM-DD" on the device's clock, not in Rome: the limit of a
+ * date field (`min`/`max`), which the browser compares with its own day.
+ */
+export function deviceToday(now: Date = new Date()): string {
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+
+    return `${now.getFullYear()}-${month}-${day}`;
+}
+
 /** The 7 days of the week starting on `monday`. */
 export function weekDates(monday: string): string[] {
     return Array.from({ length: 7 }, (_, index) => addDays(monday, index));
@@ -216,12 +227,23 @@ export function mondayOf(date: string): string {
     return addDays(date, -weekday);
 }
 
+/** { 2026, 11 } + 1 → { year: 2026, month: 12 } (month 1-12). */
+export function shiftYearMonth(
+    year: number,
+    month: number,
+    by: number,
+): { year: number; month: number } {
+    const index = year * 12 + (month - 1) + by;
+
+    return { year: Math.floor(index / 12), month: (index % 12) + 1 };
+}
+
 /** "2026-10" + 2 → "2026-12" */
 export function shiftMonth(month: string, offset: number): string {
     const [year, monthNumber] = month.split('-').map(Number);
-    const date = new Date(Date.UTC(year, monthNumber - 1 + offset, 1));
+    const shifted = shiftYearMonth(year, monthNumber, offset);
 
-    return date.toISOString().slice(0, 7);
+    return `${shifted.year}-${String(shifted.month).padStart(2, '0')}`;
 }
 
 /** "2026-10" → "ottobre 2026" */

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\User;
 use App\Support\TrainerSlots;
 use Illuminate\Http\Request;
@@ -17,7 +17,7 @@ use Inertia\Response;
  */
 class TrainerProfileHubController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     public function __invoke(Request $request): Response
     {

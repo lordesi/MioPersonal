@@ -19,7 +19,8 @@ persone è [docs/deploy.md](docs/deploy.md).
    nessun deploy.
 3. **Prima di ogni push, gli stessi controlli di GitHub**, in locale:
     - `composer ci:check`: formattazione e lint di frontend, `.md` e `.yml` (`vp check`), tipi TypeScript,
-      stile PHP (Pint), PHPStan e test. Correzioni automatiche: `npx vp check --fix` e `composer lint`;
+      test del frontend (`vp test`), stile PHP (Pint), PHPStan e test. Correzioni automatiche:
+      `npx vp check --fix` e `composer lint`;
     - `npm run build:ssr`, se la modifica tocca il frontend o l'SSR.
 4. **Pull Request → test verdi → "Squash and merge".** Il merge è un deploy in produzione: guidare l'utente
    un passo alla volta, poi far controllare in GitHub → Actions prima `tests · main` e poi `deploy · main`.

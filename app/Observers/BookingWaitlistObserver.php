@@ -34,8 +34,14 @@ class BookingWaitlistObserver implements ShouldHandleEventsAfterCommit
         }
 
         foreach ($days as $day) {
-            if (WaitlistEntry::query()->where('trainer_profile_id', $booking->trainer_profile_id)->whereDate('day', $day)->exists()) {
-                app(Waitlist::class)->notifyDay($booking->trainerProfile()->with('workingHours')->first(), $day);
+            if (! WaitlistEntry::query()->where('trainer_profile_id', $booking->trainer_profile_id)->whereDate('day', $day)->exists()) {
+                continue;
+            }
+
+            $profile = $booking->trainerProfile()->with('workingHours')->first();
+
+            if ($profile !== null) {
+                app(Waitlist::class)->notifyDay($profile, $day);
             }
         }
     }

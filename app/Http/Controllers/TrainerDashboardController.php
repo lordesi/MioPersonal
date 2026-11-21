@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Enums\BookingStatus;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Booking;
 use App\Models\ClientPackage;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\ClientBookingData;
 use App\Support\TrainerBookingRequests;
 use App\Support\TrainerPastSessions;
 use App\Support\TrainerSessions;
@@ -28,7 +29,7 @@ use Inertia\Response;
  */
 class TrainerDashboardController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     /** The periods of "Statistiche": days back from today, today included. */
     public const PERIODS = ['oggi' => 1, '7' => 7, '30' => 30];
@@ -308,7 +309,7 @@ class TrainerDashboardController extends Controller
                     'total' => $package->sessions_total,
                     'done' => $package->done_count ?? 0,
                     'booked' => $package->bookedCount(),
-                    'nextStart' => $next === null ? null : $this->iso($next->starts_at),
+                    'nextStart' => $next === null ? null : ClientBookingData::iso($next->starts_at),
                 ];
             })
             ->all());

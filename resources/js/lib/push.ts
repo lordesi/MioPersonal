@@ -1,5 +1,6 @@
 import PushSubscriptionController from '@/actions/App/Http/Controllers/PushSubscriptionController';
 import { isIos, isStandalone } from '@/lib/pwa';
+import { xsrfToken } from '@/lib/notifications';
 import { forgetKeptPages } from '@/lib/prefetch';
 
 /**
@@ -78,15 +79,6 @@ function keyBytes(base64url: string): Uint8Array<ArrayBuffer> {
     }
 
     return bytes;
-}
-
-/** Laravel's CSRF cookie, sent back in the header. */
-function xsrfToken(): string {
-    const cookie = document.cookie
-        .split('; ')
-        .find((part) => part.startsWith('XSRF-TOKEN='));
-
-    return cookie ? decodeURIComponent(cookie.slice('XSRF-TOKEN='.length)) : '';
 }
 
 /**

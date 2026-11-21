@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use App\Actions\Bookings\CreateBookingSeries;
 use App\Enums\BookingActor;
 use App\Enums\BookingStatus;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Booking;
 use App\Models\BookingSeries;
 use App\Models\TrainerClient;
-use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Notifications\BookingSeriesNotice;
 use App\Support\TrainerSlots;
@@ -28,12 +28,14 @@ use Inertia\Inertia;
  */
 class TrainerSeriesController extends Controller
 {
+    use BuildsTrainerArea;
+
     /** A rule can't run for more than this: it is set again after a year. */
     private const MAX_DAYS = 366;
 
     public function store(Request $request, TrainerClient $client, CreateBookingSeries $create): RedirectResponse
     {
-        $profile = $this->profile($request);
+        $profile = $this->trainerProfile($request);
         Gate::authorize('asTrainer', $client);
 
         if ($client->user_id === null) {
@@ -93,7 +95,7 @@ class TrainerSeriesController extends Controller
     {
         /** @var User $trainer */
         $trainer = $request->user();
-        $profile = $this->profile($request);
+        $profile = $this->trainerProfile($request);
         Gate::authorize('asTrainer', $series);
 
         $data = $request->validate(['cancel_future' => ['required', 'boolean']]);
@@ -125,13 +127,5 @@ class TrainerSeriesController extends Controller
             : 'Sedute fisse terminate: quelle già in calendario restano.']);
 
         return back();
-    }
-
-    private function profile(Request $request): TrainerProfile
-    {
-        /** @var User $user */
-        $user = $request->user();
-
-        return $user->trainerProfile ?? abort(404);
     }
 }

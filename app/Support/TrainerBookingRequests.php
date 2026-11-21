@@ -90,15 +90,22 @@ final class TrainerBookingRequests
             ->latest('id')
             ->limit(self::HANDLED_LIMIT)
             ->get()
-            ->map(fn (BookingEvent $event) => [
-                ...TrainerSessions::row($event->booking),
-                // "Pacchetto 10 sedute" or "Seduta singola", without "· seduta 2 di 10".
-                'serviceType' => $event->booking->clientPackage->name ?? $event->booking->service_name,
-                'package' => self::packageProgress($event->booking),
-                'answer' => $event->type,
-                'answeredAt' => ClientBookingData::iso($event->created_at ?? now()),
-            ])
+            // whereHas() above: every event has its booking.
+            ->flatMap(fn (BookingEvent $event) => $event->booking === null ? [] : [self::handledRow($event, $event->booking)])
             ->all());
+    }
+
+    /** @return array<string, mixed> */
+    private static function handledRow(BookingEvent $event, Booking $booking): array
+    {
+        return [
+            ...TrainerSessions::row($booking),
+            // "Pacchetto 10 sedute" or "Seduta singola", without "· seduta 2 di 10".
+            'serviceType' => $booking->clientPackage->name ?? $booking->service_name,
+            'package' => self::packageProgress($booking),
+            'answer' => $event->type,
+            'answeredAt' => ClientBookingData::iso($event->created_at ?? now()),
+        ];
     }
 
     /**

@@ -117,7 +117,7 @@ class GymPromotionsController extends Controller
         $validator->after(function (Validator $validator) use ($profile, $current, $request) {
             // At most MAX_ACTIVE_PROMOTIONS public at the same time (today).
             $activeNow = $profile->activePromotions()
-                ->when($current, fn ($query) => $query->whereKeyNot($current->id))
+                ->when($current, fn ($query, GymPromotion $current) => $query->whereKeyNot($current->id))
                 ->count();
             $starts = $request->input('starts_on');
             $willBeActive = $starts === null || $starts <= GymPromotion::today();

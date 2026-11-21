@@ -11,9 +11,8 @@ import {
     formatDay,
     formatMonth,
     formatNumber,
-    formatPercent,
 } from '@/components/admin/stats-charts';
-import { formatPrice } from '@/lib/format';
+import { formatPercent, formatPrice } from '@/lib/format';
 
 type Count = { source: string; count: number };
 type Step = { label: string; count: number };

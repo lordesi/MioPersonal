@@ -36,7 +36,7 @@ final class NewsFeed
         $profiles = TrainerProfile::query()
             ->published()
             ->where('approved_at', '>=', now()->subDays(self::DAYS))
-            ->when($city !== null, fn (Builder $query) => $query->where(fn (Builder $inCity) => $inCity
+            ->when($city, fn (Builder $query, City $city) => $query->where(fn (Builder $inCity) => $inCity
                 ->where(fn (Builder $based) => $based->basedIn($city->id))
                 ->orWhere(fn (Builder $onlineOnly) => $onlineOnly->where('trains_online', true)->where('trains_in_person', false))))
             ->with(TrainerCard::RELATIONS)
@@ -59,7 +59,7 @@ final class NewsFeed
         $gyms = GymProfile::query()
             ->published()
             ->where('approved_at', '>=', now()->subDays(self::DAYS))
-            ->when($city !== null, fn (Builder $query) => $query->where('city_id', $city->id))
+            ->when($city, fn (Builder $query, City $city) => $query->where('city_id', $city->id))
             ->with(GymCard::RELATIONS)
             ->withCount('trainers')
             ->latest('approved_at')
@@ -79,7 +79,7 @@ final class NewsFeed
             ->listed()
             ->upcoming()
             ->where('created_at', '>=', now()->subDays(self::DAYS))
-            ->when($city !== null, fn (Builder $query) => $query->where(fn (Builder $here) => $here
+            ->when($city, fn (Builder $query, City $city) => $query->where(fn (Builder $here) => $here
                 ->where('city_id', $city->id)
                 ->orWhere('place', GroupSessionPlace::Online)));
 

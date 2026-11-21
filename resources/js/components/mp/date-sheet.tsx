@@ -6,9 +6,8 @@ import ModalSheet, {
 import MonthCalendar, {
     monthsBetween,
     romeToday,
-    shiftMonth,
 } from '@/components/mp/month-calendar';
-import { addDays } from '@/lib/calendar';
+import { addDays, shiftYearMonth } from '@/lib/calendar';
 import { formatDayLong } from '@/lib/format';
 import type { SearchFilters } from '@/lib/search';
 
@@ -99,7 +98,7 @@ function DatePicker({
         },
         className?: string,
     ) => {
-        const { year, month } = shiftMonth(todayYear, todayMonth, by);
+        const { year, month } = shiftYearMonth(todayYear, todayMonth, by);
 
         return (
             <MonthCalendar

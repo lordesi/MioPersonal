@@ -6,6 +6,7 @@ use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -20,11 +21,12 @@ class RedirectLegacySlug
     public function handle(Request $request, Closure $next, string $type): Response
     {
         $route = $request->route();
-        $slug = $route->parameter('slug');
+        $name = $route instanceof Route ? $route->getName() : null;
+        $slug = $route instanceof Route ? $route->parameter('slug') : null;
         $model = $type === 'gym' ? GymProfile::class : TrainerProfile::class;
 
-        if (is_string($slug) && ! $model::query()->where('slug', $slug)->exists() && ($current = $model::currentSlug($slug)) !== null) {
-            $url = route($route->getName(), [...$route->parameters(), 'slug' => $current]);
+        if ($route instanceof Route && $name !== null && is_string($slug) && ! $model::query()->where('slug', $slug)->exists() && ($current = $model::currentSlug($slug)) !== null) {
+            $url = route($name, [...$route->parameters(), 'slug' => $current]);
             $query = $request->getQueryString();
 
             return redirect($query === null ? $url : "{$url}?{$query}", 301);

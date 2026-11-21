@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Bookings\CreateTrainerSession;
 use App\Enums\BookingActor;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Booking;
 use App\Models\TrainerClient;
 use App\Models\TrainerProfile;
@@ -24,9 +25,11 @@ use Inertia\Inertia;
  */
 class TrainerManualSessionController extends Controller
 {
+    use BuildsTrainerArea;
+
     public function store(Request $request, CreateTrainerSession $create): RedirectResponse
     {
-        $profile = $this->profile($request);
+        $profile = $this->trainerProfile($request);
 
         $data = $request->validate([
             'client_record_id' => ['required_without:new_client', 'nullable', 'integer'],
@@ -54,7 +57,8 @@ class TrainerManualSessionController extends Controller
 
         $service = $profile->services()->find((int) $data['service_id']) ?? throw ValidationException::withMessages(['service_id' => 'Scegli una delle tue sedute.']);
         $place = isset($data['place_id']) ? $profile->places()->find((int) $data['place_id']) : null;
-        $start = CarbonImmutable::createFromFormat('Y-m-d H:i', "{$data['date']} {$data['time']}", 'Europe/Rome');
+        $start = CarbonImmutable::createFromFormat('Y-m-d H:i', "{$data['date']} {$data['time']}", 'Europe/Rome')
+            ?? throw ValidationException::withMessages(['date' => 'Scegli il giorno.']);
 
         $record = isset($data['client_record_id'])
             ? $profile->clientRecords()->findOrFail((int) $data['client_record_id'])
@@ -152,13 +156,5 @@ class TrainerManualSessionController extends Controller
         $value = trim((string) $value);
 
         return $value === '' ? null : $value;
-    }
-
-    private function profile(Request $request): TrainerProfile
-    {
-        /** @var User $user */
-        $user = $request->user();
-
-        return $user->trainerProfile ?? abort(404);
     }
 }

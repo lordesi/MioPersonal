@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
+import { formatPercent } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 /**
@@ -12,15 +13,6 @@ const LOCALE = 'it-IT';
 
 export function formatNumber(value: number): string {
     return new Intl.NumberFormat(LOCALE).format(value);
-}
-
-export function formatPercent(rate: number | null): string {
-    return rate === null
-        ? '—'
-        : new Intl.NumberFormat(LOCALE, {
-              style: 'percent',
-              maximumFractionDigits: 1,
-          }).format(rate);
 }
 
 /** "2026-11" → "nov 26". */

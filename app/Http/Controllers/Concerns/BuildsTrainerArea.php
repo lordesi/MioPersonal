@@ -5,31 +5,35 @@ namespace App\Http\Controllers\Concerns;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\TrainerReviewDecision;
 use App\Models\Conversation;
+use App\Models\TrainerProfile;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Request;
 
 /**
- * Date helpers and the data of the trainer layout, for the trainer area; the
- * admin pages still use them for their placeholder data.
- * TODO: rename once the admin pages read from the database.
+ * What the pages of the trainer area share: the data of the trainer layout
+ * and the date helpers.
  */
-trait BuildsPlaceholderData
+trait BuildsTrainerArea
 {
+    /** The trainer profile of who is signed in: 404 without one. */
+    private function trainerProfile(Request $request): TrainerProfile
+    {
+        return $this->trainerProfileOrNull($request) ?? abort(404);
+    }
+
+    /** The trainer profile of who is signed in, if any (e.g. made trainer by the team, registration not sent). */
+    private function trainerProfileOrNull(Request $request): ?TrainerProfile
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return $user->trainerProfile;
+    }
+
     private function romeNow(): CarbonImmutable
     {
         return CarbonImmutable::now('Europe/Rome');
-    }
-
-    /** A Rome date `$days` from today at `$hour`:`$minute`. */
-    private function at(CarbonImmutable $now, int $days, int $hour, int $minute = 0): CarbonImmutable
-    {
-        return $now->startOfDay()->addDays($days)->setTime($hour, $minute);
-    }
-
-    /** Dates go to the frontend in UTC; the browser shows them in Europe/Rome. */
-    private function iso(CarbonImmutable $date): string
-    {
-        return $date->utc()->format('Y-m-d\TH:i:s\Z');
     }
 
     /**

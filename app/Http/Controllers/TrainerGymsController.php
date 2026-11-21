@@ -5,12 +5,11 @@ namespace App\Http\Controllers;
 use App\Actions\Gym\GymLinks;
 use App\Enums\GymLinkSide;
 use App\Enums\GymLinkStatus;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\GymCourse;
 use App\Models\GymProfile;
 use App\Models\GymTrainerLink;
 use App\Models\TrainerProfile;
-use App\Models\User;
 use App\Support\CourseCard;
 use App\Support\GymCard;
 use App\Support\GymCourseWeek;
@@ -27,11 +26,11 @@ use Inertia\Response;
  */
 class TrainerGymsController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     public function show(Request $request): Response
     {
-        $trainer = $this->trainer($request);
+        $trainer = $this->trainerProfileOrNull($request);
         $query = trim((string) $request->query('q', ''));
 
         $links = $trainer === null ? collect() : $trainer->gymLinks()
@@ -56,8 +55,7 @@ class TrainerGymsController extends Controller
     /** "Chiedi di allenare qui". */
     public function request(Request $request, string $slug, GymLinks $links): RedirectResponse
     {
-        $trainer = $this->trainer($request);
-        abort_if($trainer === null, 404);
+        $trainer = $this->trainerProfile($request);
 
         $data = $request->validate(['message' => ['nullable', 'string', 'max:'.GymLinks::MESSAGE_MAX]]);
         $gym = GymProfile::where('slug', $slug)->firstOrFail();
@@ -93,14 +91,6 @@ class TrainerGymsController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Fatto.']);
 
         return to_route('trainer.gyms');
-    }
-
-    private function trainer(Request $request): ?TrainerProfile
-    {
-        /** @var User $user */
-        $user = $request->user();
-
-        return $user->trainerProfile;
     }
 
     private function linkOf(Request $request, GymTrainerLink $link): GymTrainerLink

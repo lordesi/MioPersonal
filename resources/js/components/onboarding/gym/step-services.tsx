@@ -13,7 +13,6 @@ import {
 } from '@/components/onboarding/gym/draft';
 import {
     DarkError,
-    errorOf,
     Field,
     Optional,
     pillFieldClassName,
@@ -23,6 +22,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { darkSwitchClassName } from '@/lib/dark-form';
 import { cn } from '@/lib/utils';
+import { errorOf } from '@/lib/validation-message';
 import type { CatalogOption } from '@/types';
 
 type StepServicesProps = {

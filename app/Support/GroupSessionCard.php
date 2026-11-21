@@ -5,7 +5,6 @@ namespace App\Support;
 use App\Enums\GroupSessionPlace;
 use App\Models\GroupSession;
 use App\Models\GroupSessionHost;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -41,8 +40,8 @@ final class GroupSessionCard
             'title' => $session->title,
             'type' => $session->type->value,
             'typeLabel' => $session->type->label(),
-            'start' => self::iso($session->starts_at),
-            'end' => self::iso($session->ends_at),
+            'start' => ClientBookingData::iso($session->starts_at),
+            'end' => ClientBookingData::iso($session->ends_at),
             'city' => $session->city?->name,
             'online' => $session->place === GroupSessionPlace::Online,
             'place' => $session->placeLabel(),
@@ -66,11 +65,5 @@ final class GroupSessionCard
     public static function many(iterable $sessions): array
     {
         return array_values(Collection::make($sessions)->map(fn (GroupSession $session) => self::from($session))->all());
-    }
-
-    /** Dates go to the frontend in UTC; the browser shows them in Rome time. */
-    public static function iso(\DateTimeInterface $date): string
-    {
-        return CarbonImmutable::instance($date)->utc()->format('Y-m-d\TH:i:s\Z');
     }
 }

@@ -3,11 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Trainer\SaveTrainerProfile;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Http\Requests\TrainerProfileUpdateRequest;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
-use App\Models\User;
 use App\Support\CatalogOptions;
 use App\Support\TrainerDraft;
 use App\Support\TrainerSocials;
@@ -25,11 +24,11 @@ use Inertia\Response;
  */
 class TrainerProfileEditController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     public function show(Request $request): Response
     {
-        $profile = $this->profile($request);
+        $profile = $this->trainerProfileOrNull($request);
 
         return Inertia::render('trainer/profile', [
             'trainerArea' => $this->trainerArea(),
@@ -57,7 +56,7 @@ class TrainerProfileEditController extends Controller
 
     public function update(TrainerProfileUpdateRequest $request, SaveTrainerProfile $saver): RedirectResponse
     {
-        $profile = $this->profile($request);
+        $profile = $this->trainerProfileOrNull($request);
 
         abort_unless($profile?->isApproved() ?? false, 403);
 
@@ -66,13 +65,5 @@ class TrainerProfileEditController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Profilo aggiornato.']);
 
         return back();
-    }
-
-    private function profile(Request $request): ?TrainerProfile
-    {
-        /** @var User $user */
-        $user = $request->user();
-
-        return $user->trainerProfile;
     }
 }

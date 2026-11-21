@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { errorOf } from '@/lib/validation-message';
 import type { CatalogOption } from '@/types';
 
 type Errors = Partial<Record<string, string>>;
@@ -47,16 +48,6 @@ type FieldsProps = {
 };
 
 const inputClass = 'h-11 text-base md:text-base';
-
-/** The first error of a field or of its children ("hours.2.0.opens"). */
-function errorOf(errors: Errors, field: string): string | undefined {
-    return (
-        errors[field] ??
-        Object.entries(errors).find(([name]) =>
-            name.startsWith(`${field}.`),
-        )?.[1]
-    );
-}
 
 function Field({
     label,

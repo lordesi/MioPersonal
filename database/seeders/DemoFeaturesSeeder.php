@@ -22,6 +22,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 /**
  * Everything the newer features need to be tried by hand: the home shelves
@@ -47,7 +48,7 @@ class DemoFeaturesSeeder extends Seeder
             ->get();
 
         if ($clients->count() < 6 || ! $this->trainer('giulia-rossi')) {
-            $this->command->warn('Run DemoTrainerSeeder first.');
+            $this->command?->warn('Run DemoTrainerSeeder first.');
 
             return;
         }
@@ -63,6 +64,22 @@ class DemoFeaturesSeeder extends Seeder
         return TrainerProfile::query()
             ->whereHas('user', fn ($user) => $user->where('email', "{$slug}@demo.miopersonal.test"))
             ->first();
+    }
+
+    /**
+     * One of the demo clients, by position.
+     *
+     * @param  Collection<int, User>  $clients
+     */
+    private function client(Collection $clients, int $index): User
+    {
+        return $clients->get($index) ?? throw new RuntimeException("Run DemoTrainerSeeder first: client {$index} is missing.");
+    }
+
+    /** One of the trainers of DemoTrainerSeeder, which runs first. */
+    private function demoTrainer(string $slug): TrainerProfile
+    {
+        return $this->trainer($slug) ?? throw new RuntimeException("Run DemoTrainerSeeder first: {$slug} is missing.");
     }
 
     private function gym(string $name): ?GymProfile
@@ -180,9 +197,9 @@ class DemoFeaturesSeeder extends Seeder
             ]);
         };
 
-        $giulia = $this->trainer('giulia-rossi');
-        $marco = $this->trainer('marco-bianchi');
-        $chiara = $this->trainer('chiara-galli');
+        $giulia = $this->demoTrainer('giulia-rossi');
+        $marco = $this->demoTrainer('marco-bianchi');
+        $chiara = $this->demoTrainer('chiara-galli');
         $fitlab = $this->gym('FitLab Centro');
 
         // Open, with some people already in.
@@ -190,8 +207,10 @@ class DemoFeaturesSeeder extends Seeder
             'description' => 'Un’ora e mezza per capire come si sta alla scrivania e come si scioglie la schiena. Porta un tappetino.',
             'address' => 'Parco Sempione, ingresso Arco della Pace',
         ]);
-        foreach ($open ? $clients->take(6) : [] as $client) {
-            $places->register($open, $client);
+        if ($open !== null) {
+            foreach ($clients->take(6) as $client) {
+                $places->register($open, $client);
+            }
         }
 
         // Sold out, with a person waiting for a place.
@@ -201,9 +220,9 @@ class DemoFeaturesSeeder extends Seeder
             'price_cents' => 1000,
         ]);
         if ($full !== null) {
-            $places->register($full, $clients[0]);
-            $places->register($full, $clients[1]);
-            $waitlist->joinEvent($clients[2], $full);
+            $places->register($full, $this->client($clients, 0));
+            $places->register($full, $this->client($clients, 1));
+            $waitlist->joinEvent($this->client($clients, 2), $full);
         }
 
         // Online.
@@ -220,8 +239,10 @@ class DemoFeaturesSeeder extends Seeder
             'gym_profile_id' => $fitlab->id,
             'address' => null,
         ]);
-        foreach ($day ? $clients->slice(3, 4) : [] as $client) {
-            $places->register($day, $client);
+        if ($day !== null) {
+            foreach ($clients->slice(3, 4) as $client) {
+                $places->register($day, $client);
+            }
         }
     }
 
@@ -232,7 +253,7 @@ class DemoFeaturesSeeder extends Seeder
      */
     private function giulia(GenerateSeries $generator, LinkClient $linker, Collection $clients): void
     {
-        $profile = $this->trainer('giulia-rossi');
+        $profile = $this->demoTrainer('giulia-rossi');
         $single = $profile->services()->where('name', 'Seduta singola')->where('minutes', 60)->where('online_only', false)->first();
 
         if ($single === null) {
@@ -251,7 +272,7 @@ class DemoFeaturesSeeder extends Seeder
                 }
 
                 $profile->bookings()->forceCreate([
-                    'client_id' => $clients[($weeksAgo + $i) % 6]->id,
+                    'client_id' => $this->client($clients, ($weeksAgo + $i) % 6)->id,
                     'service_id' => $single->id,
                     'starts_at' => $start->utc(),
                     'ends_at' => $start->addHour()->utc(),
@@ -297,7 +318,7 @@ class DemoFeaturesSeeder extends Seeder
         }
 
         $silvia = $clients->first(fn (User $user) => str_starts_with($user->email, 'silvia-'));
-        $first = collect(TrainerSlots::days($profile->fresh(), 14, now()))
+        $first = collect(TrainerSlots::days($profile->refresh(), 14, now()))
             ->slice(2)
             ->flatMap(fn (array $day) => $day['slots'])
             ->first(fn (array $slot) => $slot['maxMinutes'] >= 60);

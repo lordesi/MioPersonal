@@ -7,20 +7,12 @@ import FormField from '@/components/auth/form-field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useClipboard } from '@/hooks/use-clipboard';
+import { deviceToday } from '@/lib/calendar';
 import { formatDateMedium, formatPrice } from '@/lib/format';
 import { whatsAppUrl } from '@/lib/whatsapp';
 import type { TrainerClient } from '@/types';
 
 type Errors = Partial<Record<string, string>>;
-
-/** Today as Y-m-d on the trainer's device. */
-function today(): string {
-    const now = new Date();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-
-    return `${now.getFullYear()}-${month}-${day}`;
-}
 
 /**
  * "Scheda del cliente" in the card of "Clienti": what only the trainer sees.
@@ -207,7 +199,7 @@ function PersonalLink({ client }: { client: TrainerClient }) {
 
 function Payments({ client }: { client: TrainerClient }) {
     const [amount, setAmount] = useState('');
-    const [paidOn, setPaidOn] = useState(today);
+    const [paidOn, setPaidOn] = useState(deviceToday);
     const [note, setNote] = useState('');
     const [errors, setErrors] = useState<Errors>({});
     const [processing, setProcessing] = useState(false);
@@ -298,7 +290,7 @@ function Payments({ client }: { client: TrainerClient }) {
                         <Input
                             id={id}
                             type="date"
-                            max={today()}
+                            max={deviceToday()}
                             value={paidOn}
                             onChange={(event) => setPaidOn(event.target.value)}
                             aria-describedby={describedBy}

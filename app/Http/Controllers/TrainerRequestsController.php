@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Booking;
 use App\Models\User;
 use App\Support\TrainerBookingRequests;
@@ -18,7 +18,7 @@ use Inertia\Response;
  */
 class TrainerRequestsController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     public function __invoke(Request $request): Response
     {
@@ -29,7 +29,7 @@ class TrainerRequestsController extends Controller
         // Not answered in time: to "Gestite" now, without waiting for bookings:expire.
         $overdue = $profile === null ? collect() : $profile->bookings()->overdue()->get();
 
-        if ($overdue->isNotEmpty()) {
+        if ($profile !== null && $overdue->isNotEmpty()) {
             $overdue->each(fn (Booking $booking) => $booking->expire());
             TrainerSlots::refresh($profile);
         }

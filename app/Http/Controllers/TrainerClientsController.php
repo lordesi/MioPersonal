@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Trainer\LinkClient;
 use App\Enums\BookingStatus;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Booking;
 use App\Models\BookingSeries;
 use App\Models\ClientPackage;
@@ -17,6 +17,7 @@ use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\ClientAbout;
 use App\Support\ClientAttendance;
+use App\Support\ClientBookingData;
 use App\Support\ClientProgress;
 use App\Support\TrainerPastSessions;
 use App\Support\TrainerSessions;
@@ -35,7 +36,7 @@ use Inertia\Response;
  */
 class TrainerClientsController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     /** "Svolte" of the card: the last sessions over. */
     public const PAST_SESSIONS = 10;
@@ -264,9 +265,9 @@ class TrainerClientsController extends Controller
             'registered' => $record->isRegistered(),
             'name' => $user->name ?? $record->name,
             'sessions' => $bookings->count(),
-            'firstSession' => $first === null ? null : $this->iso($first->starts_at),
-            'lastSession' => $last === null ? null : $this->iso($last->starts_at),
-            'nextSession' => $next === null ? null : $this->iso($next->starts_at),
+            'firstSession' => $first === null ? null : ClientBookingData::iso($first->starts_at),
+            'lastSession' => $last === null ? null : ClientBookingData::iso($last->starts_at),
+            'nextSession' => $next === null ? null : ClientBookingData::iso($next->starts_at),
             // Under the name: what they book, from the most recent session.
             'lastService' => ($last ?? $first)->service_name ?? '',
             'upcomingCount' => $upcoming->count(),
@@ -292,7 +293,7 @@ class TrainerClientsController extends Controller
             ] : null,
             // "Nota per il cliente": the client reads it in "Panoramica".
             'sharedNote' => $record->shared_note,
-            'sharedNoteAt' => $record->shared_note_at === null ? null : $this->iso($record->shared_note_at),
+            'sharedNoteAt' => $record->shared_note_at === null ? null : ClientBookingData::iso($record->shared_note_at),
             // The trainer's own: never shown to the client.
             'goal' => $record->goal,
             // The old single note: shown as the first, undated, while it has text.
@@ -301,7 +302,7 @@ class TrainerClientsController extends Controller
             'datedNotes' => $record->clientNotes->map(fn (TrainerClientNote $note) => [
                 'id' => $note->id,
                 'body' => $note->body,
-                'createdAt' => $this->iso($note->created_at ?? $now),
+                'createdAt' => ClientBookingData::iso($note->created_at ?? $now),
                 'edited' => $note->updated_at !== null && $note->created_at !== null && $note->updated_at->gt($note->created_at),
             ])->all(),
             'payments' => $record->payments->map(fn (ClientPayment $payment) => [

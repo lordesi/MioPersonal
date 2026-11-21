@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
             $this->call(DemoFeaturesSeeder::class);
         }
 
-        // The accounts to try the staging site with (docs/staging.md).
+        // The accounts to try the staging site with.
         if (Staging::active()) {
             $this->call(StagingSeeder::class);
         }

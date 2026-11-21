@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Http\Requests\TrainerAvailabilityRequest;
 use App\Http\Requests\TrainerDayOverrideRequest;
-use App\Models\User;
 use App\Support\TrainerAvailability;
 use App\Support\TrainerDayOverrides;
 use App\Support\TrainerSlots;
@@ -27,13 +26,11 @@ use Inertia\Response;
  */
 class TrainerAvailabilityController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     public function show(Request $request): Response
     {
-        /** @var User $trainer */
-        $trainer = $request->user();
-        $profile = $trainer->trainerProfile;
+        $profile = $this->trainerProfileOrNull($request);
 
         return Inertia::render('trainer/availability', [
             'trainerArea' => $this->trainerArea(),
@@ -46,9 +43,7 @@ class TrainerAvailabilityController extends Controller
 
     public function update(TrainerAvailabilityRequest $request): RedirectResponse
     {
-        /** @var User $trainer */
-        $trainer = $request->user();
-        $profile = $trainer->trainerProfile ?? abort(404);
+        $profile = $this->trainerProfile($request);
         $data = $request->validated();
 
         DB::transaction(function () use ($profile, $data) {
@@ -65,9 +60,7 @@ class TrainerAvailabilityController extends Controller
     /** "Modifica un giorno o una settimana": saved right away. */
     public function storeOverride(TrainerDayOverrideRequest $request): RedirectResponse
     {
-        /** @var User $trainer */
-        $trainer = $request->user();
-        $profile = $trainer->trainerProfile ?? abort(404);
+        $profile = $this->trainerProfile($request);
         $closed = $request->boolean('closed');
 
         TrainerDayOverrides::save(
@@ -87,9 +80,7 @@ class TrainerAvailabilityController extends Controller
     /** "Ripristina orari di base": the weekly hours again for those days. */
     public function destroyOverride(Request $request): RedirectResponse
     {
-        /** @var User $trainer */
-        $trainer = $request->user();
-        $profile = $trainer->trainerProfile ?? abort(404);
+        $profile = $this->trainerProfile($request);
         $data = $request->validate([
             'from' => ['required', 'date_format:Y-m-d'],
             'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from'],

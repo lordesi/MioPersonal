@@ -12,7 +12,7 @@ use App\Enums\GroupSessionType;
 use App\Enums\GymLinkStatus;
 use App\Enums\RegistrationStatus;
 use App\Http\Controllers\Concerns\BuildsGymArea;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Http\Requests\GroupSessionRequest;
 use App\Models\City;
 use App\Models\Discipline;
@@ -23,6 +23,7 @@ use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\BookingMailData;
+use App\Support\ClientBookingData;
 use App\Support\GroupSessionCard;
 use App\Support\TrainerSlots;
 use Illuminate\Database\Eloquent\Builder;
@@ -42,7 +43,7 @@ use Inertia\Response;
  */
 class OrganizerEventsController extends Controller
 {
-    use BuildsGymArea, BuildsPlaceholderData;
+    use BuildsGymArea, BuildsTrainerArea;
 
     public function index(Request $request): Response
     {
@@ -139,7 +140,7 @@ class OrganizerEventsController extends Controller
                 'email' => $registration->user->email,
                 'phone' => BookingMailData::phone($registration->user->phone),
                 'status' => $registration->status->value,
-                'at' => $this->iso($registration->updated_at ?? now()->toImmutable()),
+                'at' => ClientBookingData::iso($registration->updated_at ?? now()->toImmutable()),
             ])->values(),
             'hosts' => $session->hosts->sortByDesc('is_owner')->map(fn (GroupSessionHost $item) => [
                 'id' => $item->id,

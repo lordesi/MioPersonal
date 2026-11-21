@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\BookingActor;
 use App\Enums\BookingStatus;
 use App\Enums\PlaceType;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Booking;
 use App\Models\Service;
 use App\Models\TrainerClient;
@@ -13,6 +13,7 @@ use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\BookingLabels;
+use App\Support\ClientBookingData;
 use App\Support\TrainerPastSessions;
 use App\Support\TrainerSessions;
 use Carbon\CarbonImmutable;
@@ -35,7 +36,7 @@ use Inertia\Response;
  */
 class TrainerCalendarController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     /** How many months before and after the current one can be shown. */
     public const MONTHS_AROUND = 12;
@@ -80,8 +81,8 @@ class TrainerCalendarController extends Controller
                 ->get()
                 ->map(fn (Booking $booking) => [
                     'id' => $booking->id,
-                    'start' => $this->iso($booking->starts_at),
-                    'end' => $this->iso($booking->ends_at),
+                    'start' => ClientBookingData::iso($booking->starts_at),
+                    'end' => ClientBookingData::iso($booking->ends_at),
                     // For the link to the client's profile; null once the account is deleted.
                     'clientId' => $booking->client_id,
                     'clientName' => $booking->clientName(),

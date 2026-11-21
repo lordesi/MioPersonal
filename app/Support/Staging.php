@@ -5,7 +5,7 @@ namespace App\Support;
 /**
  * The test copy of the site (APP_ENV=staging, e.g. staging.miopersonal.it):
  * fake data, behind a password, hidden from search engines, and no real
- * email can leave it. See docs/staging.md.
+ * email can leave it. Not in use for now: the setup guide (docs/staging.md) is in the git history.
  */
 final class Staging
 {
