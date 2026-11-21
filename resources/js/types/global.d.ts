@@ -20,7 +20,8 @@ declare module '@inertiajs/core' {
             cookieConsent: CookieConsent | null;
             /** The client area's menu; null for guests and the other roles. */
             clientArea: ClientAreaData | null;
-            [key: string]: unknown;
+            /** Only on a prefetch: the token that counts the visit if the page is opened (lib/prefetch.ts). */
+            pendingVisit?: string;
         };
     }
 }
