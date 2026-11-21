@@ -39,10 +39,13 @@ class AdminJourneyTest extends TestCase
             ->create();
     }
 
-    /** A done session that ended `$daysAgo` days ago (at 10:00 Rome). */
+    /** Sessions made so far: each one an hour later, so two of the same day never overlap. */
+    private int $sessions = 0;
+
+    /** A done session `$daysAgo` days ago (from 9:00 Rome, an hour later for each one made before). */
     private function done(TrainerProfile $trainer, User $client, int $daysAgo, array $attributes = []): Booking
     {
-        $start = CarbonImmutable::now('Europe/Rome')->subDays($daysAgo)->setTime(9, 0);
+        $start = CarbonImmutable::now('Europe/Rome')->subDays($daysAgo)->setTime(9, 0)->addHours($this->sessions++ % 10);
 
         return Booking::factory()->for($trainer)->for($client, 'client')->confirmed()->at($start)
             ->create(['created_at' => $start->subDays(2), ...$attributes]);

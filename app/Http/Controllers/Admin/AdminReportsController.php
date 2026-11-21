@@ -33,8 +33,9 @@ class AdminReportsController extends Controller
     {
         $open = Report::query()->open()->oldest('id')->get();
         $closed = Report::query()->whereNotNull('resolved_at')->latest('resolved_at')->limit(self::CLOSED_LIMIT)->get();
+        // The reported things at once (one query per kind), then what each row shows.
         $reports = $open->concat($closed)
-            ->load('reporter')
+            ->load(['reporter', 'reportable'])
             ->loadMorph('reportable', [
                 TrainerProfile::class => ['user'],
                 GymProfile::class => ['user'],

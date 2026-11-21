@@ -40,13 +40,17 @@ class ServiceBookingsTest extends TestCase
         return $this->profile->services()->where('name', $name)->sole();
     }
 
+    /** Bookings made so far: each one at another hour (two of a trainer never overlap). */
+    private int $made = 0;
+
     private function confirmed(string $name, int $times, array $attributes = []): void
     {
-        Booking::factory()->for($this->profile)->confirmed()->count($times)->create([
+        Booking::factory()->for($this->profile)->confirmed()->count($times)->apart(skip: $this->made)->create([
             'service_id' => $this->service($name)->id,
             'service_name' => $name,
             ...$attributes,
         ]);
+        $this->made += $times;
     }
 
     /** @return list<bool> */
@@ -66,7 +70,8 @@ class ServiceBookingsTest extends TestCase
         $this->confirmed('Calisthenics', ServiceBookings::MOST_BOOKED_MIN - 1);
         // Not counted: cancelled, never confirmed, older than 90 days.
         $this->confirmed('Seduta singola', 3, ['status' => BookingStatus::Cancelled]);
-        Booking::factory()->for($this->profile)->count(3)->create(['service_id' => $this->service('Seduta singola')->id]);
+        Booking::factory()->for($this->profile)->count(3)->apart(skip: $this->made)->create(['service_id' => $this->service('Seduta singola')->id]);
+        $this->made += 3;
         $this->confirmed('Seduta singola', 3, ['confirmed_at' => now()->subDays(ServiceBookings::DAYS + 1)]);
 
         $this->assertSame(['Seduta singola' => false, 'Calisthenics' => false], $this->badges());

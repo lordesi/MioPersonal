@@ -16,6 +16,7 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Date;
@@ -171,6 +172,11 @@ class AppServiceProvider extends ServiceProvider
         DB::prohibitDestructiveCommands(
             app()->isProduction(),
         );
+
+        // A relation read in a loop without with(): one query per row (N+1). In
+        // local and in the tests it stops with an error, so it is fixed at once;
+        // in production it never stops a page.
+        Model::preventLazyLoading(! app()->isProduction());
 
         // Links in emails (password reset, verification) always use APP_URL over
         // HTTPS, never the Host header of the request that asked for them.

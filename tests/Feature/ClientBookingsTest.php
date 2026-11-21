@@ -64,7 +64,8 @@ class ClientBookingsTest extends TestCase
         $next = $booking()->confirmed()->at($tomorrow)->create();
         $booking()->at($tomorrow->addHours(2))->create();
         $booking()->status(BookingStatus::Declined)->at($tomorrow->addDay())->create();
-        $booking()->expired()->at($tomorrow->addDays(2))->create();
+        // Same day as $later, another hour: the trainer can't have both at once.
+        $booking()->expired()->at($tomorrow->addDays(2)->addHours(2))->create();
         $booking()->status(BookingStatus::Cancelled)->at($tomorrow->addDays(3))->create();
         $done = $booking()->confirmed()->at($tomorrow->subDays(3))->create();
         // Marked "Saltata" by the trainer: the client still sees it, but can't review it.

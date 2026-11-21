@@ -93,8 +93,9 @@ class AdminStatsTest extends TestCase
         $withTrainer = User::factory()->create();
         $alsoWithTrainer = User::factory()->create();
         $withoutTrainer = User::factory()->create();
-        foreach ([$withTrainer, $alsoWithTrainer] as $client) {
-            Booking::factory()->for($trainer)->for($client, 'client')->confirmed()->at(now()->subDays(40))->create(['created_at' => now()->subDays(45)]);
+        // Same day, an hour apart: one trainer can't have two sessions at once.
+        foreach ([$withTrainer, $alsoWithTrainer] as $hour => $client) {
+            Booking::factory()->for($trainer)->for($client, 'client')->confirmed()->at(now()->subDays(40)->addHours($hour))->create(['created_at' => now()->subDays(45)]);
         }
         foreach ([$withTrainer, $alsoWithTrainer, $withoutTrainer] as $client) {
             $this->activity($client, '2026-11-19');

@@ -53,7 +53,7 @@ class TrainerShelvesTest extends TestCase
         $this->visit($visited, 10);
         $this->visit($quiet, 1);
         $this->visit($old, 500, $this->now->subDays(40));
-        Booking::factory()->count(3)->create(['trainer_profile_id' => $requested->id]);
+        Booking::factory()->count(3)->apart()->create(['trainer_profile_id' => $requested->id]);
 
         $this->assertSame(
             [$requested->id, $visited->id, $quiet->id],

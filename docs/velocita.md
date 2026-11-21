@@ -86,10 +86,21 @@ Una card in produzione: da 84 KB (JPEG) a 22 KB.
 Tempo di PHP in produzione, prima e dopo: palestre 86-127 → 45 ms, ricerca trainer 119-145 → 65 ms, corsi 100 →
 48-60 ms, profilo di un trainer 255-315 → 134 ms.
 
-Rimasto per dopo:
+Le View Transitions (dissolvenza tra le pagine) sono state scartate: con un cambio pagina di 50 ms, un'animazione di
+150-250 ms lo farebbe sembrare più lento.
 
-- il filtro "fascia oraria" calcola gli slot un trainer alla volta: oggi 14 query e circa 120 ms, ma cresce con il
-  numero dei trainer (fase 2 del piano);
-- il profilo di un trainer è la pagina più lenta (134 ms, 24 query): da guardare con `Server-Timing`;
-- le View Transitions (dissolvenza tra le pagine) sono state scartate: con un cambio pagina di 50 ms, un'animazione di
-  150-250 ms lo farebbe sembrare più lento.
+## Pronti a crescere (fasi 1-2)
+
+- **Lazy loading vietato fuori dalla produzione** (`Model::preventLazyLoading()`): in locale e nei test una relazione
+  letta in un ciclo senza `with()` (una query per riga, N+1) si ferma con un errore. Ha trovato le segnalazioni
+  dell'admin e la ricerca per data e fascia.
+- **Test anche su PostgreSQL** (job `pgsql` di `tests.yml`): le parti delle migrazioni solo per PostgreSQL (i vincoli
+  contro le doppie prenotazioni) ora girano nei test.
+- **Indici su tutte le foreign key** (45, migrazione `add_indexes_to_foreign_keys`): oggi non cambia nulla, con molti
+  dati evita che pagine e cancellazioni di account leggano tabelle intere.
+- **Ricerca per data e fascia**: gli slot di tutti i candidati in poche query (`TrainerSlots::daysForMany()`), non
+  cinque per trainer. In locale da 71 a 24 query, e il numero resta lo stesso con più trainer (test in
+  `TrainerSearchTest`).
+- **Profilo di un trainer** (134 ms in produzione): misurato pezzo per pezzo, non c'è un collo di bottiglia (query in
+  tutto circa 20 ms, slot del calendario 7 ms, trainer simili 8 ms…). Lasciato così: si precarica già al passaggio del
+  mouse.

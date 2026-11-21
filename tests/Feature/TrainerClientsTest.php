@@ -60,13 +60,13 @@ class TrainerClientsTest extends TestCase
         $trainer = TrainerProfile::factory()->approved()->create();
         // Waiting for an answer: in "Oggi", not here yet.
         Booking::factory()->for($trainer)->create();
-        Booking::factory()->for($trainer)->expired()->create();
+        Booking::factory()->for($trainer)->expired()->apart(skip: 1)->create();
         Booking::factory()->for($trainer)->status(BookingStatus::Declined)->create();
         Booking::factory()->for($trainer)->confirmed()->status(BookingStatus::Cancelled)->create();
         // Another trainer's client.
         Booking::factory()->confirmed()->create();
         // A client who deleted the account.
-        Booking::factory()->for($trainer)->confirmed()->create(['client_id' => null]);
+        Booking::factory()->for($trainer)->confirmed()->apart(skip: 2)->create(['client_id' => null]);
 
         $this->actingAs($trainer->user)
             ->get(route('trainer.clients'))

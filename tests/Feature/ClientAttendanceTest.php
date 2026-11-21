@@ -24,9 +24,9 @@ class ClientAttendanceTest extends TestCase
         $past = CarbonImmutable::now()->subDays(3);
 
         // With you: 2 done. With another trainer: 1 done and 1 missed.
-        Booking::factory()->count(2)->for($you)->for($client, 'client')->confirmed()->at($past)->create();
+        Booking::factory()->count(2)->for($you)->for($client, 'client')->confirmed()->apart($past)->create();
         Booking::factory()->for($other)->for($client, 'client')->confirmed()->at($past)->create();
-        Booking::factory()->for($other)->for($client, 'client')->confirmed()->at($past)->create(['no_show_at' => now()]);
+        Booking::factory()->for($other)->for($client, 'client')->confirmed()->at($past->addHours(2))->create(['no_show_at' => now()]);
 
         // Not counted: still to come, cancelled.
         Booking::factory()->for($you)->for($client, 'client')->confirmed()->at(CarbonImmutable::now()->addDay())->create();

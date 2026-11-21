@@ -10,6 +10,7 @@ use App\Models\Booking;
 use App\Models\ClientPreference;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -119,7 +120,7 @@ class ClientAboutTest extends TestCase
     {
         $trainer = TrainerProfile::factory()->approved()->create();
         $request = Booking::factory()->for($trainer)->create(['expires_at' => now()->addHours(5)]);
-        $confirmed = Booking::factory()->for($trainer)->confirmed()->create(['starts_at' => now()->addDay(), 'ends_at' => now()->addDay()->addHour()]);
+        $confirmed = Booking::factory()->for($trainer)->confirmed()->at(CarbonImmutable::now()->addDays(2))->create();
 
         foreach ([$request->client, $confirmed->client] as $client) {
             $this->actingAs($client)->put(route('client.profile.update'), $this->about());

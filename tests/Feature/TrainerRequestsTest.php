@@ -37,10 +37,10 @@ class TrainerRequestsTest extends TestCase
     {
         $trainer = TrainerProfile::factory()->approved()->create();
         $later = Booking::factory()->for($trainer)->create(['expires_at' => now()->addHours(20), 'client_note' => 'Prima volta in palestra']);
-        $sooner = Booking::factory()->for($trainer)->create(['expires_at' => now()->addHours(2)]);
+        $sooner = Booking::factory()->for($trainer)->apart(skip: 1)->create(['expires_at' => now()->addHours(2)]);
         // Expired, already answered, or another trainer's: not here.
-        Booking::factory()->for($trainer)->expired()->create();
-        Booking::factory()->for($trainer)->confirmed()->create();
+        Booking::factory()->for($trainer)->expired()->apart(skip: 2)->create();
+        Booking::factory()->for($trainer)->confirmed()->apart(skip: 3)->create();
         Booking::factory()->for($trainer)->status(BookingStatus::Declined)->create();
         Booking::factory()->create();
 
@@ -67,9 +67,9 @@ class TrainerRequestsTest extends TestCase
         $confirmed->record('confirmed', $trainer->user);
 
         // Confirmed automatically (no actor): the trainer did not answer it.
-        Booking::factory()->for($trainer)->confirmed()->create()->record('confirmed');
+        Booking::factory()->for($trainer)->confirmed()->apart(skip: 1)->create()->record('confirmed');
         // Answered more than 30 days ago.
-        $old = Booking::factory()->for($trainer)->confirmed()->create();
+        $old = Booking::factory()->for($trainer)->confirmed()->apart(skip: 2)->create();
         $old->record('confirmed', $trainer->user);
         $old->events()->update(['created_at' => now()->subDays(31)]);
         // Confirmed, then cancelled: no longer a confirmed request.
@@ -179,7 +179,7 @@ class TrainerRequestsTest extends TestCase
     {
         $trainer = TrainerProfile::factory()->approved()->create();
         $late = Booking::factory()->for($trainer)->expired()->create();
-        $waiting = Booking::factory()->for($trainer)->create();
+        $waiting = Booking::factory()->for($trainer)->apart(skip: 1)->create();
         // Another trainer's: left to bookings:expire.
         $other = Booking::factory()->expired()->create();
 

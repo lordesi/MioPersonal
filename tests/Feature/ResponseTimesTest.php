@@ -14,10 +14,13 @@ class ResponseTimesTest extends TestCase
 {
     use RefreshDatabase;
 
+    /** Requests made so far: each one at another hour (two of a trainer never overlap). */
+    private int $requests = 0;
+
     /** A request answered after `$minutes`; `$byTrainer` false = confirmed automatically. */
     private function answered(TrainerProfile $profile, int $minutes, string $answer = 'confirmed', bool $byTrainer = true, int $daysAgo = 2): void
     {
-        $booking = Booking::factory()->for($profile)->create();
+        $booking = Booking::factory()->for($profile)->apart(skip: $this->requests++)->create();
         $requested = now()->subDays($daysAgo);
 
         DB::table('booking_events')->insert([
