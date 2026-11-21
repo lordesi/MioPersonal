@@ -3,6 +3,9 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+// PostgreSQL on the same machine as PHP (production, Herd): see the pgsql connection.
+$localDatabase = in_array(env('DB_HOST', '127.0.0.1'), ['127.0.0.1', 'localhost', '::1'], true);
+
 return [
 
     /*
@@ -99,7 +102,12 @@ return [
             // A database on the same machine: no TLS. Its handshake on every request
             // took 40–60 ms in production (Server-Timing `db1`, docs/velocita.md),
             // and on 127.0.0.1 the traffic never leaves the server anyway.
-            'sslmode' => env('DB_SSLMODE', in_array(env('DB_HOST', '127.0.0.1'), ['127.0.0.1', 'localhost', '::1'], true) ? 'disable' : 'prefer'),
+            'sslmode' => env('DB_SSLMODE', $localDatabase ? 'disable' : 'prefer'),
+            // …and each PHP process keeps its connection for the next pages instead of
+            // opening one per page (still ~35 ms without TLS: the login of PostgreSQL).
+            // A connection lost (PostgreSQL restarted) is opened again by Laravel; a
+            // transaction left open is rolled back by PHP. DB_PERSISTENT=false turns it off.
+            'options' => [PDO::ATTR_PERSISTENT => (bool) env('DB_PERSISTENT', $localDatabase)],
             // Dates are saved in UTC: without this, PostgreSQL reads them in the
             // server's own timezone (e.g. Europe/Berlin) and moves them by 1–2 hours.
             'timezone' => 'UTC',
