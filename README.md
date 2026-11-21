@@ -632,6 +632,8 @@ Se un errore non è in tabella: **copia il messaggio completo** e chiedi. Quasi 
 - Le idee nuove vanno nella lista **"dopo la beta"**, non si sviluppano subito.
 - Uno script, un iframe o un servizio esterno nuovo va permesso nella Content-Security-Policy:
   [docs/sicurezza.md](docs/sicurezza.md).
+- Una pagina privata con l'ID di un record controlla chi lo apre con una Policy (`Gate::authorize`):
+  [docs/sicurezza.md](docs/sicurezza.md).
 
 ---
 

@@ -1,10 +1,32 @@
-# Sicurezza delle pagine: Content-Security-Policy
+# Sicurezza delle pagine
+
+## Chi può toccare un record: le Policy
+
+Ogni indirizzo privato con l'ID di un record (una prenotazione, un cliente, una foto, un corso…) controlla che il record
+sia di chi lo apre con una Policy di [app/Policies](../app/Policies): `Gate::authorize('asClient', $booking)`,
+`'asTrainer'`, `'asGym'`. Se il record è di un altro la risposta è **404**, come se non esistesse (un 403 direbbe che
+l'ID è vero). Le regole comuni sono in [ChecksOwnership](../app/Policies/Concerns/ChecksOwnership.php); i test sono
+`tests/Unit/OwnershipPoliciesTest` e `tests/Feature/OwnershipTest`.
+
+Quando si aggiunge qualcosa:
+
+- **una rotta privata con un `{record}`**: `Gate::authorize(...)` come prima riga, prima di validare o salvare, e una
+  riga in `OwnershipTest` con l'utente sbagliato;
+- **un modello nuovo di proprietà di qualcuno**: la sua `…Policy` in `app/Policies` (Laravel la trova da solo dal nome);
+- **un figlio di un record già controllato** (la nota di un cliente, la foto di un corso): basta verificare che
+  appartenga al padre, come fanno già i controller;
+- **le regole che non sono di proprietà** (profilo approvato, evento nascosto, seduta già passata) restano nei controller.
+
+Le decisioni dell'admin su trainer e palestre rileggono il profilo bloccato (`lockForUpdate()`): due admin che
+decidono nello stesso momento fanno una sola decisione e una sola email.
+
+## Content-Security-Policy
 
 La Content-Security-Policy (CSP) dice al browser da dove una pagina può caricare script, stili, immagini e
 connessioni. Se un giorno qualcuno riuscisse a infilare uno script nel sito (per esempio in un testo scritto da un
 utente), il browser si rifiuterebbe di eseguirlo.
 
-## A che punto siamo
+### A che punto siamo
 
 | Header                                | Cosa fa                                                                         |
 | ------------------------------------- | ------------------------------------------------------------------------------- |
@@ -28,7 +50,7 @@ Cosa è permesso:
 I dati della pagina Inertia e il JSON-LD della SEO sono `<script type="application/json">`: il browser non li esegue,
 quindi non servono nonce. In locale, con `npm run dev`, è permesso anche il dev server di Vite.
 
-## Le segnalazioni
+### Le segnalazioni
 
 Il browser manda ogni violazione a `POST /csp-report`
 ([CspReportController](../app/Http/Controllers/CspReportController.php)), fuori dal gruppo web: niente sessione,
@@ -45,7 +67,7 @@ tail -n 50 /home/ploi/miopersonal.it/storage/logs/csp-$(date +%F).log
 In locale Herd aggiunge due script inline suoi (`__HERD_EARLY_ERRORS__`) a ogni pagina: in console compaiono come
 avvisi "[Report Only]" e finiscono nel log locale. Sono di Herd, non del sito, e in produzione non ci sono.
 
-## Dalla segnalazione al blocco
+### Dalla segnalazione al blocco
 
 1. Lasciare girare la versione Report-Only in produzione almeno una o due settimane, con visite vere da telefoni,
    desktop e app installata.
