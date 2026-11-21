@@ -102,6 +102,13 @@ Le View Transitions (dissolvenza tra le pagine) sono state scartate: con un camb
 - **Ricerca per data e fascia**: gli slot di tutti i candidati in poche query (`TrainerSlots::daysForMany()`), non
   cinque per trainer. In locale da 71 a 24 query, e il numero resta lo stesso con più trainer (test in
   `TrainerSearchTest`).
+- **Notifiche ed email in coda, dopo il salvataggio**: tutte le notifiche (campanella, push, email) e l'email del
+  form Contatti passano dalla coda, quindi la pagina risponde senza aspettare il servizio email o push; e partono
+  solo quando la modifica è salvata (`afterCommit()`): se il salvataggio fallisce, non arriva nulla. Una notifica
+  nuova: `implements ShouldQueue` e `$this->afterCommit()` nel costruttore (test in `QueuedNotificationsTest`).
+  Senza il worker della coda non parte niente: in produzione è un daemon di Ploi.
+- **Comandi pianificati che non si accavallano** (`withoutOverlapping()`): `bookings:expire` (ogni minuto),
+  `bookings:remind`, `waitlist:notify` e gli altri lenti (test in `ScheduleTest`).
 - **Profilo di un trainer** (134 ms in produzione): misurato pezzo per pezzo, non c'è un collo di bottiglia (query in
   tutto circa 20 ms, slot del calendario 7 ms, trainer simili 8 ms…). Lasciato così: si precarica già al passaggio del
   mouse.
