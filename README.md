@@ -598,6 +598,7 @@ Su GitHub, accanto al tuo commit, compare prima un pallino giallo e poi:
 | Comando                  | A cosa serve                               |
 | ------------------------ | ------------------------------------------ |
 | `php artisan test`       | Lancia i test automatici (Pest)            |
+| `npm run test`           | Lancia i test del frontend (`vp test`)     |
 | `vendor/bin/pint`        | Sistema la formattazione del codice PHP    |
 | `php artisan migrate`    | Applica le nuove migration al tuo database |
 | `php artisan route:list` | Mostra tutte le pagine (rotte) dell'app    |
@@ -634,6 +635,10 @@ Se un errore non è in tabella: **copia il messaggio completo** e chiedi. Quasi 
   [docs/sicurezza.md](docs/sicurezza.md).
 - Una pagina privata con l'ID di un record controlla chi lo apre con una Policy (`Gate::authorize`):
   [docs/sicurezza.md](docs/sicurezza.md).
+- Le funzioni del frontend usate in più punti (date, formati, errori dei form…) stanno una volta sola in
+  `resources/js/lib/`, con i test in un file `*.test.ts` accanto. Prima di scriverne una, cerca se c'è già.
+- Le pagine dell'area trainer trovano il profilo con `BuildsTrainerArea` (`trainerProfile()`, 404 se manca).
+  PHPStan gira al livello 8: un valore che può mancare si controlla, non si nasconde con un cast.
 
 ---
 
