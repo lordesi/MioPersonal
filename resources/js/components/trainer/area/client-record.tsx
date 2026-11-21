@@ -88,7 +88,7 @@ function NotesForm({ client }: { client: TrainerClient }) {
                                 }
                                 aria-describedby={describedBy}
                                 aria-invalid={!!errors.name}
-                                className="h-11 rounded-xl px-3.5 text-[15px] md:text-[15px]"
+                                className="h-11 rounded-xl px-3.5 text-[17px] md:text-[15px]"
                             />
                         )}
                     </FormField>
@@ -104,7 +104,7 @@ function NotesForm({ client }: { client: TrainerClient }) {
                                     }
                                     aria-describedby={describedBy}
                                     aria-invalid={!!errors.email}
-                                    className="h-11 rounded-xl px-3.5 text-[15px] md:text-[15px]"
+                                    className="h-11 rounded-xl px-3.5 text-[17px] md:text-[15px]"
                                 />
                             )}
                         </FormField>
@@ -119,7 +119,7 @@ function NotesForm({ client }: { client: TrainerClient }) {
                                     }
                                     aria-describedby={describedBy}
                                     aria-invalid={!!errors.phone}
-                                    className="h-11 rounded-xl px-3.5 text-[15px] md:text-[15px]"
+                                    className="h-11 rounded-xl px-3.5 text-[17px] md:text-[15px]"
                                 />
                             )}
                         </FormField>
@@ -136,7 +136,7 @@ function NotesForm({ client }: { client: TrainerClient }) {
                         onChange={(event) => setGoal(event.target.value)}
                         aria-describedby={describedBy}
                         aria-invalid={!!errors.goal}
-                        className="h-11 rounded-xl px-3.5 text-[15px] md:text-[15px]"
+                        className="h-11 rounded-xl px-3.5 text-[17px] md:text-[15px]"
                     />
                 )}
             </FormField>
@@ -281,7 +281,7 @@ function Payments({ client }: { client: TrainerClient }) {
                             onChange={(event) => setAmount(event.target.value)}
                             aria-describedby={describedBy}
                             aria-invalid={!!errors.amount}
-                            className="h-11 rounded-xl px-3.5 text-[15px] md:text-[15px]"
+                            className="h-11 rounded-xl px-3.5 text-[17px] md:text-[15px]"
                         />
                     )}
                 </FormField>
@@ -295,7 +295,7 @@ function Payments({ client }: { client: TrainerClient }) {
                             onChange={(event) => setPaidOn(event.target.value)}
                             aria-describedby={describedBy}
                             aria-invalid={!!errors.paid_on}
-                            className="h-11 rounded-xl px-3.5 text-[15px] md:text-[15px]"
+                            className="h-11 rounded-xl px-3.5 text-[17px] md:text-[15px]"
                         />
                     )}
                 </FormField>
@@ -310,7 +310,7 @@ function Payments({ client }: { client: TrainerClient }) {
                         onChange={(event) => setNote(event.target.value)}
                         aria-describedby={describedBy}
                         aria-invalid={!!errors.note}
-                        className="h-11 rounded-xl px-3.5 text-[15px] md:text-[15px]"
+                        className="h-11 rounded-xl px-3.5 text-[17px] md:text-[15px]"
                     />
                 )}
             </FormField>

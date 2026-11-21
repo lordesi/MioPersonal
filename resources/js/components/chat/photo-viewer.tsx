@@ -1,6 +1,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { ChevronLeft, ChevronRight, Download, X } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
+import ZoomableImage from '@/components/shared/zoomable-image';
 import {
     Dialog,
     DialogClose,
@@ -25,7 +26,7 @@ type PhotoViewerProps = {
 
 /** White round arrows, as in the profile gallery. */
 const arrow =
-    'flex size-11 shrink-0 items-center justify-center rounded-full bg-background text-foreground hover:bg-background/85 focus-visible:ring-[3px] focus-visible:ring-background/50 focus-visible:outline-none';
+    'relative z-10 flex size-11 shrink-0 items-center justify-center rounded-full bg-background text-foreground hover:bg-background/85 focus-visible:ring-[3px] focus-visible:ring-background/50 focus-visible:outline-none';
 
 /**
  * The photos of the conversation full screen: arrows and ← → between them,
@@ -106,7 +107,7 @@ export default function PhotoViewer({
 
                     {current && attachment?.src && (
                         <>
-                            <div className="flex min-h-0 flex-1 items-center justify-center gap-3 px-3 md:gap-5 md:px-6">
+                            <div className="flex min-h-0 flex-1 items-center justify-center gap-3 overflow-hidden px-3 md:gap-5 md:px-6">
                                 {total > 1 && (
                                     <button
                                         type="button"
@@ -117,8 +118,9 @@ export default function PhotoViewer({
                                         <ChevronLeft className="size-5" />
                                     </button>
                                 )}
-                                <img
+                                <ZoomableImage
                                     key={current.id}
+                                    onSwipe={go}
                                     src={attachment.src}
                                     alt={
                                         current.body ??

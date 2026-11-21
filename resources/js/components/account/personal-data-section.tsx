@@ -54,7 +54,7 @@ export default function PersonalDataSection({
                                         autoComplete="given-name"
                                         aria-describedby={describedBy}
                                         aria-invalid={!!errors.first_name}
-                                        className="h-12 rounded-xl text-[15px] md:text-[15px]"
+                                        className="h-12 rounded-xl text-[17px] md:text-[15px]"
                                     />
                                 )}
                             </FormField>
@@ -68,7 +68,7 @@ export default function PersonalDataSection({
                                         autoComplete="family-name"
                                         aria-describedby={describedBy}
                                         aria-invalid={!!errors.last_name}
-                                        className="h-12 rounded-xl text-[15px] md:text-[15px]"
+                                        className="h-12 rounded-xl text-[17px] md:text-[15px]"
                                     />
                                 )}
                             </FormField>
@@ -95,7 +95,7 @@ export default function PersonalDataSection({
                                             value={`@${username}`}
                                             disabled
                                             aria-describedby={describedBy}
-                                            className="h-12 rounded-xl text-[15px] md:text-[15px]"
+                                            className="h-12 rounded-xl text-[17px] md:text-[15px]"
                                         />
                                     )}
                                 </FormField>

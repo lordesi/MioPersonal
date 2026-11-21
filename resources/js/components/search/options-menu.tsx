@@ -346,7 +346,7 @@ function SearchField({
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
                 onKeyDown={onKeyDown}
-                className="h-11 w-full rounded-full bg-secondary pr-4 pl-10 text-[15px] outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-11 w-full rounded-full bg-secondary pr-4 pl-10 text-[17px] outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/30 md:text-[15px]"
             />
         </div>
     );

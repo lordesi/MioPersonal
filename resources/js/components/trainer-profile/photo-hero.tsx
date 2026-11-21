@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, Heart, Share } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import PhotoLightbox from '@/components/trainer-profile/photo-lightbox';
 import { cn } from '@/lib/utils';
 
 /** The round buttons on the photo of the phones: back, share, heart. */
@@ -77,15 +78,14 @@ export default function PhotoHero({
 }: PhotoHeroProps) {
     const scroller = useRef<HTMLDivElement>(null);
     const [index, setIndex] = useState(0);
+    /** The photo open full screen (PhotoLightbox), null = none. */
+    const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-    const goTo = (next: number) => {
+    const goTo = (next: number, behavior: ScrollBehavior = 'smooth') => {
         const element = scroller.current;
 
         if (element) {
-            element.scrollTo({
-                left: next * element.clientWidth,
-                behavior: 'smooth',
-            });
+            element.scrollTo({ left: next * element.clientWidth, behavior });
         }
     };
 
@@ -109,17 +109,27 @@ export default function PhotoHero({
                         }}
                         className="flex size-full snap-x snap-mandatory [scrollbar-width:none] overflow-x-auto [&::-webkit-scrollbar]:hidden"
                     >
+                        {/* A tap opens the photo full screen, where it zooms. */}
                         {slides.map((slide, slideIndex) => (
-                            <img
+                            <button
                                 key={slide.url}
-                                src={slide.url}
-                                alt={slide.caption}
-                                loading={slideIndex === 0 ? 'eager' : 'lazy'}
-                                fetchPriority={
-                                    slideIndex === 0 ? 'high' : undefined
-                                }
-                                className="size-full shrink-0 snap-start object-cover"
-                            />
+                                type="button"
+                                aria-label={`Apri la foto ${slideIndex + 1} a schermo intero`}
+                                onClick={() => setOpenIndex(slideIndex)}
+                                className="size-full shrink-0 cursor-zoom-in snap-start outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset"
+                            >
+                                <img
+                                    src={slide.url}
+                                    alt={slide.caption}
+                                    loading={
+                                        slideIndex === 0 ? 'eager' : 'lazy'
+                                    }
+                                    fetchPriority={
+                                        slideIndex === 0 ? 'high' : undefined
+                                    }
+                                    className="size-full object-cover"
+                                />
+                            </button>
                         ))}
                     </div>
                 ) : (
@@ -301,6 +311,20 @@ export default function PhotoHero({
                     )}
                 </div>
             </div>
+
+            <PhotoLightbox
+                title={photosLabel}
+                slides={slides}
+                openIndex={openIndex}
+                onOpenChange={(next) => {
+                    // Closing: the page shows the last photo seen.
+                    if (next === null && openIndex !== null) {
+                        goTo(openIndex, 'instant');
+                    }
+
+                    setOpenIndex(next);
+                }}
+            />
         </section>
     );
 }

@@ -337,7 +337,7 @@ export default function SessionPopover({
                                         onChange={(event) =>
                                             form.setNote(event.target.value)
                                         }
-                                        className="field-sizing-content min-h-11 flex-1 resize-none border-0 bg-transparent p-0 text-[15px] leading-5.5 outline-none placeholder:text-muted-foreground"
+                                        className="field-sizing-content min-h-11 flex-1 resize-none border-0 bg-transparent p-0 text-[17px] leading-5.5 outline-none placeholder:text-muted-foreground md:text-[15px]"
                                     />
                                 </div>
                             </div>

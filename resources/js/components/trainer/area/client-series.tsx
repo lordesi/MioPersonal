@@ -29,7 +29,7 @@ const times = Array.from({ length: 33 }, (_, index) => {
 });
 
 const selectClass =
-    'h-11 w-full rounded-xl border border-input bg-transparent px-3.5 text-[15px] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive';
+    'h-11 w-full rounded-xl border border-input bg-transparent px-3.5 text-base outline-none md:text-[15px] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive';
 
 /**
  * "Sedute fisse" in the card of a client: «ogni martedì alle 18». The
@@ -300,7 +300,7 @@ function NewSeries({
                                 setStartsOn(event.target.value)
                             }
                             aria-describedby={describedBy}
-                            className="h-11 rounded-xl px-3.5 text-[15px] md:text-[15px]"
+                            className="h-11 rounded-xl px-3.5 text-base md:text-[15px]"
                         />
                     )}
                 </FormField>
@@ -317,7 +317,7 @@ function NewSeries({
                             value={endsOn}
                             onChange={(event) => setEndsOn(event.target.value)}
                             aria-describedby={describedBy}
-                            className="h-11 rounded-xl px-3.5 text-[15px] md:text-[15px]"
+                            className="h-11 rounded-xl px-3.5 text-base md:text-[15px]"
                         />
                     )}
                 </FormField>

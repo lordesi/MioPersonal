@@ -245,6 +245,23 @@
     body {
         @apply bg-background text-foreground;
     }
+
+    /*
+     * Zoom (resources/js/lib/zoom-lock.ts): a double tap never zooms, and a
+     * tap answers at once. In the private areas and in the installed app
+     * the two fingers don't zoom either, only scroll. On every element, as
+     * a scrolling list or a dialog starts again from the default. The
+     * photos opened full screen (`data-zoomable`) and `touch-none` (the
+     * sliders, the crop of the photo) handle the fingers on their own.
+     */
+    * {
+        touch-action: manipulation;
+    }
+
+    .zoom-locked,
+    .zoom-locked * {
+        touch-action: pan-x pan-y;
+    }
 }
 
 /*

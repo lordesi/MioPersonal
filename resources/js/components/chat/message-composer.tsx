@@ -420,7 +420,7 @@ export default function MessageComposer({
                                 ? 'Aggiungi un messaggio'
                                 : 'Scrivi un messaggio'
                         }
-                        className="block field-sizing-content max-h-36 min-h-10.5 w-full resize-none rounded-[20px] border bg-secondary px-4 py-2.5 text-[15px] leading-5.5 transition-colors outline-none focus:border-foreground/40 focus:bg-card"
+                        className="block field-sizing-content max-h-36 min-h-10.5 w-full resize-none rounded-[20px] border bg-secondary px-4 py-2.5 text-[17px] leading-5.5 transition-colors outline-none focus:border-foreground/40 focus:bg-card md:text-[15px]"
                     />
                     {body.length >= COUNTER_FROM && (
                         <span

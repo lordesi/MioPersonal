@@ -127,7 +127,7 @@ export default function ReviewReplyCard({
                             setError(undefined);
                         }}
                         aria-invalid={error ? true : undefined}
-                        className="rounded-[18px] border-0 bg-transparent px-4 py-3 text-[15px] leading-5.25 shadow-[inset_0_0_0_1px_var(--field)] focus-visible:shadow-[inset_0_0_0_1.5px_var(--brand)] focus-visible:ring-0"
+                        className="rounded-[18px] border-0 bg-transparent px-4 py-3 text-[17px] leading-5.25 shadow-[inset_0_0_0_1px_var(--field)] focus-visible:shadow-[inset_0_0_0_1.5px_var(--brand)] focus-visible:ring-0 md:text-[15px]"
                     />
                     <InputError message={error} />
                     <div className="flex flex-wrap items-center justify-between gap-2.5">

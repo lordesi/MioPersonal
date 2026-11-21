@@ -6,6 +6,7 @@ import { prefetchCacheFor, setUpPrefetch } from '@/lib/prefetch';
 import { setUpPwa } from '@/lib/pwa';
 import { setUpSentry } from '@/lib/sentry';
 import { setUpStaleBuildReload } from '@/lib/stale-build';
+import { setUpZoomLock } from '@/lib/zoom-lock';
 
 setUpSentry();
 setUpStaleBuildReload();
@@ -13,6 +14,7 @@ setUpPwa();
 setUpBack();
 setUpPrefetch();
 setUpPageBackground();
+setUpZoomLock();
 
 void createInertiaApp({
     resolve,

@@ -296,7 +296,7 @@ export default function ProfileVisibilitySection({
                                         setUntil(event.target.value)
                                     }
                                     aria-invalid={!!error}
-                                    className="h-11 w-auto rounded-[10px] bg-background text-[15px] md:text-[15px]"
+                                    className="h-11 w-auto rounded-[10px] bg-background text-[17px] md:text-[15px]"
                                 />
                             </div>
                             <Button
