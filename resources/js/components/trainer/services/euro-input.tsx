@@ -61,7 +61,7 @@ export default function EuroInput({
                 inputMode="decimal"
                 autoComplete="off"
                 placeholder={props.placeholder ?? '—'}
-                className="h-full w-full min-w-0 bg-transparent pr-1 pl-3 text-right text-[15px] font-semibold tabular-nums outline-none placeholder:font-normal placeholder:text-muted-foreground"
+                className="h-full w-full min-w-0 bg-transparent pr-1 pl-3 text-right text-base font-semibold tabular-nums outline-none placeholder:font-normal placeholder:text-muted-foreground md:text-[15px]"
                 value={shown}
                 onChange={(event) => {
                     const next = event.target.value.trim();

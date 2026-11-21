@@ -1,8 +1,16 @@
+{{--
+    Zoom: the public pages can be zoomed with two fingers, as every site; the
+    private areas cannot, as the apps of the phone. Same rule as
+    resources/js/lib/zoom-lock.ts (which also locks the installed app).
+--}}
+@php
+    $zoomLocked = ! \Illuminate\Support\Str::startsWith($page['component'] ?? '', 'public/');
+@endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['zoom-locked' => $zoomLocked])>
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1{{ $zoomLocked ? ', maximum-scale=1, user-scalable=no' : '' }}">
 
         {{--
             The colour behind the page, before it is drawn (the areas have no SSR:

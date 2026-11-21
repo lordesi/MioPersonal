@@ -138,7 +138,7 @@ function BioLink({ card }: { card: ShareCard }) {
                     value={link}
                     aria-label="Link al tuo profilo"
                     onFocus={(event) => event.currentTarget.select()}
-                    className="h-12.5 min-w-0 flex-[1_1_260px] rounded-full border-0 bg-transparent px-5 text-[15px] shadow-[inset_0_0_0_1px_var(--field)]"
+                    className="h-12.5 min-w-0 flex-[1_1_260px] rounded-full border-0 bg-transparent px-5 text-[17px] shadow-[inset_0_0_0_1px_var(--field)] md:text-[15px]"
                 />
                 <Button
                     type="button"

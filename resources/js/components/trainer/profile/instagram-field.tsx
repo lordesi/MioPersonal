@@ -61,7 +61,7 @@ export default function InstagramField({
                     maxLength={80}
                     aria-describedby={`${id}-hint`}
                     className={cn(
-                        'h-12 rounded-xl pl-8 text-[15px]',
+                        'h-12 rounded-xl pl-8 text-[17px] md:text-[15px]',
                         dark && pillFieldClassName,
                         dark && 'pl-10',
                     )}

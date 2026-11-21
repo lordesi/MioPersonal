@@ -73,7 +73,7 @@ export default function AddClients({
                         onChange={(event) => setList(event.target.value)}
                         aria-describedby={describedBy}
                         aria-invalid={!!error}
-                        className="rounded-xl px-3.5 py-3 text-[15px] leading-5.5 md:text-[15px]"
+                        className="rounded-xl px-3.5 py-3 text-[17px] leading-5.5 md:text-[15px]"
                     />
                 )}
             </FormField>

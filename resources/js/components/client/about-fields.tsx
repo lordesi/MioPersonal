@@ -269,7 +269,7 @@ export default function AboutFields({
                     onChange={(event) =>
                         setData('trainer_note', event.target.value)
                     }
-                    className="rounded-xl bg-card px-3.5 py-3 text-[15px]"
+                    className="rounded-xl bg-card px-3.5 py-3 text-[17px] md:text-[15px]"
                 />
                 <p
                     id={noteHintId}
@@ -448,7 +448,7 @@ function SportsField({
                     onChange={(event) => setDraft(event.target.value)}
                     // Enter adds the sport instead of sending the whole form.
                     onKeyDown={(event) => event.key === 'Enter' && add(event)}
-                    className="h-12 rounded-xl bg-card px-3.5 text-[15px]"
+                    className="h-12 rounded-xl bg-card px-3.5 text-[17px] md:text-[15px]"
                 />
                 <Button
                     type="button"
@@ -529,7 +529,7 @@ function NumberInput({
                                 : Math.round(Number(event.target.value)),
                         )
                     }
-                    className="h-full w-full min-w-0 bg-transparent px-3.5 text-[15px] tabular-nums outline-none"
+                    className="h-full w-full min-w-0 bg-transparent px-3.5 text-[17px] tabular-nums outline-none md:text-[15px]"
                 />
                 <span
                     aria-hidden="true"

@@ -300,7 +300,7 @@ function NoteEditor({
                 autoFocus
                 placeholder="Cosa avete fatto, preferenze, cosa ricordare."
                 onChange={(event) => setValue(event.target.value)}
-                className="min-h-22 w-full resize-y rounded-[14px] border border-[#707070] bg-card px-3.5 py-3 text-[15px] text-foreground outline-none placeholder:text-[#8a8a8a] focus-visible:border-brand"
+                className="min-h-22 w-full resize-y rounded-[14px] border border-[#707070] bg-card px-3.5 py-3 text-[17px] text-foreground outline-none placeholder:text-[#8a8a8a] focus-visible:border-brand md:text-[15px]"
             />
             <div className="flex items-center gap-2">
                 <span className="mr-auto text-xs text-muted-foreground tabular-nums">

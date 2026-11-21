@@ -469,7 +469,7 @@ function Rules({
                                             },
                                         })
                                     }
-                                    className="h-11 cursor-pointer appearance-none rounded-full border-0 bg-transparent pr-9 pl-4 text-right text-[15px] font-semibold text-brand outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                    className="h-11 cursor-pointer appearance-none rounded-full border-0 bg-transparent pr-9 pl-4 text-right text-[17px] font-semibold text-brand outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 md:text-[15px]"
                                 >
                                     {rule.options.map((option) => (
                                         <option
