@@ -34,6 +34,13 @@ locale: 13-62 ms (Clienti trainer la più lenta, 41 query); ricerca con "fascia 
 
 Primo caricamento: circa 195 KB di JavaScript e 33 KB di CSS (compressi); ogni pagina aggiunge 5-25 KB la prima volta.
 
+## La connessione al database
+
+`db1` in `Server-Timing` è la prima query da sola: Laravel apre la connessione a PostgreSQL lì, quindi il suo tempo la
+comprende. Il 21/11/2026 in produzione era 42-67 ms (le altre query 0,5-3 ms l'una): quasi metà del tempo del server.
+Per un database sulla stessa macchina (`DB_HOST` 127.0.0.1) la connessione non usa più TLS
+([config/database.php](../config/database.php), `sslmode`).
+
 ## Pagine aperte subito (prefetch)
 
 I link di menu, tab bar, header e card scaricano la pagina prima del clic: al passaggio del mouse (`hoverPrefetch`)

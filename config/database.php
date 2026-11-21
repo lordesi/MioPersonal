@@ -96,7 +96,10 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // A database on the same machine: no TLS. Its handshake on every request
+            // took 40–60 ms in production (Server-Timing `db1`, docs/velocita.md),
+            // and on 127.0.0.1 the traffic never leaves the server anyway.
+            'sslmode' => env('DB_SSLMODE', in_array(env('DB_HOST', '127.0.0.1'), ['127.0.0.1', 'localhost', '::1'], true) ? 'disable' : 'prefer'),
             // Dates are saved in UTC: without this, PostgreSQL reads them in the
             // server's own timezone (e.g. Europe/Berlin) and moves them by 1–2 hours.
             'timezone' => 'UTC',
