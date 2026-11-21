@@ -8,13 +8,6 @@ const WEEKDAYS = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
 /** Today in Rome, "YYYY-MM-DD": the days of the trainers are Rome days. */
 export const romeToday = () => romeParts(new Date()).date;
 
-/** { 2026, 11 } + 1 → { year: 2026, month: 12 }. */
-export function shiftMonth(year: number, month: number, by: number) {
-    const index = year * 12 + (month - 1) + by;
-
-    return { year: Math.floor(index / 12), month: (index % 12) + 1 };
-}
-
 /** How many months from the month of `from` to the month of `to` ("YYYY-MM-DD"). */
 export function monthsBetween(from: string, to: string): number {
     const [fromYear, fromMonth] = from.split('-').map(Number);

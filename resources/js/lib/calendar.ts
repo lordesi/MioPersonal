@@ -227,12 +227,23 @@ export function mondayOf(date: string): string {
     return addDays(date, -weekday);
 }
 
+/** { 2026, 11 } + 1 → { year: 2026, month: 12 } (month 1-12). */
+export function shiftYearMonth(
+    year: number,
+    month: number,
+    by: number,
+): { year: number; month: number } {
+    const index = year * 12 + (month - 1) + by;
+
+    return { year: Math.floor(index / 12), month: (index % 12) + 1 };
+}
+
 /** "2026-10" + 2 → "2026-12" */
 export function shiftMonth(month: string, offset: number): string {
     const [year, monthNumber] = month.split('-').map(Number);
-    const date = new Date(Date.UTC(year, monthNumber - 1 + offset, 1));
+    const shifted = shiftYearMonth(year, monthNumber, offset);
 
-    return date.toISOString().slice(0, 7);
+    return `${shifted.year}-${String(shifted.month).padStart(2, '0')}`;
 }
 
 /** "2026-10" → "ottobre 2026" */

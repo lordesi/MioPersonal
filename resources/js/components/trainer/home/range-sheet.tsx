@@ -3,12 +3,9 @@ import ModalSheet, {
     ModalSheetBody,
     ModalSheetFooter,
 } from '@/components/mp/modal-sheet';
-import MonthCalendar, {
-    monthsBetween,
-    shiftMonth,
-} from '@/components/mp/month-calendar';
+import MonthCalendar, { monthsBetween } from '@/components/mp/month-calendar';
 import { brandFilledButtonClassName } from '@/components/trainer/ui/styles';
-import { addDays } from '@/lib/calendar';
+import { addDays, shiftYearMonth } from '@/lib/calendar';
 import { formatDayMonthShort } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -111,7 +108,7 @@ function RangePicker({
         },
         className?: string,
     ) => {
-        const { year, month } = shiftMonth(todayYear, todayMonth, -back);
+        const { year, month } = shiftYearMonth(todayYear, todayMonth, -back);
 
         return (
             <MonthCalendar
