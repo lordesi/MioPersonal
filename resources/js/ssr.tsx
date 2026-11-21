@@ -1,5 +1,5 @@
 import { createInertiaApp } from '@inertiajs/react';
-import { layout, title, withApp } from '@/lib/inertia-config';
+import { layout, resolve, title, withApp } from '@/lib/inertia-config';
 
 /**
  * Server-side rendering of the public pages (home, search, trainer profiles,
@@ -9,6 +9,7 @@ import { layout, title, withApp } from '@/lib/inertia-config';
  * HandleInertiaRequests::$withoutSsr.
  */
 void createInertiaApp({
+    resolve,
     title,
     layout,
     withApp,

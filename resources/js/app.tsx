@@ -1,6 +1,6 @@
 import { createInertiaApp } from '@inertiajs/react';
 import { setUpBack } from '@/lib/back';
-import { layout, title, withApp } from '@/lib/inertia-config';
+import { layout, resolve, title, withApp } from '@/lib/inertia-config';
 import { setUpPageBackground } from '@/lib/page-background';
 import { prefetchCacheFor, setUpPrefetch } from '@/lib/prefetch';
 import { setUpPwa } from '@/lib/pwa';
@@ -15,6 +15,7 @@ setUpPrefetch();
 setUpPageBackground();
 
 void createInertiaApp({
+    resolve,
     title,
     layout,
     strictMode: true,
