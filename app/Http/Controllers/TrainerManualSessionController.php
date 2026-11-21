@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Bookings\CreateTrainerSession;
 use App\Enums\BookingActor;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Booking;
 use App\Models\TrainerClient;
 use App\Models\TrainerProfile;
@@ -24,9 +25,11 @@ use Inertia\Inertia;
  */
 class TrainerManualSessionController extends Controller
 {
+    use BuildsTrainerArea;
+
     public function store(Request $request, CreateTrainerSession $create): RedirectResponse
     {
-        $profile = $this->profile($request);
+        $profile = $this->trainerProfile($request);
 
         $data = $request->validate([
             'client_record_id' => ['required_without:new_client', 'nullable', 'integer'],
@@ -152,13 +155,5 @@ class TrainerManualSessionController extends Controller
         $value = trim((string) $value);
 
         return $value === '' ? null : $value;
-    }
-
-    private function profile(Request $request): TrainerProfile
-    {
-        /** @var User $user */
-        $user = $request->user();
-
-        return $user->trainerProfile ?? abort(404);
     }
 }

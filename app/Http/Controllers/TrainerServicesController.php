@@ -7,7 +7,6 @@ use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Http\Requests\TrainerServicesRequest;
 use App\Models\Service;
 use App\Models\TrainerProfile;
-use App\Models\User;
 use App\Support\ServiceBookings;
 use App\Support\TrainerDraft;
 use Illuminate\Http\RedirectResponse;
@@ -28,7 +27,7 @@ class TrainerServicesController extends Controller
 
     public function show(Request $request): Response
     {
-        $profile = $this->profile($request);
+        $profile = $this->trainerProfileOrNull($request);
 
         return Inertia::render('trainer/services', [
             'trainerArea' => $this->trainerArea(),
@@ -61,20 +60,12 @@ class TrainerServicesController extends Controller
 
     public function update(TrainerServicesRequest $request, SaveTrainerServices $saver): RedirectResponse
     {
-        $profile = $this->profile($request) ?? abort(404);
+        $profile = $this->trainerProfileOrNull($request) ?? abort(404);
 
         $saver->handle($profile, $request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Servizi aggiornati.']);
 
         return back();
-    }
-
-    private function profile(Request $request): ?TrainerProfile
-    {
-        /** @var User $user */
-        $user = $request->user();
-
-        return $user->trainerProfile;
     }
 }

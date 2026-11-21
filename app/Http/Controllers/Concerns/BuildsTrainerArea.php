@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Concerns;
 use App\Enums\TrainerProfileStatus;
 use App\Enums\TrainerReviewDecision;
 use App\Models\Conversation;
+use App\Models\TrainerProfile;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Request;
 
 /**
  * What the pages of the trainer area share: the data of the trainer layout
@@ -14,6 +16,21 @@ use Carbon\CarbonImmutable;
  */
 trait BuildsTrainerArea
 {
+    /** The trainer profile of who is signed in: 404 without one. */
+    private function trainerProfile(Request $request): TrainerProfile
+    {
+        return $this->trainerProfileOrNull($request) ?? abort(404);
+    }
+
+    /** The trainer profile of who is signed in, if any (e.g. made trainer by the team, registration not sent). */
+    private function trainerProfileOrNull(Request $request): ?TrainerProfile
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return $user->trainerProfile;
+    }
+
     private function romeNow(): CarbonImmutable
     {
         return CarbonImmutable::now('Europe/Rome');

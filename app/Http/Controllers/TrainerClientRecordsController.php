@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\ClientPayment;
 use App\Models\TrainerClient;
 use App\Models\TrainerClientNote;
-use App\Models\TrainerProfile;
-use App\Models\User;
 use App\Notifications\TrainerNoteShared;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,6 +20,8 @@ use Inertia\Inertia;
  */
 class TrainerClientRecordsController extends Controller
 {
+    use BuildsTrainerArea;
+
     /** Lines accepted in one pasted list. */
     private const MAX_LINES = 100;
 
@@ -30,7 +31,7 @@ class TrainerClientRecordsController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $profile = $this->profile($request);
+        $profile = $this->trainerProfile($request);
         $data = $request->validate(['list' => ['required', 'string', 'max:10000']], [
             'list.required' => 'Scrivi almeno un nome.',
         ]);
@@ -292,19 +293,11 @@ class TrainerClientRecordsController extends Controller
     /** "Mostra nascosti": every client taken out of "Ancora da contattare" comes back. */
     public function restoreToContact(Request $request): RedirectResponse
     {
-        $this->profile($request)->clientRecords()
+        $this->trainerProfile($request)->clientRecords()
             ->whereNotNull('contact_hidden_at')
             ->update(['contact_hidden_at' => null]);
 
         return back();
-    }
-
-    private function profile(Request $request): TrainerProfile
-    {
-        /** @var User $user */
-        $user = $request->user();
-
-        return $user->trainerProfile ?? abort(404);
     }
 
     /** Only the trainer's own list. */

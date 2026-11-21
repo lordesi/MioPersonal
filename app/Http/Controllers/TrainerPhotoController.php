@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
-use App\Models\User;
 use App\Support\SafeImage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,6 +22,8 @@ use Inertia\Inertia;
  */
 class TrainerPhotoController extends Controller
 {
+    use BuildsTrainerArea;
+
     /** "Aggiungi foto": one or more files, added at the end. */
     public function store(Request $request): RedirectResponse
     {
@@ -92,9 +94,7 @@ class TrainerPhotoController extends Controller
     /** Like "Modifica profilo": only an approved profile. */
     private function approvedProfile(Request $request): TrainerProfile
     {
-        /** @var User $user */
-        $user = $request->user();
-        $profile = $user->trainerProfile;
+        $profile = $this->trainerProfileOrNull($request);
 
         abort_unless($profile?->isApproved() ?? false, 403);
 

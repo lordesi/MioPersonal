@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Trainer\DeleteTrainerProfile;
 use App\Enums\UserRole;
-use App\Models\TrainerProfile;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\User;
 use App\Support\TrainerSlots;
 use Carbon\CarbonImmutable;
@@ -20,6 +20,8 @@ use Inertia\Inertia;
  */
 class TrainerProfileSettingsController extends Controller
 {
+    use BuildsTrainerArea;
+
     /** "Metti in pausa per un periodo": days from today. */
     private const PAUSES = ['1w' => 7, '2w' => 14];
 
@@ -30,7 +32,7 @@ class TrainerProfileSettingsController extends Controller
      */
     public function updateVisibility(Request $request): RedirectResponse
     {
-        $profile = $this->profile($request);
+        $profile = $this->trainerProfile($request);
         $today = CarbonImmutable::now(TrainerSlots::TIMEZONE)->startOfDay();
 
         $data = $request->validate([
@@ -83,7 +85,7 @@ class TrainerProfileSettingsController extends Controller
     /** Saved with "Salva modifiche". */
     public function updateContacts(Request $request): RedirectResponse
     {
-        $profile = $this->profile($request);
+        $profile = $this->trainerProfile($request);
 
         $data = $request->validate([
             'show_phone' => ['required', 'boolean'],
@@ -132,13 +134,5 @@ class TrainerProfileSettingsController extends Controller
         ]);
 
         return to_route('account.settings');
-    }
-
-    private function profile(Request $request): TrainerProfile
-    {
-        /** @var User $user */
-        $user = $request->user();
-
-        return $user->trainerProfile ?? abort(404);
     }
 }
