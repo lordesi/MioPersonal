@@ -16,6 +16,7 @@ use App\Support\TrainerSlots;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -129,7 +130,7 @@ class BookingController extends Controller
         $client = $request->user();
 
         // Someone else's booking: as if it didn't exist.
-        abort_unless($booking->client_id === $client->id, 404);
+        Gate::authorize('asClient', $booking);
 
         if (! $booking->canBeCancelledByClient()) {
             throw ValidationException::withMessages(['booking' => 'Questa prenotazione non si può più annullare.']);

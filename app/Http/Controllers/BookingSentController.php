@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\ClientBookingData;
 use App\Support\TrainerCard;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,7 +22,7 @@ class BookingSentController extends Controller
         $client = $request->user();
 
         // Someone else's booking: as if it didn't exist.
-        abort_unless($booking->client_id === $client->id, 404);
+        Gate::authorize('asClient', $booking);
 
         $booking->load(['trainerProfile.user', 'trainerProfile.city', 'trainerProfile.disciplines', 'client', 'service', 'guests.user']);
         $trainer = $booking->trainerProfile;

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\ClientBookingData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -26,7 +27,7 @@ class ClientReviewController extends Controller
         $client = $request->user();
 
         // Someone else's booking: as if it didn't exist.
-        abort_unless($booking->client_id === $client->id, 404);
+        Gate::authorize('asClient', $booking);
 
         if (! ClientBookingData::canBeReviewed($booking)) {
             throw ValidationException::withMessages(['review' => 'Puoi lasciare una recensione solo dopo una seduta svolta.']);

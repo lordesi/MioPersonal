@@ -13,6 +13,7 @@ use App\Support\ClientProgress;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -63,7 +64,7 @@ class ClientProgressController extends Controller
 
     public function destroyActivity(Request $request, ActivityLog $log): RedirectResponse
     {
-        abort_unless($log->user_id === $request->user()?->id, 404);
+        Gate::authorize('asClient', $log);
 
         $log->delete();
 
@@ -117,7 +118,7 @@ class ClientProgressController extends Controller
     {
         /** @var User $client */
         $client = $request->user();
-        abort_unless($measurement->user_id === $client->id, 404);
+        Gate::authorize('asClient', $measurement);
 
         $measurement->delete();
         $this->syncProfileWeight($client);
