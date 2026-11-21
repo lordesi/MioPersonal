@@ -66,10 +66,30 @@ Quando si aggiunge qualcosa:
 Misurato in locale (13/13 controlli end-to-end con Chrome): un clic nell'area trainer passa da circa 320 ms a 50-60 ms;
 il profilo di un trainer dalla ricerca si apre in circa 80 ms.
 
-## Obiettivi della Fase 0
+## Foto
 
-- Cambio sezione dentro un'area: sotto 100 ms e senza la barra di caricamento.
-- Filtri delle ricerche: sotto 250 ms sul sito vero.
-- Aprire l'app dall'icona o da una notifica: nessuno schermo bianco.
-- Pagine pubbliche: le foto non spostano il contenuto mentre caricano.
-- Le visite ai profili nelle statistiche restano coerenti con prima.
+Ogni foto pubblica ha tre copie WebP ([SafeImage](../app/Support/SafeImage.php), `VARIANTS`): `sm` 320 px per gli
+avatar, `md` 800 px per le card, `lg` 1600 px per la foto principale e le gallerie. Le fa un job in coda dopo il
+caricamento; il comando `photos:variants`, ogni ora, fa quelle mancanti e cancella quelle rimaste senza originale.
+Una card in produzione: da 84 KB (JPEG) a 22 KB.
+
+## Obiettivi e risultati della Fase 0 (21/11/2026)
+
+| Obiettivo                                                     | Risultato                                                           |
+| ------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Cambio sezione dentro un'area: sotto 100 ms, senza barra      | 50-60 ms dalla cache (prima circa 320 ms in locale)                 |
+| Filtri delle ricerche: sotto 250 ms sul sito vero             | 96-145 ms                                                           |
+| Aprire l'app dall'icona o da una notifica: niente bianco      | sfondo scuro prima del JavaScript, avvio della PWA scuro            |
+| Pagine pubbliche: foto leggere, che non spostano il contenuto | card 84 → 22 KB; i riquadri hanno già proporzioni fisse             |
+| Visite ai profili coerenti con prima                          | il prefetch conta solo se la pagina viene mostrata (`pendingVisit`) |
+
+Tempo di PHP in produzione, prima e dopo: palestre 86-127 → 45 ms, ricerca trainer 119-145 → 65 ms, corsi 100 →
+48-60 ms, profilo di un trainer 255-315 → 134 ms.
+
+Rimasto per dopo:
+
+- il filtro "fascia oraria" calcola gli slot un trainer alla volta: oggi 14 query e circa 120 ms, ma cresce con il
+  numero dei trainer (fase 2 del piano);
+- il profilo di un trainer è la pagina più lenta (134 ms, 24 query): da guardare con `Server-Timing`;
+- le View Transitions (dissolvenza tra le pagine) sono state scartate: con un cambio pagina di 50 ms, un'animazione di
+  150-250 ms lo farebbe sembrare più lento.
