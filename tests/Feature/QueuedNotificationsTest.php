@@ -2,14 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Models\Booking;
+use App\Models\GroupSession;
 use App\Models\GymProfile;
 use App\Models\GymProfileReview;
 use App\Models\GymTrainerLink;
 use App\Models\TrainerProfile;
 use App\Models\TrainerProfileReview;
+use App\Notifications\GroupSessionReminder;
 use App\Notifications\GymLinkAccepted;
 use App\Notifications\GymLinkRequested;
 use App\Notifications\GymProfileDecided;
+use App\Notifications\SessionReminder;
 use App\Notifications\TrainerProfileDecided;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -40,6 +44,8 @@ class QueuedNotificationsTest extends TestCase
             'GymLinkRequested' => [fn () => new GymLinkRequested(new GymTrainerLink)],
             'GymProfileDecided' => [fn () => new GymProfileDecided(new GymProfileReview, 'https://example.test')],
             'TrainerProfileDecided' => [fn () => new TrainerProfileDecided(new TrainerProfileReview, 'https://example.test')],
+            'SessionReminder' => [fn () => new SessionReminder(new Booking, SessionReminder::DAY_BEFORE)],
+            'GroupSessionReminder' => [fn () => new GroupSessionReminder(new GroupSession, SessionReminder::DAY_BEFORE)],
         ];
     }
 

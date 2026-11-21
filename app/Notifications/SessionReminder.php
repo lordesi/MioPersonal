@@ -34,7 +34,10 @@ class SessionReminder extends Notification implements ShouldQueue
     /** The last reminder, for the client. */
     public const SOON_HOURS = 2;
 
-    public function __construct(public Booking $booking, public string $kind) {}
+    public function __construct(public Booking $booking, public string $kind)
+    {
+        $this->afterCommit();
+    }
 
     /**
      * @return list<string>
