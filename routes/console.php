@@ -166,7 +166,8 @@ Artisan::command('bookings:expire', function () {
     $this->info("{$count} booking requests expired, {$proposals} proposals lapsed.");
 })->purpose('Mark the booking requests the trainer did not answer in time as expired');
 
-Schedule::command('bookings:expire')->everyMinute();
+// A slow run (many requests at once) must not overlap the next one: the same booking expired twice.
+Schedule::command('bookings:expire')->everyMinute()->withoutOverlapping();
 
 // The reminders the day before and 2 hours before a confirmed session, and an event.
 Artisan::command('bookings:remind', function (SendSessionReminders $reminders, SendGroupSessionReminders $eventReminders) {

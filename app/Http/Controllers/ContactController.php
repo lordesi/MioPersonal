@@ -65,7 +65,8 @@ class ContactController extends Controller
             'message' => trim($data['message']),
         ];
 
-        Mail::to(config('mail.contact_address'))->send(new ContactMail($contact));
+        // Queued: the page answers without waiting for the mail provider.
+        Mail::to(config('mail.contact_address'))->queue(new ContactMail($contact));
 
         return to_route('contact.show')->with('status', 'contact-sent');
     }

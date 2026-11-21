@@ -8,11 +8,15 @@ use App\Models\GymTrainerLink;
 use App\Models\User;
 use App\Notifications\Concerns\SendsPush;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushMessage;
 
-/** To the side that asked: the other one said yes. The bell inside the site and the push, no email. */
-class GymLinkAccepted extends Notification
+/**
+ * To the side that asked: the other one said yes. The bell inside the site and the push, no email.
+ * Queued, and sent only once the link is saved (afterCommit).
+ */
+class GymLinkAccepted extends Notification implements ShouldQueue
 {
     use Queueable, SendsPush;
 
@@ -21,7 +25,10 @@ class GymLinkAccepted extends Notification
         return PushCategory::GymLinks;
     }
 
-    public function __construct(public GymTrainerLink $link) {}
+    public function __construct(public GymTrainerLink $link)
+    {
+        $this->afterCommit();
+    }
 
     /**
      * @return list<string>

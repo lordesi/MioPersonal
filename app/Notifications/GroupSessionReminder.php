@@ -19,7 +19,10 @@ class GroupSessionReminder extends Notification implements ShouldQueue
 {
     use Queueable, SendsPush;
 
-    public function __construct(public GroupSession $session, public string $kind) {}
+    public function __construct(public GroupSession $session, public string $kind)
+    {
+        $this->afterCommit();
+    }
 
     /**
      * @return list<string>
