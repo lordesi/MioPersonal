@@ -6,7 +6,7 @@ Base per scrivere `docs/schema.dbml` e le migration. Le scelte della sezione 6 s
 **Da dove viene.** Dal codice attuale, che descrive esattamente cosa mostra ogni schermata:
 
 - i tipi in `resources/js/types/*.ts`;
-- i dati d'esempio dei controller (`BuildsPlaceholderData` e i controller di cliente, trainer e
+- i dati d'esempio dei controller (`BuildsTrainerArea` e i controller di cliente, trainer e
   admin);
 - i form: registrazione trainer (`components/onboarding/trainer/draft.ts`), contatti,
   completa profilo, impostazioni;

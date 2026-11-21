@@ -13,8 +13,8 @@ use App\Models\GymPhoto;
 use App\Models\GymProfile;
 use App\Models\User;
 use App\Notifications\GymProfileDecided;
+use App\Support\ClientBookingData;
 use App\Support\GymDraft;
-use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -134,7 +134,7 @@ class AdminGymVerificationController extends Controller
             'city' => $profile->city->name,
             'address' => $profile->fullAddress(),
             'status' => $profile->status->value,
-            'statusSince' => $this->iso(CarbonImmutable::instance($profile->status_changed_at ?? $profile->created_at ?? now())),
+            'statusSince' => ClientBookingData::iso($profile->status_changed_at ?? $profile->created_at ?? now()),
             'description' => $profile->description,
             'amenities' => array_map(fn (string $value) => GymAmenity::tryFrom($value)?->label() ?? $value, $profile->amenities),
             'hours' => $hours,

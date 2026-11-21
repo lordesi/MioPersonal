@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\TrainerClient;
@@ -35,7 +35,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class MessagesController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     /** The poll gives at most these many messages at once. */
     public const POLL_MAX = 100;

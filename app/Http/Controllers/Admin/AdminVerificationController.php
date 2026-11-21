@@ -15,8 +15,8 @@ use App\Models\TrainerPlace;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Notifications\TrainerProfileDecided;
+use App\Support\ClientBookingData;
 use App\Support\TrainerSlots;
-use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -172,7 +172,7 @@ class AdminVerificationController extends Controller
             'city' => $profile->city->name ?? 'Solo online',
             'status' => $profile->status->value,
             // When the profile was sent, or when the team decided.
-            'statusSince' => $this->iso(CarbonImmutable::instance($profile->status_changed_at ?? $profile->created_at ?? now())),
+            'statusSince' => ClientBookingData::iso($profile->status_changed_at ?? $profile->created_at ?? now()),
             'bio' => $profile->bio,
             'places' => [
                 ...$profile->places->map(fn (TrainerPlace $place) => match ($place->type) {

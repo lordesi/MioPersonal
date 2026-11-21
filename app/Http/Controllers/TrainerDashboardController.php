@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\BookingStatus;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Booking;
 use App\Models\ClientPackage;
 use App\Models\TrainerProfile;
@@ -28,7 +28,7 @@ use Inertia\Response;
  */
 class TrainerDashboardController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     /** The periods of "Statistiche": days back from today, today included. */
     public const PERIODS = ['oggi' => 1, '7' => 7, '30' => 30];

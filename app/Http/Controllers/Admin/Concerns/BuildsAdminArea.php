@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin\Concerns;
 
 use App\Enums\TrainerProfileStatus;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
 use App\Models\ContactMessage;
 use App\Models\GymProfile;
 use App\Models\Report;
@@ -11,13 +10,10 @@ use App\Models\TrainerProfile;
 use Illuminate\Support\Facades\DB;
 
 /**
- * What every admin page sends: the menu badges. With the date helpers of
- * BuildsPlaceholderData, still used by some admin pages.
+ * What every admin page sends: the menu badges.
  */
 trait BuildsAdminArea
 {
-    use BuildsPlaceholderData;
-
     /**
      * The badges of the admin menu, sent by every admin page. "Segnalazioni":
      * the contents reported and not checked yet (one per content).

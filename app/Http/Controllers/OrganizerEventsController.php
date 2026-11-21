@@ -12,7 +12,7 @@ use App\Enums\GroupSessionType;
 use App\Enums\GymLinkStatus;
 use App\Enums\RegistrationStatus;
 use App\Http\Controllers\Concerns\BuildsGymArea;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Http\Requests\GroupSessionRequest;
 use App\Models\City;
 use App\Models\Discipline;
@@ -42,7 +42,7 @@ use Inertia\Response;
  */
 class OrganizerEventsController extends Controller
 {
-    use BuildsGymArea, BuildsPlaceholderData;
+    use BuildsGymArea, BuildsTrainerArea;
 
     public function index(Request $request): Response
     {

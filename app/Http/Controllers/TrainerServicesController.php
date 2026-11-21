@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Trainer\SaveTrainerServices;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Http\Requests\TrainerServicesRequest;
 use App\Models\Service;
 use App\Models\TrainerProfile;
@@ -24,7 +24,7 @@ use Inertia\Response;
  */
 class TrainerServicesController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     public function show(Request $request): Response
     {

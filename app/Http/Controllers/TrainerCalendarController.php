@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\BookingActor;
 use App\Enums\BookingStatus;
 use App\Enums\PlaceType;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Booking;
 use App\Models\Service;
 use App\Models\TrainerClient;
@@ -35,7 +35,7 @@ use Inertia\Response;
  */
 class TrainerCalendarController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     /** How many months before and after the current one can be shown. */
     public const MONTHS_AROUND = 12;

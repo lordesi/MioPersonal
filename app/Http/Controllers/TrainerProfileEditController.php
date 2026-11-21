@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Trainer\SaveTrainerProfile;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Http\Requests\TrainerProfileUpdateRequest;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
@@ -25,7 +25,7 @@ use Inertia\Response;
  */
 class TrainerProfileEditController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     public function show(Request $request): Response
     {

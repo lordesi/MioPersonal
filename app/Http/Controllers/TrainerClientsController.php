@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\Trainer\LinkClient;
 use App\Enums\BookingStatus;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Booking;
 use App\Models\BookingSeries;
 use App\Models\ClientPackage;
@@ -35,7 +35,7 @@ use Inertia\Response;
  */
 class TrainerClientsController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     /** "Svolte" of the card: the last sessions over. */
     public const PAST_SESSIONS = 10;

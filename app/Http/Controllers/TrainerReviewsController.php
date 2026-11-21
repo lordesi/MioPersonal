@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -18,7 +18,7 @@ use Inertia\Response;
  */
 class TrainerReviewsController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     /** Longest reply, in characters. */
     public const REPLY_MAX = 1000;

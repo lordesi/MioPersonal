@@ -9,21 +9,14 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 
 /**
- * Date helpers and the data of the trainer layout, for the trainer area; the
- * admin pages still use them for their placeholder data.
- * TODO: rename once the admin pages read from the database.
+ * What the pages of the trainer area share: the data of the trainer layout
+ * and the date helpers.
  */
-trait BuildsPlaceholderData
+trait BuildsTrainerArea
 {
     private function romeNow(): CarbonImmutable
     {
         return CarbonImmutable::now('Europe/Rome');
-    }
-
-    /** A Rome date `$days` from today at `$hour`:`$minute`. */
-    private function at(CarbonImmutable $now, int $days, int $hour, int $minute = 0): CarbonImmutable
-    {
-        return $now->startOfDay()->addDays($days)->setTime($hour, $minute);
     }
 
     /** Dates go to the frontend in UTC; the browser shows them in Europe/Rome. */

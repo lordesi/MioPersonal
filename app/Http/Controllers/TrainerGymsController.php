@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\Gym\GymLinks;
 use App\Enums\GymLinkSide;
 use App\Enums\GymLinkStatus;
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\GymCourse;
 use App\Models\GymProfile;
 use App\Models\GymTrainerLink;
@@ -27,7 +27,7 @@ use Inertia\Response;
  */
 class TrainerGymsController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     public function show(Request $request): Response
     {

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Booking;
 use App\Models\User;
 use App\Support\TrainerPastSessions;
@@ -18,7 +18,7 @@ use Inertia\Response;
  */
 class TrainerPastSessionsController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     private const PER_PAGE = 20;
 

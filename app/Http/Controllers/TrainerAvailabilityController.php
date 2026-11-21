@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\BuildsPlaceholderData;
+use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Http\Requests\TrainerAvailabilityRequest;
 use App\Http\Requests\TrainerDayOverrideRequest;
 use App\Models\User;
@@ -27,7 +27,7 @@ use Inertia\Response;
  */
 class TrainerAvailabilityController extends Controller
 {
-    use BuildsPlaceholderData;
+    use BuildsTrainerArea;
 
     public function show(Request $request): Response
     {
