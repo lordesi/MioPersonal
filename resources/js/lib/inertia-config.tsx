@@ -1,10 +1,10 @@
 import type { Page, SharedPageProps } from '@inertiajs/core';
 import type { ComponentType, ReactElement, ReactNode } from 'react';
+import AppErrorBoundary from '@/components/app-error-boundary';
 import CookieConsent from '@/components/cookies/cookie-consent';
 import AppPrompt from '@/components/pwa/app-prompt';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Sentry } from '@/lib/sentry';
 import AdminLayout from '@/layouts/admin-layout';
 import ClientLayout from '@/layouts/client-layout';
 import GymLayout from '@/layouts/gym-layout';
@@ -55,15 +55,7 @@ export function withApp(
     return (
         <TooltipProvider delayDuration={0}>
             {/* A crash while drawing a page is sent to Sentry (when it is on). */}
-            <Sentry.ErrorBoundary
-                fallback={
-                    <p className="p-6 text-center text-sm">
-                        Qualcosa è andato storto. Ricarica la pagina.
-                    </p>
-                }
-            >
-                {app}
-            </Sentry.ErrorBoundary>
+            <AppErrorBoundary>{app}</AppErrorBoundary>
             <Toaster />
             <CookieConsent initialPage={page} />
             <AppPrompt initialPage={page} />

@@ -1,34 +1,51 @@
-import * as Sentry from '@sentry/react';
-
 /**
  * Error tracking in the browser (free Sentry plan). Without VITE_SENTRY_DSN it
- * does nothing, so local development and the tests never call out. No cookies,
- * no performance tracing, no session replay: only the errors, to stay in the
- * free quota.
+ * does nothing and the build leaves Sentry out, so local development and the
+ * tests never call out.
+ *
+ * Sentry is not in the code the page starts with: setUpSentry() downloads it
+ * right after (lib/sentry-client.ts). Errors reported in the meantime wait in
+ * a small queue. To report an error by hand use reportError(), never
+ * '@sentry/react' directly (it would put Sentry back in the first download).
  */
+type Extra = Record<string, unknown>;
+type Client = typeof import('./sentry-client');
+
+const MAX_QUEUED = 10;
+
+let client: Client | null = null;
+let queue: Array<[unknown, Extra | undefined]> | null = [];
+
 export function setUpSentry(): void {
     const dsn = import.meta.env.VITE_SENTRY_DSN;
 
-    if (!dsn) {
+    if (!dsn || typeof window === 'undefined') {
+        queue = null;
+
         return;
     }
 
-    Sentry.init({
-        dsn,
-        environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || 'production',
-        tracesSampleRate: 0,
-        // Noise that isn't ours: browser extensions, a lost connection, a tab left
-        // open across a deploy (the old chunks are gone).
-        ignoreErrors: [
-            'ResizeObserver loop',
-            'Failed to fetch',
-            'Load failed',
-            'NetworkError',
-            'Importing a module script failed',
-            'Failed to fetch dynamically imported module',
-        ],
-        denyUrls: [/^chrome-extension:\/\//, /^moz-extension:\/\//],
-    });
+    import('./sentry-client')
+        .then((loaded) => {
+            loaded.start(dsn);
+            client = loaded;
+            queue?.forEach(([error, extra]) => send(error, extra));
+        })
+        // No connection, or an old build: the queued errors are lost.
+        .catch(() => undefined)
+        .finally(() => {
+            queue = null;
+        });
 }
 
-export { Sentry };
+export function reportError(error: unknown, extra?: Extra): void {
+    if (client) {
+        send(error, extra);
+    } else if (queue && queue.length < MAX_QUEUED) {
+        queue.push([error, extra]);
+    }
+}
+
+function send(error: unknown, extra?: Extra): void {
+    client?.captureException(error, extra ? { extra } : undefined);
+}
