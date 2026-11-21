@@ -469,8 +469,9 @@ class TrainerSearchController extends Controller
 
         $ids = [];
 
-        foreach ($candidates as $profile) {
-            foreach (TrainerSlots::days($profile, $days) as $day) {
+        // All the candidates' slots in a few queries, not five per trainer.
+        foreach (TrainerSlots::daysForMany($candidates, $days) as $id => $profileDays) {
+            foreach ($profileDays as $day) {
                 if ($day['date'] < $first->toDateString()) {
                     continue;
                 }
@@ -479,7 +480,7 @@ class TrainerSearchController extends Controller
                     $hour = CarbonImmutable::parse($slot['start'])->setTimezone(TrainerSlots::TIMEZONE)->hour;
 
                     if ($hour >= $from && $hour < $to) {
-                        $ids[] = $profile->id;
+                        $ids[] = $id;
 
                         continue 3;
                     }

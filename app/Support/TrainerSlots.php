@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Enums\GroupSessionStatus;
+use App\Enums\GymLinkStatus;
 use App\Enums\TrainerProfileStatus;
 use App\Models\Booking;
 use App\Models\CalendarBusyTime;
@@ -10,6 +11,8 @@ use App\Models\GroupSession;
 use App\Models\TrainerDayOverride;
 use App\Models\TrainerProfile;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
 /**
@@ -32,6 +35,8 @@ use Illuminate\Support\Collection;
  * "Blocca gli orari occupati": the times the trainer is busy on Google
  * (`calendar_busy_times`) take their time like a session, break included,
  * but don't count as sessions for "Massimo sedute al giorno".
+ *
+ * @phpstan-type Preloaded array{overrides: EloquentCollection<int, TrainerDayOverride>, bookings: EloquentCollection<int, Booking>, events: EloquentCollection<int, GroupSession>, busy: EloquentCollection<int, CalendarBusyTime>}
  */
 final class TrainerSlots
 {
@@ -52,13 +57,107 @@ final class TrainerSlots
      */
     public static function days(TrainerProfile $profile, int $days, ?CarbonImmutable $now = null, ?int $exceptBookingId = null): array
     {
+        return self::compute($profile, $days, $now, $exceptBookingId);
+    }
+
+    /**
+     * days() for many trainers at once (the search with a date or a time
+     * band): the working hours, the days with their own hours, the bookings,
+     * the events and the busy times of all of them are read in a few queries,
+     * not five per trainer. The days are the same as days() one by one.
+     *
+     * @param  EloquentCollection<int, TrainerProfile>  $profiles
+     * @return array<int, list<array{date: string, closed: bool, slots: list<array{start: string, maxMinutes: int}>}>> by profile id
+     */
+    public static function daysForMany(EloquentCollection $profiles, int $days, ?CarbonImmutable $now = null): array
+    {
+        if ($profiles->isEmpty()) {
+            return [];
+        }
+
+        $now = ($now ?? CarbonImmutable::now())->setTimezone(self::TIMEZONE);
+        $from = $now->startOfDay();
+        // The widest window: each trainer's own booking window is applied in activeBookings().
+        $until = $from->addDays($days);
+        $ids = $profiles->modelKeys();
+
+        $profiles->loadMissing('workingHours');
+
+        $overrides = TrainerDayOverride::query()
+            ->whereIn('trainer_profile_id', $ids)
+            ->whereBetween('date', [$from->toDateString(), $from->addDays($days - 1)->toDateString()])
+            ->get(['trainer_profile_id', 'date', 'hours'])
+            ->groupBy('trainer_profile_id');
+
+        $bookings = Booking::query()
+            ->whereIn('trainer_profile_id', $ids)
+            ->active()
+            ->where(fn ($query) => self::takingTime($query, $from, $until))
+            ->get([...self::BOOKING_COLUMNS, 'trainer_profile_id'])
+            ->groupBy('trainer_profile_id');
+
+        $events = GroupSession::query()
+            ->join('group_session_hosts as host', 'host.group_session_id', '=', 'group_sessions.id')
+            ->whereIn('host.trainer_profile_id', $ids)
+            ->where('host.status', GymLinkStatus::Accepted)
+            ->where('group_sessions.status', GroupSessionStatus::Published)
+            ->where('group_sessions.ends_at', '>', $from)
+            ->where('group_sessions.starts_at', '<', $until)
+            ->get(['host.trainer_profile_id as host_trainer_profile_id', 'group_sessions.id', 'group_sessions.starts_at', 'group_sessions.ends_at'])
+            ->groupBy('host_trainer_profile_id');
+
+        $busy = CalendarBusyTime::query()
+            ->join('trainer_calendar_connections as connection', 'connection.id', '=', 'calendar_busy_times.trainer_calendar_connection_id')
+            ->whereIn('connection.trainer_profile_id', $ids)
+            ->whereNotNull('connection.reads_busy_at')
+            ->where('calendar_busy_times.ends_at', '>', $from)
+            ->where('calendar_busy_times.starts_at', '<', $until)
+            ->get(['connection.trainer_profile_id as busy_trainer_profile_id', 'calendar_busy_times.starts_at', 'calendar_busy_times.ends_at'])
+            ->groupBy('busy_trainer_profile_id');
+
+        $result = [];
+
+        foreach ($profiles as $profile) {
+            $result[$profile->id] = self::compute($profile, $days, $now, null, [
+                'overrides' => $overrides->get($profile->id, new EloquentCollection),
+                'bookings' => $bookings->get($profile->id, new EloquentCollection),
+                'events' => $events->get($profile->id, new EloquentCollection),
+                'busy' => $busy->get($profile->id, new EloquentCollection),
+            ]);
+        }
+
+        return $result;
+    }
+
+    /** What activeBookings() reads of a booking. */
+    private const BOOKING_COLUMNS = ['id', 'starts_at', 'ends_at', 'blocked_until', 'proposed_starts_at', 'proposal_expires_at'];
+
+    /**
+     * The bookings taking time from `$from` (start of a day) to `$until`: a
+     * session (with its break), or a new time proposed and not answered yet.
+     *
+     * @param  Builder<Booking>  $query
+     */
+    private static function takingTime(Builder $query, CarbonImmutable $from, CarbonImmutable $until): void
+    {
+        $query
+            ->where(fn ($booked) => $booked->where('blocked_until', '>', $from)->where('starts_at', '<', $until))
+            ->orWhere(fn ($proposed) => $proposed->whereNotNull('proposed_starts_at')->where('proposal_expires_at', '>', now()));
+    }
+
+    /**
+     * @param  Preloaded|null  $preloaded  read by daysForMany(); null = read here
+     * @return list<array{date: string, closed: bool, slots: list<array{start: string, maxMinutes: int}>}>
+     */
+    private static function compute(TrainerProfile $profile, int $days, ?CarbonImmutable $now, ?int $exceptBookingId, ?array $preloaded = null): array
+    {
         $now = ($now ?? CarbonImmutable::now())->setTimezone(self::TIMEZONE);
         $rangesByWeekday = self::rangesByWeekday($profile);
         $earliest = self::earliestStart($profile, $now);
         $lastDay = $now->startOfDay()->addDays($profile->booking_window_days);
-        $bookings = self::activeBookings($profile, $now, $now->startOfDay()->addDays(min($days, $profile->booking_window_days)), $exceptBookingId);
+        $bookings = self::activeBookings($profile, $now, $now->startOfDay()->addDays(min($days, $profile->booking_window_days)), $exceptBookingId, $preloaded);
         // "Giorni e settimane diverse": these dates have their own hours (or none).
-        $overrides = self::overrides($profile, $now->startOfDay(), $now->startOfDay()->addDays($days - 1));
+        $overrides = self::overrides($profile, $now->startOfDay(), $now->startOfDay()->addDays($days - 1), $preloaded['overrides'] ?? null);
         $result = [];
 
         for ($index = 0; $index < $days; $index++) {
@@ -263,13 +362,16 @@ final class TrainerSlots
     /**
      * Rome date => ranges of the days with their own hours ([] = closed).
      *
+     * @param  EloquentCollection<int, TrainerDayOverride>|null  $preloaded  the ones of these days, from daysForMany()
      * @return array<string, list<array{int, int}>>
      */
-    private static function overrides(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $to): array
+    private static function overrides(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $to, ?EloquentCollection $preloaded = null): array
     {
-        return $profile->dayOverrides()
+        $overrides = $preloaded ?? $profile->dayOverrides()
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
-            ->get(['date', 'hours'])
+            ->get(['date', 'hours']);
+
+        return $overrides
             ->mapWithKeys(fn (TrainerDayOverride $override) => [
                 $override->date->toDateString() => WorkingRanges::normalize($override->hours),
             ])
@@ -282,25 +384,34 @@ final class TrainerSlots
      * the client answers or the proposal expires. So do the events the
      * trainer organizes, and the times they're busy on Google (external).
      *
+     * With `$preloaded` (daysForMany(), read up to a wider `$until` for all
+     * the trainers), the same rules are applied here to this trainer's window.
+     *
+     * @param  Preloaded|null  $preloaded
      * @return Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable, external?: bool}>
      */
-    private static function activeBookings(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $until, ?int $exceptBookingId = null): Collection
+    private static function activeBookings(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $until, ?int $exceptBookingId = null, ?array $preloaded = null): Collection
     {
-        $bookings = $profile->bookings()
-            ->active()
-            ->when($exceptBookingId !== null, fn ($query) => $query->whereKeyNot($exceptBookingId))
-            ->where(fn ($query) => $query
-                ->where(fn ($booked) => $booked->where('blocked_until', '>', $from->startOfDay())->where('starts_at', '<', $until))
-                ->orWhere(fn ($proposed) => $proposed->whereNotNull('proposed_starts_at')->where('proposal_expires_at', '>', now())))
-            ->get(['id', 'starts_at', 'ends_at', 'blocked_until', 'proposed_starts_at', 'proposal_expires_at']);
+        $dayStart = $from->startOfDay();
+
+        $bookings = $preloaded === null
+            ? $profile->bookings()
+                ->active()
+                ->when($exceptBookingId !== null, fn ($query) => $query->whereKeyNot($exceptBookingId))
+                ->where(fn ($query) => self::takingTime($query, $dayStart, $until))
+                ->get(self::BOOKING_COLUMNS)
+            : $preloaded['bookings']->filter(fn (Booking $booking) => ($booking->blocked_until->greaterThan($dayStart) && $booking->starts_at->lessThan($until))
+                || ($booking->proposed_starts_at !== null && $booking->proposal_expires_at?->greaterThan(now())));
 
         // "Eventi": the trainer's events take their time too.
-        $events = GroupSession::query()
-            ->hostedBy($profile)
-            ->where('status', GroupSessionStatus::Published)
-            ->where('ends_at', '>', $from->startOfDay())
-            ->where('starts_at', '<', $until)
-            ->get(['id', 'starts_at', 'ends_at'])
+        $events = ($preloaded === null
+            ? GroupSession::query()
+                ->hostedBy($profile)
+                ->where('status', GroupSessionStatus::Published)
+                ->where('ends_at', '>', $dayStart)
+                ->where('starts_at', '<', $until)
+                ->get(['id', 'starts_at', 'ends_at'])
+            : $preloaded['events']->filter(fn (GroupSession $event) => $event->starts_at->lessThan($until)))
             ->map(fn (GroupSession $event) => [
                 'start' => $event->starts_at->setTimezone(self::TIMEZONE),
                 'blockedUntil' => $event->ends_at->setTimezone(self::TIMEZONE),
@@ -325,7 +436,7 @@ final class TrainerSlots
                 return $times;
             })
             ->concat($events)
-            ->concat(self::busyTimes($profile, $from, $until))
+            ->concat(self::busyTimes($profile, $from, $until, $preloaded === null ? null : $preloaded['busy']->filter(fn (CalendarBusyTime $busy) => $busy->starts_at->lessThan($until))))
             ->sortBy(fn (array $time) => $time['start']->getTimestamp())
             ->values();
     }
@@ -334,22 +445,32 @@ final class TrainerSlots
      * "Blocca gli orari occupati": the times busy on Google, with the break
      * after them like a session (the one before is in freeMinutes).
      *
+     * @param  EloquentCollection<int, CalendarBusyTime>|null  $preloaded  the ones of these days, from daysForMany()
      * @return Collection<int, array{start: CarbonImmutable, blockedUntil: CarbonImmutable, external: true}>
      */
-    private static function busyTimes(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $until): Collection
+    private static function busyTimes(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $until, ?EloquentCollection $preloaded = null): Collection
     {
-        return CalendarBusyTime::query()
+        $busy = $preloaded ?? CalendarBusyTime::query()
             ->whereHas('connection', fn ($connection) => $connection
                 ->where('trainer_profile_id', $profile->id)
                 ->whereNotNull('reads_busy_at'))
             ->where('ends_at', '>', $from->startOfDay())
             ->where('starts_at', '<', $until)
-            ->get(['starts_at', 'ends_at'])
-            ->map(fn (CalendarBusyTime $busy) => [
-                'start' => $busy->starts_at->setTimezone(self::TIMEZONE),
-                'blockedUntil' => $busy->ends_at->setTimezone(self::TIMEZONE)->addMinutes($profile->break_minutes),
-                'external' => true,
-            ]);
+            ->get(['starts_at', 'ends_at']);
+
+        return $busy->map(fn (CalendarBusyTime $busy) => self::busyTime($busy, $profile->break_minutes));
+    }
+
+    /**
+     * @return array{start: CarbonImmutable, blockedUntil: CarbonImmutable, external: true}
+     */
+    private static function busyTime(CalendarBusyTime $busy, int $breakMinutes): array
+    {
+        return [
+            'start' => $busy->starts_at->setTimezone(self::TIMEZONE),
+            'blockedUntil' => $busy->ends_at->setTimezone(self::TIMEZONE)->addMinutes($breakMinutes),
+            'external' => true,
+        ];
     }
 
     /** Minimum notice ("Preavviso minimo") and the end of a pause. */

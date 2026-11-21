@@ -14,6 +14,7 @@ use Carbon\CarbonImmutable;
 use Database\Seeders\CatalogSeeder;
 use Database\Seeders\DemoTrainerSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -315,7 +316,8 @@ class TrainerSearchTest extends TestCase
     {
         $days = (int) CarbonImmutable::now('Europe/Rome')->startOfDay()->diffInDays($day) + 1;
 
-        return TrainerProfile::query()->published()->with('user')->get()
+        // One trainer at a time with days(): the search computes them all at once (daysForMany()).
+        return TrainerProfile::query()->published()->with(['user', 'workingHours'])->get()
             ->filter(fn (TrainerProfile $profile) => collect(TrainerSlots::days($profile, $days)[$days - 1]['slots'])
                 ->contains(function (array $slot) use ($from, $to) {
                     $hour = CarbonImmutable::parse($slot['start'])->setTimezone('Europe/Rome')->hour;
@@ -333,7 +335,7 @@ class TrainerSearchTest extends TestCase
      */
     private function refreshFirstSlots(): void
     {
-        TrainerProfile::query()->each(fn (TrainerProfile $profile) => TrainerSlots::refresh($profile));
+        TrainerProfile::query()->with('workingHours')->each(fn (TrainerProfile $profile) => TrainerSlots::refresh($profile));
     }
 
     /** @param  array<string, string>  $query */
@@ -395,6 +397,31 @@ class TrainerSearchTest extends TestCase
             ->unique()->sort()->values()->all();
 
         $this->assertSame($expected, $this->searchedNames(['fascia' => 'pomeriggio']));
+    }
+
+    public function test_the_time_band_reads_as_many_queries_with_more_trainers()
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-16 09:00', 'Europe/Rome'));
+        $this->refreshFirstSlots();
+
+        $queries = function (): int {
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            $this->get(route('trainers.search', ['fascia' => 'sera']))->assertOk();
+            DB::disableQueryLog();
+
+            return count(DB::getQueryLog());
+        };
+
+        $before = $queries();
+
+        // Five more trainers free every evening: five more candidates to compute.
+        TrainerProfile::factory()->count(5)->approved()->bookable()->create(['visible_in_search' => true])
+            ->each(fn (TrainerProfile $profile) => TrainerSlots::refresh($profile->refresh()->load('workingHours')));
+
+        $names = $this->searchedNames(['fascia' => 'sera']);
+        $this->assertCount(5, array_filter($names, fn (string $name) => in_array($name, TrainerProfile::query()->latest('id')->limit(5)->with('user')->get()->pluck('user.name')->all(), true)));
+        $this->assertSame($before, $queries());
     }
 
     public function test_a_trainer_without_a_saved_first_free_slot_is_left_out_at_once()

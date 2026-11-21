@@ -9,7 +9,6 @@ use App\Models\GymProfile;
 use App\Models\Report;
 use App\Models\Review;
 use App\Models\TrainerProfile;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -34,15 +33,14 @@ class AdminReportsController extends Controller
     {
         $open = Report::query()->open()->oldest('id')->get();
         $closed = Report::query()->whereNotNull('resolved_at')->latest('resolved_at')->limit(self::CLOSED_LIMIT)->get();
-        // One query per kind of reported thing, with what each row shows.
-        $reports = $open->concat($closed)->load([
-            'reporter',
-            'reportable' => fn (MorphTo $reportable) => $reportable->morphWith([
+        // The reported things at once (one query per kind), then what each row shows.
+        $reports = $open->concat($closed)
+            ->load(['reporter', 'reportable'])
+            ->loadMorph('reportable', [
                 TrainerProfile::class => ['user'],
                 GymProfile::class => ['user'],
                 Review::class => ['trainerProfile.user', 'client'],
-            ]),
-        ]);
+            ]);
 
         return Inertia::render('admin/reports', [
             'adminArea' => $this->adminArea(),
