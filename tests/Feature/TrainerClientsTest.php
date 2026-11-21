@@ -66,7 +66,7 @@ class TrainerClientsTest extends TestCase
         // Another trainer's client.
         Booking::factory()->confirmed()->create();
         // A client who deleted the account.
-        Booking::factory()->for($trainer)->confirmed()->create(['client_id' => null]);
+        Booking::factory()->for($trainer)->confirmed()->apart(skip: 2)->create(['client_id' => null]);
 
         $this->actingAs($trainer->user)
             ->get(route('trainer.clients'))
