@@ -36,12 +36,6 @@ trait BuildsTrainerArea
         return CarbonImmutable::now('Europe/Rome');
     }
 
-    /** Dates go to the frontend in UTC; the browser shows them in Europe/Rome. */
-    private function iso(CarbonImmutable $date): string
-    {
-        return $date->utc()->format('Y-m-d\TH:i:s\Z');
-    }
-
     /**
      * Data the trainer layout needs on every page of the trainer area: the
      * link to the public profile and its status, for the notice at the top

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Review;
 use App\Models\User;
+use App\Support\ClientBookingData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -48,7 +49,7 @@ class TrainerReviewsController extends Controller
                     'serviceName' => $review->booking?->service_name,
                     // Left after a booked session: the "Seduta svolta" chip.
                     'fromSession' => $review->booking_id !== null,
-                    'date' => $this->iso($review->created_at ?? now()->toImmutable()),
+                    'date' => ClientBookingData::iso($review->created_at ?? now()->toImmutable()),
                     'text' => $review->text,
                     'reply' => $review->reply,
                 ])

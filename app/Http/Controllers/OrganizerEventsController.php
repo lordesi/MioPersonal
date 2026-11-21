@@ -23,6 +23,7 @@ use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\BookingMailData;
+use App\Support\ClientBookingData;
 use App\Support\GroupSessionCard;
 use App\Support\TrainerSlots;
 use Illuminate\Database\Eloquent\Builder;
@@ -139,7 +140,7 @@ class OrganizerEventsController extends Controller
                 'email' => $registration->user->email,
                 'phone' => BookingMailData::phone($registration->user->phone),
                 'status' => $registration->status->value,
-                'at' => $this->iso($registration->updated_at ?? now()->toImmutable()),
+                'at' => ClientBookingData::iso($registration->updated_at ?? now()->toImmutable()),
             ])->values(),
             'hosts' => $session->hosts->sortByDesc('is_owner')->map(fn (GroupSessionHost $item) => [
                 'id' => $item->id,

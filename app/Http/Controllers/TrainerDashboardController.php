@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\ClientPackage;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\ClientBookingData;
 use App\Support\TrainerBookingRequests;
 use App\Support\TrainerPastSessions;
 use App\Support\TrainerSessions;
@@ -308,7 +309,7 @@ class TrainerDashboardController extends Controller
                     'total' => $package->sessions_total,
                     'done' => $package->done_count ?? 0,
                     'booked' => $package->bookedCount(),
-                    'nextStart' => $next === null ? null : $this->iso($next->starts_at),
+                    'nextStart' => $next === null ? null : ClientBookingData::iso($next->starts_at),
                 ];
             })
             ->all());

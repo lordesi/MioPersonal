@@ -14,7 +14,7 @@ use App\Models\Review;
 use App\Models\TrainerClient;
 use App\Models\TrainerProfile;
 use App\Models\User;
-use Carbon\CarbonInterface;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /**
@@ -354,10 +354,13 @@ final class ClientBookingData
         ];
     }
 
-    /** Dates go to the frontend in UTC; the browser shows them in Europe/Rome. */
-    public static function iso(CarbonInterface $date): string
+    /**
+     * Dates go to the frontend in UTC; the browser shows them in Europe/Rome.
+     * A copy is converted: the date passed in keeps its timezone.
+     */
+    public static function iso(\DateTimeInterface $date): string
     {
-        return $date->utc()->format('Y-m-d\TH:i:s\Z');
+        return CarbonImmutable::instance($date)->utc()->format('Y-m-d\TH:i:s\Z');
     }
 
     /** The first discipline of the trainer, e.g. "Yoga" in "Yoga con Chiara Galli". */
