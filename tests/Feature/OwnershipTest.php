@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\CourseLevel;
 use App\Enums\GymLinkSide;
 use App\Enums\GymLinkStatus;
 use App\Models\Booking;
@@ -89,6 +90,39 @@ class OwnershipTest extends TestCase
         ], $link);
 
         $this->assertSame(GymLinkStatus::Pending, $link->fresh()?->status);
+    }
+
+    public function test_a_gym_cannot_touch_another_gyms_courses_photos_and_promotions()
+    {
+        $owner = GymProfile::factory()->approved()->create();
+        $course = $owner->courses()->create(['name' => 'Pilates', 'level' => CourseLevel::All, 'is_active' => true]);
+        $coursePhoto = $course->photos()->create(['path' => 'gym-courses/one.jpg', 'sort' => 0]);
+        $photo = $owner->photos()->create(['path' => 'gyms/one.jpg', 'is_cover' => false]);
+        $promotion = $owner->promotions()->create(['title' => 'Primo mese a metà prezzo', 'discount_percent' => 50]);
+        $intruder = GymProfile::factory()->approved()->create()->user;
+
+        $this->assertEveryActionIsNotFound($intruder, [
+            ['post', 'gym.courses.update'],
+            ['delete', 'gym.courses.destroy'],
+            ['post', 'gym.courses.photos.store'],
+        ], $course);
+        $this->assertEveryActionIsNotFound($intruder, [
+            ['post', 'gym.courses.photos.first'],
+            ['delete', 'gym.courses.photos.destroy'],
+        ], $course, $coursePhoto);
+        $this->assertEveryActionIsNotFound($intruder, [
+            ['post', 'gym.photos.cover'],
+            ['delete', 'gym.photos.destroy'],
+        ], $photo);
+        $this->assertEveryActionIsNotFound($intruder, [
+            ['patch', 'gym.promotions.update'],
+            ['delete', 'gym.promotions.destroy'],
+        ], $promotion);
+
+        $this->assertModelExists($course);
+        $this->assertModelExists($coursePhoto);
+        $this->assertFalse($photo->fresh()?->is_cover);
+        $this->assertSame('Primo mese a metà prezzo', $promotion->fresh()?->title);
     }
 
     /**

@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -91,7 +92,7 @@ class GymPhotoController extends Controller
     public function cover(GymPhoto $photo): RedirectResponse
     {
         $profile = $this->gymOrFail();
-        $this->galleryPhotoOf($profile, $photo);
+        $this->galleryPhotoOf($photo);
 
         DB::transaction(function () use ($profile, $photo) {
             $profile->photos()->where('is_cover', true)->update([
@@ -108,8 +109,7 @@ class GymPhotoController extends Controller
 
     public function destroy(GymPhoto $photo): RedirectResponse
     {
-        $profile = $this->gymOrFail();
-        $this->galleryPhotoOf($profile, $photo);
+        $this->galleryPhotoOf($photo);
 
         $photo->delete();
         Storage::disk(GymPhoto::DISK)->delete($photo->path);
@@ -120,8 +120,9 @@ class GymPhotoController extends Controller
     }
 
     /** Someone else's photo, or the cover (it can only be replaced): as if it didn't exist. */
-    private function galleryPhotoOf(GymProfile $profile, GymPhoto $photo): void
+    private function galleryPhotoOf(GymPhoto $photo): void
     {
-        abort_if($photo->gym_profile_id !== $profile->id || $photo->is_cover, 404);
+        Gate::authorize('asGym', $photo);
+        abort_if($photo->is_cover, 404);
     }
 }

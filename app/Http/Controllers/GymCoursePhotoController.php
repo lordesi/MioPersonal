@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -99,7 +100,7 @@ class GymCoursePhotoController extends Controller
     /** Another gym's course, or a photo of another course: as if it didn't exist. */
     private function ensureOwn(GymCourse $course, ?GymCoursePhoto $photo = null): void
     {
-        abort_unless($course->gym_profile_id === $this->gymOrFail()->id, 404);
+        Gate::authorize('asGym', $course);
         abort_if($photo !== null && $photo->gym_course_id !== $course->id, 404);
     }
 }

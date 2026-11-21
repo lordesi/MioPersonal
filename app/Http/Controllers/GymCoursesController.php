@@ -16,6 +16,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator as ValidatorFacade;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -101,7 +102,7 @@ class GymCoursesController extends Controller
     public function update(Request $request, GymCourse $course): RedirectResponse
     {
         $profile = $this->gymOrFail();
-        $this->ensureOwn($profile, $course);
+        $this->ensureOwn($course);
 
         $this->save($request, $profile, $course);
 
@@ -112,8 +113,7 @@ class GymCoursesController extends Controller
 
     public function destroy(GymCourse $course): RedirectResponse
     {
-        $profile = $this->gymOrFail();
-        $this->ensureOwn($profile, $course);
+        $this->ensureOwn($course);
 
         // The places taken in its next lessons: cancelled, the clients told.
         foreach ($course->lessons as $lesson) {
@@ -276,14 +276,14 @@ class GymCoursesController extends Controller
         })->validate();
     }
 
-    private function ensureOwn(GymProfile $profile, GymCourse $course): void
+    private function ensureOwn(GymCourse $course): void
     {
-        abort_unless($course->gym_profile_id === $profile->id, 404);
+        Gate::authorize('asGym', $course);
     }
 
     private function ensureOwnLesson(GymCourseLesson $lesson): void
     {
-        $this->ensureOwn($this->gymOrFail(), $lesson->course);
+        $this->ensureOwn($lesson->course);
     }
 
     /** The day asked, a day of that lesson, not past. */
