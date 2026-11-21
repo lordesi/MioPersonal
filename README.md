@@ -491,6 +491,8 @@ le notifiche della campanella.
 
 Il sito si installa sulla schermata Home (`public/manifest.webmanifest`) e manda notifiche push
 (`public/sw.js`). Non ci sono costi: le push passano dai servizi gratuiti di Apple, Google e Mozilla.
+Senza connessione il service worker mostra `public/offline.html` («Sei offline»), l'unica cosa che tiene
+in cache: le regole sono in [docs/velocita.md](docs/velocita.md), sezione «Rifiniture (fase 5a)».
 
 1. **Chiavi VAPID**, una volta sola per ogni ambiente:
     ```
@@ -628,6 +630,8 @@ Se un errore non è in tabella: **copia il messaggio completo** e chiedi. Quasi 
 - `git pull` prima di iniziare e prima di ogni `git push`.
 - Una cosa alla volta: finisci, prova, fai commit, poi passa alla successiva.
 - Le idee nuove vanno nella lista **"dopo la beta"**, non si sviluppano subito.
+- Uno script, un iframe o un servizio esterno nuovo va permesso nella Content-Security-Policy:
+  [docs/sicurezza.md](docs/sicurezza.md).
 
 ---
 

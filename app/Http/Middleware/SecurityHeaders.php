@@ -2,8 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\ContentSecurityPolicy;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Vite;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -16,17 +18,28 @@ use Symfony\Component\HttpFoundation\Response;
  * - pages of logged-in users are never cached (by the browser or a CDN);
  * - in production over HTTPS, the browser keeps using HTTPS (HSTS).
  *
- * A full Content-Security-Policy is for later: it has to be tried with Vite and SSR.
+ * - the full Content-Security-Policy (App\Support\ContentSecurityPolicy) on the
+ *   HTML pages, for now only reported: the browser blocks nothing and tells
+ *   /csp-report what it would block. The nonce is the one Vite puts on its tags.
  */
 class SecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
+        $nonce = Vite::useCspNonce();
+
         $response = $next($request);
         $headers = $response->headers;
 
         $headers->set('X-Frame-Options', 'DENY');
         $headers->set('Content-Security-Policy', "frame-ancestors 'none'");
+
+        if (str_contains((string) $headers->get('Content-Type'), 'text/html')) {
+            $headers->set('Content-Security-Policy-Report-Only', ContentSecurityPolicy::header(
+                $nonce,
+                Vite::isRunningHot() ? trim((string) file_get_contents(Vite::hotFile())) : null,
+            ));
+        }
         $headers->set('X-Content-Type-Options', 'nosniff');
         $headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self), payment=(), usb=()');
