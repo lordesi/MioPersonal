@@ -151,7 +151,7 @@ class ClientHomeController extends Controller
             'kind' => 'trainer',
             'title' => $trainer->user->name,
             // The photo of the public profile, as User::avatar for trainers.
-            'avatar' => $trainer->portrait?->url(),
+            'avatar' => $trainer->portrait?->url('sm'),
             'activity' => $trainer->disciplines->first()->name ?? $booking->service_name,
             'start' => ClientBookingData::iso($booking->starts_at),
             'end' => ClientBookingData::iso($booking->ends_at),

@@ -252,7 +252,7 @@ class TrainerProfileController extends Controller
             // App\Enums\TrainingGoal values: the page shows them with the labels of goals.ts.
             'goals' => $profile->goals ?? [],
             // The profile photo goes in the circle next to the name, not in the carousel.
-            'portraitUrl' => $profile->photos->firstWhere('is_portrait', true)?->url(),
+            'portraitUrl' => $profile->photos->firstWhere('is_portrait', true)?->url('lg'),
             'photos' => $this->photos($profile),
             'services' => $this->services($profile, $viewer),
             'places' => self::visiblePlaces($profile)->map(fn (TrainerPlace $place) => $this->place($place, $cities))->all(),
@@ -335,7 +335,7 @@ class TrainerProfileController extends Controller
             ->reject(fn (TrainerPhoto $photo) => $photo->is_portrait)
             ->map(fn (TrainerPhoto $photo) => [
                 'caption' => $photo->caption ?? '',
-                'url' => $photo->url(),
+                'url' => $photo->url('lg'),
             ])->all());
     }
 
@@ -565,7 +565,7 @@ class TrainerProfileController extends Controller
                 'name' => $place->gymProfile->name,
                 'city' => $place->gymProfile->city->name,
                 'address' => $place->gymProfile->fullAddress(),
-                'coverUrl' => $place->gymProfile->cover?->url(),
+                'coverUrl' => $place->gymProfile->cover?->url('md'),
                 'href' => route('gyms.show', $place->gymProfile->slug, false),
             ])->all());
     }

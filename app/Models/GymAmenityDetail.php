@@ -3,11 +3,11 @@
 namespace App\Models;
 
 use App\Enums\GymAmenity;
+use App\Support\SafeImage;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * A service of a gym told better ("Servizi" of the gym area): a description
@@ -37,9 +37,10 @@ class GymAmenityDetail extends Model
         ];
     }
 
-    public function photoUrl(): ?string
+    /** @param  'sm'|'md'|'lg'|null  $size  a lighter copy (SafeImage::VARIANTS); null = the original */
+    public function photoUrl(?string $size = null): ?string
     {
-        return $this->photo_path === null ? null : Storage::disk(GymPhoto::DISK)->url($this->photo_path);
+        return $this->photo_path === null ? null : SafeImage::url(GymPhoto::DISK, $this->photo_path, $size);
     }
 
     /** Nothing to show: no text and no photo. */

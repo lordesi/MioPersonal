@@ -106,7 +106,7 @@ final class GymCourseWeek
                 'id' => $course->id,
                 'name' => $course->name,
                 'description' => $course->description,
-                'photos' => $course->photoUrls(),
+                'photos' => $course->photoUrls('lg'),
                 'maxPlaces' => $course->maxPlaces(),
                 'level' => $course->level->label(),
                 'discipline' => $course->discipline?->name,

@@ -46,7 +46,7 @@ final class GroupSessionCard
             'city' => $session->city?->name,
             'online' => $session->place === GroupSessionPlace::Online,
             'place' => $session->placeLabel(),
-            'coverUrl' => $session->coverUrl(),
+            'coverUrl' => $session->coverUrl('md'),
             'discipline' => $session->discipline?->name,
             'price' => $session->priceLabel(),
             'capacity' => $session->capacity,

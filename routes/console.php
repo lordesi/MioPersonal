@@ -305,6 +305,27 @@ Artisan::command('messages:expire-attachments', function () {
 
 Schedule::command('messages:expire-attachments')->dailyAt('05:15')->withoutOverlapping();
 
+// The lighter copies of the public photos (SafeImage::VARIANTS): made for the
+// photos uploaded before them (or whose job failed), a few at a time, and
+// deleted when their original is gone (photo replaced or deleted, account closed).
+Artisan::command('photos:variants {--limit=200 : Photos done in one run}', function () {
+    $made = 0;
+
+    foreach (SafeImage::withoutVariants((int) $this->option('limit')) as $path) {
+        try {
+            $made += SafeImage::makeVariants($path);
+        } catch (Throwable $exception) {
+            $this->warn("Skipped {$path}: {$exception->getMessage()}");
+        }
+    }
+
+    $pruned = SafeImage::pruneVariants();
+    $this->info("{$made} copies made, {$pruned} copies without their photo deleted.");
+
+    return 0;
+})->purpose('Make the light copies of the photos and delete the orphan ones');
+Schedule::command('photos:variants')->hourly()->withoutOverlapping();
+
 // Once, for the photos uploaded before SafeImage: each one is drawn again in
 // place, without metadata (GPS position…), upright and at most 2000 px.
 Artisan::command('photos:strip-metadata', function () {

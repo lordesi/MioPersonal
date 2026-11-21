@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PushCategory;
 use App\Enums\UserRole;
 use App\Rules\Username;
+use App\Support\SafeImage;
 use Carbon\CarbonInterface;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -20,7 +21,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
 /**
@@ -228,12 +228,13 @@ class User extends Authenticatable implements MustVerifyEmail
             $portrait = $this->role === UserRole::Trainer ? $this->trainerProfile?->portrait : null;
 
             if ($portrait !== null) {
-                return $portrait->url();
+                // Small everywhere (menus, lists, chats): the light copy.
+                return $portrait->url('sm');
             }
 
             return $this->avatar_path === null
                 ? null
-                : Storage::disk(self::AVATAR_DISK)->url($this->avatar_path);
+                : SafeImage::url(self::AVATAR_DISK, $this->avatar_path, 'sm');
         });
     }
 

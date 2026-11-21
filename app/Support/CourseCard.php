@@ -26,7 +26,7 @@ final class CourseCard
             'id' => $course->id,
             'name' => $course->name,
             'href' => self::href($course),
-            'photoUrl' => $course->photoUrl() ?? $gym->cover?->url(),
+            'photoUrl' => $course->photoUrl('md') ?? $gym->cover?->url('md'),
             'level' => $course->level->label(),
             'discipline' => $course->discipline?->name,
             'instructor' => $course->instructorLabel(),

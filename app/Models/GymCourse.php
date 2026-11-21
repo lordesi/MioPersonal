@@ -71,17 +71,19 @@ class GymCourse extends Model
     }
 
     /** The first photo: the one on the cards. */
-    public function photoUrl(): ?string
+    /** @param  'sm'|'md'|'lg'|null  $size  a lighter copy (SafeImage::VARIANTS); null = the original */
+    public function photoUrl(?string $size = null): ?string
     {
-        return $this->photos->first()?->url();
+        return $this->photos->first()?->url($size);
     }
 
     /**
+     * @param  'sm'|'md'|'lg'|null  $size  a lighter copy (SafeImage::VARIANTS); null = the original
      * @return list<string>
      */
-    public function photoUrls(): array
+    public function photoUrls(?string $size = null): array
     {
-        return array_values($this->photos->map(fn (GymCoursePhoto $photo) => $photo->url())->all());
+        return array_values($this->photos->map(fn (GymCoursePhoto $photo) => $photo->url($size))->all());
     }
 
     /** "Max 15 posti": the most places of its lessons, null when none says. */
