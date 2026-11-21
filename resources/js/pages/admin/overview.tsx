@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import ActivityList from '@/components/admin/activity-list';
+import { formatPercent } from '@/lib/format';
 import {
     bookings,
     gymVerification,
@@ -41,11 +42,6 @@ function plural(count: number, one: string, many: string): string {
     return `${count} ${count === 1 ? one : many}`;
 }
 
-/** 0.91 → "91%" */
-function percent(ratio: number): string {
-    return `${Math.round(ratio * 100)}%`;
-}
-
 export default function Overview({ todo, stats, activity }: OverviewProps) {
     const todoCards = [
         {
@@ -81,7 +77,7 @@ export default function Overview({ todo, stats, activity }: OverviewProps) {
     const weekDetail =
         stats.bookingsLastWeek === 0
             ? 'Nessuna la settimana prima'
-            : `${weekChange >= 0 ? '+' : '−'}${percent(Math.abs(weekChange))} rispetto alla settimana prima`;
+            : `${weekChange >= 0 ? '+' : '−'}${formatPercent(Math.abs(weekChange), 0)} rispetto alla settimana prima`;
 
     const statCards = [
         {
@@ -106,8 +102,8 @@ export default function Overview({ todo, stats, activity }: OverviewProps) {
         },
         {
             label: 'Prenotazioni confermate',
-            value: percent(stats.confirmedRate),
-            detail: `Decadute: ${percent(stats.expiredRate)}, rifiutate: ${percent(stats.declinedRate)}`,
+            value: formatPercent(stats.confirmedRate, 0),
+            detail: `Decadute: ${formatPercent(stats.expiredRate, 0)}, rifiutate: ${formatPercent(stats.declinedRate, 0)}`,
         },
     ];
 
