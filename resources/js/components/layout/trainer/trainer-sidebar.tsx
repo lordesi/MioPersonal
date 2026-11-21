@@ -104,14 +104,15 @@ export default function TrainerSidebar({
 
             <div className="mt-auto flex flex-col items-center gap-3">
                 {publicProfileHref && (
-                    <a
+                    <Link
                         href={publicProfileHref}
+                        prefetch={hoverPrefetch}
                         aria-label="Vedi profilo pubblico"
                         title="Vedi profilo pubblico"
                         className="flex size-11 items-center justify-center rounded-full border border-white/12 bg-white/6 text-brand transition-colors outline-none hover:bg-white/10 focus-visible:ring-[3px] focus-visible:ring-ring/50"
                     >
                         <Eye aria-hidden="true" className="size-5" />
-                    </a>
+                    </Link>
                 )}
                 <Link
                     prefetch={hoverPrefetch}

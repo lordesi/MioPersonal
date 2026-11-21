@@ -4,10 +4,18 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        {{-- Inline style to set the HTML background color based on our theme in app.css --}}
+        {{--
+            The colour behind the page, before it is drawn (the areas have no SSR:
+            opening the app or a push notification would show white until the
+            JavaScript arrives). Dark like the site; the gym and admin areas are
+            light. Same rule as resources/js/lib/page-background.ts.
+        --}}
+        @php
+            $pageBackground = \Illuminate\Support\Str::startsWith($page['component'] ?? '', ['gym/', 'admin/', 'dev/']) ? '#ffffff' : '#0a0a0a';
+        @endphp
         <style>
             html {
-                background-color: #ffffff;
+                background-color: {{ $pageBackground }};
             }
         </style>
 
@@ -16,7 +24,7 @@
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
         {{-- The app on the home screen: public/manifest.webmanifest, public/sw.js. --}}
         <link rel="manifest" href="/manifest.webmanifest">
-        <meta name="theme-color" content="#ffffff">
+        <meta name="theme-color" content="{{ $pageBackground }}">
         <meta name="apple-mobile-web-app-title" content="MioPersonal">
 
         @include('partials.seo')
