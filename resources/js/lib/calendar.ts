@@ -36,6 +36,17 @@ export function addDays(date: string, days: number): string {
     return day.toISOString().slice(0, 10);
 }
 
+/**
+ * Today as "YYYY-MM-DD" on the device's clock, not in Rome: the limit of a
+ * date field (`min`/`max`), which the browser compares with its own day.
+ */
+export function deviceToday(now: Date = new Date()): string {
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+
+    return `${now.getFullYear()}-${month}-${day}`;
+}
+
 /** The 7 days of the week starting on `monday`. */
 export function weekDates(monday: string): string[] {
     return Array.from({ length: 7 }, (_, index) => addDays(monday, index));
