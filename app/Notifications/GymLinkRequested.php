@@ -8,14 +8,16 @@ use App\Models\GymTrainerLink;
 use App\Models\User;
 use App\Notifications\Concerns\SendsPush;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushMessage;
 
 /**
  * To the side that has to answer: a trainer asks to join the gym, or the gym
  * invites a trainer. The bell inside the site and the push, no email.
+ * Queued, and sent only once the request is saved (afterCommit).
  */
-class GymLinkRequested extends Notification
+class GymLinkRequested extends Notification implements ShouldQueue
 {
     use Queueable, SendsPush;
 
@@ -24,7 +26,10 @@ class GymLinkRequested extends Notification
         return PushCategory::GymLinks;
     }
 
-    public function __construct(public GymTrainerLink $link) {}
+    public function __construct(public GymTrainerLink $link)
+    {
+        $this->afterCommit();
+    }
 
     /**
      * @return list<string>

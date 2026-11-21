@@ -7,6 +7,7 @@ use App\Models\TrainerProfileReview;
 use App\Models\User;
 use App\Notifications\Concerns\SendsPush;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushMessage;
@@ -15,15 +16,18 @@ use NotificationChannels\WebPush\WebPushMessage;
  * After the team's decision in "Admin · Verifica": approved, changes requested
  * or rejected (with the team's message). The email always (it is what the
  * trainer waits for, even without opening the site), the bell and the push too.
+ * Queued, and sent only once the decision is saved (afterCommit).
  */
-class TrainerProfileDecided extends Notification
+class TrainerProfileDecided extends Notification implements ShouldQueue
 {
     use Queueable, SendsPush;
 
     public function __construct(
         public TrainerProfileReview $review,
         public string $profileUrl,
-    ) {}
+    ) {
+        $this->afterCommit();
+    }
 
     /**
      * @return list<string>
