@@ -9,6 +9,7 @@ use App\Http\Middleware\ProtectStaging;
 use App\Http\Middleware\RedirectLegacySlug;
 use App\Http\Middleware\RememberAcquisition;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\ServerTiming;
 use App\Http\Middleware\ThrottleSignups;
 use App\Http\Middleware\TrackLastActivity;
 use App\Support\Cloudflare;
@@ -62,6 +63,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(prepend: [SecurityHeaders::class]);
         // Staging only: the password and "noindex", before anything else runs.
         $middleware->prepend(ProtectStaging::class);
+        // Outermost: the time of every response (pages, redirects, 404, 429…) in DevTools.
+        $middleware->prepend(ServerTiming::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $wantsJson = fn (Request $request) => $request->is('api/*') || $request->expectsJson();
