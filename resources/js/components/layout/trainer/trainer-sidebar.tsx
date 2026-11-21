@@ -10,6 +10,7 @@ import { Initials } from '@/components/trainer/ui/bits';
 import { glassClassName } from '@/components/trainer/ui/styles';
 import { cn } from '@/lib/utils';
 import { today } from '@/routes/trainer';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 type TrainerSidebarProps = {
     current: TrainerNavSection | null;
@@ -48,6 +49,7 @@ export default function TrainerSidebar({
             )}
         >
             <Link
+                prefetch={hoverPrefetch}
                 href={today()}
                 aria-label="MioPersonal, Home"
                 className="flex rounded-full text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
@@ -65,6 +67,7 @@ export default function TrainerSidebar({
 
                     return (
                         <Link
+                            prefetch={hoverPrefetch}
                             key={item.section}
                             href={item.href}
                             aria-label={
@@ -111,6 +114,7 @@ export default function TrainerSidebar({
                     </a>
                 )}
                 <Link
+                    prefetch={hoverPrefetch}
                     href={profile.href}
                     aria-label={profile.title}
                     title={profile.title}

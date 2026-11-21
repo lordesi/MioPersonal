@@ -34,6 +34,28 @@ locale: 13-62 ms (Clienti trainer la più lenta, 41 query); ricerca con "fascia 
 
 Primo caricamento: circa 195 KB di JavaScript e 33 KB di CSS (compressi); ogni pagina aggiunge 5-25 KB la prima volta.
 
+## Pagine aperte subito (prefetch)
+
+I link di menu, tab bar, header e card scaricano la pagina prima del clic: al passaggio del mouse (`hoverPrefetch`)
+oppure, per le tab bar dei telefoni, appena compaiono (`tabBarPrefetch`). Le regole sono in
+[lib/prefetch.ts](../resources/js/lib/prefetch.ts):
+
+- una pagina scaricata da più di 3 secondi si mostra subito e si aggiorna da sola in background;
+- dopo ogni modifica (un'azione di Inertia, o una delle `fetch()` di chat, notifiche e push) le pagine scaricate si
+  buttano via: nessuna può mostrare dati di prima;
+- una pagina scaricata conta come visita o ricerca solo se viene mostrata (`pendingVisit`,
+  [Stats](../app/Support/Stats.php)).
+
+Quando si aggiunge qualcosa:
+
+- **un link di navigazione** (menu, card): `prefetch={hoverPrefetch}`;
+- **mai su un link che fa un'azione** (Esci, Elimina, `method="post"`…): il prefetch è una GET;
+- **una modifica mandata con `fetch()`** invece che con Inertia: chiamare `forgetKeptPages()` quando riesce;
+- **una pagina che conta visite o ricerche**: passare da `Stats::record…()`, che gestisce già il prefetch.
+
+Misurato in locale (13/13 controlli end-to-end con Chrome): un clic nell'area trainer passa da circa 320 ms a 50-60 ms;
+il profilo di un trainer dalla ricerca si apre in circa 80 ms.
+
 ## Obiettivi della Fase 0
 
 - Cambio sezione dentro un'area: sotto 100 ms e senza la barra di caricamento.

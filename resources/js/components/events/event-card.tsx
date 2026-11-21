@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { dateBlockParts, formatDateMedium, formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { GroupSessionSummary } from '@/types';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 const pill = 'h-5.5 rounded-full px-2 text-xs font-medium';
 
@@ -46,6 +47,7 @@ export default function EventCard({
 
     return (
         <Link
+            prefetch={hoverPrefetch}
             href={href}
             aria-label={[
                 event.title,

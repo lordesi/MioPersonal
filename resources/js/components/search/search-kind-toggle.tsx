@@ -7,6 +7,7 @@ import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
 import { search as eventsSearch } from '@/routes/events';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 /** The four things to explore, always in this order. */
 export type SearchKind = 'trainer' | 'gym' | 'course' | 'event';
@@ -126,6 +127,7 @@ export function SearchKindLinks({
 
                 return (
                     <Link
+                        prefetch={hoverPrefetch}
                         key={kind.value}
                         href={searchKindUrl(kind.value, city)}
                         aria-current={active ? 'page' : undefined}

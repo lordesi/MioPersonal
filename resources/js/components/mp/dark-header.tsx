@@ -5,6 +5,7 @@ import NotificationBell from '@/components/layout/notification-bell';
 import { cn } from '@/lib/utils';
 import { dashboard, home, login } from '@/routes';
 import { register as trainerRegister } from '@/routes/trainer';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 /** The white outline on the photo ("Accedi", "La mia area"). */
 const outlineButton =
@@ -14,6 +15,7 @@ const outlineButton =
 export function DarkLogo({ className }: { className?: string }) {
     return (
         <Link
+            prefetch={hoverPrefetch}
             href={home()}
             aria-label="MioPersonal, torna alla home"
             className={cn(
@@ -56,6 +58,7 @@ export default function DarkHeader({ className }: { className?: string }) {
                     {user ? (
                         <>
                             <Link
+                                prefetch={hoverPrefetch}
                                 href={dashboard()}
                                 className={cn(
                                     outlineButton,
@@ -74,12 +77,14 @@ export default function DarkHeader({ className }: { className?: string }) {
                     ) : (
                         <>
                             <Link
+                                prefetch={hoverPrefetch}
                                 href={trainerRegister()}
                                 className="hidden min-h-11 items-center text-[15px] font-semibold text-foreground hover:text-brand md:flex"
                             >
                                 Sei un trainer?
                             </Link>
                             <Link
+                                prefetch={hoverPrefetch}
                                 href={login()}
                                 className={cn(
                                     outlineButton,

@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { searchUrl } from '@/lib/search';
 import type { CatalogOption } from '@/types';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 /** One stroke icon per discipline of the catalog (DisciplineSeeder), as in the design. */
 const icons: Record<string, string> = {
@@ -53,6 +54,7 @@ export default function DisciplinesGrid({
                 {disciplines.map((discipline) => (
                     <li key={discipline.value} className="flex">
                         <Link
+                            prefetch={hoverPrefetch}
                             href={searchUrl({ disciplina: [discipline.value] })}
                             aria-label={
                                 shortLabels[discipline.value]

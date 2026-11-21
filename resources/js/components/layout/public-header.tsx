@@ -34,6 +34,7 @@ import { dashboard, howItWorks, login, register } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
 import { register as gymRegister } from '@/routes/gym';
 import { register as trainerRegister } from '@/routes/trainer';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 /** Light outline on the dark background, the "Sei un trainer?" look. */
 const heroButton =
@@ -107,6 +108,7 @@ export default function PublicHeader({ className }: { className?: string }) {
                 >
                     {searchKinds.map((kind) => (
                         <Link
+                            prefetch={hoverPrefetch}
                             key={kind.value}
                             href={searchKindUrl(kind.value)}
                             aria-current={
@@ -127,6 +129,7 @@ export default function PublicHeader({ className }: { className?: string }) {
                         <>
                             {/* The client has the tabs at the bottom on phones. */}
                             <Link
+                                prefetch={hoverPrefetch}
                                 href={dashboard()}
                                 className={cn(
                                     heroButton,
@@ -147,6 +150,7 @@ export default function PublicHeader({ className }: { className?: string }) {
                         <>
                             <ProMenu />
                             <Link
+                                prefetch={hoverPrefetch}
                                 href={login()}
                                 className={cn(
                                     heroButton,
@@ -188,7 +192,7 @@ function ProMenu() {
                         asChild
                         className="cursor-pointer gap-2.5 rounded-lg px-2.5 py-2"
                     >
-                        <Link href={link.href}>
+                        <Link prefetch={hoverPrefetch} href={link.href}>
                             <link.icon aria-hidden="true" className="size-4" />
                             <span className="flex flex-col">
                                 <span className="text-sm font-medium">
@@ -235,6 +239,7 @@ function GuestMenu({ active }: { active: SearchKind | null }) {
                     </span>
                     {searchKinds.map((kind) => (
                         <Link
+                            prefetch={hoverPrefetch}
                             key={kind.value}
                             href={searchKindUrl(kind.value)}
                             onClick={close}
@@ -256,6 +261,7 @@ function GuestMenu({ active }: { active: SearchKind | null }) {
                     </span>
                     {proLinks.map((link) => (
                         <Link
+                            prefetch={hoverPrefetch}
                             key={link.title}
                             href={link.href}
                             onClick={close}
@@ -266,6 +272,7 @@ function GuestMenu({ active }: { active: SearchKind | null }) {
                         </Link>
                     ))}
                     <Link
+                        prefetch={hoverPrefetch}
                         href={contactPage.url()}
                         onClick={close}
                         className={sheetRow}

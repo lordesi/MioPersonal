@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import UserAvatar from '@/components/shared/user-avatar';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 type TrainerRowProps = {
     name: string;
@@ -27,6 +28,7 @@ export default function TrainerRow({
             />
             <span className="flex min-w-0 flex-1 flex-col">
                 <Link
+                    prefetch={hoverPrefetch}
                     href={href}
                     className="text-base font-semibold hover:underline"
                 >

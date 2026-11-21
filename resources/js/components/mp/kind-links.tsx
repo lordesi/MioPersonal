@@ -5,6 +5,7 @@ import {
 } from '@/components/search/search-kind-toggle';
 import type { SearchKind } from '@/components/search/search-kind-toggle';
 import { cn } from '@/lib/utils';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 type KindLinksProps = {
     current: SearchKind;
@@ -43,6 +44,7 @@ export default function KindLinks({
 
                 return (
                     <Link
+                        prefetch={hoverPrefetch}
                         key={kind.value}
                         href={searchKindUrl(kind.value, city)}
                         aria-current={active ? 'page' : undefined}

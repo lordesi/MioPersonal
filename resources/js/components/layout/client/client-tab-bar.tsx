@@ -7,6 +7,7 @@ import {
 } from '@/components/layout/client-nav';
 import { glassClassName } from '@/components/trainer/ui/styles';
 import { cn } from '@/lib/utils';
+import { tabBarPrefetch } from '@/lib/prefetch';
 
 type ClientTabBarProps = {
     current: ClientNavSection | null;
@@ -46,6 +47,8 @@ export default function ClientTabBar({
 
                     return (
                         <Link
+                            prefetch={tabBarPrefetch}
+                            data-prefetch="mount"
                             key={item.section}
                             href={item.href}
                             aria-label={

@@ -16,6 +16,7 @@ import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { cn } from '@/lib/utils';
 import { logout } from '@/routes';
 import type { TrainerAreaData } from '@/types';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 type ProfileListProps = {
     /** The page open on the right (desktop): its row is marked. */
@@ -50,6 +51,7 @@ export default function ProfileList({
     return (
         <div className={cn('flex flex-col', large ? 'gap-5.5' : 'gap-4.5')}>
             <Link
+                prefetch={hoverPrefetch}
                 href={editProfileHref()}
                 aria-current={editActive ? 'page' : undefined}
                 className={cn(
@@ -282,6 +284,7 @@ function Row({
 
     return (
         <Link
+            prefetch={hoverPrefetch}
             href={link.href}
             aria-current={active ? 'page' : undefined}
             className={className}

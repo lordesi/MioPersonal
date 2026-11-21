@@ -142,9 +142,18 @@ class AppServiceProvider extends ServiceProvider
         // Every page of the web group: a ceiling far above what a person does,
         // so one address can't flood the server. Signed-in people by account
         // (many share a gym's wifi), the others by IP.
-        RateLimiter::for('global', fn (Request $request) => $request->user()
-            ? Limit::perMinute(300)->by('user|'.$request->user()->getAuthIdentifier())
-            : Limit::perMinute(120)->by('ip|'.$request->ip()));
+        // The prefetch of Inertia (the pointer on links, the tab bar of the areas)
+        // has its own count: people sharing a wifi, moving over a list of
+        // results, must not run out of the pages they really open.
+        RateLimiter::for('global', function (Request $request) {
+            $key = $request->user() ? 'user|'.$request->user()->getAuthIdentifier() : 'ip|'.$request->ip();
+
+            if ($request->header('Purpose') === 'prefetch') {
+                return Limit::perMinute($request->user() ? 600 : 300)->by('prefetch|'.$key);
+            }
+
+            return Limit::perMinute($request->user() ? 300 : 120)->by($key);
+        });
 
         // App\Http\Middleware\ThrottleSignups: new accounts (each gets "Conferma la tua email")…
         RateLimiter::for('signups', fn (Request $request) => Limit::perHour(10)->by($request->ip()));

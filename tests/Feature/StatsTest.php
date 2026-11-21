@@ -80,6 +80,71 @@ class StatsTest extends TestCase
         $this->assertSame(9, (int) $log->results);
     }
 
+    public function test_a_prefetched_search_counts_only_once_it_is_shown()
+    {
+        $prefetch = $this->withHeaders(['Purpose' => 'prefetch'])
+            ->get(route('trainers.search', ['milano', 'disciplina' => 'pilates']));
+
+        // Hovering a link is not a search…
+        $this->assertSame(0, DB::table('search_logs')->count());
+        $token = $prefetch->viewData('page')['props']['pendingVisit'];
+        $this->assertIsString($token);
+
+        // …the page shown from the cache is, once.
+        $this->withHeaders(['Purpose' => ''])->post(route('stats.pending-visit'), ['token' => $token])->assertNoContent();
+        $this->post(route('stats.pending-visit'), ['token' => $token])->assertNoContent();
+
+        $log = DB::table('search_logs')->sole();
+        $this->assertSame(['pilates'], json_decode($log->disciplines, true));
+        // The results of the prefetch: the pilates trainers of Milano.
+        $this->assertSame(3, (int) $log->results);
+        $this->assertSame('guest', $log->role);
+    }
+
+    public function test_a_prefetched_profile_counts_once_it_is_shown()
+    {
+        $profile = TrainerProfile::query()->published()->firstOrFail();
+
+        $token = $this->withHeaders(['Purpose' => 'prefetch'])
+            ->get(route('trainers.show', $profile->slug))
+            ->viewData('page')['props']['pendingVisit'];
+
+        $this->assertSame(0, DB::table('trainer_profile_views')->count());
+
+        $this->withHeaders(['Purpose' => ''])->post(route('stats.pending-visit'), ['token' => $token]);
+
+        $this->assertSame(1, (int) DB::table('trainer_profile_views')->where('trainer_profile_id', $profile->id)->value('views'));
+    }
+
+    public function test_pages_opened_normally_carry_no_token()
+    {
+        $this->assertArrayNotHasKey('pendingVisit', $this->get(route('trainers.search'))->viewData('page')['props']);
+    }
+
+    public function test_a_token_of_another_visitor_an_old_one_or_a_fake_one_is_not_counted()
+    {
+        $token = fn () => $this->withHeaders(['Purpose' => 'prefetch'])
+            ->get(route('trainers.search'))
+            ->viewData('page')['props']['pendingVisit'];
+
+        // Made for a guest, sent by a signed-in client.
+        $guestToken = $token();
+        $this->actingAs(User::factory()->create())->withHeaders(['Purpose' => ''])
+            ->post(route('stats.pending-visit'), ['token' => $guestToken]);
+        $this->app['auth']->forgetGuards();
+
+        // Shown too late.
+        $this->flushHeaders();
+        $this->withHeader('User-Agent', self::BROWSER);
+        $oldToken = $token();
+        $this->travel(16)->minutes();
+        $this->withHeaders(['Purpose' => ''])->post(route('stats.pending-visit'), ['token' => $oldToken]);
+
+        $this->post(route('stats.pending-visit'), ['token' => 'not-a-token'])->assertNoContent();
+
+        $this->assertSame(0, DB::table('search_logs')->count());
+    }
+
     public function test_pages_keep_only_the_channel_of_the_visit_in_the_session()
     {
         $this->withHeader('Referer', 'https://www.google.it/')->get(route('home'))

@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 type HomeShelfProps<T> = {
     /** Unique in the page. */
@@ -42,6 +43,7 @@ export default function HomeShelf<T>({
                     {title}
                 </h2>
                 <Link
+                    prefetch={hoverPrefetch}
                     href={link.href}
                     className="flex min-h-11 shrink-0 items-center text-[15px] font-semibold whitespace-nowrap text-brand"
                 >

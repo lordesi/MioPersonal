@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Models\Conversation;
 use App\Models\CookieConsent;
 use App\Models\User;
+use App\Support\Stats;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Sentry\State\Scope;
@@ -112,6 +113,8 @@ class HandleInertiaRequests extends Middleware
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             // null shows the cookie banner.
             'cookieConsent' => CookieConsent::current($request),
+            // Prefetched pages only: the views and searches to count if the page is shown (lib/prefetch.ts).
+            ...($request->header('Purpose') === 'prefetch' ? ['pendingVisit' => fn () => Stats::pendingToken($request)] : []),
         ];
     }
 
