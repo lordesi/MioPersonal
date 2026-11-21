@@ -1,3 +1,16 @@
+/** The first error of a field or of its children ("hours.2.0.opens"). */
+export function errorOf(
+    errors: Partial<Record<string, string>>,
+    field: string,
+): string | undefined {
+    return (
+        errors[field] ??
+        Object.entries(errors).find(([name]) =>
+            name.startsWith(`${field}.`),
+        )?.[1]
+    );
+}
+
 export type FormControl =
     | HTMLInputElement
     | HTMLTextAreaElement

@@ -5,11 +5,11 @@ import type { GymDraft } from '@/components/onboarding/gym/draft';
 import { MAX_REGISTRATION_PHOTOS } from '@/components/onboarding/gym/draft';
 import {
     DarkError,
-    errorOf,
     Optional,
     Section,
 } from '@/components/onboarding/dark-fields';
 import { cn } from '@/lib/utils';
+import { errorOf } from '@/lib/validation-message';
 
 type StepPhotosProps = {
     draft: GymDraft;

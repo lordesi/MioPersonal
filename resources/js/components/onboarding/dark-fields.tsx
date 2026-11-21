@@ -119,19 +119,6 @@ export function DarkError({ id, message }: { id?: string; message?: string }) {
     );
 }
 
-/** The first error of a field or of its children ("hours.2.0.opens"). */
-export function errorOf(
-    errors: Partial<Record<string, string>>,
-    field: string,
-): string | undefined {
-    return (
-        errors[field] ??
-        Object.entries(errors).find(([name]) =>
-            name.startsWith(`${field}.`),
-        )?.[1]
-    );
-}
-
 /** An hour (every half hour unless `options` says otherwise): a native select, round, with an arrow. */
 export function TimeSelect({
     value,
