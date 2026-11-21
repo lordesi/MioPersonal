@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Vite;
 use Tests\TestCase;
 
 class SecurityHeadersTest extends TestCase
@@ -20,6 +21,30 @@ class SecurityHeadersTest extends TestCase
             ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
             ->assertHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self), payment=(), usb=()')
             ->assertHeaderMissing('Strict-Transport-Security');
+    }
+
+    public function test_html_pages_report_the_full_content_security_policy()
+    {
+        $response = $this->get(route('home'))->assertOk();
+        $policy = (string) $response->headers->get('Content-Security-Policy-Report-Only');
+
+        // The nonce of this request, the one Vite puts on its script tags.
+        $this->assertStringContainsString("script-src 'self' 'nonce-".Vite::cspNonce()."'", $policy);
+        $this->assertStringContainsString("default-src 'self'", $policy);
+        $this->assertStringContainsString("object-src 'none'", $policy);
+        $this->assertStringContainsString('report-uri /csp-report', $policy);
+        // What blocks today stays the same.
+        $response->assertHeader('Content-Security-Policy', "frame-ancestors 'none'");
+
+        // A new nonce on every request.
+        $next = (string) $this->get(route('home'))->headers->get('Content-Security-Policy-Report-Only');
+        $this->assertNotSame($policy, $next);
+    }
+
+    public function test_responses_that_are_not_html_have_no_policy_to_report()
+    {
+        $this->get(route('home'), ['X-Inertia' => 'true', 'X-Requested-With' => 'XMLHttpRequest'])
+            ->assertHeaderMissing('Content-Security-Policy-Report-Only');
     }
 
     public function test_pages_of_logged_in_users_are_never_cached()
