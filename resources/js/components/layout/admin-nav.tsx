@@ -33,6 +33,7 @@ import {
     gymVerification,
 } from '@/routes/admin';
 import type { AdminAreaData } from '@/types';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 export type AdminSection =
     | 'overview'
@@ -152,6 +153,7 @@ function NavLinks({
 
                 return (
                     <Link
+                        prefetch={hoverPrefetch}
                         key={item.section}
                         href={item.href()}
                         aria-current={isActive ? 'page' : undefined}
@@ -216,7 +218,11 @@ export function AdminSidebar({ current, area, userName }: AdminSidebarProps) {
                         </span>
                     </span>
                 </div>
-                <Link href={home()} className="text-[13px] underline">
+                <Link
+                    prefetch={hoverPrefetch}
+                    href={home()}
+                    className="text-[13px] underline"
+                >
                     Vai al sito pubblico
                 </Link>
             </div>

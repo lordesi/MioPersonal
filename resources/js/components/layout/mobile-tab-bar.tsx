@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/types';
+import { tabBarPrefetch } from '@/lib/prefetch';
 
 export type TabItem = NavItem & {
     /** Small counter on the icon, e.g. bookings waiting for an answer. */
@@ -62,6 +63,8 @@ export default function MobileTabBar({
         >
             {items.map((item) => (
                 <Link
+                    prefetch={tabBarPrefetch}
+                    data-prefetch="mount"
                     key={item.title}
                     href={item.href}
                     aria-current={item.isActive ? 'page' : undefined}

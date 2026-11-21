@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { register as gymRegister } from '@/routes/gym';
 import { register as trainerRegister } from '@/routes/trainer';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 const cards = [
     {
@@ -59,6 +60,7 @@ export default function ProCards() {
                                 {card.text}
                             </p>
                             <Link
+                                prefetch={hoverPrefetch}
                                 href={card.href}
                                 className="inline-flex h-11 items-center rounded-full bg-brand px-5 text-[15px] font-semibold text-primary-foreground outline-none hover:brightness-105 focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             >

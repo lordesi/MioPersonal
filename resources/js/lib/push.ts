@@ -1,5 +1,6 @@
 import PushSubscriptionController from '@/actions/App/Http/Controllers/PushSubscriptionController';
 import { isIos, isStandalone } from '@/lib/pwa';
+import { forgetKeptPages } from '@/lib/prefetch';
 
 /**
  * "Attiva le notifiche" on this device. The browser asks for permission only
@@ -112,6 +113,9 @@ async function send(
     if (!response.ok) {
         throw new Error(`push ${response.status}`);
     }
+
+    // The settings kept show the notifications of this device as before.
+    forgetKeptPages();
 }
 
 function save(subscription: PushSubscription): Promise<void> {

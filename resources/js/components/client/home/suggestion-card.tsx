@@ -6,6 +6,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { formatPrice, formatRating } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { GymSummary, TrainerSummary } from '@/types';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 type SuggestionCardProps =
     | { kind: 'trainer'; trainer: TrainerSummary; className?: string }
@@ -105,6 +106,7 @@ export default function SuggestionCard(props: SuggestionCardProps) {
                 <div className="flex items-start gap-2">
                     <h3 className="min-w-0 flex-1 text-base leading-5 font-semibold tracking-[-0.31px]">
                         <Link
+                            prefetch={hoverPrefetch}
                             href={data.href}
                             aria-label={data.ariaLabel}
                             className="block truncate outline-none after:absolute after:inset-0 after:rounded-[29px] focus-visible:after:outline-2 focus-visible:after:-outline-offset-3 focus-visible:after:outline-ring"

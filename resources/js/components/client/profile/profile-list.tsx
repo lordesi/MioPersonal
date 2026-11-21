@@ -23,6 +23,7 @@ import { settings } from '@/routes/account';
 import { bookings, favorites } from '@/routes/client';
 import { edit as editProfile } from '@/routes/client/profile';
 import { show as contactPage } from '@/routes/contact';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 type ProfileListProps = {
     /** Phones: big rows like the iOS settings; desktop: the compact column. */
@@ -120,6 +121,7 @@ export default function ClientProfileList({
     return (
         <div className={cn('flex flex-col', large ? 'gap-6' : 'gap-4.5')}>
             <Link
+                prefetch={hoverPrefetch}
                 href={editProfile()}
                 className={cn(
                     'flex items-center text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
@@ -323,7 +325,7 @@ function ProfileRow({
             {content}
         </a>
     ) : (
-        <Link href={row.href} className={className}>
+        <Link prefetch={hoverPrefetch} href={row.href} className={className}>
             {content}
         </Link>
     );

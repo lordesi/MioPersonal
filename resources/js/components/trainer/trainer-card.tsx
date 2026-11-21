@@ -7,6 +7,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { formatPrice } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { TrainerSummary } from '@/types';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 /*
  * Classes for each layout, written out in full so Tailwind can find them.
@@ -120,6 +121,7 @@ export default function TrainerCard({
     return (
         <div className={cn('relative', styles.root, className)}>
             <Link
+                prefetch={hoverPrefetch}
                 href={trainer.href}
                 aria-label={`${trainer.name}, ${trainer.city}, ${online}da ${price} a seduta`}
                 className={cn(

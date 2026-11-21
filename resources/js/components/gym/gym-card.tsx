@@ -6,6 +6,7 @@ import { useFavorite } from '@/hooks/use-favorite';
 import { monthlyLabel } from '@/lib/gym';
 import { cn } from '@/lib/utils';
 import type { GymSummary } from '@/types';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 const pill = 'h-5.5 rounded-full px-2 text-xs font-medium';
 
@@ -86,6 +87,7 @@ export default function GymCard({
             )}
         >
             <Link
+                prefetch={hoverPrefetch}
                 href={gym.href}
                 aria-label={[
                     gym.name,

@@ -1,4 +1,5 @@
 import { xsrfToken } from '@/lib/notifications';
+import { forgetKeptPages } from '@/lib/prefetch';
 import { older, poll, store, typing } from '@/routes/messages';
 import type { ChatMessage } from '@/types';
 
@@ -120,6 +121,8 @@ export async function sendMessage(
         body: form,
     });
     const data = await json<{ message: ChatMessage }>(response);
+    // The kept pages show the chats as before this message.
+    forgetKeptPages();
 
     return data.message;
 }

@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import { BuildingIcon, DumbbellIcon } from '@/components/mp/icons';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 export type CardStat = {
     value: ReactNode;
@@ -128,6 +129,7 @@ export default function ProfileCard({
                 <div className="grid gap-0.5">
                     <h3 className="flex min-w-0 text-[22px] leading-7 font-bold tracking-[-0.26px]">
                         <Link
+                            prefetch={hoverPrefetch}
                             href={href}
                             aria-label={ariaLabel}
                             className="card-link min-w-0 truncate outline-none after:absolute after:inset-0 after:rounded-[38px] focus-visible:after:outline-2 focus-visible:after:-outline-offset-3 focus-visible:after:outline-ring"

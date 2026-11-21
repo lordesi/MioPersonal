@@ -57,6 +57,25 @@ class FloodProtectionTest extends TestCase
             ->assertOk();
     }
 
+    public function test_prefetch_has_its_own_ceiling_and_leaves_the_pages_alone()
+    {
+        $prefetch = fn () => $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.9'])
+            ->withHeader('Purpose', 'prefetch')
+            ->get('_flood-probe');
+
+        for ($i = 0; $i < 300; $i++) {
+            $prefetch()->assertOk();
+        }
+
+        $prefetch()->assertStatus(429);
+
+        // The pages really opened still have all their allowance.
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.9'])
+            ->withHeader('Purpose', '')
+            ->get('_flood-probe')
+            ->assertOk();
+    }
+
     public function test_signed_in_people_are_limited_by_account_not_by_ip()
     {
         $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.9']);

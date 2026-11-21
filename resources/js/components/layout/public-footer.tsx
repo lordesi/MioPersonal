@@ -19,6 +19,7 @@ import {
     register as trainerRegister,
     today as trainerToday,
 } from '@/routes/trainer';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 const exploreLinks = [
     { title: 'Personal trainer', href: searchUrl() },
@@ -117,6 +118,7 @@ function LinkList({
             </h3>
             {links.map((link) => (
                 <Link
+                    prefetch={hoverPrefetch}
                     key={link.title}
                     href={link.href}
                     aria-current={

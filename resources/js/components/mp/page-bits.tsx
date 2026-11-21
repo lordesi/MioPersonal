@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { home } from '@/routes';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 /*
  * The pieces of the dark pages of text ("Come funziona", "Contatti", the
@@ -50,6 +51,7 @@ export function PageBreadcrumb({ current }: { current: string }) {
             className="flex min-h-11 items-center gap-1.5 text-[13px] text-muted-foreground"
         >
             <Link
+                prefetch={hoverPrefetch}
                 href={home()}
                 className="flex min-h-11 items-center outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
@@ -98,6 +100,7 @@ export function LinkCard({
 }) {
     return (
         <Link
+            prefetch={hoverPrefetch}
             href={href}
             className={cn(
                 darkCardClassName,

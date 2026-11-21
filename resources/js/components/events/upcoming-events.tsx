@@ -4,6 +4,7 @@ import { EventGrid } from '@/components/events/event-card';
 import { cn } from '@/lib/utils';
 import { search } from '@/routes/events';
 import type { GroupSessionSummary } from '@/types';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 /**
  * "Prossimi eventi" on the profile of a trainer or a gym, and in the client
@@ -45,6 +46,7 @@ export default function UpcomingEvents({
                 </h2>
                 {showAll && (
                     <Link
+                        prefetch={hoverPrefetch}
                         href={allHref}
                         className="inline-flex min-h-11 items-center gap-1 text-sm font-medium md:min-h-0"
                     >

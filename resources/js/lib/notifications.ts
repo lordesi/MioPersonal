@@ -1,3 +1,5 @@
+import { forgetKeptPages } from '@/lib/prefetch';
+
 /** The bell of the site (NotificationController): the latest notifications of the logged-in person. */
 export type AppNotification = {
     id: string;
@@ -53,6 +55,9 @@ export async function markAllNotificationsRead(): Promise<void> {
     if (!response.ok) {
         throw new Error(`notifications ${response.status}`);
     }
+
+    // The kept pages still have the number on the bell.
+    forgetKeptPages();
 }
 
 /** "Cancella le notifiche precedenti": these ones (NotificationController::destroy). */
@@ -71,6 +76,8 @@ export async function deleteNotifications(ids: string[]): Promise<void> {
     if (!response.ok) {
         throw new Error(`notifications ${response.status}`);
     }
+
+    forgetKeptPages();
 }
 
 const relativeTime = new Intl.RelativeTimeFormat('it', { numeric: 'auto' });

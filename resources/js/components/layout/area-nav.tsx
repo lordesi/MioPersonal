@@ -21,6 +21,7 @@ import {
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { cn } from '@/lib/utils';
 import { logout } from '@/routes';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 /**
  * The navigation of the reserved areas (client, trainer, gym), drawn from one
@@ -99,6 +100,7 @@ export function AreaSidebar({
             <div className="flex items-start justify-between gap-2 px-2">
                 <div className="flex flex-col gap-2.5">
                     <Link
+                        prefetch={hoverPrefetch}
                         href={homeHref}
                         aria-label={`MioPersonal, ${areaLabel?.toLowerCase() ?? 'vai alla home'}`}
                         className="flex items-center gap-2.5 text-sidebar-primary"
@@ -130,6 +132,7 @@ export function AreaSidebar({
                         )}
                         {group.items.map((item) => (
                             <Link
+                                prefetch={hoverPrefetch}
                                 key={item.section}
                                 href={item.href}
                                 aria-current={
@@ -168,6 +171,7 @@ export function AreaSidebar({
             <div className="mt-auto flex flex-col gap-3">
                 {publicProfileHref && (
                     <Link
+                        prefetch={hoverPrefetch}
                         href={publicProfileHref}
                         className="flex min-h-11 items-center gap-2.5 rounded-[10px] border border-sidebar-border px-3 text-sm font-medium text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                     >
@@ -307,6 +311,7 @@ function MoreSheet({
                             )}
                             {group.items.map((item) => (
                                 <Link
+                                    prefetch={hoverPrefetch}
                                     key={item.section}
                                     href={item.href}
                                     onClick={close}
@@ -346,6 +351,7 @@ function MoreSheet({
                     />
                     {links.map((link) => (
                         <Link
+                            prefetch={hoverPrefetch}
                             key={link.title}
                             href={link.href}
                             onClick={close}

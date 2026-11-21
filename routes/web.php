@@ -61,6 +61,7 @@ use App\Http\Controllers\MessagesController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrganizerEventsController;
+use App\Http\Controllers\PendingVisitController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RobotsController;
@@ -141,6 +142,10 @@ Route::inertia('termini', 'public/terms', [
 Route::inertia('cookie', 'public/cookies', [
     'seo' => Seo::page('Cookie policy', 'Quali cookie usa MioPersonal, a cosa servono e come cambiare in qualsiasi momento le tue preferenze.'),
 ])->name('legal.cookies');
+// A prefetched page was shown: its views and searches count now (App\Support\Stats::record()).
+Route::post('statistiche/visita', PendingVisitController::class)
+    ->middleware('throttle:60,1')
+    ->name('stats.pending-visit');
 // The choice of the cookie banner and of "Impostazioni cookie", also for guests.
 Route::post('cookie/consenso', [CookieConsentController::class, 'store'])
     ->middleware('throttle:20,1')

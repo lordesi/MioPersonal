@@ -5,6 +5,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { formatPrice, formatRating } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { TrainerSummary } from '@/types';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 type FavoriteTrainerCardProps = {
     trainer: TrainerSummary;
@@ -50,6 +51,7 @@ export default function FavoriteTrainerCard({
             ) : (
                 <>
                     <Link
+                        prefetch={hoverPrefetch}
                         href={trainer.href}
                         className="flex flex-col text-foreground"
                     >
@@ -90,7 +92,9 @@ export default function FavoriteTrainerCard({
                     </Link>
                     <div className="flex px-4 pb-4">
                         <Button asChild className="h-10 flex-1 font-semibold">
-                            <Link href={trainer.href}>Prenota</Link>
+                            <Link prefetch={hoverPrefetch} href={trainer.href}>
+                                Prenota
+                            </Link>
                         </Button>
                     </div>
                     <FavoriteButton

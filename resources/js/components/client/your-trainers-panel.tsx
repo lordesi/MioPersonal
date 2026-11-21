@@ -6,6 +6,7 @@ import Panel from '@/components/trainer/area/panel';
 import { saveFavorite } from '@/hooks/use-favorite';
 import { cn } from '@/lib/utils';
 import type { ClientTrainer } from '@/types';
+import { hoverPrefetch } from '@/lib/prefetch';
 
 type YourTrainersPanelProps = {
     trainers: ClientTrainer[];
@@ -28,6 +29,7 @@ export default function YourTrainersPanel({
             className="gap-1.5 rounded-3xl"
             action={
                 <Link
+                    prefetch={hoverPrefetch}
                     href={searchHref}
                     className="text-[13px] leading-4.5 font-semibold hover:underline"
                 >
@@ -81,6 +83,7 @@ function TrainerItem({
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="flex items-center gap-1.5">
                     <Link
+                        prefetch={hoverPrefetch}
                         href={trainer.href}
                         className="truncate text-[15px] leading-5.5 font-semibold hover:underline"
                     >
@@ -118,6 +121,7 @@ function TrainerItem({
             )}
             {trainer.messageHref && (
                 <Link
+                    prefetch={hoverPrefetch}
                     href={trainer.messageHref}
                     aria-label={`Scrivi a ${trainer.name}`}
                     className="flex size-9 flex-none items-center justify-center rounded-full hover:bg-accent"
@@ -126,6 +130,7 @@ function TrainerItem({
                 </Link>
             )}
             <Link
+                prefetch={hoverPrefetch}
                 href={trainer.href}
                 aria-label={`Prenota con ${trainer.name}`}
                 className="inline-flex h-9 flex-none items-center rounded-[10px] border border-input bg-card px-3 text-[13px] font-semibold hover:bg-accent"
