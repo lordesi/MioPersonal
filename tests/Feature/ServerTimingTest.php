@@ -10,7 +10,7 @@ class ServerTimingTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const HEADER = '/^app;dur=\d+\.\d;desc="PHP", db;dur=\d+\.\d;desc="(\d+) query"$/';
+    private const HEADER = '/^app;dur=\d+\.\d;desc="PHP", db;dur=\d+\.\d;desc="(\d+) query", db1;dur=\d+\.\d;desc="prima query \(apre la connessione\)"$/';
 
     public function test_pages_tell_how_long_the_server_took()
     {
