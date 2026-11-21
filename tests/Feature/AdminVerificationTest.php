@@ -137,6 +137,23 @@ class AdminVerificationTest extends TestCase
         $this->assertSame(TrainerProfileStatus::Approved, $profile->refresh()->status);
     }
 
+    public function test_two_admins_approving_at_the_same_time_make_one_decision()
+    {
+        $profile = $this->profileWithCertificate();
+
+        // Both opened the page while the profile was waiting.
+        $this->actingAs(User::factory()->admin()->create())
+            ->post(route('admin.verification.decide', $profile), ['decision' => 'approved'])
+            ->assertSessionHasNoErrors();
+        $this->actingAs(User::factory()->admin()->create())
+            ->post(route('admin.verification.decide', $profile), ['decision' => 'changes', 'reasons' => ['Foto']])
+            ->assertSessionHasErrors('decision');
+
+        $this->assertSame(TrainerProfileStatus::Approved, $profile->refresh()->status);
+        $this->assertSame(1, $profile->decisions()->count());
+        Notification::assertSentToTimes($profile->user, TrainerProfileDecided::class, 1);
+    }
+
     public function test_only_admins_decide_and_open_certificates_with_a_signed_link()
     {
         $profile = $this->profileWithCertificate();
