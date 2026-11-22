@@ -6,6 +6,7 @@ import { courseSearchUrl } from '@/lib/course';
 import { useFeatures, withFeatures } from '@/lib/features';
 import type { FeatureName } from '@/lib/features';
 import { gymSearchUrl } from '@/lib/gym';
+import { openProblemReport } from '@/lib/problem-report';
 import { openAppPrompt, useInstallMethod } from '@/lib/pwa';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
@@ -211,6 +212,15 @@ export default function PublicFooter({
                             >
                                 Impostazioni cookie
                             </button>
+                            {role && (
+                                <button
+                                    type="button"
+                                    onClick={openProblemReport}
+                                    className={linkClassName(variant)}
+                                >
+                                    Segnala un problema
+                                </button>
+                            )}
                             {canInstall && (
                                 <button
                                     type="button"

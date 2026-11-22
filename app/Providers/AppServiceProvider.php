@@ -178,6 +178,11 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('signups', fn (Request $request) => Limit::perHour(10)->by($request->ip()));
         // …and "Reimposta la password" links (the broker alone limits only per address).
         RateLimiter::for('password-reset-links', fn (Request $request) => Limit::perHour(5)->by($request->ip()));
+        // "Segnala un problema": a tester with a bad day sends a few, not dozens.
+        RateLimiter::for('problem-reports', fn (Request $request) => [
+            Limit::perHour(10)->by('hour|'.$request->user()?->getAuthIdentifier()),
+            Limit::perDay(30)->by('day|'.$request->user()?->getAuthIdentifier()),
+        ]);
         // Content-Security-Policy reports (CspReportController): a page with a violation sends one per load.
         RateLimiter::for('csp-reports', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
     }

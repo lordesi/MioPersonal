@@ -10,6 +10,7 @@ import {
     Dumbbell,
     LayoutDashboard,
     LogOut,
+    MessageSquareWarning,
     Settings,
     User,
 } from 'lucide-react';
@@ -32,6 +33,7 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
+import { openProblemReport } from '@/lib/problem-report';
 import { openAppPrompt, useInstallMethod } from '@/lib/pwa';
 import { cn } from '@/lib/utils';
 import { home, logout } from '@/routes';
@@ -111,6 +113,11 @@ function menuGroups(
         href: contactPage.url(),
         icon: CircleHelp,
     };
+    const problem: MenuItem = {
+        title: 'Segnala un problema',
+        action: openProblemReport,
+        icon: MessageSquareWarning,
+    };
     const explore: MenuItem = {
         title: 'Esplora il sito',
         href: home.url(),
@@ -137,7 +144,7 @@ function menuGroups(
                 },
             ],
             app,
-            [explore, help],
+            [explore, help, problem],
         ];
     }
 
@@ -161,7 +168,7 @@ function menuGroups(
                 },
             ],
             app,
-            [explore, help],
+            [explore, help, problem],
         ];
     }
 
@@ -191,6 +198,7 @@ function menuGroups(
         app,
         [
             help,
+            problem,
             {
                 title: 'Diventa un trainer',
                 href: trainerRegister.url(),

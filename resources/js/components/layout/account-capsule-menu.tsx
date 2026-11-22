@@ -7,12 +7,14 @@ import {
     ExternalLink,
     LayoutDashboard,
     LogOut,
+    MessageSquareWarning,
     User,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Fragment } from 'react';
 import { Initials } from '@/components/trainer/ui/bits';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
+import { openProblemReport } from '@/lib/problem-report';
 import { openAppPrompt, useInstallMethod } from '@/lib/pwa';
 import { cn } from '@/lib/utils';
 import { logout } from '@/routes';
@@ -112,6 +114,11 @@ function menuGroups(
                 title: 'Centro assistenza',
                 icon: CircleHelp,
                 href: contactPage.url(),
+            },
+            {
+                title: 'Segnala un problema',
+                icon: MessageSquareWarning,
+                action: openProblemReport,
             },
         ],
     ];

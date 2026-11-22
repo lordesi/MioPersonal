@@ -307,10 +307,11 @@ export default function AboutFields({
                             Voglio indicare altezza e peso
                         </span>
                         <span className="text-[13px] font-normal text-muted-foreground">
-                            Acconsento a che MioPersonal li conservi e li mostri
-                            solo ai trainer a cui chiedo una seduta. Posso
-                            toglierli quando voglio: togliendo la spunta li
-                            cancelliamo.
+                            Acconsento a che MioPersonal li conservi, insieme al
+                            peso che segno nel tempo nella Panoramica, e li
+                            mostri solo ai trainer a cui chiedo una seduta.
+                            Posso toglierli quando voglio: togliendo la spunta
+                            li cancelliamo.
                         </span>
                     </Label>
                 </div>

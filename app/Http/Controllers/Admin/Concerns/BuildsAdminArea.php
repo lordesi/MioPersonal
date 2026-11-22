@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Concerns;
 use App\Enums\TrainerProfileStatus;
 use App\Models\ContactMessage;
 use App\Models\GymProfile;
+use App\Models\ProblemReport;
 use App\Models\Report;
 use App\Models\TrainerProfile;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +19,7 @@ trait BuildsAdminArea
      * The badges of the admin menu, sent by every admin page. "Segnalazioni":
      * the contents reported and not checked yet (one per content).
      *
-     * @return array{verificationCount: int, gymVerificationCount: int, unreadMessages: int, openReports: int}
+     * @return array{verificationCount: int, gymVerificationCount: int, unreadMessages: int, openProblems: int, openReports: int}
      */
     private function adminArea(): array
     {
@@ -26,6 +27,8 @@ trait BuildsAdminArea
             'verificationCount' => TrainerProfile::where('status', TrainerProfileStatus::Review)->count(),
             'gymVerificationCount' => GymProfile::where('status', TrainerProfileStatus::Review)->count(),
             'unreadMessages' => ContactMessage::unread()->count(),
+            // "Problemi segnalati" not solved yet.
+            'openProblems' => ProblemReport::open()->count(),
             'openReports' => DB::query()
                 ->fromSub(Report::open()->select(['reportable_type', 'reportable_id'])->distinct(), 'reported')
                 ->count(),

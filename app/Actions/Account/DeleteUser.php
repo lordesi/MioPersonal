@@ -7,6 +7,7 @@ use App\Actions\Trainer\DeleteTrainerProfile;
 use App\Enums\BookingActor;
 use App\Models\Booking;
 use App\Models\Conversation;
+use App\Models\ProblemReport;
 use App\Models\TrainerClient;
 use App\Models\User;
 use App\Support\TrainerSlots;
@@ -51,6 +52,9 @@ class DeleteUser
 
         // The bell of the site (the notifications are not tied to the user by a foreign key).
         $user->notifications()->delete();
+
+        // "Segnala un problema", with the screenshots on the disk (the rows would go with the account anyway).
+        ProblemReport::purge(ProblemReport::query()->where('user_id', $user->id));
 
         $user->delete();
 

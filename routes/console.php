@@ -15,6 +15,7 @@ use App\Models\Booking;
 use App\Models\BookingSeries;
 use App\Models\CookieConsent;
 use App\Models\Message;
+use App\Models\ProblemReport;
 use App\Models\TrainerCalendarConnection;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
@@ -282,6 +283,15 @@ Artisan::command('cookie-consents:prune', function () {
 })->purpose('Delete the cookie choices older than '.CookieConsent::RETENTION_MONTHS.' months');
 
 Schedule::command('cookie-consents:prune')->dailyAt('05:05');
+
+// "Segnala un problema": the privacy policy keeps them ProblemReport::RETENTION_DAYS, solved or not.
+Artisan::command('problem-reports:prune', function () {
+    $count = ProblemReport::purge(ProblemReport::query()->where('created_at', '<', now()->subDays(ProblemReport::RETENTION_DAYS)));
+
+    $this->info("{$count} old problem reports deleted.");
+})->purpose('Delete the reports of "Segnala un problema" older than '.ProblemReport::RETENTION_DAYS.' days, with their screenshots');
+
+Schedule::command('problem-reports:prune')->dailyAt('05:10');
 
 // "Messaggi": the photos and the PDFs last Message::ATTACHMENT_DAYS. The file
 // is deleted and the path emptied; the text, the kind and the name stay, so

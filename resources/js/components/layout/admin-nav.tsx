@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 import {
     Building2,
+    Bug,
     Calendar,
     CalendarDays,
     ChartColumn,
@@ -26,6 +27,7 @@ import {
     events,
     messages,
     overview,
+    problems,
     reports,
     reviews,
     settings,
@@ -43,6 +45,7 @@ export type AdminSection =
     | 'verification'
     | 'gym-verification'
     | 'messages'
+    | 'problems'
     | 'bookings'
     | 'users'
     | 'reports'
@@ -93,6 +96,13 @@ const sections: {
         icon: Mail,
         href: messages.url,
         badge: 'unreadMessages',
+    },
+    {
+        section: 'problems',
+        title: 'Problemi segnalati',
+        icon: Bug,
+        href: problems.url,
+        badge: 'openProblems',
     },
     {
         section: 'bookings',
