@@ -19,6 +19,7 @@ use App\Models\TrainerCalendarConnection;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
 use App\Models\User;
+use App\Support\Features;
 use App\Support\ResponseTimes;
 use App\Support\SafeImage;
 use App\Support\Staging;
@@ -164,10 +165,14 @@ Artisan::command('bookings:expire', function () {
 // A slow run (many requests at once) must not overlap the next one: the same booking expired twice.
 Schedule::command('bookings:expire')->everyMinute()->withoutOverlapping();
 
-// The reminders the day before and 2 hours before a confirmed session, and an event.
+// The reminders the day before and 2 hours before a confirmed session, and an event
+// (not while the events are switched off, config/features.php: their pages are a 404).
 Artisan::command('bookings:remind', function (SendSessionReminders $reminders, SendGroupSessionReminders $eventReminders) {
     $this->info("{$reminders->handle()} reminders sent.");
-    $this->info("{$eventReminders->handle()} event reminders sent.");
+
+    if (Features::events()) {
+        $this->info("{$eventReminders->handle()} event reminders sent.");
+    }
 })->purpose('Remind clients and trainers of their next confirmed sessions and events');
 
 Schedule::command('bookings:remind')->everyFiveMinutes()->withoutOverlapping();

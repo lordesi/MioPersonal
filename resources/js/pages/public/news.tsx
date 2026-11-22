@@ -11,6 +11,8 @@ import ProfileCard from '@/components/mp/profile-card';
 import SaveableCard from '@/components/mp/saveable-card';
 import { ResultsGrid } from '@/components/mp/search-results';
 import OptionsMenu from '@/components/search/options-menu';
+import { useFeatures } from '@/lib/features';
+import type { Features } from '@/lib/features';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
@@ -34,6 +36,17 @@ type NewsProps = {
     days: number;
 };
 
+/** What the page lists, by the parts of the site switched on. */
+function newsIntro(features: Features): string {
+    const joined = features.gyms
+        ? 'I personal trainer e le palestre appena arrivati su MioPersonal, verificati dal nostro team'
+        : 'I personal trainer appena arrivati su MioPersonal, verificati dal nostro team';
+
+    return features.events
+        ? `${joined}, e i nuovi eventi in programma.`
+        : `${joined}.`;
+}
+
 /**
  * "Novità": the trainers and gyms that joined in the last days, and the new
  * events, in Italy or a city. The cards of the home and of the searches.
@@ -48,6 +61,7 @@ export default function News({
     days,
 }: NewsProps) {
     const place = city ? `a ${city.name}` : 'in Italia';
+    const features = useFeatures();
     const empty =
         trainers.length === 0 && gyms.length === 0 && events.length === 0;
 
@@ -68,9 +82,7 @@ export default function News({
                     </span>
                     <h1 className={pageTitleClassName}>Novità {place}</h1>
                     <p className="max-w-150 text-[17px] leading-6 text-muted-foreground">
-                        I personal trainer e le palestre appena arrivati su
-                        MioPersonal, verificati dal nostro team, e i nuovi
-                        eventi in programma.
+                        {newsIntro(features)}
                     </p>
                 </div>
                 <OptionsMenu
@@ -115,14 +127,19 @@ export default function News({
                         className="font-semibold text-brand hover:underline"
                     >
                         Cerca tra tutti i trainer
-                    </Link>{' '}
-                    o{' '}
-                    <Link
-                        href={gymSearchUrl({}, city?.slug)}
-                        className="font-semibold text-brand hover:underline"
-                    >
-                        le palestre
                     </Link>
+                    {features.gyms && (
+                        <>
+                            {' '}
+                            o{' '}
+                            <Link
+                                href={gymSearchUrl({}, city?.slug)}
+                                className="font-semibold text-brand hover:underline"
+                            >
+                                le palestre
+                            </Link>
+                        </>
+                    )}
                     .
                 </p>
             )}

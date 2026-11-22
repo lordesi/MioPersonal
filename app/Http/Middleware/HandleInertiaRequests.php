@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Models\Conversation;
 use App\Models\CookieConsent;
 use App\Models\User;
+use App\Support\Features;
 use App\Support\Stats;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -93,6 +94,8 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            // Gyms, courses and events: off hides their menus and sections (lib/features.ts).
+            'features' => Features::all(),
             'auth' => [
                 // Only what the pages use (types/auth.ts): not the whole model, which
                 // also holds the phone, acquisition data and the activity times.
@@ -136,7 +139,7 @@ class HandleInertiaRequests extends Middleware
         /** @var array{trainers: int, gyms: int} */
         return $request->attributes->get('favoriteCounts') ?? tap([
             'trainers' => $user->favoriteTrainers()->where('trainer_profiles.status', TrainerProfileStatus::Approved)->count(),
-            'gyms' => $user->favoriteGyms()->approved()->count(),
+            'gyms' => Features::gyms() ? $user->favoriteGyms()->approved()->count() : 0,
         ], fn (array $counts) => $request->attributes->set('favoriteCounts', $counts));
     }
 

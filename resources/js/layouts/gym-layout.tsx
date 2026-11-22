@@ -8,10 +8,12 @@ import type { GymSection } from '@/components/layout/gym-nav';
 import {
     GYM_TABS,
     gymNavGroups,
+    gymSectionOn,
     gymSheetLinks,
 } from '@/components/layout/gym-nav';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useFeatures } from '@/lib/features';
 import { dashboard, register } from '@/routes/gym';
 import type { GymAreaData } from '@/types';
 
@@ -87,7 +89,8 @@ function StatusNotice({
  */
 export default function GymLayout({ children, section }: GymLayoutProps) {
     const { auth, gymArea } = usePage<{ gymArea?: GymAreaData }>().props;
-    const groups = gymNavGroups(section, gymArea?.pendingCount ?? 0);
+    const features = useFeatures();
+    const groups = gymNavGroups(section, gymArea?.pendingCount ?? 0, features);
     const name = auth?.user?.name ?? '';
     const profileHref = gymArea?.publicProfileHref ?? undefined;
 
@@ -129,7 +132,7 @@ export default function GymLayout({ children, section }: GymLayoutProps) {
                 </main>
                 <AreaTabBar
                     groups={groups}
-                    tabs={GYM_TABS}
+                    tabs={GYM_TABS.filter((tab) => gymSectionOn(tab, features))}
                     label="Area palestra"
                     current={section}
                     more={{

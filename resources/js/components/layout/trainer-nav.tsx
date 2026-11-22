@@ -16,6 +16,8 @@ import {
     User,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { withFeatures } from '@/lib/features';
+import type { FeatureName, Features } from '@/lib/features';
 import { show as contactPage } from '@/routes/contact';
 import {
     availability,
@@ -118,18 +120,22 @@ export type ProfileLink = {
     href: string;
     /** Opens outside the trainer area (the public profile, the site). */
     external?: boolean;
+    /** Hidden while that part of the site is off (lib/features.ts). */
+    feature?: FeatureName;
 };
 
 export type ProfileGroup = { label: string; links: ProfileLink[] };
 
 /**
  * The groups of "Profilo": what the clients book (ATTIVITÀ), what they see
- * (VETRINA), the account and the help.
+ * (VETRINA), the account and the help. Without the rows of the parts of
+ * the site switched off (events, gyms).
  */
 export function profileGroups(
     publicProfileHref: string | null,
+    features: Features,
 ): ProfileGroup[] {
-    return [
+    const groups: ProfileGroup[] = [
         {
             label: 'ATTIVITÀ',
             links: [
@@ -150,12 +156,14 @@ export function profileGroups(
                     title: 'Eventi',
                     icon: Ticket,
                     href: events.url(),
+                    feature: 'events',
                 },
                 {
                     section: 'gyms',
                     title: 'Palestre',
                     icon: Building2,
                     href: gyms.url(),
+                    feature: 'gyms',
                 },
             ],
         },
@@ -219,6 +227,11 @@ export function profileGroups(
             ],
         },
     ];
+
+    return groups.map((group) => ({
+        ...group,
+        links: withFeatures(group.links, features),
+    }));
 }
 
 /** "Modifica profilo": the card at the top of "Profilo". */

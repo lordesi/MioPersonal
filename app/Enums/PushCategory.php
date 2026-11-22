@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Features;
+
 /**
  * "Cosa ricevere sul dispositivo" in the settings: the kinds of push
  * notifications a user can turn off. Off stops only the push: the bell inside
@@ -20,18 +22,25 @@ enum PushCategory: string
     case Messages = 'messages';
 
     /**
-     * The switches each role sees, in this order.
+     * The switches each role sees, in this order; not the ones of the parts
+     * of the site switched off (config/features.php).
      *
      * @return list<self>
      */
     public static function forRole(UserRole $role): array
     {
-        return match ($role) {
+        $categories = match ($role) {
             UserRole::Client => [self::Bookings, self::Cancellations, self::Messages, self::Notes, self::Events, self::Waitlist],
             UserRole::Trainer => [self::Requests, self::Cancellations, self::Bookings, self::Messages, self::Events, self::GymLinks],
             UserRole::Gym => [self::GymLinks, self::Events],
             UserRole::Admin => [],
         };
+
+        return array_values(array_filter($categories, fn (self $category) => match ($category) {
+            self::Events => Features::events(),
+            self::GymLinks => Features::gyms(),
+            default => true,
+        }));
     }
 
     public function label(): string

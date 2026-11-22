@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\GroupSession;
 use App\Models\User;
 use App\Support\ClientBookingData;
+use App\Support\Features;
 use App\Support\GroupSessionCard;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -49,8 +50,9 @@ class ClientBookingsController extends Controller
                 ->values()),
             'packages' => ClientBookingData::packages($client),
             'trainers' => ClientBookingData::trainers($client, $bookings),
-            // "I miei eventi": the places taken, still to come (cancelled ones marked).
-            'events' => GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()
+            // "I miei eventi": the places taken, still to come (cancelled ones marked);
+            // none while the events are switched off (config/features.php).
+            'events' => ! Features::events() ? [] : GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()
                 ->whereHas('activeRegistrations', fn (Builder $registration) => $registration->where('user_id', $client->id))
                 ->where('ends_at', '>', now()))
                 ->orderBy('starts_at')

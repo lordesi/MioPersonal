@@ -8,6 +8,7 @@ import SegmentedTabs from '@/components/trainer/area/segmented-tabs';
 import { Button } from '@/components/ui/button';
 import type { FavoriteKind } from '@/hooks/use-favorite';
 import { saveFavorite } from '@/hooks/use-favorite';
+import { useFeatures } from '@/lib/features';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import type { GymSummary, TrainerSummary } from '@/types';
@@ -40,9 +41,13 @@ export default function Favorites({
         gyms: gyms.length - removed.gyms.length,
     };
 
+    // Without the gyms (switched off, lib/features.ts): the trainers only, no tabs.
+    const withGyms = useFeatures().gyms;
     const countLabel = [
         kept.trainers === 1 ? '1 trainer' : `${kept.trainers} trainer`,
-        kept.gyms === 1 ? '1 palestra' : `${kept.gyms} palestre`,
+        ...(withGyms
+            ? [kept.gyms === 1 ? '1 palestra' : `${kept.gyms} palestre`]
+            : []),
     ].join(' e ');
 
     const markRemoved = (list: Tab, slug: string, isRemoved: boolean) =>
@@ -73,22 +78,24 @@ export default function Favorites({
                 description={`Hai salvato ${countLabel}`}
             />
 
-            <SegmentedTabs
-                label="Tipo di preferiti"
-                tabs={[
-                    {
-                        value: 'trainers',
-                        label: 'Trainer',
-                        count: kept.trainers,
-                    },
-                    { value: 'gyms', label: 'Palestre', count: kept.gyms },
-                ]}
-                value={tab}
-                onChange={setTab}
-                controls="favorites-list"
-            />
+            {withGyms && (
+                <SegmentedTabs
+                    label="Tipo di preferiti"
+                    tabs={[
+                        {
+                            value: 'trainers',
+                            label: 'Trainer',
+                            count: kept.trainers,
+                        },
+                        { value: 'gyms', label: 'Palestre', count: kept.gyms },
+                    ]}
+                    value={tab}
+                    onChange={setTab}
+                    controls="favorites-list"
+                />
+            )}
 
-            <div id="favorites-list" role="tabpanel">
+            <div id="favorites-list" role={withGyms ? 'tabpanel' : undefined}>
                 {tab === 'trainers' ? (
                     kept.trainers === 0 ? (
                         <EmptyState

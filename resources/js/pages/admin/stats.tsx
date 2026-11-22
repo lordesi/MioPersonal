@@ -12,6 +12,7 @@ import {
     formatMonth,
     formatNumber,
 } from '@/components/admin/stats-charts';
+import { useFeatures } from '@/lib/features';
 import { formatPercent, formatPrice } from '@/lib/format';
 
 type Count = { source: string; count: number };
@@ -161,6 +162,7 @@ export default function AdminStats({ stats }: { stats: Stats }) {
     const journey = stats.journey;
     const thisWeek = journey.weeks.at(-1);
     const lastWeeks = journey.weeks.slice(-4);
+    const features = useFeatures();
 
     return (
         <>
@@ -558,6 +560,17 @@ export default function AdminStats({ stats }: { stats: Stats }) {
                 </AdminPanel>
             </div>
 
+            {features.gyms && <GymStats gyms={stats.gyms} />}
+        </>
+    );
+}
+
+/** "Palestre": only while the gyms are switched on (lib/features.ts). */
+function GymStats({ gyms }: { gyms: Stats['gyms'] }) {
+    const stats = { gyms };
+
+    return (
+        <>
             <h2 className="mt-3 text-lg font-bold tracking-tight">Palestre</h2>
             <section
                 aria-label="Indicatori delle palestre"

@@ -7,6 +7,7 @@ import {
     Download,
     Menu,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import AccountCapsuleMenu from '@/components/layout/account-capsule-menu';
 import BrandLogo from '@/components/layout/brand-logo';
@@ -14,7 +15,7 @@ import NotificationBell from '@/components/layout/notification-bell';
 import type { SearchKind } from '@/components/search/search-kind-toggle';
 import {
     searchKindUrl,
-    searchKinds,
+    useSearchKinds,
 } from '@/components/search/search-kind-toggle';
 import {
     DropdownMenu,
@@ -28,6 +29,8 @@ import {
     SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
+import { useFeatures, withFeatures } from '@/lib/features';
+import type { FeatureName } from '@/lib/features';
 import { openAppPrompt, useInstallMethod } from '@/lib/pwa';
 import { cn } from '@/lib/utils';
 import { dashboard, howItWorks, login, register } from '@/routes';
@@ -40,7 +43,14 @@ import { hoverPrefetch } from '@/lib/prefetch';
 const heroButton =
     'inline-flex h-11 items-center rounded-lg text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-primary-foreground/50';
 
-const proLinks = [
+const proLinks: {
+    title: string;
+    hint: string;
+    href: string;
+    icon: LucideIcon;
+    /** Hidden while that part of the site is off (lib/features.ts). */
+    feature?: FeatureName;
+}[] = [
     {
         title: 'Sei un personal trainer?',
         hint: 'Crea il tuo profilo, è gratis',
@@ -52,6 +62,7 @@ const proLinks = [
         hint: 'Corsi, abbonamenti e i tuoi trainer',
         href: gymRegister.url(),
         icon: Building2,
+        feature: 'gyms',
     },
     {
         title: 'Come funziona',
@@ -96,6 +107,7 @@ export default function PublicHeader({ className }: { className?: string }) {
     const active = currentKind(page.url);
     const role = user?.role;
     const variant = role === 'trainer' || role === 'gym' ? role : 'client';
+    const kinds = useSearchKinds();
 
     return (
         <header className={cn('bg-primary text-primary-foreground', className)}>
@@ -106,7 +118,7 @@ export default function PublicHeader({ className }: { className?: string }) {
                     aria-label="Esplora"
                     className="hidden items-center gap-1 lg:flex"
                 >
-                    {searchKinds.map((kind) => (
+                    {kinds.map((kind) => (
                         <Link
                             prefetch={hoverPrefetch}
                             key={kind.value}
@@ -170,6 +182,8 @@ export default function PublicHeader({ className }: { className?: string }) {
 
 /** "Per i professionisti ▾" (desktop): the two sign-ups and how it works. */
 function ProMenu() {
+    const links = withFeatures(proLinks, useFeatures());
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger
@@ -186,7 +200,7 @@ function ProMenu() {
                 sideOffset={8}
                 className="w-72 rounded-xl p-1.5"
             >
-                {proLinks.map((link) => (
+                {links.map((link) => (
                     <DropdownMenuItem
                         key={link.title}
                         asChild
@@ -218,6 +232,8 @@ function GuestMenu({ active }: { active: SearchKind | null }) {
     const [open, setOpen] = useState(false);
     const close = () => setOpen(false);
     const canInstall = useInstallMethod() !== null;
+    const kinds = useSearchKinds();
+    const links = withFeatures(proLinks, useFeatures());
 
     return (
         <Sheet open={open} onOpenChange={setOpen}>
@@ -237,7 +253,7 @@ function GuestMenu({ active }: { active: SearchKind | null }) {
                     <span className="px-3 pb-1 text-[11px] font-semibold tracking-[0.08em] text-muted-foreground">
                         ESPLORA
                     </span>
-                    {searchKinds.map((kind) => (
+                    {kinds.map((kind) => (
                         <Link
                             prefetch={hoverPrefetch}
                             key={kind.value}
@@ -259,7 +275,7 @@ function GuestMenu({ active }: { active: SearchKind | null }) {
                     <span className="px-3 pt-4 pb-1 text-[11px] font-semibold tracking-[0.08em] text-muted-foreground">
                         PER I PROFESSIONISTI
                     </span>
-                    {proLinks.map((link) => (
+                    {links.map((link) => (
                         <Link
                             prefetch={hoverPrefetch}
                             key={link.title}

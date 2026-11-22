@@ -119,13 +119,18 @@ final class AdminStats
             return ['key' => $key, 'label' => $label, 'value' => $values[0], 'previous' => $values[1], 'format' => $format];
         };
 
+        // The gyms' tiles only while they are switched on (config/features.php).
+        $gymTiles = ! Features::gyms() ? [] : [
+            $tile('gyms', 'Nuove palestre', $both(fn ($from, $to) => $this->newUsers(UserRole::Gym, $from, $to))),
+            $tile('publishedGyms', 'Palestre approvate', $both(fn ($from, $to) => GymProfile::query()->whereBetween('approved_at', [$from->utc(), $to->utc()])->count())),
+        ];
+
         return [
             $tile('visits', 'Visite al sito (30 giorni)', $traffic('visits')),
             $tile('pageViews', 'Pagine viste', $traffic('pageViews')),
             $tile('clients', 'Nuovi clienti', $both(fn ($from, $to) => $this->newUsers(UserRole::Client, $from, $to))),
             $tile('trainers', 'Nuovi trainer', $both(fn ($from, $to) => $this->newUsers(UserRole::Trainer, $from, $to))),
-            $tile('gyms', 'Nuove palestre', $both(fn ($from, $to) => $this->newUsers(UserRole::Gym, $from, $to))),
-            $tile('publishedGyms', 'Palestre approvate', $both(fn ($from, $to) => GymProfile::query()->whereBetween('approved_at', [$from->utc(), $to->utc()])->count())),
+            ...$gymTiles,
             $tile('activeClients', 'Clienti attivi', $both(fn ($from, $to) => $this->activeUsers(UserRole::Client, $from, $to))),
             $tile('activeTrainers', 'Trainer attivi', $both(fn ($from, $to) => $this->activeUsers(UserRole::Trainer, $from, $to))),
             $tile('requests', 'Richieste di prenotazione', $both(fn ($from, $to) => Booking::query()->whereBetween('created_at', [$from->utc(), $to->utc()])->count())),

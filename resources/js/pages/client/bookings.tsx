@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { romeParts } from '@/lib/calendar';
 import { formatDayLong } from '@/lib/format';
 import { courseSearchUrl } from '@/lib/course';
+import { useFeatures, withFeatures } from '@/lib/features';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { search as eventsSearch } from '@/routes/events';
@@ -89,6 +90,26 @@ export default function Bookings({
     const resumeSessionsLeft = packages
         .filter((pack) => pack.trainerHref === resumeTrainer?.href)
         .reduce((sum, pack) => sum + pack.total - pack.booked, 0);
+    const otherSearches = withFeatures(
+        [
+            {
+                label: 'Palestre',
+                href: gymSearchUrl(),
+                feature: 'gyms' as const,
+            },
+            {
+                label: 'Corsi',
+                href: courseSearchUrl(),
+                feature: 'courses' as const,
+            },
+            {
+                label: 'Eventi',
+                href: eventsSearch.url(),
+                feature: 'events' as const,
+            },
+        ],
+        useFeatures(),
+    );
 
     return (
         <>
@@ -112,26 +133,27 @@ export default function Bookings({
                 }
             />
 
-            {/* The other searches, one tap away. */}
-            <nav
-                aria-label="Esplora"
-                className="-mt-2 flex [scrollbar-width:none] gap-2 overflow-x-auto"
-            >
-                {[
-                    { label: 'Palestre', href: gymSearchUrl() },
-                    { label: 'Corsi', href: courseSearchUrl() },
-                    { label: 'Eventi', href: eventsSearch.url() },
-                ].map((link) => (
-                    <Link
-                        key={link.label}
-                        href={link.href}
-                        className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full border bg-card px-3.5 text-sm font-medium hover:bg-accent"
-                    >
-                        {link.label}
-                        <ArrowRight aria-hidden="true" className="size-3.5" />
-                    </Link>
-                ))}
-            </nav>
+            {/* The other searches, one tap away (the ones switched on). */}
+            {otherSearches.length > 0 && (
+                <nav
+                    aria-label="Esplora"
+                    className="-mt-2 flex [scrollbar-width:none] gap-2 overflow-x-auto"
+                >
+                    {otherSearches.map((link) => (
+                        <Link
+                            key={link.label}
+                            href={link.href}
+                            className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full border bg-card px-3.5 text-sm font-medium hover:bg-accent"
+                        >
+                            {link.label}
+                            <ArrowRight
+                                aria-hidden="true"
+                                className="size-3.5"
+                            />
+                        </Link>
+                    ))}
+                </nav>
+            )}
 
             <div className="flex flex-wrap items-start gap-5">
                 <div className="flex min-w-0 flex-[3_1_540px] flex-col gap-5">

@@ -35,6 +35,11 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- The parts switched off on the site (config/features.php) are tested too, whatever the
+             local .env says; FeaturesOffTest checks them off. -->
+        <env name="FEATURE_GYMS" value="true" force="true"/>
+        <env name="FEATURE_COURSES" value="true" force="true"/>
+        <env name="FEATURE_EVENTS" value="true" force="true"/>
         <!-- Never Cloudflare's real API from the tests, whatever the local .env says. -->
         <env name="CLOUDFLARE_ANALYTICS_TOKEN" value="" force="true"/>
         <env name="CLOUDFLARE_SITE_TAG" value="" force="true"/>

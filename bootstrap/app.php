@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CspReportController;
 use App\Http\Middleware\EnsureAccountActive;
+use App\Http\Middleware\EnsureFeatureOn;
 use App\Http\Middleware\EnsureSessionCurrent;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsAdmin;
@@ -54,6 +55,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => EnsureUserIsAdmin::class,
             'role' => EnsureUserHasRole::class,
             'legacy-slug' => RedirectLegacySlug::class,
+            // A part switched off in config/features.php: a 404.
+            'feature' => EnsureFeatureOn::class,
         ]);
 
         $middleware->web(append: [

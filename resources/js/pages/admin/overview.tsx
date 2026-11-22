@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import ActivityList from '@/components/admin/activity-list';
+import { useFeatures, withFeatures } from '@/lib/features';
 import { formatPercent } from '@/lib/format';
 import {
     bookings,
@@ -43,32 +44,38 @@ function plural(count: number, one: string, many: string): string {
 }
 
 export default function Overview({ todo, stats, activity }: OverviewProps) {
-    const todoCards = [
-        {
-            count: todo.verificationCount,
-            label: 'Trainer da verificare',
-            hint: `Il più vecchio aspetta da ${plural(todo.oldestWaitDays, 'giorno', 'giorni')}`,
-            href: verification(),
-        },
-        {
-            count: todo.gymVerificationCount,
-            label: 'Palestre da verificare',
-            hint: `La più vecchia aspetta da ${plural(todo.oldestGymWaitDays, 'giorno', 'giorni')}`,
-            href: gymVerification(),
-        },
-        {
-            count: todo.expiredToday,
-            label: 'Prenotazioni decadute oggi',
-            hint: 'Trainer che non hanno risposto in 24 h',
-            href: bookings(),
-        },
-        {
-            count: todo.reportedCount,
-            label: 'Profili e recensioni segnalate',
-            hint: 'Segnalati dagli utenti',
-            href: reports(),
-        },
-    ];
+    // The gyms' cards only while they are switched on (lib/features.ts).
+    const features = useFeatures();
+    const todoCards = withFeatures(
+        [
+            {
+                count: todo.verificationCount,
+                label: 'Trainer da verificare',
+                hint: `Il più vecchio aspetta da ${plural(todo.oldestWaitDays, 'giorno', 'giorni')}`,
+                href: verification(),
+            },
+            {
+                count: todo.gymVerificationCount,
+                label: 'Palestre da verificare',
+                hint: `La più vecchia aspetta da ${plural(todo.oldestGymWaitDays, 'giorno', 'giorni')}`,
+                href: gymVerification(),
+                feature: 'gyms' as const,
+            },
+            {
+                count: todo.expiredToday,
+                label: 'Prenotazioni decadute oggi',
+                hint: 'Trainer che non hanno risposto in 24 h',
+                href: bookings(),
+            },
+            {
+                count: todo.reportedCount,
+                label: 'Profili e recensioni segnalate',
+                hint: 'Segnalati dagli utenti',
+                href: reports(),
+            },
+        ],
+        features,
+    );
 
     const weekChange =
         (stats.bookingsThisWeek - stats.bookingsLastWeek) /
@@ -79,33 +86,37 @@ export default function Overview({ todo, stats, activity }: OverviewProps) {
             ? 'Nessuna la settimana prima'
             : `${weekChange >= 0 ? '+' : '−'}${formatPercent(Math.abs(weekChange), 0)} rispetto alla settimana prima`;
 
-    const statCards = [
-        {
-            label: 'Iscritti totali',
-            value: String(stats.users),
-            detail: `+${stats.usersThisWeek} questa settimana`,
-        },
-        {
-            label: 'Trainer attivi',
-            value: String(stats.activeTrainers),
-            detail: 'Entrati nelle ultime 24 ore',
-        },
-        {
-            label: 'Palestre attive',
-            value: String(stats.activeGyms),
-            detail: 'Visibili nella ricerca',
-        },
-        {
-            label: 'Prenotazioni (7 giorni)',
-            value: String(stats.bookingsThisWeek),
-            detail: weekDetail,
-        },
-        {
-            label: 'Prenotazioni confermate',
-            value: formatPercent(stats.confirmedRate, 0),
-            detail: `Decadute: ${formatPercent(stats.expiredRate, 0)}, rifiutate: ${formatPercent(stats.declinedRate, 0)}`,
-        },
-    ];
+    const statCards = withFeatures(
+        [
+            {
+                label: 'Iscritti totali',
+                value: String(stats.users),
+                detail: `+${stats.usersThisWeek} questa settimana`,
+            },
+            {
+                label: 'Trainer attivi',
+                value: String(stats.activeTrainers),
+                detail: 'Entrati nelle ultime 24 ore',
+            },
+            {
+                label: 'Palestre attive',
+                value: String(stats.activeGyms),
+                detail: 'Visibili nella ricerca',
+                feature: 'gyms' as const,
+            },
+            {
+                label: 'Prenotazioni (7 giorni)',
+                value: String(stats.bookingsThisWeek),
+                detail: weekDetail,
+            },
+            {
+                label: 'Prenotazioni confermate',
+                value: formatPercent(stats.confirmedRate, 0),
+                detail: `Decadute: ${formatPercent(stats.expiredRate, 0)}, rifiutate: ${formatPercent(stats.declinedRate, 0)}`,
+            },
+        ],
+        features,
+    );
 
     return (
         <>

@@ -1,9 +1,20 @@
 import { Link } from '@inertiajs/react';
+import { cn } from '@/lib/utils';
 import { register as gymRegister } from '@/routes/gym';
 import { register as trainerRegister } from '@/routes/trainer';
+import { useFeatures, withFeatures } from '@/lib/features';
+import type { FeatureName } from '@/lib/features';
 import { hoverPrefetch } from '@/lib/prefetch';
 
-const cards = [
+const cards: {
+    title: string;
+    text: string;
+    action: string;
+    href: string;
+    image: string;
+    position: string;
+    feature?: FeatureName;
+}[] = [
     {
         title: 'Sei un personal trainer?',
         text: 'Profilo, agenda, richieste e clienti in un posto solo. Gratis.',
@@ -19,11 +30,14 @@ const cards = [
         href: gymRegister.url(),
         image: '/images/design/pro-gym.webp',
         position: 'object-[50%_40%]',
+        feature: 'gyms',
     },
 ];
 
-/** "Per i professionisti": the two sign-ups, on a photo each. */
+/** "Per i professionisti": the sign-ups switched on, on a photo each. */
 export default function ProCards() {
+    const shown = withFeatures(cards, useFeatures());
+
     return (
         <section
             aria-labelledby="pro-title"
@@ -35,8 +49,13 @@ export default function ProCards() {
             >
                 Per i professionisti
             </h2>
-            <div className="grid gap-3 md:grid-cols-2 md:gap-5">
-                {cards.map((card) => (
+            <div
+                className={cn(
+                    'grid gap-3 md:gap-5',
+                    shown.length > 1 && 'md:grid-cols-2',
+                )}
+            >
+                {shown.map((card) => (
                     <div
                         key={card.title}
                         className="relative flex min-h-65 flex-col justify-end overflow-hidden rounded-[26px] border border-white/10 p-5 md:min-h-95 md:p-8"

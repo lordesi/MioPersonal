@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\TrainerProfileStatus;
 use App\Models\GymProfile;
 use App\Models\User;
+use App\Support\Features;
 use App\Support\GymCard;
 use App\Support\TrainerCard;
 use App\Support\TrainerSlots;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -34,15 +36,16 @@ class ClientFavoritesController extends Controller
             ->values()
             ->all();
 
-        // A gym suspended, being deleted or taken back for review too.
-        $gyms = $client->favoriteGyms()
+        // A gym suspended, being deleted or taken back for review too; none
+        // while the gyms are switched off (config/features.php).
+        $gyms = ! Features::gyms() ? new Collection : $client->favoriteGyms()
             ->approved()
             ->with(GymCard::RELATIONS)
             ->withCount('trainers')
             ->get();
 
         $tab = match ($request->query('tipo')) {
-            'palestre' => 'gyms',
+            'palestre' => Features::gyms() ? 'gyms' : 'trainers',
             'trainer' => 'trainers',
             // The tab with something in it: the trainers when both have.
             default => $trainers === [] && $gyms->isNotEmpty() ? 'gyms' : 'trainers',
