@@ -13,6 +13,7 @@ import DarkDialog from '@/components/mp/dark-dialog';
 import { Initials } from '@/components/trainer/ui/bits';
 import { listLabelClassName } from '@/components/trainer/ui/styles';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
+import { useFeatures } from '@/lib/features';
 import { cn } from '@/lib/utils';
 import { logout } from '@/routes';
 import type { TrainerAreaData } from '@/types';
@@ -45,7 +46,10 @@ export default function ProfileList({
     const [askLogout, setAskLogout] = useState(false);
     const cleanup = useMobileNavigation();
     const large = size === 'lg';
-    const groups = profileGroups(trainerArea?.publicProfileHref ?? null);
+    const groups = profileGroups(
+        trainerArea?.publicProfileHref ?? null,
+        useFeatures(),
+    );
     const editActive = current === 'profile';
 
     return (

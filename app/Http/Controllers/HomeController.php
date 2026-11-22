@@ -8,6 +8,7 @@ use App\Models\GroupSession;
 use App\Models\GymProfile;
 use App\Models\TrainerProfile;
 use App\Support\CatalogOptions;
+use App\Support\Features;
 use App\Support\GroupSessionCard;
 use App\Support\GymCard;
 use App\Support\GymShelves;
@@ -37,21 +38,19 @@ class HomeController extends Controller
         TrainerSlots::refreshStale();
 
         $trainerFavorites = TrainerCard::favoriteIds($request->user());
-        $gymFavorites = GymCard::favoriteIds($request->user());
         $trendingTrainers = TrainerShelves::trending($trainerFavorites);
-        $trendingGyms = GymShelves::trending($gymFavorites);
 
         return Inertia::render('public/home', [
             // "Trainer in tendenza", or "in evidenza" while too few are trending.
             'trainers' => $trendingTrainers !== null
                 ? ['key' => 'trending', 'title' => 'Trainer in tendenza', 'items' => $trendingTrainers]
                 : ['key' => 'featured', 'title' => 'Trainer in evidenza', 'items' => $this->featuredTrainers($trainerFavorites)],
-            // The same for the gyms.
-            'gyms' => $trendingGyms !== null
-                ? ['key' => 'trending', 'title' => 'Palestre in tendenza', 'items' => $trendingGyms]
-                : ['key' => 'featured', 'title' => 'Palestre in evidenza', 'items' => GymCard::many($this->featuredGyms(), $gymFavorites)],
+            // The same for the gyms (an empty shelf is hidden: gyms switched off).
+            'gyms' => $this->gyms($request),
             // "Prossimi eventi" of all of Italy.
-            'events' => GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()->listed()->upcoming())->orderBy('starts_at')->limit(self::EVENTS)->get()),
+            'events' => Features::events()
+                ? GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()->listed()->upcoming())->orderBy('starts_at')->limit(self::EVENTS)->get())
+                : [],
             // Options of the search form.
             'disciplines' => CatalogOptions::disciplines(),
             // With the center of each city: "Usa la mia posizione" finds the closest one in the browser.
@@ -110,6 +109,26 @@ class HomeController extends Controller
                 ],
             ],
         );
+    }
+
+    /**
+     * "Palestre in tendenza", or "in evidenza" while too few are trending;
+     * no gyms while they are switched off.
+     *
+     * @return array{key: string, title: string, items: list<array<string, mixed>>}
+     */
+    private function gyms(Request $request): array
+    {
+        if (! Features::gyms()) {
+            return ['key' => 'featured', 'title' => 'Palestre in evidenza', 'items' => []];
+        }
+
+        $gymFavorites = GymCard::favoriteIds($request->user());
+        $trendingGyms = GymShelves::trending($gymFavorites);
+
+        return $trendingGyms !== null
+            ? ['key' => 'trending', 'title' => 'Palestre in tendenza', 'items' => $trendingGyms]
+            : ['key' => 'featured', 'title' => 'Palestre in evidenza', 'items' => GymCard::many($this->featuredGyms(), $gymFavorites)];
     }
 
     /**

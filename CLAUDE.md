@@ -34,6 +34,19 @@ persone è [docs/deploy.md](docs/deploy.md).
 - Prima di una migrazione rischiosa (cancella o modifica molti dati): avvisare l'utente e fare il backup del
   database ([docs/deploy.md](docs/deploy.md), sezione "Backup del database").
 
+## Funzioni spente
+
+- Il sito parte **solo con i trainer**: palestre, corsi ed eventi (anche quelli dei trainer) sono spenti con
+  [`config/features.php`](config/features.php). Niente menu né sezioni, e le loro pagine rispondono 404. Il
+  codice resta; il punto di partenza è il tag git `prima-solo-trainer`.
+- Si riaccendono con `FEATURE_GYMS`, `FEATURE_COURSES` e `FEATURE_EVENTS=true` nel `.env` (in locale per
+  lavorarci; in produzione con una PR). I corsi richiedono anche le palestre. Nel codice si leggono sempre con
+  `App\Support\Features` (PHP), `useFeatures()`/`withFeatures()` in
+  [`lib/features.ts`](resources/js/lib/features.ts) (React) e `->middleware('feature:…')` (rotte).
+- I test girano con tutto acceso ([`phpunit.xml`](phpunit.xml)) e devono restare verdi: se una modifica al codice
+  condiviso li rompe, si sistema subito. `FeaturesOffTest` verifica che spente non si vedano.
+- Un menu, un link o una sezione nuova verso palestre, corsi o eventi va legata al suo interruttore.
+
 ## Se qualcosa va storto
 
 - **Deploy fallito**: correggere su un branch e rifare la Pull Request, oppure GitHub → Actions → deploy →

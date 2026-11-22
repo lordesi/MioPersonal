@@ -8,6 +8,7 @@ use App\Models\GroupSession;
 use App\Models\GymCourse;
 use App\Models\GymProfile;
 use App\Models\TrainerProfile;
+use App\Support\Features;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
@@ -47,11 +48,12 @@ class SitemapController extends Controller
             ->orderBy('id')
             ->get(['id', 'slug', 'city_id', 'updated_at']);
 
-        $gymUrls = $this->gymUrls();
+        // Gyms, courses and events switched off (config/features.php): none of their pages.
+        $gymUrls = Features::gyms() ? $this->gymUrls() : [];
         $urls = [['loc' => route('home'), 'lastmod' => null]];
 
         // The pages on MioPersonal itself: what it is, how to reach us, how to join.
-        foreach (['how-it-works', 'contact.show', 'trainer.register', 'gym.register'] as $page) {
+        foreach (['how-it-works', 'contact.show', 'trainer.register', ...(Features::gyms() ? ['gym.register'] : [])] as $page) {
             $urls[] = ['loc' => route($page), 'lastmod' => null];
         }
 
@@ -60,7 +62,12 @@ class SitemapController extends Controller
             $urls[] = ['loc' => route('news'), 'lastmod' => null];
         }
 
-        $urls = [...$urls, ...$gymUrls, ...$this->courseUrls(), ...$this->eventUrls()];
+        $urls = [
+            ...$urls,
+            ...$gymUrls,
+            ...(Features::courses() ? $this->courseUrls() : []),
+            ...(Features::events() ? $this->eventUrls() : []),
+        ];
 
         if ($profiles->isEmpty()) {
             return $urls;

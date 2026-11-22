@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import BrandLogo from '@/components/layout/brand-logo';
 import { openCookieSettings } from '@/lib/cookie-consent';
 import { courseSearchUrl } from '@/lib/course';
+import { useFeatures, withFeatures } from '@/lib/features';
+import type { FeatureName } from '@/lib/features';
 import { gymSearchUrl } from '@/lib/gym';
 import { openAppPrompt, useInstallMethod } from '@/lib/pwa';
 import { searchUrl } from '@/lib/search';
@@ -21,16 +23,23 @@ import {
 } from '@/routes/trainer';
 import { hoverPrefetch } from '@/lib/prefetch';
 
-const exploreLinks = [
+type FooterLink = {
+    title: string;
+    href: string;
+    /** Hidden while that part of the site is off (lib/features.ts). */
+    feature?: FeatureName;
+};
+
+const exploreLinks: FooterLink[] = [
     { title: 'Personal trainer', href: searchUrl() },
-    { title: 'Palestre', href: gymSearchUrl() },
-    { title: 'Corsi', href: courseSearchUrl() },
-    { title: 'Eventi', href: eventsSearch.url() },
+    { title: 'Palestre', href: gymSearchUrl(), feature: 'gyms' },
+    { title: 'Corsi', href: courseSearchUrl(), feature: 'courses' },
+    { title: 'Eventi', href: eventsSearch.url(), feature: 'events' },
     { title: 'Novità', href: news.url() },
 ];
 
 /** A trainer or a gym finds its own area where the sign-up of its kind was. */
-function proLinks(role?: string) {
+function proLinks(role?: string): FooterLink[] {
     return [
         role === 'trainer'
             ? { title: 'La tua area trainer', href: trainerToday.url() }
@@ -39,8 +48,16 @@ function proLinks(role?: string) {
                   href: trainerRegister.url(),
               },
         role === 'gym'
-            ? { title: 'La tua area palestra', href: gymDashboard.url() }
-            : { title: 'Hai una palestra?', href: gymRegister.url() },
+            ? {
+                  title: 'La tua area palestra',
+                  href: gymDashboard.url(),
+                  feature: 'gyms',
+              }
+            : {
+                  title: 'Hai una palestra?',
+                  href: gymRegister.url(),
+                  feature: 'gyms',
+              },
         { title: 'Come funziona', href: howItWorks.url() },
     ];
 }
@@ -146,6 +163,7 @@ export default function PublicFooter({
     const currentPath = page.url.split(/[?#]/)[0];
     const role = page.props.auth?.user?.role;
     const canInstall = useInstallMethod() !== null;
+    const features = useFeatures();
 
     return (
         <footer className={cn(styles[variant].footer, className)}>
@@ -168,14 +186,14 @@ export default function PublicFooter({
                         <LinkList
                             id="footer-explore"
                             title="Esplora"
-                            links={exploreLinks}
+                            links={withFeatures(exploreLinks, features)}
                             currentPath={currentPath}
                             variant={variant}
                         />
                         <LinkList
                             id="footer-pro"
                             title="Per i professionisti"
-                            links={proLinks(role)}
+                            links={withFeatures(proLinks(role), features)}
                             currentPath={currentPath}
                             variant={variant}
                         />

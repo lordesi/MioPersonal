@@ -1,4 +1,5 @@
 import type { CookieConsent } from '@/lib/cookie-consent';
+import type { Features } from '@/lib/features';
 import type { Auth } from '@/types/auth';
 import type { ClientAreaData } from '@/types/client';
 
@@ -12,6 +13,8 @@ declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
             name: string;
+            /** Gyms, courses and events: off hides them (lib/features.ts). */
+            features: Features;
             auth: Auth;
             sidebarOpen: boolean;
             /** For "Attiva le notifiche"; null for guests or without the keys in the .env. */

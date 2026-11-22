@@ -3,6 +3,8 @@ import { Building2, CalendarDays, CalendarHeart, Dumbbell } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { courseSearchUrl } from '@/lib/course';
+import { useFeatures, withFeatures } from '@/lib/features';
+import type { FeatureName } from '@/lib/features';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
@@ -12,13 +14,17 @@ import { hoverPrefetch } from '@/lib/prefetch';
 /** The four things to explore, always in this order. */
 export type SearchKind = 'trainer' | 'gym' | 'course' | 'event';
 
-export const searchKinds: {
+type SearchKindItem = {
     value: SearchKind;
     label: string;
     /** In the header menu and the tabs: one word. */
     shortLabel: string;
     icon: LucideIcon;
-}[] = [
+    /** Hidden while that part of the site is off (lib/features.ts). */
+    feature?: FeatureName;
+};
+
+export const searchKinds: SearchKindItem[] = [
     {
         value: 'trainer',
         label: 'Personal trainer',
@@ -30,20 +36,31 @@ export const searchKinds: {
         label: 'Palestre',
         shortLabel: 'Palestre',
         icon: Building2,
+        feature: 'gyms',
     },
     {
         value: 'course',
         label: 'Corsi',
         shortLabel: 'Corsi',
         icon: CalendarDays,
+        feature: 'courses',
     },
     {
         value: 'event',
         label: 'Eventi',
         shortLabel: 'Eventi',
         icon: CalendarHeart,
+        feature: 'events',
     },
 ];
+
+/**
+ * The kinds switched on. With the trainers only there is nothing to
+ * choose: the toggles and tabs are hidden.
+ */
+export function useSearchKinds(): SearchKindItem[] {
+    return withFeatures(searchKinds, useFeatures());
+}
 
 /** The search of a kind, in a city or in all of Italy. */
 export function searchKindUrl(kind: SearchKind, city?: string | null): string {
@@ -86,6 +103,12 @@ type ToggleProps = {
  * title and the search bar below.
  */
 export function SearchKindToggle({ value, onChange }: ToggleProps) {
+    const kinds = useSearchKinds();
+
+    if (kinds.length < 2) {
+        return null;
+    }
+
     return (
         <ToggleGroup
             type="single"
@@ -95,7 +118,7 @@ export function SearchKindToggle({ value, onChange }: ToggleProps) {
             onValueChange={(next) => next && onChange(next as SearchKind)}
             className={trackClassName}
         >
-            {searchKinds.map((kind) => (
+            {kinds.map((kind) => (
                 <ToggleGroupItem
                     key={kind.value}
                     value={kind.value}
@@ -120,9 +143,15 @@ export function SearchKindLinks({
     current: SearchKind;
     city: string | null;
 }) {
+    const kinds = useSearchKinds();
+
+    if (kinds.length < 2) {
+        return null;
+    }
+
     return (
         <nav aria-label="Cosa cerchi" className={cn(trackClassName, 'flex')}>
-            {searchKinds.map((kind) => {
+            {kinds.map((kind) => {
                 const active = kind.value === current;
 
                 return (

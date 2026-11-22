@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import {
     searchKindUrl,
-    searchKinds,
+    useSearchKinds,
 } from '@/components/search/search-kind-toggle';
 import type { SearchKind } from '@/components/search/search-kind-toggle';
 import { cn } from '@/lib/utils';
@@ -29,17 +29,24 @@ export default function KindLinks({
     variant,
     className,
 }: KindLinksProps) {
+    const kinds = useSearchKinds();
+
+    // The trainers only: nothing else to switch to.
+    if (kinds.length < 2) {
+        return null;
+    }
+
     return (
         <nav
             aria-label="Cosa cerchi"
             className={cn(
                 variant === 'tabs'
-                    ? 'grid grid-cols-4 border-b border-separator'
+                    ? 'grid auto-cols-fr grid-flow-col border-b border-separator'
                     : 'flex gap-0.5 rounded-full p-1 shadow-[inset_0_0_0_1px_var(--field)]',
                 className,
             )}
         >
-            {searchKinds.map((kind) => {
+            {kinds.map((kind) => {
                 const active = kind.value === current;
 
                 return (

@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Building2, Dumbbell } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
     IconBadge,
     LinkCard,
@@ -11,12 +12,14 @@ import {
     sectionTitleClassName,
 } from '@/components/mp/page-bits';
 import {
-    searchKinds,
     searchKindUrl,
+    useSearchKinds,
 } from '@/components/search/search-kind-toggle';
 import type { SearchKind } from '@/components/search/search-kind-toggle';
 import FaqList from '@/components/seo/faq-list';
 import type { FaqItem } from '@/components/seo/faq-list';
+import { useFeatures, withFeatures } from '@/lib/features';
+import type { FeatureName } from '@/lib/features';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
 import { register as gymRegister } from '@/routes/gym';
@@ -38,7 +41,13 @@ const kindHints: Record<SearchKind, string> = {
     event: 'Open day, workshop e allenamenti di gruppo: prenoti il posto in pochi secondi.',
 };
 
-const pros = [
+const pros: {
+    title: string;
+    text: string;
+    href: string;
+    icon: LucideIcon;
+    feature?: FeatureName;
+}[] = [
     {
         title: 'Sei un personal trainer?',
         text: 'Profilo, agenda, richieste e clienti in un posto solo.',
@@ -50,6 +59,7 @@ const pros = [
         text: 'Profilo, corsi, eventi, abbonamenti e i tuoi trainer.',
         href: gymRegister.url(),
         icon: Building2,
+        feature: 'gyms',
     },
 ];
 
@@ -58,6 +68,10 @@ const pros = [
  * search engines and AI assistants read when they ask about it.
  */
 export default function HowItWorks({ summary, faq }: HowItWorksProps) {
+    // Only the parts of the site switched on (lib/features.ts).
+    const features = useFeatures();
+    const kinds = useSearchKinds();
+
     return (
         <div
             className={cn(
@@ -95,8 +109,13 @@ export default function HowItWorks({ summary, faq }: HowItWorksProps) {
                 <h2 id="explore-title" className={sectionTitleClassName}>
                     Cosa trovi su MioPersonal
                 </h2>
-                <ul className="grid grid-cols-2 gap-2 md:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] md:gap-4">
-                    {searchKinds.map((kind) => (
+                <ul
+                    className={cn(
+                        'grid gap-2 md:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] md:gap-4',
+                        kinds.length > 1 && 'grid-cols-2',
+                    )}
+                >
+                    {kinds.map((kind) => (
                         <li key={kind.value}>
                             <Link
                                 href={searchKindUrl(kind.value)}
@@ -125,7 +144,7 @@ export default function HowItWorks({ summary, faq }: HowItWorksProps) {
                     Per i professionisti
                 </h2>
                 <ul className="grid gap-2 md:grid-cols-[repeat(auto-fit,minmax(300px,1fr))] md:gap-4">
-                    {pros.map((item) => (
+                    {withFeatures(pros, features).map((item) => (
                         <li key={item.title}>
                             <LinkCard
                                 href={item.href}

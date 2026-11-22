@@ -3,11 +3,12 @@ import { useState } from 'react';
 import SegmentedControl from '@/components/mp/segmented-control';
 import WhatWhereSearch from '@/components/mp/what-where-search';
 import type { WhatWhereResult } from '@/components/mp/what-where-search';
-import { searchKinds } from '@/components/search/search-kind-toggle';
+import { useSearchKinds } from '@/components/search/search-kind-toggle';
 import type { SearchKind } from '@/components/search/search-kind-toggle';
 import { courseSearchUrl } from '@/lib/course';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
+import { cn } from '@/lib/utils';
 import { search as eventsSearch } from '@/routes/events';
 import type { CatalogOption, CityWithCoordinates } from '@/types';
 
@@ -19,11 +20,6 @@ type HomeHeroProps = {
     /** "Cosa" of the events: the type. */
     eventTypes: CatalogOption[];
 };
-
-const kindOptions = searchKinds.map((kind) => ({
-    value: kind.value,
-    label: kind.shortLabel,
-}));
 
 const hints: Record<SearchKind, string> = {
     trainer: 'Per consultare i profili non occorre registrarsi',
@@ -44,6 +40,11 @@ export default function HomeHero({
     eventTypes,
 }: HomeHeroProps) {
     const [kind, setKind] = useState<SearchKind>('trainer');
+    // The kinds switched on (lib/features.ts): with the trainers only, no switch.
+    const kindOptions = useSearchKinds().map((option) => ({
+        value: option.value,
+        label: option.shortLabel,
+    }));
 
     const searches: Record<
         SearchKind,
@@ -133,13 +134,22 @@ export default function HomeHero({
                         <strong className="font-bold">vicino a te</strong>.
                     </h1>
 
-                    <div className="flex flex-col gap-4 md:grid md:grid-cols-[400px_minmax(0,1fr)] md:items-center md:gap-3 md:border-t md:border-white/20 md:pt-7">
-                        <SegmentedControl
-                            label="Cosa cerchi"
-                            options={kindOptions}
-                            value={kind}
-                            onValueChange={setKind}
-                        />
+                    <div
+                        className={cn(
+                            'flex flex-col gap-4 md:grid md:items-center md:gap-3 md:border-t md:border-white/20 md:pt-7',
+                            kindOptions.length > 1
+                                ? 'md:grid-cols-[400px_minmax(0,1fr)]'
+                                : 'md:grid-cols-1',
+                        )}
+                    >
+                        {kindOptions.length > 1 && (
+                            <SegmentedControl
+                                label="Cosa cerchi"
+                                options={kindOptions}
+                                value={kind}
+                                onValueChange={setKind}
+                            />
+                        )}
                         <WhatWhereSearch
                             // A new kind starts with empty fields.
                             key={kind}

@@ -18,6 +18,7 @@ use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Models\WaitlistEntry;
 use App\Support\CourseCard;
+use App\Support\Features;
 use App\Support\GroupSessionCard;
 use App\Support\ResponseTimes;
 use App\Support\Seo;
@@ -76,17 +77,21 @@ class TrainerProfileController extends Controller
             // "Mostra tutte le recensioni": sent only when the page asks for it
             // (router.reload with only: ['allReviews']), never on the first load.
             'allReviews' => Inertia::optional(fn () => $this->reviews($profile)),
-            // "Prossimi eventi" the trainer organizes.
-            'events' => GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()->listed()->upcoming()->hostedBy($profile))->orderBy('starts_at')->limit(6)->get()),
+            // "Prossimi eventi" the trainer organizes (none while the events are switched off).
+            'events' => Features::events()
+                ? GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()->listed()->upcoming()->hostedBy($profile))->orderBy('starts_at')->limit(6)->get())
+                : [],
             // "Corsi che tiene": the gyms' courses where the trainer is the instructor.
-            'courses' => CourseCard::many(GymCourse::query()
-                ->where('instructor_trainer_id', $profile->id)
-                ->where('is_active', true)
-                ->whereHas('lessons')
-                ->whereHas('gymProfile', fn ($gym) => $gym->published())
-                ->with(CourseCard::RELATIONS)
-                ->orderBy('name')
-                ->get()),
+            'courses' => Features::courses()
+                ? CourseCard::many(GymCourse::query()
+                    ->where('instructor_trainer_id', $profile->id)
+                    ->where('is_active', true)
+                    ->whereHas('lessons')
+                    ->whereHas('gymProfile', fn ($gym) => $gym->published())
+                    ->with(CourseCard::RELATIONS)
+                    ->orderBy('name')
+                    ->get())
+                : [],
             'seo' => $this->seo($profile),
         ]);
     }
@@ -540,15 +545,18 @@ class TrainerProfileController extends Controller
     }
 
     /**
-     * The places shown: a gym only while it is public (approved, owner active).
+     * The places shown: a gym only while it is public (approved, owner active)
+     * and the gyms are switched on (config/features.php).
      *
      * @return Collection<int, TrainerPlace>
      */
     public static function visiblePlaces(TrainerProfile $profile): Collection
     {
+        $gyms = Features::gyms();
+
         return $profile->places
             ->filter(fn (TrainerPlace $place) => $place->type !== PlaceType::Gym
-                || ($place->gymProfile?->isApproved() && $place->gymProfile->ownerIsActive()))
+                || ($gyms && $place->gymProfile?->isApproved() && $place->gymProfile->ownerIsActive()))
             ->values();
     }
 

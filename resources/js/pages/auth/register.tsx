@@ -11,6 +11,8 @@ import { DarkLogo } from '@/components/mp/dark-header';
 import { BuildingIcon, DumbbellIcon } from '@/components/mp/icons';
 import { Spinner } from '@/components/ui/spinner';
 import { darkCheckboxClassName, darkFieldClassName } from '@/lib/dark-form';
+import { useFeatures, withFeatures } from '@/lib/features';
+import type { FeatureName } from '@/lib/features';
 import { cn } from '@/lib/utils';
 import { login, register } from '@/routes';
 import { register as gymRegister } from '@/routes/gym';
@@ -29,6 +31,8 @@ const accountTypes: {
     value: AccountType;
     label: string;
     icon: IconComponent;
+    /** Hidden while that part of the site is off (lib/features.ts). */
+    feature?: FeatureName;
 }[] = [
     { value: 'cliente', label: 'Sono un cliente', icon: Search },
     {
@@ -36,7 +40,12 @@ const accountTypes: {
         label: 'Sono un personal trainer',
         icon: DumbbellIcon,
     },
-    { value: 'palestra', label: 'Ho una palestra', icon: BuildingIcon },
+    {
+        value: 'palestra',
+        label: 'Ho una palestra',
+        icon: BuildingIcon,
+        feature: 'gyms',
+    },
 ];
 
 const brandLink =
@@ -96,6 +105,7 @@ function Header({ className }: { className?: string }) {
 
 function ChooseType() {
     const [type, setType] = useState<AccountType>('cliente');
+    const types = withFeatures(accountTypes, useFeatures());
 
     const next = () => {
         if (type === 'cliente') {
@@ -116,15 +126,25 @@ function ChooseType() {
                         event.preventDefault();
                         next();
                     }}
-                    className="flex flex-1 flex-col md:w-240 md:flex-none md:items-center md:gap-10"
+                    className={cn(
+                        'flex flex-1 flex-col md:flex-none md:items-center md:gap-10',
+                        types.length > 2 ? 'md:w-240' : 'md:w-160',
+                    )}
                 >
                     <fieldset className="contents">
                         <legend className="mt-8 mb-6 text-[28px] leading-8.5 font-bold tracking-[-0.36px] md:mt-0 md:mb-10 md:text-center md:text-5xl md:leading-[1.1] md:font-light md:tracking-[-0.03em]">
                             Come vuoi usare{' '}
                             <span className="md:font-bold">MioPersonal</span>?
                         </legend>
-                        <div className="flex flex-col gap-3 md:grid md:w-full md:grid-cols-3 md:gap-5">
-                            {accountTypes.map((option) => (
+                        <div
+                            className={cn(
+                                'flex flex-col gap-3 md:grid md:w-full md:gap-5',
+                                types.length > 2
+                                    ? 'md:grid-cols-3'
+                                    : 'md:grid-cols-2',
+                            )}
+                        >
+                            {types.map((option) => (
                                 <TypeOption
                                     key={option.value}
                                     {...option}
@@ -207,6 +227,7 @@ function TypeOption({
 function ClientAccount({ googleEnabled }: { googleEnabled: boolean }) {
     // An email or phone that already has an account: "Hai già un account?".
     const [existing, setExisting] = useState<ExistingAccount | null>(null);
+    const features = useFeatures();
 
     return (
         <div className="theme-dark relative isolate flex min-h-dvh flex-col overflow-hidden">
@@ -300,7 +321,9 @@ function ClientAccount({ googleEnabled }: { googleEnabled: boolean }) {
                     )}
 
                     <p className="flex flex-wrap items-center justify-center gap-x-1.5 text-[15px] text-muted-foreground">
-                        Sei un trainer o hai una palestra?
+                        {features.gyms
+                            ? 'Sei un trainer o hai una palestra?'
+                            : 'Sei un personal trainer?'}
                         <Link href={register()} className={brandLink}>
                             Cambia tipo di account
                         </Link>

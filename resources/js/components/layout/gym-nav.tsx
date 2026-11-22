@@ -19,6 +19,7 @@ import type {
     SheetLink,
 } from '@/components/layout/area-nav';
 import { withActive } from '@/components/layout/area-nav';
+import type { Features } from '@/lib/features';
 import { home } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
 import {
@@ -54,11 +55,36 @@ export const GYM_TABS: GymSection[] = [
     'trainers',
 ];
 
+/** Courses and events can be switched off on their own (lib/features.ts). */
+export function gymSectionOn(section: GymSection, features: Features): boolean {
+    switch (section) {
+        case 'courses':
+            return features.courses;
+        case 'events':
+            return features.events;
+        default:
+            return true;
+    }
+}
+
 /**
  * The gym area: what happens in the gym ("Attività"), how it looks
- * ("Profilo") and what it costs ("Prezzi").
+ * ("Profilo") and what it costs ("Prezzi"). Without the parts switched off.
  */
 export function gymNavGroups(
+    current: GymSection | undefined,
+    pendingCount: number,
+    features: Features,
+): AreaNavGroup[] {
+    return gymNavGroupsAll(current, pendingCount).map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+            gymSectionOn(item.section as GymSection, features),
+        ),
+    }));
+}
+
+function gymNavGroupsAll(
     current?: GymSection,
     pendingCount = 0,
 ): AreaNavGroup[] {

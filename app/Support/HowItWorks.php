@@ -15,6 +15,17 @@ final class HowItWorks
 {
     public const SUMMARY = 'MioPersonal è la piattaforma italiana per trovare e prenotare personal trainer verificati, di persona o online: profili controllati dal team, prezzi chiari, orari liberi e recensioni di clienti reali. Durante la beta è gratuita per clienti e trainer.';
 
+    /** " Sul sito trovi anche palestre ed eventi…": only the parts switched on (config/features.php). */
+    private static function alsoOnTheSite(): string
+    {
+        $parts = array_keys(array_filter([
+            'palestre' => Features::gyms(),
+            'eventi sportivi' => Features::events(),
+        ]));
+
+        return $parts === [] ? '' : ' Sul sito trovi anche '.implode(' ed ', $parts).' nella tua città.';
+    }
+
     /**
      * @return list<array{question: string, answer: string}>
      */
@@ -23,7 +34,7 @@ final class HowItWorks
         return [
             [
                 'question' => 'Cos’è MioPersonal?',
-                'answer' => 'MioPersonal è una piattaforma italiana per trovare e prenotare un personal trainer. Raccoglie i profili di personal trainer indipendenti di tutta Italia, che allenano di persona (in studio, in palestra, a domicilio o all’aperto) o online, con discipline, esperienza, prezzi, orari liberi e recensioni di clienti reali. Sul sito trovi anche palestre ed eventi sportivi nella tua città.',
+                'answer' => 'MioPersonal è una piattaforma italiana per trovare e prenotare un personal trainer. Raccoglie i profili di personal trainer indipendenti di tutta Italia, che allenano di persona (in studio, in palestra, a domicilio o all’aperto) o online, con discipline, esperienza, prezzi, orari liberi e recensioni di clienti reali.'.self::alsoOnTheSite(),
             ],
             [
                 'question' => 'Come trovo un personal trainer su MioPersonal?',

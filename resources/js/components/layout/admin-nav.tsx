@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import BrandLogo from '@/components/layout/brand-logo';
 import UserAvatar from '@/components/shared/user-avatar';
+import { useFeatures, withFeatures } from '@/lib/features';
+import type { FeatureName } from '@/lib/features';
 import { cn } from '@/lib/utils';
 import { home } from '@/routes';
 import {
@@ -55,6 +57,8 @@ const sections: {
     icon: LucideIcon;
     href: () => string;
     badge?: keyof AdminAreaData;
+    /** Hidden while that part of the site is off (lib/features.ts). */
+    feature?: FeatureName;
 }[] = [
     {
         section: 'overview',
@@ -81,6 +85,7 @@ const sections: {
         icon: Building2,
         href: gymVerification.url,
         badge: 'gymVerificationCount',
+        feature: 'gyms',
     },
     {
         section: 'messages',
@@ -114,6 +119,7 @@ const sections: {
         title: 'Eventi',
         icon: CalendarDays,
         href: events.url,
+        feature: 'events',
     },
     {
         section: 'catalog',
@@ -145,9 +151,11 @@ function NavLinks({
     className,
     linkClassName,
 }: AdminNavProps & { className?: string; linkClassName?: string }) {
+    const shown = withFeatures(sections, useFeatures());
+
     return (
         <nav aria-label="Amministrazione" className={className}>
-            {sections.map((item) => {
+            {shown.map((item) => {
                 const isActive = item.section === current;
                 const badge = item.badge ? area[item.badge] : 0;
 

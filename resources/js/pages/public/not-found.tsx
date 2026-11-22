@@ -8,6 +8,7 @@ import {
     Ticket,
     User,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { FormEvent } from 'react';
 import {
     LinkCard,
@@ -18,6 +19,8 @@ import {
     pageTitleClassName,
 } from '@/components/mp/page-bits';
 import { courseSearchUrl } from '@/lib/course';
+import { useFeatures, withFeatures } from '@/lib/features';
+import type { FeatureName } from '@/lib/features';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
@@ -25,8 +28,14 @@ import { dashboard } from '@/routes';
 import { search as eventsSearch } from '@/routes/events';
 import { show as contactPage } from '@/routes/contact';
 
-/** The four searches, then "La mia area" for whoever is logged in. */
-const exploreLinks = [
+/** The four searches (the ones switched on), then "La mia area" for whoever is logged in. */
+const exploreLinks: {
+    title: string;
+    hint: string;
+    href: string;
+    icon: LucideIcon;
+    feature?: FeatureName;
+}[] = [
     {
         title: 'Cerca un personal trainer',
         hint: 'Per disciplina, città e disponibilità',
@@ -38,18 +47,21 @@ const exploreLinks = [
         hint: 'Servizi, abbonamenti e promozioni',
         href: gymSearchUrl(),
         icon: Building2,
+        feature: 'gyms',
     },
     {
         title: 'Corsi in palestra',
         hint: 'Gli orari della settimana',
         href: courseSearchUrl(),
         icon: CalendarDays,
+        feature: 'courses',
     },
     {
         title: 'Eventi',
         hint: 'Workshop, open day, allenamenti di gruppo',
         href: eventsSearch.url(),
         icon: Ticket,
+        feature: 'events',
     },
 ];
 
@@ -57,8 +69,9 @@ const exploreLinks = [
 export default function NotFound() {
     // Missing on Laravel's own error responses.
     const user = usePage().props.auth?.user;
+    const features = useFeatures();
     const usefulLinks = [
-        ...exploreLinks,
+        ...withFeatures(exploreLinks, features),
         user
             ? {
                   title: 'La mia area',

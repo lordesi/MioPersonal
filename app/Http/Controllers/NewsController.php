@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\City;
 use App\Support\CatalogOptions;
+use App\Support\Features;
 use App\Support\NewsFeed;
 use App\Support\Seo;
 use Illuminate\Http\Request;
@@ -25,19 +26,27 @@ class NewsController extends Controller
         abort_if($city !== null && ! $city->is_active, 404);
 
         $place = $city === null ? 'in Italia' : "a {$city->name}";
+        // Gyms and events switched off (config/features.php): only the trainers.
+        $gyms = Features::gyms();
 
         return Inertia::render('public/news', [
             'city' => $city === null ? null : ['slug' => $city->slug, 'name' => $city->name],
             'trainers' => NewsFeed::trainers($city, self::LIMIT, $request->user()),
-            'gyms' => NewsFeed::gyms($city, self::LIMIT, $request->user()),
-            'events' => NewsFeed::events($city, self::LIMIT),
+            'gyms' => $gyms ? NewsFeed::gyms($city, self::LIMIT, $request->user()) : [],
+            'events' => Features::events() ? NewsFeed::events($city, self::LIMIT) : [],
             'cities' => CatalogOptions::cities(),
             'days' => NewsFeed::DAYS,
-            'seo' => Seo::page(
-                "Nuovi personal trainer e palestre {$place}",
-                "Le novità di MioPersonal {$place}: i personal trainer e le palestre arrivati negli ultimi ".NewsFeed::DAYS.' giorni, verificati dal nostro team.',
-                canonical: route('news', $city?->slug),
-            ),
+            'seo' => $gyms
+                ? Seo::page(
+                    "Nuovi personal trainer e palestre {$place}",
+                    "Le novità di MioPersonal {$place}: i personal trainer e le palestre arrivati negli ultimi ".NewsFeed::DAYS.' giorni, verificati dal nostro team.',
+                    canonical: route('news', $city?->slug),
+                )
+                : Seo::page(
+                    "Nuovi personal trainer {$place}",
+                    "Le novità di MioPersonal {$place}: i personal trainer arrivati negli ultimi ".NewsFeed::DAYS.' giorni, verificati dal nostro team.',
+                    canonical: route('news', $city?->slug),
+                ),
         ]);
     }
 }

@@ -11,12 +11,14 @@ use App\Models\TrainerClient;
 use App\Models\User;
 use App\Support\BookingLabels;
 use App\Support\ClientBookingData;
+use App\Support\Features;
 use App\Support\GroupSessionCard;
 use App\Support\GymCard;
 use App\Support\RecommendedTrainers;
 use App\Support\TrainerSlots;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -59,7 +61,8 @@ class ClientHomeController extends Controller
             'week' => $this->week($client, $monday),
             'dayBookings' => $this->dayItems($client, $day, $day->addDay()),
             'trainers' => fn () => RecommendedTrainers::for($client, $preference, self::SUGGESTIONS),
-            'gyms' => fn () => $this->gyms($client, $preference?->city_id),
+            // None while the gyms are switched off (config/features.php).
+            'gyms' => fn () => Features::gyms() ? $this->gyms($client, $preference?->city_id) : [],
         ]);
     }
 
@@ -124,7 +127,8 @@ class ClientHomeController extends Controller
             ->whereIn('trainer_profile_id', $bookings->pluck('trainer_profile_id')->unique()->all())
             ->pluck('id', 'trainer_profile_id');
 
-        $events = GroupSession::query()
+        // No events while they are switched off (config/features.php): their pages are a 404.
+        $events = ! Features::events() ? new EloquentCollection : GroupSession::query()
             ->whereHas('activeRegistrations', fn (Builder $registration) => $registration->where('user_id', $client->id))
             ->where('starts_at', '>=', $from->utc())
             ->where('starts_at', '<', $until->utc())

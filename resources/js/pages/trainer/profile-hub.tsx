@@ -11,6 +11,7 @@ import {
     softButtonClassName,
 } from '@/components/trainer/ui/styles';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useFeatures } from '@/lib/features';
 import { formatUntilDay } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { reviews, services, settings, share } from '@/routes/trainer';
@@ -84,6 +85,7 @@ export default function ProfileHub({
 
 /** Desktop: the public profile at a glance, with its link and the switch. */
 function Overview({ me, visibility, counts }: ProfileHubProps) {
+    const features = useFeatures();
     const shareLink = async () => {
         if (!me.publicUrl) {
             return;
@@ -124,11 +126,16 @@ function Overview({ me, visibility, counts }: ProfileHubProps) {
                   value: String(counts.services),
                   href: services.url(),
               },
-              {
-                  label: 'Palestre',
-                  value: String(counts.gyms),
-                  href: gyms.url(),
-              },
+              // Not while the gyms are switched off (lib/features.ts).
+              ...(features.gyms
+                  ? [
+                        {
+                            label: 'Palestre',
+                            value: String(counts.gyms),
+                            href: gyms.url(),
+                        },
+                    ]
+                  : []),
               {
                   label: 'Recensioni',
                   value:
@@ -229,7 +236,7 @@ function Overview({ me, visibility, counts }: ProfileHubProps) {
             )}
 
             {tiles.length > 0 && (
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid auto-cols-fr grid-flow-col gap-2.5">
                     {tiles.map((tile) => (
                         <Link
                             key={tile.label}

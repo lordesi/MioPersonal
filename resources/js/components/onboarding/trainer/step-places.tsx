@@ -40,6 +40,7 @@ import {
 } from '@/components/onboarding/trainer/draft';
 import OptionsMenu from '@/components/search/options-menu';
 import type { GymOption } from '@/components/onboarding/trainer/draft';
+import { useFeatures } from '@/lib/features';
 import { trainingGoals } from '@/lib/goals';
 import { cn } from '@/lib/utils';
 import type { CatalogOption, CityOption } from '@/types';
@@ -130,6 +131,11 @@ export default function StepPlaces({
     gymOptions,
 }: StepProps) {
     const cityNeeded = draft.places.length === 0 || needsCity(draft);
+    // "In palestra" (a gym of MioPersonal) only while the gyms are switched on.
+    const withGyms = useFeatures().gyms;
+    const places = placeOptions.filter(
+        (option) => withGyms || option.value !== 'gym',
+    );
 
     return (
         <div className="flex flex-col gap-10 md:gap-12">
@@ -197,8 +203,15 @@ export default function StepPlaces({
                     title="Dove alleni"
                     aside={<Counter>Anche più di uno</Counter>}
                 >
-                    <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
-                        {placeOptions.map((option) => (
+                    <div
+                        className={cn(
+                            'grid grid-cols-2 gap-2',
+                            places.length > 4
+                                ? 'md:grid-cols-5'
+                                : 'md:grid-cols-4',
+                        )}
+                    >
+                        {places.map((option) => (
                             <PlaceCard
                                 key={option.value}
                                 place={option.value}
@@ -217,7 +230,7 @@ export default function StepPlaces({
                         ))}
                     </div>
 
-                    {draft.places.includes('gym') && (
+                    {withGyms && draft.places.includes('gym') && (
                         <GymPicker
                             draft={draft}
                             update={update}
