@@ -13,6 +13,7 @@ use App\Jobs\SyncBusyTimesJob;
 use App\Jobs\SyncCalendarJob;
 use App\Models\Booking;
 use App\Models\BookingSeries;
+use App\Models\ContactMessage;
 use App\Models\CookieConsent;
 use App\Models\Message;
 use App\Models\ProblemReport;
@@ -283,6 +284,17 @@ Artisan::command('cookie-consents:prune', function () {
 })->purpose('Delete the cookie choices older than '.CookieConsent::RETENTION_MONTHS.' months');
 
 Schedule::command('cookie-consents:prune')->dailyAt('05:05');
+
+// The messages of the Contatti page ("Admin · Messaggi"): the privacy policy keeps them ContactMessage::RETENTION_MONTHS.
+Artisan::command('contact-messages:prune', function () {
+    $count = ContactMessage::query()
+        ->where('created_at', '<', now()->subMonths(ContactMessage::RETENTION_MONTHS))
+        ->delete();
+
+    $this->info("{$count} old contact messages deleted.");
+})->purpose('Delete the messages of the Contatti page older than '.ContactMessage::RETENTION_MONTHS.' months');
+
+Schedule::command('contact-messages:prune')->dailyAt('05:20');
 
 // "Segnala un problema": the privacy policy keeps them ProblemReport::RETENTION_DAYS, solved or not.
 Artisan::command('problem-reports:prune', function () {

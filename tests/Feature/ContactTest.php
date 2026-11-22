@@ -157,4 +157,19 @@ class ContactTest extends TestCase
         $this->post(route('contact.store'), $this->validForm(['message' => str_repeat('a', 1501)]))
             ->assertSessionHasErrors('message');
     }
+
+    /** The privacy policy keeps them 12 months from when they were sent. */
+    public function test_messages_older_than_12_months_are_deleted()
+    {
+        Mail::fake();
+        $this->post(route('contact.store'), $this->validForm());
+        $this->post(route('contact.store'), $this->validForm(['name' => 'Luca Neri']));
+        [$old, $recent] = SavedMessage::query()->orderBy('id')->get()->all();
+        $old->forceFill(['created_at' => now()->subMonths(SavedMessage::RETENTION_MONTHS)->subDay()])->save();
+
+        $this->artisan('contact-messages:prune')->assertSuccessful();
+
+        $this->assertModelMissing($old);
+        $this->assertModelExists($recent);
+    }
 }
