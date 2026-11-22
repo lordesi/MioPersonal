@@ -202,10 +202,7 @@ function Row({
 
 /** Lower case, without accents: "Niccolò" is found with "nicco". */
 export function normalize(value: string): string {
-    return value
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .toLowerCase();
+    return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
 /** "14:05" today, "Mar 6 ott" before. */
