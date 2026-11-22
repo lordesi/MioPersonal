@@ -1,6 +1,7 @@
 <?php
 
 use App\Support\Calendar\CalendarAccessRevoked;
+use App\Support\SentryScrubber;
 
 /**
  * Sentry Laravel SDK configuration file.
@@ -57,6 +58,9 @@ return [
 
     // Configures which data is collected automatically, `null` keeps collecting data based on `send_default_pii`
     'data_collection' => null,
+
+    // The values of the database queries never reach Sentry (emails, phones…): see the class.
+    'before_send' => [SentryScrubber::class, 'beforeSend'],
 
     // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#ignore_exceptions
     // Laravel already skips 403/404/419/429 and validation errors; these are the

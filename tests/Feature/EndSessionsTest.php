@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\EnsureSessionCurrent;
 use App\Models\User;
 use App\Support\EndSessions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -12,6 +13,14 @@ use Tests\TestCase;
 class EndSessionsTest extends TestCase
 {
     use RefreshDatabase;
+
+    /** The rows are deleted only with the database driver (local); Redis relies on the version. */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['session.driver' => 'database']);
+    }
 
     public function test_others_keeps_only_the_current_session()
     {
@@ -29,6 +38,9 @@ class EndSessionsTest extends TestCase
 
         $this->assertSame([$current, 'someone-else'], DB::table('sessions')->orderBy('id')->pluck('id')->all());
         $this->assertNotSame('old-token', $user->fresh()->remember_token);
+        // The current session has the new version: it stays in.
+        $this->assertSame(1, $user->fresh()->session_version);
+        $this->assertSame(1, $session->get(EnsureSessionCurrent::KEY));
     }
 
     public function test_all_ends_every_session_of_the_user()

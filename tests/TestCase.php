@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Enums\UserRole;
+use App\Http\Middleware\EnsureSessionCurrent;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -29,5 +30,22 @@ abstract class TestCase extends BaseTestCase
         }
 
         return parent::actingAs($user, $guard);
+    }
+
+    /**
+     * A device logged in before EndSessions ran (its session still has the
+     * starting version) goes back to the login on its next request.
+     */
+    protected function assertOtherDeviceLoggedOut(User $user): void
+    {
+        $this->flushSession();
+        $this->app['auth']->forgetGuards();
+
+        $this->actingAs($user->fresh() ?? $user)
+            ->withSession([EnsureSessionCurrent::KEY => 0])
+            ->get(route('dashboard'))
+            ->assertRedirect(route('login'));
+
+        $this->assertGuest();
     }
 }

@@ -11,11 +11,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\Concerns\MakesTestImages;
 use Tests\TestCase;
 
 /** "Modifica profilo": an approved trainer changes steps 2, 3 and 6, public right away. */
 class TrainerProfileEditTest extends TestCase
 {
+    use MakesTestImages;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -191,6 +193,24 @@ class TrainerProfileEditTest extends TestCase
         $this->assertSame('Istruttore Pilates', $document->title);
         $this->assertNull($document->path);
         Storage::disk('local')->assertMissing('trainers/attestato.pdf');
+    }
+
+    /** A photo of a certificate loses its EXIF (where it was taken); a PDF stays as it came. */
+    public function test_a_certificate_photo_is_saved_without_metadata()
+    {
+        $profile = $this->approvedTrainer();
+
+        $this->actingAs($profile->user)
+            ->put(route('trainer.profile.update'), $this->payload(['certifications' => [
+                ['title' => 'Istruttore Pilates', 'issuer' => 'FIF', 'year' => '2020', 'file' => UploadedFile::fake()->createWithContent('attestato.jpg', $this->phonePhoto(600, 400))],
+                ['title' => 'Primo soccorso', 'issuer' => 'CRI', 'year' => '2021', 'file' => UploadedFile::fake()->createWithContent('bls.pdf', "%PDF-1.4\n%%EOF")],
+            ]]))
+            ->assertSessionHasNoErrors();
+
+        [$photo, $pdf] = $profile->documents()->orderBy('sort')->pluck('path')->all();
+        $this->assertStringEndsWith('.jpg', (string) $photo);
+        $this->assertArrayNotHasKey('GPSLatitudeRef', $this->exif((string) Storage::disk('local')->get((string) $photo)));
+        $this->assertSame("%PDF-1.4\n%%EOF", Storage::disk('local')->get((string) $pdf));
     }
 
     public function test_the_same_checks_as_the_registration()

@@ -7,6 +7,7 @@ use App\Models\City;
 use App\Models\ClientPreference;
 use App\Models\Discipline;
 use App\Models\User;
+use App\Rules\ImagePixels;
 use App\Support\CatalogOptions;
 use App\Support\ClientProgress;
 use App\Support\SafeImage;
@@ -101,7 +102,7 @@ class CompleteProfileController extends Controller
     public function updatePhoto(Request $request): RedirectResponse
     {
         $request->validate([
-            'photo' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:5120'],
+            'photo' => ['required', 'image', new ImagePixels, 'mimes:jpg,jpeg,png', 'max:5120'],
         ], [
             'photo.required' => 'Scegli una foto.',
             'photo.image' => 'La foto deve essere un’immagine JPG o PNG.',

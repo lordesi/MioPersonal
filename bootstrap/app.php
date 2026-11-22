@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CspReportController;
 use App\Http\Middleware\EnsureAccountActive;
+use App\Http\Middleware\EnsureSessionCurrent;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUsernameChosen;
@@ -58,6 +59,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             // First of ours: a flood is turned away before any page work (see AppServiceProvider).
             'throttle:global',
+            // A session ended from another device (EndSessions) goes back to the login.
+            EnsureSessionCurrent::class,
             HandleInertiaRequests::class,
             // After Inertia: its redirects become 303 for PUT/PATCH/DELETE.
             EnsureAccountActive::class,

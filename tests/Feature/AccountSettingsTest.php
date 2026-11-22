@@ -8,7 +8,6 @@ use App\Models\TrainerProfile;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -163,21 +162,22 @@ class AccountSettingsTest extends TestCase
     public function test_changing_the_password_logs_out_the_other_devices()
     {
         $user = User::factory()->create(['remember_token' => 'stolen-token']);
-        DB::table('sessions')->insert([
-            'id' => 'stolen-session', 'user_id' => $user->id, 'ip_address' => '10.0.0.1',
-            'user_agent' => 'test', 'payload' => '', 'last_activity' => now()->timestamp,
-        ]);
 
         $this->actingAs($user)
             ->put(route('account.password.update'), [
                 'current_password' => 'password',
                 'password' => 'Una-nuova-password1',
             ])
-            ->assertSessionHasNoErrors();
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('session_version', 1);
 
+        // This device stays in.
         $this->assertAuthenticatedAs($user);
-        $this->assertFalse(DB::table('sessions')->where('id', 'stolen-session')->exists());
+        $this->get(route('account.settings'))->assertOk();
         $this->assertNotSame('stolen-token', $user->fresh()->remember_token);
+
+        // The session opened elsewhere before the change goes back to the login.
+        $this->assertOtherDeviceLoggedOut($user);
     }
 
     public function test_password_does_not_change_with_a_wrong_current_one()

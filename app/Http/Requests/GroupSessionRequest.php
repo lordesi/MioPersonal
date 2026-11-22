@@ -9,6 +9,7 @@ use App\Models\City;
 use App\Models\Discipline;
 use App\Models\GroupSession;
 use App\Models\User;
+use App\Rules\ImagePixels;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -73,7 +74,7 @@ class GroupSessionRequest extends FormRequest
             'price_cents' => ['required', 'integer', 'between:0,1000000'],
             'dates' => ['nullable', 'integer', 'between:1,'.GroupSession::MAX_DATES],
             'scope' => ['nullable', Rule::in([SaveGroupSession::SCOPE_THIS, SaveGroupSession::SCOPE_FOLLOWING])],
-            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=800,min_height=450'],
+            'cover' => ['nullable', 'image', new ImagePixels, 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=800,min_height=450'],
             'remove_cover' => ['nullable', 'boolean'],
         ];
     }

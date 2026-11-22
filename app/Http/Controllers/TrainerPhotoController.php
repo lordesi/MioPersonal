@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\TrainerPhoto;
 use App\Models\TrainerProfile;
+use App\Rules\ImagePixels;
 use App\Support\SafeImage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,7 +33,7 @@ class TrainerPhotoController extends Controller
 
         $request->validate([
             'photos' => ['required', 'array', 'min:1', 'max:'.$room],
-            'photos.*' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=800,min_height=500'],
+            'photos.*' => ['required', 'image', new ImagePixels, 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=800,min_height=500'],
         ], [
             'photos.required' => 'Scegli almeno una foto.',
             'photos.max' => $room === 0
