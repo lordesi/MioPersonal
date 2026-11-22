@@ -30,11 +30,7 @@ export function cleanUsername(value: string): string {
 /** "Giulia", "Rossi" → "giulia-rossi": the example in the empty field. */
 export function usernameFromName(...parts: string[]): string {
     return cleanUsername(
-        parts
-            .join(' ')
-            .normalize('NFD')
-            .replace(/[̀-ͯ]/g, '')
-            .trim(),
+        parts.join(' ').normalize('NFD').replace(/[̀-ͯ]/g, '').trim(),
     ).replace(/-{2,}/g, '-');
 }
 
