@@ -27,6 +27,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['user_id', 'role', 'topic', 'name', 'email', 'message'])]
 class ContactMessage extends Model
 {
+    /** The privacy policy says so: then they are deleted (contact-messages:prune). */
+    public const RETENTION_MONTHS = 12;
+
     /**
      * @return array<string, string>
      */

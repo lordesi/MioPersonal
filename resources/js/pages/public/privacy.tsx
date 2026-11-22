@@ -197,7 +197,7 @@ const sections: LegalSection[] = [
                     'Registri tecnici di accesso: 14 giorni.',
                     'Segnalazioni di errore (Sentry): 30 giorni.',
                     '«Messaggi» tra cliente e trainer: il testo finché esiste il rapporto (il cliente nei «Clienti» del trainer) e lo cancelliamo con l’account del cliente o quando il trainer chiude il profilo. Le foto e i PDF allegati li cancelliamo 10 giorni dopo l’invio.',
-                    'Messaggi dalla pagina Contatti: non li salviamo sul sito. Arrivano nella casella email del team e li teniamo 12 mesi dalla risposta.',
+                    'Messaggi dalla pagina Contatti: li salviamo sul sito, perché il team li legga, e li cancelliamo 12 mesi dopo l’invio. Arrivano anche nella casella email del team, dove li teniamo 12 mesi dalla risposta.',
                     '«Segnala un problema», con lo screenshot: 90 giorni dall’invio, poi li cancelliamo; prima, se elimini l’account. Se ti rispondiamo per email, la conversazione resta nella casella del team come i messaggi dalla pagina Contatti.',
                     'Scelte sui cookie: 12 mesi dalla scelta, per poter dimostrare il consenso.',
                 ]}
