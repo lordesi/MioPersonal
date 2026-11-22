@@ -20,7 +20,6 @@ use App\Support\ContentSecurityPolicy;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -69,7 +68,9 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureAccountActive::class,
             // Accounts from before the usernames confirm theirs once.
             EnsureUsernameChosen::class,
-            AddLinkHeadersForPreloadedAssets::class,
+            // No AddLinkHeadersForPreloadedAssets: it copied the ~100 <link rel="modulepreload">
+            // of the <head> into a 15 KB `Link` header (17 KB of headers in all), over the 16 KB
+            // that Node.js and some link-preview bots accept. Sent with the HTML, it saved nothing.
             TrackLastActivity::class,
             RememberAcquisition::class,
             ThrottleSignups::class,
