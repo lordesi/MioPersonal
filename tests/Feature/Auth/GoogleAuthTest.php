@@ -5,7 +5,6 @@ namespace Tests\Feature\Auth;
 use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as GoogleUser;
@@ -74,10 +73,6 @@ class GoogleAuthTest extends TestCase
     public function test_linking_an_unverified_account_drops_the_password_and_its_sessions()
     {
         $user = User::factory()->unverified()->create(['email' => 'giulia@example.com', 'remember_token' => 'attacker-token']);
-        DB::table('sessions')->insert([
-            'id' => 'attacker-session', 'user_id' => $user->id, 'ip_address' => '10.0.0.1',
-            'user_agent' => 'test', 'payload' => '', 'last_activity' => now()->timestamp,
-        ]);
         $this->fakeGoogle();
 
         $this->get(route('google.callback'))
@@ -87,7 +82,10 @@ class GoogleAuthTest extends TestCase
         $user->refresh();
         $this->assertNull($user->password);
         $this->assertNotSame('attacker-token', $user->remember_token);
-        $this->assertFalse(DB::table('sessions')->where('id', 'attacker-session')->exists());
+        // Giulia stays in; the session of who typed her email goes.
+        $this->get(route('dashboard'))->assertRedirect();
+        $this->assertAuthenticatedAs($user);
+        $this->assertOtherDeviceLoggedOut($user);
     }
 
     public function test_linking_a_verified_account_keeps_the_password()

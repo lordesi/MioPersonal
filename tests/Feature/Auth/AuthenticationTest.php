@@ -97,4 +97,23 @@ class AuthenticationTest extends TestCase
 
         $response->assertTooManyRequests();
     }
+
+    /** Many addresses trying passwords on one account: 30 an hour, then it stops. */
+    public function test_one_email_is_limited_from_any_address()
+    {
+        $user = User::factory()->create();
+
+        RateLimiter::increment(md5('login'.'email|'.$user->email), amount: 30);
+
+        $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.9'])
+            ->post(route('login.store'), ['email' => $user->email, 'password' => 'wrong-password'])
+            ->assertTooManyRequests();
+
+        // Another account from the same address is not affected.
+        $other = User::factory()->create();
+        $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.9'])
+            ->post(route('login.store'), ['email' => $other->email, 'password' => 'password'])
+            ->assertRedirect();
+        $this->assertAuthenticatedAs($other);
+    }
 }

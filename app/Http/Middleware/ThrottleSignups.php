@@ -22,6 +22,7 @@ class ThrottleSignups
         'register.store' => 'signups',
         'trainer.register.store' => 'signups',
         'google.register.store' => 'signups',
+        'gym.register.store' => 'signups',
         'password.email' => 'password-reset-links',
     ];
 

@@ -14,6 +14,7 @@ use App\Models\Discipline;
 use App\Models\GymProfile;
 use App\Models\Service;
 use App\Models\TrainerProfile;
+use App\Rules\ImagePixels;
 use App\Rules\Username;
 use App\Rules\WorkingRange;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -99,7 +100,7 @@ class TrainerProfileRequest extends FormRequest
             'experience' => ['required', Rule::enum(TrainerExperience::class)],
             'instagram' => ['nullable', 'string', 'regex:/^[A-Za-z0-9._]{1,30}$/'],
             // Required, except for a profile that already has one (fixing after "Chiedi modifiche").
-            'photo' => [Rule::requiredIf(fn () => $this->user()?->trainerProfile?->portrait === null), 'nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=400,min_height=400'],
+            'photo' => [Rule::requiredIf(fn () => $this->user()?->trainerProfile?->portrait === null), 'nullable', 'image', new ImagePixels, 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=400,min_height=400'],
 
             // Step 3
             'disciplines' => ['required', 'array', 'min:1', 'max:'.TrainerProfile::MAX_DISCIPLINES],
@@ -131,7 +132,7 @@ class TrainerProfileRequest extends FormRequest
             'certifications.*.title' => ['required', 'string', 'max:150'],
             'certifications.*.issuer' => ['required', 'string', 'max:150'],
             'certifications.*.year' => ['required', 'integer', 'between:1950,'.now()->year],
-            'certifications.*.file' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+            'certifications.*.file' => ['nullable', 'file', new ImagePixels, 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
             // The ✕ next to a certificate already sent: its file goes.
             'certifications.*.remove_file' => ['nullable', 'boolean'],
         ];

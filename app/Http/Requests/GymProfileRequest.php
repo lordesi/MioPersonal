@@ -7,6 +7,7 @@ use App\Enums\GymAmenity;
 use App\Enums\UserRole;
 use App\Models\City;
 use App\Models\GymProfile;
+use App\Rules\ImagePixels;
 use App\Rules\Username;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -98,9 +99,9 @@ class GymProfileRequest extends FormRequest
             'opening_notes' => ['nullable', 'string', 'max:200'],
 
             // Step 4: photos. The cover is required, except for a profile that already has one.
-            'cover' => [Rule::requiredIf(fn () => $this->currentProfile()?->cover === null), 'nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=800,min_height=500'],
+            'cover' => [Rule::requiredIf(fn () => $this->currentProfile()?->cover === null), 'nullable', 'image', new ImagePixels, 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=800,min_height=500'],
             'gallery' => ['array', 'max:'.self::MAX_REGISTRATION_PHOTOS],
-            'gallery.*' => ['image', 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=800,min_height=500'],
+            'gallery.*' => ['image', new ImagePixels, 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=800,min_height=500'],
 
             // Step 5: public contacts.
             'contact_phone' => ['nullable', 'string', 'max:30', 'regex:/^[0-9 +().\/-]{6,30}$/'],
