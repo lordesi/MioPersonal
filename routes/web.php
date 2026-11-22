@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AdminEventsController;
 use App\Http\Controllers\Admin\AdminGymVerificationController;
 use App\Http\Controllers\Admin\AdminMessagesController;
 use App\Http\Controllers\Admin\AdminOverviewController;
+use App\Http\Controllers\Admin\AdminProblemsController;
 use App\Http\Controllers\Admin\AdminReportsController;
 use App\Http\Controllers\Admin\AdminReviewsController;
 use App\Http\Controllers\Admin\AdminSettingsController;
@@ -62,6 +63,7 @@ use App\Http\Controllers\NewsController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrganizerEventsController;
 use App\Http\Controllers\PendingVisitController;
+use App\Http\Controllers\ProblemReportController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RobotsController;
@@ -231,6 +233,11 @@ Route::middleware(['auth', 'throttle:20,1'])
 Route::post('segnalazioni', [ReportController::class, 'store'])
     ->middleware(['auth', 'throttle:10,1'])
     ->name('reports.store');
+
+// "Segnala un problema" from the account menu and the footer, for every logged-in user.
+Route::post('segnala-un-problema', [ProblemReportController::class, 'store'])
+    ->middleware(['auth', 'throttle:problem-reports'])
+    ->name('problem-reports.store');
 
 // The bell of the site: the latest notifications, and "segna tutte come lette".
 Route::middleware(['auth', 'throttle:60,1'])
@@ -559,6 +566,14 @@ Route::middleware(['auth', 'verified', 'admin', 'password.confirm'])->prefix('ad
     // "Segna come letto" / "Segna come da leggere".
     Route::post('messaggi/{message}/letto', [AdminMessagesController::class, 'markRead'])->whereNumber('message')->name('messages.read');
     Route::delete('messaggi/{message}/letto', [AdminMessagesController::class, 'markUnread'])->whereNumber('message')->name('messages.unread');
+    // "Problemi segnalati": "Segna come risolto" / "Riapri"; screenshots only with the temporary link of the page.
+    Route::get('problemi', AdminProblemsController::class)->name('problems');
+    Route::post('problemi/{report}/risolto', [AdminProblemsController::class, 'solve'])->whereNumber('report')->name('problems.solve');
+    Route::delete('problemi/{report}/risolto', [AdminProblemsController::class, 'reopen'])->whereNumber('report')->name('problems.reopen');
+    Route::get('problemi/{report}/screenshot', [AdminProblemsController::class, 'screenshot'])
+        ->whereNumber('report')
+        ->middleware('signed')
+        ->name('problems.screenshot');
     Route::get('prenotazioni', AdminBookingsController::class)->name('bookings');
     Route::get('utenti', AdminUsersController::class)->name('users');
     Route::controller(AdminUserStatusController::class)->prefix('utenti/{user}')->whereNumber('user')->name('users.')->group(function () {

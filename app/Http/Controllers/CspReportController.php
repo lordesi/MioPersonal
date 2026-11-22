@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\PageAddress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -70,15 +71,6 @@ class CspReportController extends Controller
             return self::text($value);
         }
 
-        $parts = parse_url($value);
-
-        if ($parts === false) {
-            return '';
-        }
-
-        $origin = isset($parts['host']) ? ($parts['scheme'] ?? 'https').'://'.$parts['host'].(isset($parts['port']) ? ':'.$parts['port'] : '') : '';
-        $path = (string) preg_replace('#/[A-Za-z0-9_\-.]{20,}(?=/|$)#', '/{token}', $parts['path'] ?? '');
-
-        return Str::limit($origin.$path, 200);
+        return PageAddress::clean($value);
     }
 }

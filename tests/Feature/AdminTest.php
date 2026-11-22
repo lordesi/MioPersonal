@@ -19,6 +19,7 @@ class AdminTest extends TestCase
         'admin.stats' => 'admin/stats',
         'admin.verification' => 'admin/verification',
         'admin.messages' => 'admin/messages',
+        'admin.problems' => 'admin/problems',
         'admin.bookings' => 'admin/bookings',
         'admin.users' => 'admin/users',
         'admin.reports' => 'admin/reports',
@@ -73,6 +74,7 @@ class AdminTest extends TestCase
                     ->whereType('adminArea.verificationCount', 'integer')
                     ->whereType('adminArea.openReports', 'integer')
                     ->whereType('adminArea.unreadMessages', 'integer')
+                    ->whereType('adminArea.openProblems', 'integer')
                 );
         }
     }

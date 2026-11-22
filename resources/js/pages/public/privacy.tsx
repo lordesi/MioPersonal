@@ -55,6 +55,7 @@ const sections: LegalSection[] = [
                         'Recensioni e risposte pubblicate sulla piattaforma.',
                         '«Messaggi» tra te e i tuoi trainer: il testo, le foto e i PDF allegati (per esempio le schede di allenamento, che teniamo 10 giorni), la data di invio e quando hai aperto la conversazione.',
                         'Messaggi che ci invii dalla pagina Contatti.',
+                        'Quello che ci invii con «Segnala un problema»: il testo, lo screenshot se lo alleghi, la pagina in cui eri (senza i dettagli dell’indirizzo, come filtri o codici), il tipo di dispositivo e di browser, la dimensione dello schermo e se usavi l’app installata. Non registriamo il contenuto della pagina.',
                         'Dati tecnici: indirizzo IP, tipo di browser, registri di accesso, data dell’ultima attività e giorni in cui hai usato il sito, cookie tecnici.',
                         'Statistiche anonime, non collegate a te: le ricerche fatte (città, discipline, filtri usati e numero di risultati) e quante volte ogni giorno viene aperto il profilo di un trainer. Le visite al sito e le pagine viste le conta Cloudflare Web Analytics, senza cookie e senza riconoscerti da una visita all’altra: a noi arrivano solo i totali (per esempio quante visite in un giorno e da quale sito sono arrivate).',
                         'Da dove sei arrivato quando ti sei iscritto: il canale (per esempio Google, Instagram o il nome di una campagna) e la prima pagina vista.',
@@ -89,6 +90,7 @@ const sections: LegalSection[] = [
                     'Mostrarti nella «Panoramica» i tuoi allenamenti, l’obiettivo e i traguardi: esecuzione del servizio (art. 6.1.b). Il peso nel tempo solo con il consenso esplicito (art. 9.2.a).',
                     'Mostrare i tuoi progressi a un trainer solo se attivi la condivisione con lui: il tuo consenso (art. 6.1.a, e 9.2.a per il peso), che revochi spegnendo l’interruttore.',
                     'Oggi non inviamo newsletter né novità promozionali. Se lo faremo, sarà solo con il tuo consenso, revocabile in ogni momento (art. 6.1.a).',
+                    'Leggere e risolvere i problemi che ci segnali con «Segnala un problema», e risponderti per email: legittimo interesse a far funzionare bene il servizio (art. 6.1.f).',
                     'Proteggere la piattaforma da abusi e accessi non autorizzati: legittimo interesse (art. 6.1.f).',
                     'Statistiche interne per migliorare il servizio (quanti utenti sono attivi, cosa si cerca e non si trova): legittimo interesse (art. 6.1.f). Le ricerche e le visite ai profili sono anonime; i giorni di attività si cancellano con l’account.',
                     'Rispettare obblighi di legge (art. 6.1.c).',
@@ -196,6 +198,7 @@ const sections: LegalSection[] = [
                     'Segnalazioni di errore (Sentry): 30 giorni.',
                     '«Messaggi» tra cliente e trainer: il testo finché esiste il rapporto (il cliente nei «Clienti» del trainer) e lo cancelliamo con l’account del cliente o quando il trainer chiude il profilo. Le foto e i PDF allegati li cancelliamo 10 giorni dopo l’invio.',
                     'Messaggi dalla pagina Contatti: non li salviamo sul sito. Arrivano nella casella email del team e li teniamo 12 mesi dalla risposta.',
+                    '«Segnala un problema», con lo screenshot: 90 giorni dall’invio, poi li cancelliamo; prima, se elimini l’account. Se ti rispondiamo per email, la conversazione resta nella casella del team come i messaggi dalla pagina Contatti.',
                     'Scelte sui cookie: 12 mesi dalla scelta, per poter dimostrare il consenso.',
                 ]}
             />
@@ -257,7 +260,7 @@ export default function Privacy() {
             pageName="Privacy policy"
             title="Informativa sulla privacy"
             intro="Come MioPersonal raccoglie e usa i tuoi dati quando cerchi un trainer, prenoti una seduta o ti iscrivi come personal trainer."
-            updatedOn="18 novembre 2026"
+            updatedOn="22 novembre 2026"
             summary={[
                 'Raccogliamo solo i dati che servono a farti trovare un trainer e a gestire le prenotazioni.',
                 'Email e telefono arrivano al trainer solo dopo che ha confermato una tua prenotazione.',

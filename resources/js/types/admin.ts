@@ -5,6 +5,8 @@ export type AdminAreaData = {
     gymVerificationCount: number;
     /** Messages of the Contatti page not read yet. */
     unreadMessages: number;
+    /** "Segnala un problema" not solved yet. */
+    openProblems: number;
     /** Contents reported with "Segnala" still to check. */
     openReports: number;
 };
@@ -47,6 +49,29 @@ export type AdminReport = {
 };
 
 /** A message of the Contatti page, in "Admin · Messaggi". */
+/** "Admin · Problemi segnalati": one report of "Segnala un problema". */
+export type AdminProblem = {
+    id: number;
+    name: string;
+    email: string;
+    /** "Cliente", "Trainer", "Palestra", "Admin". */
+    role: string;
+    message: string;
+    /** The path, without query string and tokens, e.g. "/area-trainer/oggi". */
+    page: string;
+    /** e.g. "iPhone · Safari". */
+    device: string;
+    /** e.g. "390×844". */
+    viewport: string | null;
+    /** Sent from the installed app. */
+    installed: boolean;
+    /** A link that works for 10 minutes, or null without screenshot. */
+    screenshotUrl: string | null;
+    /** ISO UTC string. */
+    createdAt: string;
+    solved: boolean;
+};
+
 export type AdminMessage = {
     id: number;
     name: string;

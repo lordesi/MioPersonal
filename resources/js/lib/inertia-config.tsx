@@ -2,6 +2,7 @@ import type { Page, SharedPageProps } from '@inertiajs/core';
 import type { ComponentType, ReactElement, ReactNode } from 'react';
 import AppErrorBoundary from '@/components/app-error-boundary';
 import CookieConsent from '@/components/cookies/cookie-consent';
+import ProblemReportHost from '@/components/problem-report/problem-report-host';
 import AppPrompt from '@/components/pwa/app-prompt';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -112,6 +113,7 @@ export function withApp(
             <Toaster />
             <CookieConsent initialPage={page} />
             <AppPrompt initialPage={page} />
+            <ProblemReportHost />
         </TooltipProvider>
     );
 }
