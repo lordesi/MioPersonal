@@ -20,6 +20,7 @@ use App\Support\TrainerSlots;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Saves steps 2–7 of "Diventa trainer", both the first time and when the
@@ -261,6 +262,23 @@ class SaveTrainerProfile
     }
 
     /**
+     * A PDF as it came; a photo of the certificate cleaned like every other photo
+     * (SafeImage): no EXIF left, such as the place where it was taken.
+     */
+    private function storeCertificate(UploadedFile $file, string $directory, string $field): string|false
+    {
+        if (! in_array(strtolower((string) $file->guessExtension()), ['jpg', 'jpeg', 'png'], true)) {
+            return $file->store($directory, TrainerDocument::DISK);
+        }
+
+        try {
+            return SafeImage::store($file, $directory, TrainerDocument::DISK);
+        } catch (\RuntimeException) {
+            throw ValidationException::withMessages([$field => 'Non siamo riusciti a leggere la foto dell’attestato: prova con un’altra o con un PDF.']);
+        }
+    }
+
+    /**
      * The list replaces the old one. A certification sent again with its id
      * keeps its file, unless a new file replaces it or remove_file (the ✕
      * next to the certificate) takes it away.
@@ -281,10 +299,19 @@ class SaveTrainerProfile
             $file = $certification['file'] ?? null;
 
             if ($file !== null) {
-                $stored = $file->store("trainers/{$profile->id}/certificates", TrainerDocument::DISK);
+                try {
+                    $stored = $this->storeCertificate($file, "trainers/{$profile->id}/certificates", "certifications.{$index}.file");
 
-                if ($stored === false) {
-                    throw new \RuntimeException('A certificate could not be stored.');
+                    if ($stored === false) {
+                        throw new \RuntimeException('A certificate could not be stored.');
+                    }
+                } catch (\Throwable $exception) {
+                    // The files of this list written so far: withFileCleanup() doesn't know them yet.
+                    foreach ($written as [$disk, $writtenPath]) {
+                        Storage::disk($disk)->delete($writtenPath);
+                    }
+
+                    throw $exception;
                 }
 
                 $written[] = [TrainerDocument::DISK, $stored];

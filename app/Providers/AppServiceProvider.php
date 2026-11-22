@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Enums\SocialProvider;
+use App\Http\Middleware\EnsureSessionCurrent;
 use App\Models\User;
 use App\Support\Socialite\FacebookProfileProvider;
 use App\Support\Socialite\GoogleCalendarProvider;
@@ -12,6 +13,7 @@ use App\Support\Socialite\YouTubeProvider;
 use App\Support\Staging;
 use App\Support\Stats;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -48,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
         $this->configureAuthEmails();
         $this->recordAcquisition();
+        $this->stampSessionVersion();
         $this->configureSocialDrivers();
         // The staging site never sends a real email.
         Staging::trapMail();
@@ -76,6 +79,21 @@ class AppServiceProvider extends ServiceProvider
 
             foreach ($drivers as $name => $class) {
                 $socialite->extend($name, fn () => $socialite->buildProvider($class, (array) config("services.{$name}")));
+            }
+        });
+    }
+
+    /**
+     * Every login (form, Google, "Ricordami") writes the user's session version
+     * in the session: EnsureSessionCurrent ends it once EndSessions raises it.
+     */
+    protected function stampSessionVersion(): void
+    {
+        Event::listen(Login::class, function (Login $event) {
+            $request = request();
+
+            if ($event->guard === 'web' && $event->user instanceof User && $request->hasSession()) {
+                EnsureSessionCurrent::stamp($request->session(), $event->user);
             }
         });
     }

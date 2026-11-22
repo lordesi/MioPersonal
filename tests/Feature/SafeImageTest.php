@@ -9,11 +9,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
+use Tests\Concerns\MakesTestImages;
 use Tests\TestCase;
 
 /** Uploaded photos lose their metadata: a phone photo can tell where it was taken. */
 class SafeImageTest extends TestCase
 {
+    use MakesTestImages;
     use RefreshDatabase;
 
     public function test_the_test_photo_really_has_gps_and_orientation()
@@ -57,6 +59,43 @@ class SafeImageTest extends TestCase
         SafeImage::clean('%PDF-1.4 not an image');
     }
 
+    public function test_a_decompression_bomb_is_refused_before_decoding()
+    {
+        // 60 000 × 60 000 px in a few bytes: GD would ask for about 14 GB.
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('too large');
+
+        SafeImage::clean($this->pngBomb());
+    }
+
+    public function test_the_phone_photos_of_48_mp_are_still_within_the_limit()
+    {
+        $this->assertGreaterThan(8064 * 6048, SafeImage::MAX_PIXELS);
+    }
+
+    public function test_the_upload_of_a_bomb_gets_a_message_instead_of_an_error()
+    {
+        Storage::fake(User::AVATAR_DISK);
+        $client = User::factory()->create();
+
+        $this->actingAs($client)
+            ->post(route('client.complete-profile.photo'), [
+                'photo' => UploadedFile::fake()->createWithContent('bomba.png', $this->pngBomb()),
+            ])
+            ->assertSessionHasErrors(['photo' => 'La foto è troppo grande: usa un’immagine fino a 50 megapixel.']);
+
+        $this->assertNull($client->refresh()->avatar_path);
+        $this->assertSame([], Storage::disk(User::AVATAR_DISK)->allFiles());
+    }
+
+    public function test_the_lighter_copies_skip_a_bomb_already_on_the_disk()
+    {
+        Storage::fake(SafeImage::VARIANTS_DISK);
+        Storage::disk(SafeImage::VARIANTS_DISK)->put('gyms/bomba.png', $this->pngBomb());
+
+        $this->assertSame(0, SafeImage::makeVariants('gyms/bomba.png'));
+    }
+
     public function test_an_uploaded_avatar_is_saved_without_metadata()
     {
         Storage::fake(User::AVATAR_DISK);
@@ -83,34 +122,5 @@ class SafeImageTest extends TestCase
         $this->artisan('photos:strip-metadata')->assertSuccessful();
 
         $this->assertArrayNotHasKey('GPSLatitudeRef', $this->exif((string) Storage::disk(TrainerPhoto::DISK)->get('avatars/old.jpg')));
-    }
-
-    /**
-     * A JPEG as a phone makes it: EXIF with Orientation 6 (turned) and a GPS block.
-     */
-    private function phonePhoto(int $width = 300, int $height = 200): string
-    {
-        $image = imagecreatetruecolor($width, $height);
-        ob_start();
-        imagejpeg($image);
-        $jpeg = (string) ob_get_clean();
-
-        // TIFF, little endian. IFD0 at 8: Orientation = 6, GPS IFD pointer.
-        $ifd0 = pack('v', 2)
-            .pack('vvVvv', 0x0112, 3, 1, 6, 0)
-            .pack('vvVV', 0x8825, 4, 1, 8 + 2 + 2 * 12 + 4)
-            .pack('V', 0);
-        // GPS IFD: GPSLatitudeRef = "N".
-        $gps = pack('v', 1).pack('vvV', 0x0001, 2, 2).'N'."\0\0\0".pack('V', 0);
-        $exif = "Exif\0\0".'II'.pack('v', 42).pack('V', 8).$ifd0.$gps;
-
-        // APP1 right after the start of image marker.
-        return substr($jpeg, 0, 2)."\xFF\xE1".pack('n', strlen($exif) + 2).$exif.substr($jpeg, 2);
-    }
-
-    /** @return array<string, mixed> */
-    private function exif(string $jpeg): array
-    {
-        return @exif_read_data('data://image/jpeg;base64,'.base64_encode($jpeg)) ?: [];
     }
 }

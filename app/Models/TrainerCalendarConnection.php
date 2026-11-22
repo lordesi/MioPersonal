@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,6 +37,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'google_user_id', 'google_email', 'access_token', 'refresh_token', 'token_expires_at',
     'calendar_id', 'last_error', 'connected_at', 'last_synced_at', 'reads_busy_at', 'busy_synced_at',
 ])]
+// Never in a page or a JSON answer, even if the model ends up in one: the cast decrypts them.
+#[Hidden(['access_token', 'refresh_token'])]
 class TrainerCalendarConnection extends Model
 {
     /** The name of the calendar made on the trainer's Google account. */

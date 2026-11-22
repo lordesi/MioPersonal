@@ -25,6 +25,14 @@ class SafeImage
     /** The long side of the saved photo, at most. */
     public const MAX_SIDE = 2000;
 
+    /**
+     * The largest photo accepted, in pixels: 50 MP, above the 48 MP of the
+     * phones. Without it, a small PNG of one colour (it compresses about 1000
+     * to 1) asks GD for gigabytes and takes the server down (a "decompression
+     * bomb"). The upload rules give the message first (App\Rules\ImagePixels).
+     */
+    public const MAX_PIXELS = 50_000_000;
+
     private const JPEG_QUALITY = 85;
 
     /**
@@ -103,7 +111,8 @@ class SafeImage
         $contents = (string) $storage->get($path);
         $info = @getimagesizefromstring($contents);
 
-        if ($info === false) {
+        // Not an image, or one never cleaned by store() (too large to decode).
+        if ($info === false || $info[0] * $info[1] > self::MAX_PIXELS) {
             return 0;
         }
 
@@ -202,6 +211,9 @@ class SafeImage
 
         $isJpeg = $info[2] === IMAGETYPE_JPEG;
 
+        // Checked before decoding: a few MB of PNG can hold billions of pixels.
+        self::ensureNotTooLarge($info[0], $info[1]);
+
         // A 5 MB JPEG can be 48 MP: about 200 MB once decoded.
         self::ensureMemory($info[0] * $info[1]);
 
@@ -288,6 +300,14 @@ class SafeImage
     }
 
     /** About 5 bytes per pixel for GD, twice while resizing, plus some room. */
+    private static function ensureNotTooLarge(int $width, int $height): void
+    {
+        if ($width < 1 || $height < 1 || $width * $height > self::MAX_PIXELS) {
+            throw new RuntimeException("The image is too large ({$width}×{$height}).");
+        }
+    }
+
+    /** Raised only within MAX_PIXELS (ensureNotTooLarge): at most about 560 MB. */
     private static function ensureMemory(int $pixels): void
     {
         $needed = $pixels * 5 * 2 + 64 * 1024 * 1024;

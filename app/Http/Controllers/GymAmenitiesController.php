@@ -7,6 +7,7 @@ use App\Http\Controllers\Concerns\BuildsGymArea;
 use App\Models\GymAmenityDetail;
 use App\Models\GymPhoto;
 use App\Models\GymProfile;
+use App\Rules\ImagePixels;
 use App\Support\SafeImage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,7 +55,7 @@ class GymAmenitiesController extends Controller
 
         $data = $request->validate([
             'description' => ['nullable', 'string', 'max:'.GymAmenityDetail::DESCRIPTION_MAX],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=800,min_height=500'],
+            'photo' => ['nullable', 'image', new ImagePixels, 'mimes:jpg,jpeg,png', 'max:5120', 'dimensions:min_width=800,min_height=500'],
         ], [
             'description.max' => 'La descrizione può avere al massimo '.GymAmenityDetail::DESCRIPTION_MAX.' caratteri.',
             'photo.image' => 'La foto deve essere un’immagine JPG o PNG.',

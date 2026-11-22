@@ -9,6 +9,7 @@ use App\Models\Message;
 use App\Models\TrainerClient;
 use App\Models\User;
 use App\Notifications\MessageReceived;
+use App\Rules\ImagePixels;
 use App\Support\ClientBookingData;
 use App\Support\SafeImage;
 use Illuminate\Http\JsonResponse;
@@ -165,7 +166,7 @@ class MessagesController extends Controller
         $data = $request->validate([
             'body' => ['nullable', 'string', 'max:'.Message::BODY_MAX, 'required_without_all:attachment,photo'],
             'attachment' => ['nullable', 'file', 'mimes:pdf', 'max:'.Message::ATTACHMENT_MAX_KB],
-            'photo' => ['nullable', 'prohibits:attachment', 'image', 'mimes:jpg,jpeg,png', 'max:'.Message::PHOTO_MAX_KB],
+            'photo' => ['nullable', 'prohibits:attachment', 'image', new ImagePixels, 'mimes:jpg,jpeg,png', 'max:'.Message::PHOTO_MAX_KB],
         ], [
             'body.required_without_all' => 'Scrivi un messaggio o allega una foto o un PDF.',
             'body.max' => 'Il messaggio può avere al massimo '.Message::BODY_MAX.' caratteri.',

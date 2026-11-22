@@ -103,10 +103,17 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureRateLimiting(): void
     {
+        // 5 a minute from one address, and 30 an hour on one email from anywhere:
+        // many addresses trying passwords on the same account stop too. Kept wide,
+        // as who knows an email could otherwise lock its owner out; "Password
+        // dimenticata" and Google keep working.
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $email = Str::transliterate(Str::lower((string) $request->input(Fortify::username())));
 
-            return Limit::perMinute(5)->by($throttleKey);
+            return [
+                Limit::perMinute(5)->by($email.'|'.$request->ip()),
+                Limit::perHour(30)->by('email|'.$email),
+            ];
         });
     }
 

@@ -22,6 +22,7 @@ class SignupThrottleTest extends TestCase
         $this->post(route('register.store'), ['email' => 'bot10@example.com'])
             ->assertTooManyRequests();
         $this->post(route('trainer.register.store'))->assertTooManyRequests();
+        $this->post(route('gym.register.store'))->assertTooManyRequests();
 
         // Another address is not affected.
         $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.2'])

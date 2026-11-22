@@ -124,6 +124,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'acquisition' => 'array',
             'notification_settings' => 'array',
             'two_factor_confirmed_at' => 'datetime',
+            'session_version' => 'integer',
         ];
     }
 
