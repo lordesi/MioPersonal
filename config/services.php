@@ -59,9 +59,11 @@ return [
 
     // "Collega Google Calendar" (App\Http\Controllers\TrainerCalendarController::connect): the
     // same Google client as the login, with the Calendar API on and this redirect added to it.
+    // GOOGLE_CALENDAR_CLIENT_*: a client of a second Google project, only for Calendar, so its
+    // verification (sensitive scopes, the 100-user cap of unverified apps) never touches the login.
     'google-calendar' => [
-        'client_id' => env('GOOGLE_CLIENT_ID'),
-        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'client_id' => env('GOOGLE_CALENDAR_CLIENT_ID') ?: env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CALENDAR_CLIENT_ID') ? env('GOOGLE_CALENDAR_CLIENT_SECRET') : env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_CALENDAR_REDIRECT_URI', '/area-trainer/calendario-google/callback'),
     ],
 

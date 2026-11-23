@@ -171,6 +171,67 @@ Senza queste variabili il sito funziona: niente script e "—" al posto delle vi
 - Il deploy entra nel server via SSH con l'IP, non con il dominio: la nuvola arancione non lo tocca. Il
   controllo di `/up` dopo il deploy si fa dal server stesso.
 
+## Backup automatici
+
+Ogni notte alle 02:30 UTC lo scheduler lancia [`scripts/backup.sh`](../scripts/backup.sh) (solo in
+produzione):
+
+- **database**: un `pg_dump` per notte in `db/` su Backblaze B2. Le copie con più di 30 giorni vengono
+  cancellate. Le ultime 7 restano anche sul server, in `~/backups/…-notte.dump`;
+- **foto e attestati**: `storage/app/public` e `storage/app/private` in `files/current/`. Quello che il sito
+  cancella o sostituisce finisce in `files/deleted-AAAA-MM-GG/`, che viene tolto dopo 30 giorni. Non vengono
+  copiati gli allegati dei «Messaggi» (`chat/`, il sito li cancella dopo 10 giorni) né le copie WebP delle foto
+  (le rifà `php8.4 artisan photos:variants`);
+- **tutto cifrato** sul server da rclone prima di partire: Backblaze vede solo file illeggibili;
+- **Healthchecks.io** riceve un segnale all'inizio e alla fine. Se una notte manca, manda un'email.
+
+Si torna indietro di 30 giorni al massimo, ed è voluto: l'informativa promette che i dati di un account
+eliminato spariscono dalle copie di sicurezza entro 30 giorni. Il log è in `storage/logs/backup.log`.
+
+Finché il server non ha il remote rclone `miopersonal-backup`, lo script si ferma e scrive
+"Backup skipped" nel log.
+
+**Le chiavi**:
+
+- la chiave di Backblaze (keyID e applicationKey);
+- le **due password di rclone** (password e salt): senza queste i backup non si aprono più;
+- l'indirizzo di Healthchecks.
+
+Stanno nel gestore di password di tutti e due e sul server (`~/.config/rclone/rclone.conf` e
+`BACKUP_HEALTHCHECK_URL` nel `.env`), mai nel repository.
+
+Lanciarlo a mano e vedere cosa c'è su B2:
+
+```
+cd /home/ploi/miopersonal.it && bash scripts/backup.sh
+rclone ls miopersonal-backup:db/
+rclone size miopersonal-backup:
+```
+
+**Prova di ripristino** (ogni 3 mesi e prima del lancio). Non tocca il sito:
+
+```
+mkdir -p /tmp/ripristino
+rclone copy miopersonal-backup:db/ /tmp/ripristino/ --max-age 2d
+pg_restore --list /tmp/ripristino/*.dump | head -20
+rclone ls miopersonal-backup:files/current/ | head
+rm -rf /tmp/ripristino
+```
+
+Deve comparire l'elenco delle tabelle (`users`, `bookings`…) e alcune foto.
+
+**Ripristino vero**: sostituisce i dati del sito, quindi **chiamatevi prima e fatelo con Claude**.
+
+1. Prima un backup a mano dello stato attuale (sezione sotto).
+2. Il database: `rclone copy miopersonal-backup:db/<file>.dump ~/backups/`, poi
+   `pg_restore --clean --if-exists` con gli stessi parametri di `pg_dump` qui sotto.
+3. I file: `rclone copy miopersonal-backup:files/current/public storage/app/public`, e lo stesso per
+   `private`. Un file cancellato per sbaglio si recupera da `files/deleted-<giorno>/`.
+4. `php8.4 artisan photos:variants` rifà le copie WebP delle foto.
+
+Se il server non c'è più, su un server nuovo basta reinstallare rclone e rifare i due remote con le stesse
+chiavi e le stesse password: i backup tornano leggibili.
+
 ## Backup del database
 
 Prima di un rilascio delicato. Sul server (`ssh ploi@2.28.40.245`):
