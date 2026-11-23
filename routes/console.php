@@ -285,6 +285,17 @@ Artisan::command('cookie-consents:prune', function () {
 
 Schedule::command('cookie-consents:prune')->dailyAt('05:05');
 
+// The nightly backup (scripts/backup.sh): database, photos and certificates, encrypted, to
+// Backblaze B2. Only on the server; it does nothing until rclone is set up (docs/deploy.md).
+// 02:30 UTC: before the automatic reboot of the security updates (03:15) and the
+// sessions of the "sedute fisse" (03:30). In the background: the minute tasks don't wait.
+Schedule::exec('bash '.escapeshellarg(base_path('scripts/backup.sh')))
+    ->dailyAt('02:30')
+    ->environments(['production'])
+    ->withoutOverlapping(180)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/backup.log'));
+
 // The messages of the Contatti page ("Admin · Messaggi"): the privacy policy keeps them ContactMessage::RETENTION_MONTHS.
 Artisan::command('contact-messages:prune', function () {
     $count = ContactMessage::query()

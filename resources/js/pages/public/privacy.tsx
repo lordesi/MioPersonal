@@ -157,7 +157,7 @@ const sections: LegalSection[] = [
                         'Il team di MioPersonal, solo per verificare i profili dei trainer, rispondere alle tue richieste e gestire le segnalazioni.',
                         'Se usi «Continua con Google», Google sa che hai fatto l’accesso a MioPersonal: per quella parte è un titolare autonomo, con la sua informativa.',
                         'Se sei un trainer e colleghi Google Calendar, Google riceve le sedute che scriviamo nel tuo calendario «MioPersonal» (servizio, nome del cliente, luogo, data e orario): per il tuo account Google è un titolare autonomo, con la sua informativa.',
-                        'I fornitori che ci aiutano a far funzionare il servizio, nominati responsabili del trattamento: Hetzner Online GmbH (Germania) per i server, Brevo (Sendinblue SAS, Francia) per l’invio delle email, Cloudflare (Cloudflare Inc., USA) per la rete che porta il sito fino a te, la protezione dagli attacchi e il conteggio anonimo delle visite, e Sentry (Functional Software Inc., USA) per la segnalazione degli errori tecnici. A Sentry arrivano solo i dettagli dell’errore (pagina, browser, punto del codice in cui si è verificato), senza nome, email o indirizzo IP e senza cookie.',
+                        'I fornitori che ci aiutano a far funzionare il servizio, nominati responsabili del trattamento: Hetzner Online GmbH (Germania) per i server, Brevo (Sendinblue SAS, Francia) per l’invio delle email, Cloudflare (Cloudflare Inc., USA) per la rete che porta il sito fino a te, la protezione dagli attacchi e il conteggio anonimo delle visite, Sentry (Functional Software Inc., USA) per la segnalazione degli errori tecnici e Backblaze (Backblaze Inc., USA) per conservare le copie di sicurezza. A Sentry arrivano solo i dettagli dell’errore (pagina, browser, punto del codice in cui si è verificato), senza nome, email o indirizzo IP e senza cookie. Le copie di sicurezza le cifriamo sui nostri server prima di inviarle: Backblaze non può leggerle.',
                     ]}
                 />
                 <LegalParagraph>
@@ -174,10 +174,11 @@ const sections: LegalSection[] = [
             <LegalParagraph>
                 I dati sono conservati su server di Hetzner situati nell’Unione
                 europea. Anche le segnalazioni di errore restano nella regione
-                europea di Sentry. Sentry e Cloudflare però sono società
-                statunitensi, quindi per un eventuale accesso dagli Stati Uniti
-                valgono le garanzie previste dal GDPR: il Data Privacy Framework
-                UE-USA e le clausole contrattuali standard.
+                europea di Sentry, e le copie di sicurezza, cifrate, nella
+                regione europea di Backblaze. Sentry, Cloudflare e Backblaze
+                però sono società statunitensi, quindi per un eventuale accesso
+                dagli Stati Uniti valgono le garanzie previste dal GDPR: il Data
+                Privacy Framework UE-USA e le clausole contrattuali standard.
             </LegalParagraph>
         ),
     },
@@ -260,7 +261,7 @@ export default function Privacy() {
             pageName="Privacy policy"
             title="Informativa sulla privacy"
             intro="Come MioPersonal raccoglie e usa i tuoi dati quando cerchi un trainer, prenoti una seduta o ti iscrivi come personal trainer."
-            updatedOn="22 novembre 2026"
+            updatedOn="23 novembre 2026"
             summary={[
                 'Raccogliamo solo i dati che servono a farti trovare un trainer e a gestire le prenotazioni.',
                 'Email e telefono arrivano al trainer solo dopo che ha confermato una tua prenotazione.',
