@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { profile } from '@/routes/trainer';
 
 type ProfilePageProps = {
-    /** "Servizi e <strong>prezzi</strong>": light, the strong part bold. */
+    /** "Servizi e prezzi". */
     title: ReactNode;
     /** Under the title, grey. */
     intro?: ReactNode;
@@ -20,8 +20,8 @@ type ProfilePageProps = {
 };
 
 /**
- * A page of "Profilo" (services, hours, settings…) drawn as the steps of
- * "Diventa trainer": the big light title with a grey intro, then the
+ * A page of "Profilo" (services, hours, reviews…) in the "carbone" design:
+ * "‹ Profilo", the bold title with a grey line under it, then the
  * sections in a column of 960px on desktop. Phones get "‹ Profilo" from the
  * layout; desktop has it here.
  */
@@ -39,24 +39,24 @@ export default function ProfilePage({
     return (
         <div
             className={cn(
-                'flex w-full flex-col gap-10 md:mx-auto md:max-w-240 md:gap-12 md:pt-4 md:pb-8',
+                'flex w-full max-w-240 flex-col gap-8 md:pb-8',
                 className,
             )}
         >
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
                 {/* Phones: the layout has "‹ Profilo"; another way back is shown here. */}
                 {(!isMobile || customBack) && (
                     <Link
                         href={back.href}
-                        className="-ml-1 inline-flex min-h-9 items-center gap-1 self-start text-[15px] font-semibold text-brand outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        className="-ml-1 inline-flex min-h-11 items-center gap-1 self-start text-base font-semibold text-brand outline-none hover:text-brand-hover focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                        <ChevronLeft aria-hidden="true" className="size-4.5" />
+                        <ChevronLeft aria-hidden="true" className="size-5" />
                         {back.label}
                     </Link>
                 )}
                 <div className="flex flex-wrap items-end justify-between gap-4">
-                    <div className="flex min-w-0 flex-col gap-2 md:gap-2.5">
-                        <h1 className="text-[34px] leading-[1.12] font-light tracking-[-0.035em] text-balance md:text-5xl md:leading-[1.1] md:tracking-[-0.03em] [&_strong]:font-bold">
+                    <div className="flex min-w-0 flex-col gap-1.5">
+                        <h1 className="text-[34px] leading-[1.08] font-bold tracking-[-0.03em] text-balance md:text-[40px]">
                             {title}
                         </h1>
                         {intro && (

@@ -1,5 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import AuthPhotoShell, {
+    authButtonClassName,
     authLinkClassName,
 } from '@/components/auth/auth-photo-shell';
 import FormField from '@/components/auth/form-field';
@@ -129,7 +130,7 @@ export default function Login({
                                 type="submit"
                                 disabled={processing}
                                 data-test="login-button"
-                                className="btn-brand h-12.5 text-[17px]"
+                                className={authButtonClassName}
                             >
                                 {processing && <Spinner />}
                                 Accedi

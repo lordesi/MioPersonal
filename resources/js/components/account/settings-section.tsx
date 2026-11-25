@@ -1,6 +1,13 @@
 import type { LucideIcon } from 'lucide-react';
+import { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+
+/**
+ * True inside a page of its own ("Impostazioni › Dati personali" of the
+ * client): no card and no title, the page has them.
+ */
+export const BareSettingsSection = createContext(false);
 
 type SettingsSectionProps = {
     /** Anchor of the section menu, e.g. "dati" → "#dati". */
@@ -23,6 +30,27 @@ export default function SettingsSection({
     children,
 }: SettingsSectionProps) {
     const titleId = `${id}-title`;
+    const bare = useContext(BareSettingsSection);
+
+    if (bare) {
+        return (
+            <section
+                id={id}
+                aria-labelledby={titleId}
+                className="flex flex-col gap-4.5"
+            >
+                <h2 id={titleId} className="sr-only">
+                    {title}
+                </h2>
+                {description && (
+                    <p className="text-[15px] leading-5 text-muted-foreground">
+                        {description}
+                    </p>
+                )}
+                {children}
+            </section>
+        );
+    }
 
     return (
         <section

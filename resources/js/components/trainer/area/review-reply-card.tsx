@@ -1,14 +1,10 @@
-import { router, usePage } from '@inertiajs/react';
-import { Check, MessageCircle } from 'lucide-react';
+import { router } from '@inertiajs/react';
 import { useId, useState } from 'react';
 import InputError from '@/components/input-error';
-import UserAvatar from '@/components/shared/user-avatar';
-import StarRating from '@/components/trainer/star-rating';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useInitials } from '@/hooks/use-initials';
+import { areaButtonClassName } from '@/components/mp/area-bits';
+import { Initials } from '@/components/trainer/ui/bits';
 import { formatPastDate } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { reply as replyRoute } from '@/routes/trainer/reviews';
 import type { TrainerAreaReview } from '@/types';
 
@@ -16,8 +12,9 @@ import type { TrainerAreaReview } from '@/types';
 const REPLY_MAX = 1000;
 
 /**
- * A client's review in "Recensioni" (docs/design), with the trainer's public
- * reply or the form to write it. One reply only: it cannot be changed.
+ * A client's review in "Recensioni" (design "Trainer · Recensioni · nuovo"):
+ * who, when and the stars, the text, then the trainer's public reply or
+ * "Rispondi". One reply only: it cannot be changed.
  */
 export default function ReviewReplyCard({
     review,
@@ -26,8 +23,6 @@ export default function ReviewReplyCard({
 }) {
     const nameId = useId();
     const replyId = useId();
-    const { auth } = usePage().props;
-    const getInitials = useInitials();
     const [formOpen, setFormOpen] = useState(false);
     const [draft, setDraft] = useState('');
     const [error, setError] = useState<string>();
@@ -54,80 +49,64 @@ export default function ReviewReplyCard({
     return (
         <article
             aria-labelledby={nameId}
-            className="flex flex-col gap-4.5 rounded-[26px] bg-card p-4 md:rounded-[20px] md:bg-transparent md:p-6 md:shadow-[inset_0_0_0_1px_var(--border)]"
+            className="flex flex-col gap-2.5 border-b border-separator py-4.5"
         >
-            <div className="flex flex-wrap items-center gap-3">
-                <UserAvatar
-                    name={review.authorName}
-                    size="md"
-                    className="size-11 text-sm font-bold [&_[data-slot=avatar-fallback]]:bg-sidebar [&_[data-slot=avatar-fallback]]:text-sidebar-foreground"
-                />
-                <span className="flex min-w-45 flex-1 flex-col">
-                    <h2 id={nameId} className="text-base font-semibold">
+            <div className="flex items-center gap-3">
+                <Initials name={review.authorName} size={40} />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <h2
+                        id={nameId}
+                        className="truncate text-base leading-5.5 font-semibold"
+                    >
                         {review.authorName}
                     </h2>
-                    <span className="text-[13px] leading-4.5 text-foreground/70">
+                    <span className="truncate text-[13px] leading-4.5 text-muted-foreground">
                         {review.serviceName && `${review.serviceName} · `}
                         {formatPastDate(review.date)}
+                        {review.fromSession && ' · Seduta svolta'}
                     </span>
                 </span>
-                {review.fromSession && (
-                    <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-[#262626] px-2.5 text-xs font-semibold">
-                        <Check
-                            aria-hidden="true"
-                            className="size-3.25"
-                            strokeWidth={2.5}
-                        />
-                        Seduta svolta
+                <span
+                    role="img"
+                    aria-label={`${review.rating} stelle su 5`}
+                    className="shrink-0 tracking-[0.05em] text-brand"
+                >
+                    {'★'.repeat(review.rating)}
+                    <span className="text-[#2e3135]">
+                        {'★'.repeat(5 - review.rating)}
                     </span>
-                )}
+                </span>
             </div>
 
-            <div className="flex flex-col gap-2.5">
-                <StarRating value={review.rating} size="lg" />
-                <p className="text-lg leading-7 font-medium tracking-[-0.01em]">
-                    “{review.text}”
-                </p>
-            </div>
+            <p className="text-base leading-6">{review.text}</p>
 
             {review.reply ? (
-                <div className="flex flex-col gap-2 rounded-[18px] bg-[#262626] px-4.5 py-4 text-foreground md:bg-card">
-                    <span className="flex items-center gap-2">
-                        <span
-                            aria-hidden="true"
-                            className="flex size-6.5 items-center justify-center rounded-full bg-sidebar-primary text-[10px] font-bold text-sidebar-primary-foreground"
-                        >
-                            {getInitials(auth.user?.name ?? '')}
-                        </span>
-                        <span className="text-[13px] leading-4.5 font-semibold">
-                            La tua risposta
-                        </span>
+                <div className="flex flex-col gap-1 rounded-2xl bg-card px-3.5 py-3">
+                    <span className="text-xs font-semibold tracking-[0.02em] text-muted-foreground">
+                        LA TUA RISPOSTA
                     </span>
-                    <p className="text-sm leading-5.25 whitespace-pre-wrap text-sidebar-foreground/90">
+                    <p className="text-[15px] leading-5 whitespace-pre-wrap">
                         {review.reply}
                     </p>
                 </div>
             ) : formOpen ? (
-                <div className="flex flex-col gap-2.5 rounded-[20px] bg-[#262626] p-4">
-                    <Label
-                        htmlFor={replyId}
-                        className="text-[13px] leading-4.5"
-                    >
+                <div className="flex flex-col gap-2">
+                    <label htmlFor={replyId} className="sr-only">
                         Rispondi {replyTo}
-                    </Label>
-                    <Textarea
+                    </label>
+                    <textarea
                         id={replyId}
                         rows={3}
                         maxLength={REPLY_MAX}
                         value={draft}
                         autoFocus
-                        placeholder="Ringrazia e aggiungi un dettaglio sulla seduta…"
+                        placeholder={`Rispondi ${replyTo} con gentilezza`}
                         onChange={(event) => {
                             setDraft(event.target.value);
                             setError(undefined);
                         }}
                         aria-invalid={error ? true : undefined}
-                        className="rounded-[18px] border-0 bg-transparent px-4 py-3 text-[17px] leading-5.25 shadow-[inset_0_0_0_1px_var(--field)] focus-visible:shadow-[inset_0_0_0_1.5px_var(--brand)] focus-visible:ring-0 md:text-[15px]"
+                        className="min-h-24 w-full resize-none rounded-[14px] border border-input bg-card px-4 py-3 text-[17px] leading-5.5 outline-none placeholder:text-muted-foreground focus-visible:border-ring md:text-base"
                     />
                     <InputError message={error} />
                     <div className="flex flex-wrap items-center justify-between gap-2.5">
@@ -135,40 +114,40 @@ export default function ReviewReplyCard({
                             {draft.length} / {REPLY_MAX}
                         </span>
                         <span className="flex gap-2">
-                            <Button
+                            <button
                                 type="button"
-                                variant="outline"
-                                className="h-10 rounded-[10px] px-3.5 font-semibold"
                                 disabled={sending}
                                 onClick={() => {
                                     setFormOpen(false);
                                     setError(undefined);
                                 }}
+                                className={areaButtonClassName('ghost', 'sm')}
                             >
                                 Annulla
-                            </Button>
-                            <Button
+                            </button>
+                            <button
                                 type="button"
-                                data-fill
-                                className="h-10 px-4 font-semibold"
                                 disabled={draft.trim() === '' || sending}
                                 onClick={publish}
+                                className={cn(
+                                    areaButtonClassName('primary', 'sm'),
+                                    'min-h-10 px-4.5',
+                                )}
                             >
                                 Pubblica risposta
-                            </Button>
+                            </button>
                         </span>
                     </div>
                 </div>
             ) : (
-                <div className="flex justify-end border-t pt-4">
-                    <Button
+                <div>
+                    <button
                         type="button"
-                        className="h-11 rounded-xl px-4.5 font-semibold"
                         onClick={() => setFormOpen(true)}
+                        className="inline-flex h-9 items-center rounded-full px-3.5 text-sm font-semibold shadow-[inset_0_0_0_1px_var(--input)] outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                        <MessageCircle aria-hidden="true" />
                         Rispondi
-                    </Button>
+                    </button>
                 </div>
             )}
         </article>

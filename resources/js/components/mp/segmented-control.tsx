@@ -59,7 +59,7 @@ export default function SegmentedControl<T extends string>({
                 'flex w-full gap-0.5 rounded-full',
                 tone === 'white'
                     ? 'p-1 shadow-[inset_0_0_0_1px_var(--field)]'
-                    : 'p-0.5 shadow-[inset_0_0_0_1px_var(--border)]',
+                    : 'p-0.5 shadow-[inset_0_0_0_1px_#26282c]',
                 className,
             )}
         >

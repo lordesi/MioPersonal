@@ -10,10 +10,8 @@ import TimeGrid from '@/components/trainer/calendar/time-grid';
 import type { CalendarViewProps } from '@/components/trainer/calendar/types';
 import ViewMenu from '@/components/trainer/calendar/view-switch';
 import WeekStrip from '@/components/trainer/home/week-strip';
-import {
-    brandFilledButtonClassName,
-    pageTitleClassName,
-} from '@/components/trainer/ui/styles';
+import { areaTitleClassName } from '@/components/mp/area-bits';
+import TrainerHeaderActions from '@/components/trainer/area/trainer-header-actions';
 import {
     addDays,
     mondayOf,
@@ -75,32 +73,32 @@ export default function CalendarMobile(props: CalendarViewProps) {
 
     return (
         <>
-            <header className="flex min-h-13 items-center gap-2">
-                <h1 className={cn(pageTitleClassName, 'mr-auto')}>
-                    Calendario
-                </h1>
-                <ViewMenu
-                    view={view}
-                    onChange={(next) => show(next, selectedDay)}
-                />
-                {sessionOptions && (
-                    <button
-                        type="button"
-                        onClick={(event) => onAdd(event.currentTarget)}
-                        aria-label="Nuova seduta"
-                        className={cn(
-                            brandFilledButtonClassName,
-                            'size-11 px-0',
-                        )}
-                    >
-                        <Plus
-                            aria-hidden="true"
-                            className="size-5.5"
-                            strokeWidth={2.25}
-                        />
-                    </button>
-                )}
+            <header className="flex items-start justify-between gap-3">
+                <h1 className={areaTitleClassName}>Calendario</h1>
+                <div className="flex items-center gap-1.5">
+                    {sessionOptions && (
+                        <button
+                            type="button"
+                            onClick={(event) => onAdd(event.currentTarget)}
+                            aria-label="Aggiungi una seduta"
+                            className="flex size-11 items-center justify-center rounded-full bg-brand text-black outline-none hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        >
+                            <Plus
+                                aria-hidden="true"
+                                className="size-5.5"
+                                strokeWidth={2.6}
+                            />
+                        </button>
+                    )}
+                    <TrainerHeaderActions bell={false} />
+                </div>
             </header>
+
+            <ViewMenu
+                view={view}
+                onChange={(next) => show(next, selectedDay)}
+                className="-mt-3"
+            />
 
             {view === 'month' && (
                 <section

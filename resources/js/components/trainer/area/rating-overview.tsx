@@ -1,5 +1,3 @@
-import { useId } from 'react';
-import StarRating from '@/components/trainer/star-rating';
 import { formatRating } from '@/lib/format';
 
 type RatingOverviewProps = {
@@ -12,8 +10,9 @@ type RatingOverviewProps = {
 };
 
 /**
- * The black "LA TUA MEDIA" of "Recensioni" (docs/design): the average, how
- * many reviews and how many of each star.
+ * The average of "Recensioni" (design "Trainer · Recensioni · nuovo"): the
+ * big number with the stars and how many reviews, and on the right how many
+ * of each star.
  */
 export default function RatingOverview({
     average,
@@ -21,64 +20,58 @@ export default function RatingOverview({
     ratings,
     allFromSession,
 }: RatingOverviewProps) {
-    const titleId = useId();
     const rows = [5, 4, 3, 2, 1].map((stars) => ({
         stars,
         count: ratings.filter((rating) => rating === stars).length,
     }));
     const total = Math.max(1, ratings.length);
+    const rounded = Math.round(average);
 
     return (
-        <aside
-            aria-labelledby={titleId}
-            className="flex flex-[2_1_300px] flex-col gap-4.5 rounded-[26px] bg-card p-4 text-foreground md:rounded-[20px] md:bg-transparent md:p-5 md:shadow-[inset_0_0_0_1px_var(--border)]"
-        >
-            <div className="flex flex-col gap-1.5">
-                <h2
-                    id={titleId}
-                    className="text-xs font-semibold tracking-[0.08em] text-sidebar-muted-foreground"
+        <section aria-label="La tua media" className="flex items-center gap-6">
+            <div className="flex shrink-0 flex-col gap-0.5">
+                <b className="text-[56px] leading-none font-bold tracking-[-0.04em] tabular-nums">
+                    {formatRating(average)}
+                </b>
+                <span
+                    role="img"
+                    aria-label={`${formatRating(average)} su 5`}
+                    className="text-lg tracking-[0.05em] text-brand"
                 >
-                    LA TUA MEDIA
-                </h2>
-                <div className="flex items-baseline gap-2.5">
-                    <span className="text-[52px] leading-14 font-bold tracking-[-0.04em] tabular-nums">
-                        {formatRating(average)}
+                    {'★'.repeat(rounded)}
+                    <span className="text-[#2e3135]">
+                        {'★'.repeat(5 - rounded)}
                     </span>
-                    <span className="text-sm text-sidebar-muted-foreground">
-                        su 5
-                    </span>
-                </div>
-                <StarRating value={Math.round(average)} size="lg" />
-                <span className="text-sm text-sidebar-foreground/80 tabular-nums">
+                </span>
+                <span className="text-[13px] text-muted-foreground tabular-nums">
                     {count === 1 ? '1 recensione' : `${count} recensioni`}
-                    {allFromSession && ' · tutte da sedute svolte'}
+                    {allFromSession && ', da sedute svolte'}
                 </span>
             </div>
 
             <div
                 role="img"
                 aria-label={`Distribuzione: ${rows.map((row) => `${row.stars} ${row.stars === 1 ? 'stella' : 'stelle'} ${row.count}`).join(', ')}`}
-                className="flex flex-col gap-2"
+                className="flex min-w-0 flex-1 flex-col gap-1.5"
             >
                 {rows.map((row) => (
-                    <div key={row.stars} className="flex items-center gap-2.5">
-                        <span className="w-3.5 text-[13px] leading-4.5 font-semibold text-sidebar-foreground/80 tabular-nums">
-                            {row.stars}
-                        </span>
-                        <span className="h-2 flex-1 overflow-hidden rounded-full bg-sidebar-border">
+                    <div
+                        key={row.stars}
+                        className="flex items-center gap-2 text-[13px] text-muted-foreground tabular-nums"
+                    >
+                        <span className="w-2.5">{row.stars}</span>
+                        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#1c1e21]">
                             <span
-                                className="block h-full rounded-full bg-sidebar-primary"
+                                className="block h-full rounded-full bg-brand"
                                 style={{
                                     width: `${(row.count / total) * 100}%`,
                                 }}
                             />
                         </span>
-                        <span className="w-3.5 text-right text-[13px] leading-4.5 text-sidebar-muted-foreground tabular-nums">
-                            {row.count}
-                        </span>
+                        <span className="w-4.5 text-right">{row.count}</span>
                     </div>
                 ))}
             </div>
-        </aside>
+        </section>
     );
 }

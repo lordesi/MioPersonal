@@ -53,8 +53,9 @@ class HomeTest extends TestCase
                     // Guests have no favorites: every heart is empty.
                     ->where('favorite', false)
                 )
-                ->has('disciplines', 10)
-                ->has('cities', 109)
+                // The search is one button ("Cerca un trainer"): no options to send.
+                ->missing('disciplines')
+                ->missing('cities')
             );
     }
 

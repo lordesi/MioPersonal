@@ -172,7 +172,7 @@ export default function ExistingAccountDialog({
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="btn-brand h-12.5 text-[17px] tracking-[-0.43px]"
+                                className="flex h-14 items-center justify-center gap-2 rounded-full bg-brand text-[17px] font-bold font-semibold tracking-[-0.43px] text-black outline-none hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-60"
                             >
                                 {processing && <Spinner />}
                                 Accedi

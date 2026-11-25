@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { iconButtonClassName } from '@/components/mp/area-bits';
 import { roundSoftClassName } from '@/components/trainer/ui/styles';
 import { addDays, sessionsLabel } from '@/lib/calendar';
 import {
@@ -21,8 +22,8 @@ type WeekStripProps = {
 };
 
 /**
- * The 7 days of the week with a dot on the days with sessions: today has
- * the turquoise outline, the chosen day is filled. The arrows go to the
+ * The 7 days of the week with a dot on the days with sessions: today is
+ * written in turquoise, the chosen day is filled. The arrows go to the
  * Monday of the week before or after.
  */
 export default function WeekStrip({
@@ -61,10 +62,7 @@ export default function WeekStrip({
                         ? 'Settimana precedente'
                         : 'Settimana successiva'
                 }
-                className={cn(
-                    roundSoftClassName,
-                    !large && 'size-11 bg-transparent',
-                )}
+                className={large ? roundSoftClassName : iconButtonClassName}
             >
                 {direction === 'prev' ? (
                     <ChevronLeft aria-hidden="true" className="size-5" />
@@ -97,9 +95,10 @@ export default function WeekStrip({
                     >
                         <span
                             className={cn(
-                                large ? 'text-xs' : 'text-[15px]',
+                                large ? 'text-xs' : 'text-[13px]',
+                                'font-semibold',
                                 selected
-                                    ? 'font-bold text-brand'
+                                    ? 'text-foreground'
                                     : 'text-muted-foreground',
                             )}
                         >
@@ -107,17 +106,17 @@ export default function WeekStrip({
                         </span>
                         <span
                             className={cn(
-                                'flex items-center justify-center text-xl tabular-nums',
+                                'flex items-center justify-center text-xl font-semibold tabular-nums',
                                 large
                                     ? 'size-12 rounded-2xl'
-                                    : 'size-11 rounded-[14px]',
+                                    : 'h-12 w-11 rounded-xl',
                                 selected
-                                    ? 'bg-brand font-bold text-[#0a0a0a]'
+                                    ? 'bg-brand text-black'
                                     : isToday
-                                      ? 'font-medium text-brand shadow-[inset_0_0_0_1px_#42d7d9]'
+                                      ? 'text-brand'
                                       : past
-                                        ? 'font-medium text-[#8a8a8a]'
-                                        : 'font-medium text-foreground',
+                                        ? 'text-muted-foreground'
+                                        : 'text-foreground',
                             )}
                         >
                             {formatDayNumber(item.date)}
@@ -129,7 +128,7 @@ export default function WeekStrip({
                                 item.count === 0
                                     ? 'bg-transparent'
                                     : past
-                                      ? 'bg-[#5c5c5c]'
+                                      ? 'bg-input'
                                       : 'bg-brand',
                             )}
                         />
@@ -150,12 +149,12 @@ export default function WeekStrip({
     }
 
     return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3.5">
             <div className="flex items-center justify-between">
                 <h2 className="text-[17px] font-semibold first-letter:uppercase">
                     {monthLabel(week[3]?.date ?? day)}
                 </h2>
-                <div className="flex">
+                <div className="flex gap-1">
                     {arrows('prev')}
                     {arrows('next')}
                 </div>

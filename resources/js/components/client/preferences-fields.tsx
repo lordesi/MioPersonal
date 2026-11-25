@@ -1,4 +1,4 @@
-import { router, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import {
     CalendarDays,
     Check,
@@ -9,6 +9,7 @@ import {
     Sun,
     Sunrise,
     Target,
+    Plus,
     Upload,
     User,
     UtensilsCrossed,
@@ -20,7 +21,7 @@ import CompleteProfileController from '@/actions/App/Http/Controllers/CompletePr
 import AboutFields from '@/components/client/about-fields';
 import PhotoCropDialog from '@/components/client/photo-crop-dialog';
 import { Field, pillClassName } from '@/components/client/profile-field';
-import NumberedSection from '@/components/trainer/area/numbered-section';
+import AccordionSection from '@/components/client/accordion-section';
 import UserAvatar from '@/components/shared/user-avatar';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -60,13 +61,13 @@ export const preferredTimes: Option[] = [
 ];
 
 /** As in ClientPreferencesRequest: from 20 € to 100 € ("Nessun limite"), steps of 5 €. */
-const BUDGET_MIN_CENTS = 2000;
-const BUDGET_MAX_CENTS = 10000;
-const BUDGET_STEP_CENTS = 500;
+export const BUDGET_MIN_CENTS = 2000;
+export const BUDGET_MAX_CENTS = 10000;
+export const BUDGET_STEP_CENTS = 500;
 /** Where the slider starts while no budget is chosen. */
-const BUDGET_START_CENTS = 4500;
+export const BUDGET_START_CENTS = 4500;
 /** The scale under the slider. */
-const BUDGET_TICKS_CENTS = [2000, 4000, 6000, 8000, 10000];
+export const BUDGET_TICKS_CENTS = [2000, 4000, 6000, 8000, 10000];
 
 /** As in CompleteProfileController::updatePhoto (max:5120). */
 const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
@@ -197,7 +198,6 @@ export default function PreferencesFields({
     cities,
     birthYears,
 }: PreferencesFieldsProps) {
-    const { auth } = usePage().props;
     const cityId = useId();
     const [locating, setLocating] = useState(false);
     // "Uso la tua posizione" until the city is changed by hand.
@@ -229,6 +229,27 @@ export default function PreferencesFields({
             .finally(() => setLocating(false));
     };
 
+    // Under the titles of the closed sections: what is chosen.
+    const whereSummary =
+        [
+            cities.find((city) => city.value === data.city)?.label,
+            trainingModes.find((mode) => mode.value === data.mode)?.label,
+        ]
+            .filter(Boolean)
+            .join(' · ') || 'Città e modalità';
+    const goalSummary =
+        trainingGoals.find((goal) => goal.value === data.goal)?.label ??
+        'Obiettivo e discipline';
+    const whenSummary = [
+        data.times.length === 0
+            ? 'Qualsiasi momento'
+            : data.times.length === 1
+              ? (preferredTimes.find((time) => time.value === data.times[0])
+                    ?.label ?? '1 fascia')
+              : `${data.times.length} fasce`,
+        budgetLabel(data.budget_max_cents),
+    ].join(' · ');
+
     let locateLabel = 'Usa la mia posizione attuale';
 
     if (locating) {
@@ -239,24 +260,11 @@ export default function PreferencesFields({
 
     return (
         <>
-            <NumberedSection
-                step={1}
-                title={
-                    <>
-                        Foto profilo{' '}
-                        <span className="text-sm font-medium text-muted-foreground">
-                            · facoltativa
-                        </span>
-                    </>
-                }
+            <AccordionSection
+                title="Dove e come"
+                summary={whereSummary}
+                defaultOpen
             >
-                <PhotoUpload
-                    name={auth?.user?.name ?? ''}
-                    src={auth?.user?.avatar}
-                />
-            </NumberedSection>
-
-            <NumberedSection step={2} title="Dove e come ti alleni">
                 <div className="flex flex-col gap-2">
                     <Label htmlFor={cityId} className="font-semibold">
                         In che città ti alleni
@@ -352,9 +360,9 @@ export default function PreferencesFields({
                         </ToggleGroup>
                     )}
                 </Field>
-            </NumberedSection>
+            </AccordionSection>
 
-            <NumberedSection step={3} title="Cosa cerchi">
+            <AccordionSection title="Cosa cerchi" summary={goalSummary}>
                 <Field label="Il tuo obiettivo" hint="Scegline uno">
                     {(labelId) => (
                         <ToggleGroup
@@ -436,9 +444,9 @@ export default function PreferencesFields({
                         </ToggleGroup>
                     )}
                 </Field>
-            </NumberedSection>
+            </AccordionSection>
 
-            <NumberedSection step={4} title="Quando">
+            <AccordionSection title="Quando e budget" summary={whenSummary}>
                 <Field
                     label="Quando preferisci allenarti"
                     // Nothing until a time is chosen, then "2 scelti".
@@ -494,10 +502,9 @@ export default function PreferencesFields({
                     value={data.budget_max_cents}
                     onChange={(cents) => setData('budget_max_cents', cents)}
                 />
-            </NumberedSection>
+            </AccordionSection>
 
             <AboutFields
-                step={5}
                 data={data}
                 setData={setData}
                 birthYears={birthYears}
@@ -557,10 +564,13 @@ function BudgetField({
  * "Carica una foto": the file input is hidden, the button opens it. The photo
  * is saved right away, then the new auth.user.avatar comes back with the page.
  */
-function PhotoUpload({ name, src }: { name: string; src?: string | null }) {
-    const getInitials = useInitials();
+/**
+ * Choose, crop and save the profile photo (CompleteProfileController): the
+ * file input, "Ritaglia la foto" and the upload; also used by the steps of
+ * "Completa il tuo profilo".
+ */
+export function usePhotoUpload() {
     const inputRef = useRef<HTMLInputElement>(null);
-    const errorId = useId();
     const [uploading, setUploading] = useState(false);
     const [removing, setRemoving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -636,6 +646,40 @@ function PhotoUpload({ name, src }: { name: string; src?: string | null }) {
         });
     };
 
+    return {
+        inputRef,
+        choose,
+        cropSrc,
+        closeCrop,
+        upload,
+        remove,
+        uploading,
+        removing,
+        error,
+    };
+}
+
+export function PhotoUpload({
+    name,
+    src,
+}: {
+    name: string;
+    src?: string | null;
+}) {
+    const getInitials = useInitials();
+    const errorId = useId();
+    const {
+        inputRef,
+        choose,
+        cropSrc,
+        closeCrop,
+        upload,
+        remove,
+        uploading,
+        removing,
+        error,
+    } = usePhotoUpload();
+
     let uploadLabel = 'Carica una foto';
 
     if (uploading) {
@@ -645,31 +689,64 @@ function PhotoUpload({ name, src }: { name: string; src?: string | null }) {
     }
 
     return (
-        <div className="flex flex-wrap items-center gap-4.5 rounded-[18px] border bg-secondary/50 p-4">
-            {src ? (
-                <UserAvatar
-                    name={name}
-                    src={src}
-                    label="Foto profilo caricata"
-                    className="size-20 text-[26px] ring-4 ring-card"
-                />
-            ) : (
-                <span
-                    aria-hidden="true"
-                    className="flex size-20 flex-none items-center justify-center rounded-full border-[1.5px] border-dashed border-muted-foreground/60 bg-card text-2xl font-bold text-muted-foreground"
+        <div className="flex items-center gap-4.5">
+            <span className="relative size-20 shrink-0">
+                {src ? (
+                    <UserAvatar
+                        name={name}
+                        src={src}
+                        label="Foto profilo caricata"
+                        className="size-20 text-[26px]"
+                    />
+                ) : (
+                    <span
+                        aria-hidden="true"
+                        className="flex size-20 items-center justify-center rounded-full bg-[#1c1e21] text-[26px] font-bold text-foreground"
+                    >
+                        {getInitials(name)}
+                    </span>
+                )}
+                <button
+                    type="button"
+                    disabled={uploading}
+                    aria-label={uploadLabel}
+                    aria-describedby={error ? errorId : undefined}
+                    onClick={() => inputRef.current?.click()}
+                    className="absolute -right-0.5 -bottom-0.5 flex size-8.5 items-center justify-center rounded-full bg-brand text-black shadow-[0_0_0_4px_#000] outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
                 >
-                    {getInitials(name)}
-                </span>
-            )}
-            <div className="flex min-w-55 flex-1 flex-col gap-2.5">
+                    {src ? (
+                        <Upload aria-hidden="true" className="size-4" />
+                    ) : (
+                        <Plus aria-hidden="true" className="size-4.5" />
+                    )}
+                </button>
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <b className="truncate text-[17px] leading-5.5 font-semibold">
+                    {name}
+                </b>
                 {error ? (
                     <span id={errorId} className="text-[13px] text-destructive">
                         {error}
                     </span>
                 ) : (
-                    <span className="text-[13px] leading-4.5 text-muted-foreground">
-                        JPG o PNG, massimo 5 MB.
+                    <span className="text-[15px] leading-5 text-muted-foreground">
+                        {uploading
+                            ? 'Caricamento…'
+                            : src
+                              ? 'Tocca la freccia per cambiarla'
+                              : 'Tocca + per aggiungere una foto'}
                     </span>
+                )}
+                {src && (
+                    <button
+                        type="button"
+                        disabled={removing || uploading}
+                        onClick={remove}
+                        className="-ml-1 inline-flex min-h-9 items-center self-start px-1 text-sm font-semibold text-[#ff7a7a] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+                    >
+                        Rimuovi la foto
+                    </button>
                 )}
                 <input
                     ref={inputRef}
@@ -685,29 +762,6 @@ function PhotoUpload({ name, src }: { name: string; src?: string | null }) {
                     onCancel={closeCrop}
                     onConfirm={upload}
                 />
-                <div className="flex flex-wrap gap-2">
-                    <Button
-                        type="button"
-                        disabled={uploading}
-                        aria-describedby={error ? errorId : undefined}
-                        onClick={() => inputRef.current?.click()}
-                        className="h-10 rounded-[10px] px-3.5 font-semibold"
-                    >
-                        <Upload aria-hidden="true" />
-                        {uploadLabel}
-                    </Button>
-                    {src && (
-                        <Button
-                            type="button"
-                            variant="outline"
-                            disabled={removing || uploading}
-                            onClick={remove}
-                            className="h-10 rounded-[10px] px-3.5"
-                        >
-                            Rimuovi
-                        </Button>
-                    )}
-                </div>
             </div>
         </div>
     );

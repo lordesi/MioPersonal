@@ -154,7 +154,7 @@ export default function CookiePreferencesDialog({
                     type="button"
                     onClick={onSave}
                     disabled={disabled}
-                    className="btn-brand h-12.5 w-full text-[17px] tracking-[-0.43px] md:w-auto md:min-w-65 md:px-8"
+                    className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-brand text-[17px] font-semibold tracking-[-0.43px] text-black outline-none hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-60 md:w-auto md:min-w-65 md:px-8"
                 >
                     Salva preferenze
                 </button>

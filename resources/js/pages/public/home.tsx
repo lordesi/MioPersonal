@@ -2,15 +2,14 @@ import { Head } from '@inertiajs/react';
 import HomeHero from '@/components/home/home-hero';
 import HomeShelf from '@/components/home/home-shelf';
 import ProCards from '@/components/home/pro-cards';
-import { eventCard, gymCard, trainerCard } from '@/components/mp/cards';
+import { eventCard, gymCard } from '@/components/mp/cards';
 import ProfileCard from '@/components/mp/profile-card';
 import SaveableCard from '@/components/mp/saveable-card';
+import TrainerCard from '@/components/mp/trainer-card';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { search as eventsSearch } from '@/routes/events';
 import type {
-    CatalogOption,
-    CityWithCoordinates,
     GroupSessionSummary,
     GymSummary,
     SeoData,
@@ -30,39 +29,19 @@ type HomeProps = {
     gyms: Shelf<GymSummary>;
     /** "Prossimi eventi": hidden when empty. */
     events: GroupSessionSummary[];
-    disciplines: CatalogOption[];
-    /** With their center, for "Usa la mia posizione". */
-    cities: CityWithCoordinates[];
-    /** "Cosa" of the gyms' search: the services. */
-    amenities: CatalogOption[];
-    /** "Cosa" of the events' search: the type. */
-    eventTypes: CatalogOption[];
     seo: SeoData;
 };
 
 /**
- * The home: the search of the four kinds on a photo, then the trainers, the
- * gyms and the events and the two sign-ups for professionals.
+ * The home (design "Home F"): the photo with "Cerca un trainer", then the
+ * trainers, the gyms and the events switched on, and the sign-ups for
+ * professionals.
  */
-export default function Home({
-    trainers,
-    gyms,
-    events,
-    disciplines,
-    cities,
-    amenities,
-    eventTypes,
-    seo,
-}: HomeProps) {
+export default function Home({ trainers, gyms, events, seo }: HomeProps) {
     return (
         <>
             <Head title={seo.title} />
-            <HomeHero
-                disciplines={disciplines}
-                cities={cities}
-                amenities={amenities}
-                eventTypes={eventTypes}
-            />
+            <HomeHero />
             <HomeShelf
                 id={`${trainers.key}-trainers`}
                 title={trainers.title}
@@ -70,14 +49,7 @@ export default function Home({
                 items={trainers.items}
                 itemKey={(trainer) => trainer.slug}
             >
-                {(trainer) => (
-                    <SaveableCard
-                        {...trainerCard(trainer)}
-                        slug={trainer.slug}
-                        favoriteKind="trainer"
-                        saved={trainer.favorite}
-                    />
-                )}
+                {(trainer) => <TrainerCard trainer={trainer} />}
             </HomeShelf>
             <HomeShelf
                 id={`${gyms.key}-gyms`}

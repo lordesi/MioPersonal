@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { Check, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
@@ -26,8 +26,9 @@ type LegalPageProps = {
     intro: string;
     /** Shown as "Ultimo aggiornamento: …". */
     updatedOn: string;
-    summary: string[];
     sections: LegalSection[];
+    /** "Hai una domanda su questa pagina?" at the end (only the terms, as in the design). */
+    questions?: boolean;
 };
 
 const smallLabelClassName =
@@ -35,7 +36,7 @@ const smallLabelClassName =
 
 /**
  * Privacy, Terms and Cookie pages: same structure, different texts.
- * Phones: "In breve", then every section folds (the first one open).
+ * Phones: every section folds (the first one open).
  * Desktop: the index on the left, the sections open on the right.
  * The texts are drafts: a lawyer must check them before the launch.
  */
@@ -44,8 +45,8 @@ export default function LegalPage({
     title,
     intro,
     updatedOn,
-    summary,
     sections,
+    questions = false,
 }: LegalPageProps) {
     // Phones: the open sections; desktop shows them all.
     const [open, setOpen] = useState<string[]>(
@@ -120,36 +121,6 @@ export default function LegalPage({
                 </nav>
 
                 <article className="flex min-w-0 flex-col gap-8 md:max-w-180 md:flex-[999_1_560px] md:gap-12">
-                    <section
-                        aria-labelledby="legal-summary"
-                        className={cn(
-                            darkCardClassName,
-                            'flex flex-col gap-3 p-4 md:p-6',
-                        )}
-                    >
-                        <h2
-                            id="legal-summary"
-                            className={cn(smallLabelClassName, 'text-brand')}
-                        >
-                            In breve
-                        </h2>
-                        <ul className="flex flex-col gap-2.5">
-                            {summary.map((item) => (
-                                <li
-                                    key={item}
-                                    className="flex gap-2.5 text-[15px] leading-5.25"
-                                >
-                                    <Check
-                                        aria-hidden="true"
-                                        strokeWidth={2.5}
-                                        className="mt-0.5 size-4 shrink-0 text-brand"
-                                    />
-                                    {item}
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-
                     <div className="flex flex-col md:gap-12">
                         {sections.map((section, index) => {
                             const isOpen = open.includes(section.id);
@@ -208,28 +179,33 @@ export default function LegalPage({
                         })}
                     </div>
 
-                    <section
-                        aria-label="Domande"
-                        className={cn(
-                            darkCardClassName,
-                            'flex flex-wrap items-center justify-between gap-4 p-4 md:p-6',
-                        )}
-                    >
-                        <span className="flex flex-col gap-0.5">
-                            <span className="text-[17px] leading-5.5 font-semibold">
-                                Hai una domanda su questa pagina?
-                            </span>
-                            <span className="text-[13px] leading-4.5 text-muted-foreground md:text-[15px] md:leading-5.25">
-                                Ti rispondiamo noi, senza giri di parole.
-                            </span>
-                        </span>
-                        <Link
-                            href={contactPage()}
-                            className={cn(brandFilledClassName, 'h-11 px-6')}
+                    {questions && (
+                        <section
+                            aria-label="Domande"
+                            className={cn(
+                                darkCardClassName,
+                                'flex flex-wrap items-center justify-between gap-4 p-4 md:p-6',
+                            )}
                         >
-                            Scrivici
-                        </Link>
-                    </section>
+                            <span className="flex flex-col gap-0.5">
+                                <span className="text-[17px] leading-5.5 font-semibold">
+                                    Hai una domanda su questa pagina?
+                                </span>
+                                <span className="text-[13px] leading-4.5 text-muted-foreground md:text-[15px] md:leading-5.25">
+                                    Ti rispondiamo noi, senza giri di parole.
+                                </span>
+                            </span>
+                            <Link
+                                href={contactPage()}
+                                className={cn(
+                                    brandFilledClassName,
+                                    'h-11 px-6',
+                                )}
+                            >
+                                Scrivici
+                            </Link>
+                        </section>
+                    )}
                 </article>
             </div>
         </div>

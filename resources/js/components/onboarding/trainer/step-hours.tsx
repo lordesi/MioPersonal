@@ -148,7 +148,7 @@ export function WorkingHours({
                 </Counter>
             }
         >
-            <ul className="flex flex-col rounded-[26px] bg-card px-4">
+            <ul className="flex flex-col border-t border-separator">
                 {hours.map((ranges, day) => {
                     if (days && !days.includes(day)) {
                         return null;
@@ -180,7 +180,7 @@ export function WorkingHours({
                                 {ranges.map((range, index) => (
                                     <span
                                         key={range.start}
-                                        className="inline-flex h-9 items-center rounded-full bg-[#2a2a2a] text-[15px] font-semibold tracking-[-0.23px] tabular-nums"
+                                        className="inline-flex h-9 items-center rounded-full bg-secondary text-[15px] font-semibold tracking-[-0.23px] tabular-nums"
                                     >
                                         <button
                                             type="button"
@@ -436,7 +436,7 @@ function Rules({
 
     return (
         <Section title="Regole di prenotazione">
-            <DarkCard className="gap-0 py-1 md:p-0 md:px-5">
+            <DarkCard className="gap-0 border-t py-0">
                 {bookingRuleOptions.map((rule) => {
                     const value = rules[rule.name];
 

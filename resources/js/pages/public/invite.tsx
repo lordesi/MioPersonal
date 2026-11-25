@@ -1,16 +1,13 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { CalendarDays, MapPin, Users } from 'lucide-react';
+import { CalendarDays, Search, Users } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import BookingInviteController from '@/actions/App/Http/Controllers/BookingInviteController';
 import {
-    IconBadge,
     brandFilledClassName,
     brandOutlineClassName,
-    darkCardClassName,
     pageColumnClassName,
-    pageTitleClassName,
 } from '@/components/mp/page-bits';
 import { Spinner } from '@/components/ui/spinner';
 import { perPersonLabel } from '@/lib/booking';
@@ -21,6 +18,7 @@ import {
     formatTimeRange,
 } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { searchUrl } from '@/lib/search';
 import { bookings } from '@/routes/client';
 import type { SeoData } from '@/types';
 
@@ -90,17 +88,21 @@ export default function Invite({ seo, token, invite, state }: InviteProps) {
                 className="flex flex-col gap-6 md:gap-8"
             >
                 <div className="flex flex-col gap-3">
-                    <span className="text-[13px] font-semibold tracking-[0.08em] text-brand uppercase">
+                    <span className="text-xs font-bold tracking-[0.08em] text-brand uppercase">
                         Invito a una seduta
                     </span>
-                    <h1 id="invite-title" className={pageTitleClassName}>
-                        {invite.bookerFirstName} ti invita ad allenarvi insieme
+                    <h1
+                        id="invite-title"
+                        className="text-[34px] leading-[1.06] font-bold tracking-[-0.03em] text-balance md:text-5xl"
+                    >
+                        {invite.bookerFirstName} ti invita ad{' '}
+                        <span className="text-brand">allenarvi insieme</span>
                     </h1>
-                    <p className="text-[17px] text-muted-foreground md:text-xl">
+                    <p className="text-[17px] leading-[1.4] text-muted-foreground md:text-xl">
                         {invite.serviceName} con{' '}
                         <Link
                             href={invite.trainerHref}
-                            className="font-semibold text-brand hover:underline"
+                            className="font-semibold text-brand hover:text-brand-hover"
                         >
                             {invite.trainerName}
                         </Link>
@@ -108,10 +110,8 @@ export default function Invite({ seo, token, invite, state }: InviteProps) {
                 </div>
 
                 <ul
-                    className={cn(
-                        darkCardClassName,
-                        'flex flex-col gap-4 p-5 md:gap-5 md:p-7',
-                    )}
+                    aria-label="Dettagli della seduta"
+                    className="flex flex-col gap-4 rounded-[28px] border border-border bg-card p-5 shadow-[inset_0_1px_0_0_rgba(237,238,240,0.06),0_20px_40px_0_rgba(0,0,0,0.5)] md:p-7"
                 >
                     <Row icon={CalendarDays}>
                         <span className="tabular-nums">
@@ -125,17 +125,17 @@ export default function Invite({ seo, token, invite, state }: InviteProps) {
                                 : 'In attesa della conferma del trainer'}
                         </span>
                     </Row>
-                    {invite.placeLabel && (
-                        <Row icon={MapPin}>{invite.placeLabel}</Row>
-                    )}
+                    <li aria-hidden="true" className="h-px bg-separator" />
                     <Row icon={Users}>
                         <span className="tabular-nums">
-                            {invite.people} persone ·{' '}
-                            {perPersonLabel(invite.priceCents, invite.people)}
+                            {invite.people === 1
+                                ? '1 persona'
+                                : `${invite.people} persone`}{' '}
+                            · {perPersonLabel(invite.priceCents, invite.people)}
                         </span>
                         <span className="text-[13px] font-normal text-muted-foreground md:text-[15px]">
                             Totale {formatPrice(invite.priceCents)}, da pagare
-                            al trainer. Nessun pagamento online.
+                            al trainer.
                         </span>
                     </Row>
                 </ul>
@@ -154,16 +154,21 @@ export default function Invite({ seo, token, invite, state }: InviteProps) {
 }
 
 function Row({
-    icon,
+    icon: Icon,
     children,
 }: {
     icon: typeof CalendarDays;
     children: ReactNode;
 }) {
     return (
-        <li className="flex items-center gap-3 md:gap-4">
-            <IconBadge icon={icon} />
-            <span className="flex min-w-0 flex-col gap-0.5 text-[15px] font-semibold md:text-[17px]">
+        <li className="flex items-center gap-3.5 md:gap-4">
+            <span
+                aria-hidden="true"
+                className="flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft text-brand"
+            >
+                <Icon className="size-5.5" />
+            </span>
+            <span className="flex min-w-0 flex-col gap-0.5 text-base font-semibold md:text-[17px]">
                 {children}
             </span>
         </li>
@@ -248,13 +253,19 @@ function InviteAction({
             return <Notice text="Sei il trainer di questa seduta." />;
         case 'full':
             return (
-                <Notice
-                    text={`I posti sono già tutti presi. Chiedi a ${bookerFirstName} se si libera un posto.`}
-                />
+                <>
+                    <Notice
+                        text={`I posti sono già tutti presi. Chiedi a ${bookerFirstName} se si libera un posto.`}
+                    />
+                    <SearchOther />
+                </>
             );
         default:
             return (
-                <Notice text="Questa seduta non accetta più partecipanti." />
+                <>
+                    <Notice text="Questa seduta non accetta più partecipanti." />
+                    <SearchOther />
+                </>
             );
     }
 }
@@ -275,5 +286,18 @@ function Notice({ text, action = false }: { text: string; action?: boolean }) {
                 </Link>
             )}
         </div>
+    );
+}
+
+/** The session can't be joined: "Cerca un altro trainer" (design "Invito a una seduta"). */
+function SearchOther() {
+    return (
+        <Link
+            href={searchUrl()}
+            className="flex min-h-14 items-center justify-center gap-2.5 rounded-full border border-border bg-card px-5.5 text-[17px] font-semibold text-foreground shadow-[inset_0_1px_0_0_rgba(237,238,240,0.06)] outline-none hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring md:self-start"
+        >
+            <Search aria-hidden="true" className="size-5 text-brand" />
+            Cerca un altro trainer
+        </Link>
     );
 }

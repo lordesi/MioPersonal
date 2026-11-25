@@ -76,11 +76,7 @@ export default function TrainerGyms({
             <Head title="Palestre" />
 
             <ProfilePage
-                title={
-                    <>
-                        Le tue <strong>palestre</strong>
-                    </>
-                }
+                title="Palestre"
                 intro={`Le palestre di MioPersonal dove alleni: compaiono nel tuo profilo e tu nel loro. Al massimo ${max}.`}
             >
                 <InputError message={error} />

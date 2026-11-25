@@ -51,9 +51,9 @@ export default function VerifyEmail({ status }: { status?: string }) {
             >
                 <span
                     aria-hidden="true"
-                    className="order-first flex size-14 items-center justify-center rounded-full border-[1.5px] border-brand bg-[rgba(10,10,10,0.55)] text-brand"
+                    className="order-first flex size-13 items-center justify-center rounded-full bg-brand-soft text-brand"
                 >
-                    <Mail className="size-7" />
+                    <Mail className="size-6" />
                 </span>
 
                 <AuthIntro>
@@ -64,10 +64,10 @@ export default function VerifyEmail({ status }: { status?: string }) {
                     : serve per entrare {area}.
                 </AuthIntro>
 
-                <ol className="flex flex-col gap-3 rounded-[20px] bg-card p-4 text-[15px]">
+                <ol className="flex flex-col rounded-[22px] border border-separator bg-card p-3 text-base [&>li]:py-2">
                     <Step number={1}>Apri l’email di MioPersonal</Step>
                     <Step number={2}>
-                        Clicca <strong>Conferma la tua email</strong>
+                        Tocca <strong>Conferma la tua email</strong>
                     </Step>
                 </ol>
 
@@ -101,7 +101,7 @@ function Step({ number, children }: { number: number; children: ReactNode }) {
         <li className="flex items-center gap-3">
             <span
                 aria-hidden="true"
-                className="flex size-7 flex-none items-center justify-center rounded-full text-[13px] font-semibold text-brand tabular-nums shadow-[inset_0_0_0_1px_var(--brand)]"
+                className="flex size-7 flex-none items-center justify-center rounded-full text-sm font-bold text-brand tabular-nums shadow-[inset_0_0_0_1.5px_var(--brand)]"
             >
                 {number}
             </span>

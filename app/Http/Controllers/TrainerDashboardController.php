@@ -32,7 +32,12 @@ class TrainerDashboardController extends Controller
     use BuildsTrainerArea;
 
     /** The periods of "Statistiche": days back from today, today included. */
-    public const PERIODS = ['oggi' => 1, '7' => 7, '30' => 30];
+    public const PERIODS = ['oggi' => 1, '7' => 7, '30' => 30, '90' => 90];
+
+    /** The labels under the line of "Guadagni". */
+    private const WEEKDAY_LETTERS = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
+
+    private const MONTHS_SHORT = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
     /** The default period of "Statistiche". */
     public const DEFAULT_PERIOD = '7';
@@ -105,6 +110,12 @@ class TrainerDashboardController extends Controller
                 'sessions' => 0,
                 'sessionsBefore' => 0,
                 'hours' => 0,
+                'earningsCents' => 0,
+                'earningsBeforeCents' => 0,
+                'earningsSeries' => [],
+                'newClients' => 0,
+                'newClientsBefore' => 0,
+                'confirmedRate' => null,
             ],
         ];
     }
@@ -129,7 +140,7 @@ class TrainerDashboardController extends Controller
             'week' => $this->week($profile, $day),
             'daySessions' => $this->daySessions($profile, $day),
             'packages' => $this->packages($profile),
-            'stats' => $this->stats($profile, self::period($request)),
+            'stats' => self::stats($profile, self::period($request)),
         ];
     }
 
@@ -198,7 +209,7 @@ class TrainerDashboardController extends Controller
      *
      * @return array{period: string, from: string, to: string}
      */
-    private static function period(Request $request): array
+    public static function period(Request $request): array
     {
         $today = CarbonImmutable::now('Europe/Rome')->startOfDay();
         $period = $request->string('periodo')->toString();
@@ -244,7 +255,7 @@ class TrainerDashboardController extends Controller
      * @param  array{period: string, from: string, to: string}  $period
      * @return array<string, mixed>
      */
-    private function stats(TrainerProfile $profile, array $period): array
+    public static function stats(TrainerProfile $profile, array $period): array
     {
         $from = CarbonImmutable::parse($period['from'], 'Europe/Rome');
         $to = CarbonImmutable::parse($period['to'], 'Europe/Rome');
@@ -261,19 +272,83 @@ class TrainerDashboardController extends Controller
             ->where('status', BookingStatus::Confirmed)
             ->where('starts_at', '>=', $a->utc())
             ->where('starts_at', '<', $b->addDay()->utc())
-            ->get(['starts_at', 'ends_at']);
+            ->get(['starts_at', 'ends_at', 'price_cents']);
+
+        // "Nuovi clienti": added to "Clienti" in the period (by a booking or by hand).
+        $newClients = fn (CarbonImmutable $a, CarbonImmutable $b) => $profile->clientRecords()
+            ->where('created_at', '>=', $a->utc())
+            ->where('created_at', '<', $b->addDay()->utc())
+            ->count();
 
         $now = $sessions($from, $to);
+        $before = $sessions($beforeFrom, $beforeTo);
+
+        // "Richieste confermate": of the requests of the clients sent in the
+        // period and answered (or expired), how many were confirmed.
+        $answered = $profile->bookings()
+            ->fromClient()
+            ->where('created_at', '>=', $from->utc())
+            ->where('created_at', '<', $to->addDay()->utc())
+            ->where('status', '!=', BookingStatus::Pending)
+            ->get(['status', 'confirmed_at']);
+        $confirmed = $answered->filter(fn (Booking $booking) => $booking->confirmed_at !== null)->count();
+        $closed = $answered->filter(fn (Booking $booking) => $booking->confirmed_at !== null
+            || in_array($booking->status, [BookingStatus::Declined, BookingStatus::Expired], true))->count();
 
         return [
             ...$period,
             'views' => $views($from, $to),
             'viewsBefore' => $views($beforeFrom, $beforeTo),
             'sessions' => $now->count(),
-            'sessionsBefore' => $sessions($beforeFrom, $beforeTo)->count(),
+            'sessionsBefore' => $before->count(),
             // "21 h di allenamento".
             'hours' => round($now->sum(fn (Booking $booking) => $booking->starts_at->diffInMinutes($booking->ends_at)) / 60, 1),
+            // "Guadagni": the price of the confirmed sessions of the period.
+            'earningsCents' => (int) $now->sum('price_cents'),
+            'earningsBeforeCents' => (int) $before->sum('price_cents'),
+            'earningsSeries' => self::earningsSeries($now, $from, $to),
+            'newClients' => $newClients($from, $to),
+            'newClientsBefore' => $newClients($beforeFrom, $beforeTo),
+            'confirmedRate' => $closed === 0 ? null : round($confirmed / $closed, 2),
         ];
+    }
+
+    /**
+     * The points of the line of "Guadagni": one a day up to two weeks, one
+     * a week up to two months, then one a month.
+     *
+     * @param  Collection<int, Booking>  $sessions
+     * @return list<array{label: string, cents: int}>
+     */
+    private static function earningsSeries(Collection $sessions, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $days = (int) $from->diffInDays($to) + 1;
+        $buckets = [];
+
+        if ($days <= 14) {
+            for ($day = $from; $day->lessThanOrEqualTo($to); $day = $day->addDay()) {
+                $buckets[] = [$day, $day->endOfDay(), $days <= 7 ? self::WEEKDAY_LETTERS[$day->dayOfWeekIso - 1] : $day->format('j')];
+            }
+        } elseif ($days <= 62) {
+            $start = $from;
+
+            for ($week = 1; $start->lessThanOrEqualTo($to); $week++) {
+                $end = $start->addDays(6)->endOfDay();
+                $buckets[] = [$start, $end->greaterThan($to->endOfDay()) ? $to->endOfDay() : $end, "Sett {$week}"];
+                $start = $start->addDays(7);
+            }
+        } else {
+            for ($month = $from->startOfMonth(); $month->lessThanOrEqualTo($to); $month = $month->addMonth()) {
+                $buckets[] = [$month->greaterThan($from) ? $month : $from, $month->endOfMonth(), self::MONTHS_SHORT[$month->month - 1]];
+            }
+        }
+
+        return array_map(fn (array $bucket) => [
+            'label' => $bucket[2],
+            'cents' => (int) $sessions
+                ->filter(fn (Booking $booking) => $booking->starts_at->betweenIncluded($bucket[0], $bucket[1]))
+                ->sum('price_cents'),
+        ], $buckets);
     }
 
     /**

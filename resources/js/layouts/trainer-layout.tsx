@@ -2,14 +2,11 @@ import { Link, usePage } from '@inertiajs/react';
 import { ChevronLeft } from 'lucide-react';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import AreaGlow from '@/components/layout/area-glow';
 import ProfileStatusNotice from '@/components/layout/profile-status-notice';
 import TrainerSidebar from '@/components/layout/trainer/trainer-sidebar';
 import TrainerTabBar from '@/components/layout/trainer/trainer-tab-bar';
 import type { TrainerSection } from '@/components/layout/trainer-nav';
 import { navSection } from '@/components/layout/trainer-nav';
-import ProfileList from '@/components/trainer/profile-hub/profile-list';
-import { panelClassName } from '@/components/trainer/ui/styles';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { profile } from '@/routes/trainer';
@@ -27,9 +24,9 @@ type TrainerLayoutProps = {
 };
 
 /**
- * The trainer area, dark with a turquoise glow. Desktop: the glass side menu
- * (Vetro 1) and the page on the right; the pages of "Profilo" keep its list
- * on the left. Phones: the page and the floating tab bar (Vetro 4). Two
+ * The trainer area, on the black of the "carbone" design. Desktop: the side
+ * menu and the page on the right; the pages of "Profilo" keep its list on
+ * the left. Phones: the page and the floating tab bar. Two
  * different drawings, chosen by the width of the screen (the area is never
  * rendered on the server, so no mismatch).
  */
@@ -70,10 +67,8 @@ export default function TrainerLayout({
     if (isMobile) {
         return (
             <div className="theme-dark relative min-h-dvh bg-background">
-                {/* The pages of "Profilo": black as "Diventa trainer". */}
-                {!inProfile && <AreaGlow />}
-                <main className="relative flex flex-col gap-6 px-4 pt-3 pb-32">
-                    {inProfile && (
+                <main className="relative flex flex-col gap-8 px-4 pt-6 pb-32">
+                    {inProfile && section !== 'settings' && (
                         <Link
                             href={profile()}
                             className="-mb-2 inline-flex min-h-11 items-center gap-1 self-start text-[17px] text-brand outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
@@ -98,37 +93,20 @@ export default function TrainerLayout({
     }
 
     return (
-        <div className="theme-dark relative flex min-h-dvh gap-6 bg-background p-4">
-            {!inProfile && <AreaGlow />}
+        <div className="theme-dark relative flex min-h-dvh gap-6 bg-background p-4 lg:gap-10">
             <TrainerSidebar
                 current={current}
                 pendingCount={pending}
                 unreadChats={unread}
-                publicProfileHref={trainerArea?.publicProfileHref ?? null}
                 userName={auth?.user?.name ?? ''}
                 avatar={auth?.user?.avatar}
             />
-            {/* Inside a page of "Profilo" only "‹ Profilo" goes back: no second column. */}
-            {current === 'profile' && !inProfile && (
-                <section
-                    aria-label="Sezioni del profilo"
-                    className={cn(
-                        panelClassName,
-                        'sticky top-4 h-[calc(100dvh-2rem)] w-80 shrink-0 [scrollbar-width:none] overflow-y-auto px-3 py-4',
-                    )}
-                >
-                    <h2 className="mx-2.5 mt-1 mb-4.5 text-[28px] leading-8.5 font-bold tracking-[0.38px]">
-                        Profilo
-                    </h2>
-                    <ProfileList current={section} size="sm" />
-                </section>
-            )}
             <main
                 className={cn(
-                    'relative flex min-w-0 flex-1 flex-col gap-6',
-                    fill ? 'h-[calc(100dvh-2rem)]' : 'pt-2 pb-12',
-                    current === 'profile' &&
-                        (inProfile ? 'pt-6 pr-4' : 'max-w-240 pt-6 pr-4'),
+                    'relative flex w-full min-w-0 flex-1 flex-col gap-8',
+                    fill
+                        ? 'h-[calc(100dvh-2rem)] pr-2 lg:pr-6'
+                        : 'mx-auto max-w-280 pt-6 pr-2 pb-12 lg:pr-6',
                 )}
             >
                 {notice}

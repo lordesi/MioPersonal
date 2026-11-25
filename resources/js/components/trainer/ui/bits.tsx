@@ -34,25 +34,7 @@ export function CountChip({
     );
 }
 
-/** The four colours of the initials: chosen by the name, always the same for a person. */
-const HUES = [
-    'bg-brand-soft text-brand',
-    'bg-secondary text-foreground',
-    'bg-[#1f2d3a] text-[#9cc8f0]',
-    'bg-[#33291c] text-[#f0c98a]',
-] as const;
-
-function hueOf(name: string): string {
-    let sum = 0;
-
-    for (const char of name) {
-        sum += char.charCodeAt(0);
-    }
-
-    return HUES[sum % HUES.length];
-}
-
-/** A round avatar: the photo, or the initials on a colour of the name. */
+/** A round avatar: the photo, or the initials on the soft turquoise (design ".av"). */
 export function Initials({
     name,
     src,
@@ -100,7 +82,7 @@ export function Initials({
                     ? 'bg-brand-soft text-brand'
                     : tone === 'outline'
                       ? 'bg-transparent text-muted-foreground shadow-[inset_0_0_0_1.5px_#3a3a3a]'
-                      : hueOf(name),
+                      : 'bg-brand-soft text-brand',
                 tone === 'muted' && 'opacity-55',
                 className,
             )}

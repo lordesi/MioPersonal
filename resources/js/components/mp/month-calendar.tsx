@@ -58,6 +58,8 @@ type MonthCalendarProps = {
     next?: Arrow;
     /** A span of days ("Intervallo personalizzato"): both ends outlined, the days between filled. */
     range?: { from: string; to: string | null };
+    /** The chosen day filled turquoise (profile "Giorno e ora"), not outlined. */
+    fill?: boolean;
     className?: string;
 };
 
@@ -75,6 +77,7 @@ export default function MonthCalendar({
     previous,
     next,
     range,
+    fill = false,
     className,
 }: MonthCalendarProps) {
     const title = monthTitle(year, month);
@@ -146,14 +149,23 @@ export default function MonthCalendar({
                             onClick={() => onSelect(date)}
                             className={cn(
                                 'relative flex size-11 items-center justify-center justify-self-center rounded-xl text-base tabular-nums outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 enabled:hover:bg-accent',
-                                info.disabled && 'text-[#5c5c5c]',
+                                info.disabled &&
+                                    (fill
+                                        ? 'text-muted-foreground'
+                                        : 'text-[#5c5c5c]'),
+                                fill &&
+                                    !info.disabled &&
+                                    !info.dim &&
+                                    'font-medium',
                                 info.past && 'line-through',
                                 info.dim && 'text-muted-foreground',
                                 isToday &&
                                     !pressed &&
                                     'shadow-[inset_0_0_0_1px_var(--field)]',
                                 pressed &&
-                                    'font-bold shadow-[inset_0_0_0_1.5px_var(--brand)]',
+                                    (fill
+                                        ? 'rounded-[10px] bg-brand font-bold text-black enabled:hover:bg-brand'
+                                        : 'font-bold shadow-[inset_0_0_0_1.5px_var(--brand)]'),
                                 between && 'bg-brand-soft text-brand',
                             )}
                         >

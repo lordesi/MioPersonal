@@ -35,7 +35,7 @@ class ClientHomeController extends Controller
     public const MAX_MONTHS = 12;
 
     /** "Trainer consigliati" and "Palestre consigliate". */
-    private const SUGGESTIONS = 6;
+    private const SUGGESTIONS = 4;
 
     private const TIMEZONE = 'Europe/Rome';
 

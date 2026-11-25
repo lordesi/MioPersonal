@@ -439,6 +439,52 @@ class TrainerRegistrationTest extends TestCase
             );
     }
 
+    public function test_what_is_included_goes_on_each_row_of_its_kind_and_comes_back()
+    {
+        $client = User::factory()->create();
+
+        $this->actingAs($client)
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile([
+                    'sessions' => [$this->sessionType([
+                        'included' => [' Valutazione iniziale ', 'Programma su misura'],
+                    ])],
+                ]),
+            ])
+            ->assertSessionHasNoErrors();
+
+        $profile = $client->refresh()->trainerProfile;
+        $this->assertNotNull($profile);
+        // Trimmed, on every duration of the kind.
+        $this->assertSame(
+            [['Valutazione iniziale', 'Programma su misura'], ['Valutazione iniziale', 'Programma su misura']],
+            $profile->services->where('name', 'Seduta singola')->sortBy('sort')->pluck('included')->values()->all(),
+        );
+
+        $profile->forceFill(['status' => TrainerProfileStatus::Changes])->save();
+        $this->get(route('trainer.register'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('draft.pricing.sessions.0.included', ['Valutazione iniziale', 'Programma su misura'])
+            );
+    }
+
+    public function test_what_is_included_has_at_most_six_short_lines()
+    {
+        $client = User::factory()->create();
+
+        $this->actingAs($client)
+            ->post(route('trainer.register.store'), [
+                'terms' => '1',
+                ...$this->profile([
+                    'sessions' => [$this->sessionType([
+                        'included' => [...array_fill(0, 6, 'Una voce'), str_repeat('x', 61)],
+                    ])],
+                ]),
+            ])
+            ->assertSessionHasErrors(['sessions.0.included', 'sessions.0.included.6']);
+    }
+
     public function test_the_online_prices_count_only_with_online_and_in_person()
     {
         $client = User::factory()->create();
@@ -739,6 +785,31 @@ class TrainerRegistrationTest extends TestCase
 
         $this->assertGuest();
         $this->assertSame(1, User::count());
+    }
+
+    public function test_continua_checks_the_username_with_the_presentation_not_with_the_account()
+    {
+        User::factory()->create(['username' => 'giulia-rossi']);
+        $account = [
+            'first_name' => 'Giulia',
+            'last_name' => 'Rossi',
+            'email' => 'giulia@example.com',
+            'phone' => '347 521 8846',
+            'password' => 'Password1',
+            'terms' => '1',
+        ];
+
+        // Step 1 is asked without the username: it comes in "Presentazione".
+        $this->post(route('trainer.register.check', 1), $account)
+            ->assertSessionDoesntHaveErrors(['username']);
+
+        $this->post(route('trainer.register.check', 2), [
+            'username' => 'giulia-rossi',
+            'headline' => 'Functional training e Pilates',
+            'bio' => str_repeat('Alleno persone che vogliono tornare in forma. ', 5),
+            'experience' => '5to10',
+            'photo' => UploadedFile::fake()->image('ritratto.jpg', 600, 600),
+        ])->assertSessionHasErrors(['username']);
     }
 
     public function test_continua_checks_instagram_in_step_2_not_in_step_1()

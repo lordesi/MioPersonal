@@ -41,11 +41,11 @@ export default function ProCards() {
     return (
         <section
             aria-labelledby="pro-title"
-            className="mx-auto flex w-full max-w-300 flex-col gap-3 px-4 pt-10 pb-12 md:gap-5 md:px-8 md:pt-18 md:pb-20"
+            className="mx-auto flex w-full max-w-300 flex-col gap-3.5 px-4 pt-11 pb-14 md:gap-5 md:px-8 md:pt-18 md:pb-20"
         >
             <h2
                 id="pro-title"
-                className="mb-1 text-[22px] leading-7 font-bold tracking-[-0.26px] md:mb-0 md:text-[28px] md:leading-8.5"
+                className="text-[22px] leading-7 font-bold tracking-[-0.02em] md:text-[28px] md:leading-8.5"
             >
                 Per i professionisti
             </h2>
@@ -58,7 +58,7 @@ export default function ProCards() {
                 {shown.map((card) => (
                     <div
                         key={card.title}
-                        className="relative flex min-h-65 flex-col justify-end overflow-hidden rounded-[26px] border border-white/10 p-5 md:min-h-95 md:p-8"
+                        className="relative flex h-75 flex-col justify-end overflow-hidden rounded-[32px] border border-border bg-card p-5 md:h-95 md:p-8"
                     >
                         <img
                             src={card.image}
@@ -69,19 +69,19 @@ export default function ProCards() {
                         />
                         <div
                             aria-hidden="true"
-                            className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,10,10,0.1)_0%,rgba(10,10,10,0.55)_45%,rgba(10,10,10,0.94)_85%)]"
+                            className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.55)_45%,rgba(0,0,0,0.92)_100%)]"
                         />
                         <div className="relative flex flex-col items-start gap-2">
-                            <h3 className="text-xl leading-6.5 font-semibold tracking-[-0.45px] md:text-[26px] md:leading-8 md:font-bold">
+                            <h3 className="text-2xl leading-7 font-bold tracking-[-0.02em] md:text-[28px] md:leading-8.5">
                                 {card.title}
                             </h3>
-                            <p className="mb-2 max-w-105 text-[15px] leading-5 text-[#d6d6d6] md:mb-3 md:text-base md:leading-5.5">
+                            <p className="mb-1.5 max-w-105 text-[15px] leading-[1.4] text-subtle-foreground md:mb-3 md:text-base">
                                 {card.text}
                             </p>
                             <Link
                                 prefetch={hoverPrefetch}
                                 href={card.href}
-                                className="inline-flex h-11 items-center rounded-full bg-brand px-5 text-[15px] font-semibold text-primary-foreground outline-none hover:brightness-105 focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                className="inline-flex h-11.5 items-center rounded-full bg-brand px-5 text-base font-bold text-black outline-none hover:brightness-105 focus-visible:ring-2 focus-visible:ring-ring"
                             >
                                 {card.action}
                             </Link>

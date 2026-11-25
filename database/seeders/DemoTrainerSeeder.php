@@ -300,7 +300,11 @@ class DemoTrainerSeeder extends Seeder
         $profile->services()->delete();
 
         // The first session on top, then one row for each duration (see SaveTrainerServices).
-        $single = ['name' => 'Seduta singola', 'fixed_duration' => false, 'note' => 'in studio, a domicilio o al parco'];
+        $single = ['name' => 'Seduta singola', 'fixed_duration' => false, 'note' => 'in studio, a domicilio o al parco', 'included' => [
+            'Valutazione iniziale di forma fisica e mobilità',
+            'Allenamento guidato con correzione della tecnica',
+            'Indicazioni per allenarti da solo fino alla seduta successiva',
+        ]];
         $online = ['name' => 'Seduta singola', 'fixed_duration' => false, 'note' => 'in videochiamata', 'online_only' => true];
         $services = [
             ['name' => Service::FIRST_SESSION_NAME, 'minutes' => 60, 'price_cents' => 3000, 'note' => 'test di partenza e obiettivi'],

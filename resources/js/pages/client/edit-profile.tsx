@@ -1,14 +1,18 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import PreferencesFields, {
+    PhotoUpload,
     preferencesFormData,
 } from '@/components/client/preferences-fields';
 import type {
     BirthYears,
     SavedPreferences,
 } from '@/components/client/preferences-fields';
-import PreferencesPreview from '@/components/client/preferences-preview';
-import PageHeading from '@/components/trainer/area/page-heading';
+import {
+    areaButtonClassName,
+    areaTitleClassName,
+} from '@/components/mp/area-bits';
+import { cn } from '@/lib/utils';
 import { update } from '@/routes/client/profile';
 import type { CatalogOption, CityWithCoordinates } from '@/types';
 
@@ -22,10 +26,10 @@ type EditProfileProps = {
 };
 
 /**
- * "Modifica profilo": the answers of "Completa il tuo profilo"
- * (pages/onboarding/complete-profile.tsx), changed from the client area,
- * with the black "Anteprima" panel and its "Salva modifiche" on the right.
- * After saving, the page stays open with the "Profilo aggiornato." toast.
+ * "Modifica profilo" (design "Modifica profilo cliente · V1"): the photo
+ * with the pencil, then the answers of "Completa il tuo profilo" in sections
+ * that open one at a time, and "Salva modifiche". The photo is saved as soon
+ * as it is chosen; after saving, the page stays open with the toast.
  */
 export default function EditProfile({
     disciplines,
@@ -33,6 +37,7 @@ export default function EditProfile({
     preferences,
     birthYears,
 }: EditProfileProps) {
+    const { auth } = usePage().props;
     const form = useForm(preferencesFormData(preferences));
 
     const save = (event: FormEvent) => {
@@ -51,10 +56,18 @@ export default function EditProfile({
         <>
             <Head title="Modifica profilo" />
 
-            <PageHeading title="Modifica profilo" />
+            <h1 className={areaTitleClassName}>Modifica profilo</h1>
 
-            <form onSubmit={save} className="flex flex-wrap items-start gap-5">
-                <div className="flex min-w-0 flex-[3_1_560px] flex-col gap-4">
+            <form
+                onSubmit={save}
+                className="flex w-full max-w-170 flex-col gap-6"
+            >
+                <PhotoUpload
+                    name={auth?.user?.name ?? ''}
+                    src={auth?.user?.avatar}
+                />
+
+                <div className="flex flex-col">
                     <PreferencesFields
                         data={form.data}
                         setData={form.setData}
@@ -62,22 +75,24 @@ export default function EditProfile({
                         cities={cities}
                         birthYears={birthYears}
                     />
-
-                    {firstError && (
-                        <p role="alert" className="text-sm text-destructive">
-                            {firstError}
-                        </p>
-                    )}
                 </div>
-                <aside className="min-w-0 flex-[2_1_320px] lg:sticky lg:top-6">
-                    <PreferencesPreview
-                        data={form.data}
-                        disciplines={disciplines}
-                        cities={cities}
-                        changed={form.isDirty}
-                        saving={form.processing}
-                    />
-                </aside>
+
+                {firstError && (
+                    <p role="alert" className="text-sm text-destructive">
+                        {firstError}
+                    </p>
+                )}
+
+                <button
+                    type="submit"
+                    disabled={!form.isDirty || form.processing}
+                    className={cn(
+                        areaButtonClassName('primary', 'lg'),
+                        'w-full md:w-auto md:self-start',
+                    )}
+                >
+                    {form.processing ? 'Salvo…' : 'Salva modifiche'}
+                </button>
             </form>
         </>
     );

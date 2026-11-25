@@ -33,6 +33,27 @@ class TrainerRequestsTest extends TestCase
             );
     }
 
+    public function test_the_switch_turns_the_automatic_confirmation_on_and_off()
+    {
+        $trainer = TrainerProfile::factory()->approved()->create(['auto_confirm' => false]);
+
+        $this->actingAs($trainer->user)
+            ->from(route('trainer.requests'))
+            ->patch(route('trainer.requests.auto-confirm'), ['auto_confirm' => true])
+            ->assertRedirect(route('trainer.requests'));
+        $this->assertTrue($trainer->fresh()->auto_confirm);
+
+        $this->actingAs($trainer->user)
+            ->patch(route('trainer.requests.auto-confirm'), ['auto_confirm' => false]);
+        $this->assertFalse($trainer->fresh()->auto_confirm);
+
+        // Only for trainers: a client is sent to their own area.
+        $this->actingAs(User::factory()->create())
+            ->patch(route('trainer.requests.auto-confirm'), ['auto_confirm' => true])
+            ->assertRedirect();
+        $this->assertFalse($trainer->fresh()->auto_confirm);
+    }
+
     public function test_only_the_trainers_requests_still_waiting_the_ones_expiring_first_on_top()
     {
         $trainer = TrainerProfile::factory()->approved()->create();

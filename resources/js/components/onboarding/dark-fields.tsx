@@ -7,20 +7,21 @@ import { cn } from '@/lib/utils';
 
 /*
  * The pieces of the dark sign-ups ("Registra la palestra", "Diventa
- * trainer"): round fields with a grey outline, turquoise while typing.
+ * trainer"): the fields of the design system (56px, grey outline, turquoise
+ * while typing).
  */
 
-/** A round field: 52px on phones, 50px on desktop. */
+/** A field: 56px, on the card color. */
 export const pillFieldClassName =
-    'h-13 w-full min-w-0 rounded-full border-0 bg-transparent px-5 text-[17px] font-semibold text-foreground shadow-[inset_0_0_0_1px_var(--field)] outline-none placeholder:font-normal placeholder:text-muted-foreground focus-visible:shadow-[inset_0_0_0_1.5px_var(--brand)] focus-visible:ring-0 aria-invalid:shadow-[inset_0_0_0_1.5px_var(--destructive)] disabled:opacity-100 md:h-12.5 md:text-[17px]';
+    'h-14 w-full min-w-0 rounded-[14px] border border-input bg-card px-4 text-[17px] text-foreground shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-brand focus-visible:ring-0 aria-invalid:border-destructive disabled:opacity-100 md:h-14 md:text-[17px]';
 
-/** A round box with an icon and an input inside (the outline is on the box). */
+/** A box with an icon and an input inside (the outline is on the box). */
 export const pillBoxClassName =
-    'field-pill h-13 px-5 text-foreground md:h-12.5 has-[[aria-invalid=true]]:shadow-[inset_0_0_0_1.5px_var(--destructive)]';
+    'flex h-14 items-center gap-2.5 rounded-[14px] border border-input bg-card px-4 text-foreground focus-within:border-brand has-[[aria-invalid=true]]:border-destructive';
 
 /** The input inside a pillBox. */
 export const pillInnerClassName =
-    'h-11 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-[17px] font-semibold text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground';
+    'h-11 w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-[17px] text-foreground outline-none placeholder:text-muted-foreground';
 
 export const fieldLabelClassName =
     'text-[15px] leading-5 font-semibold tracking-[-0.23px]';
@@ -39,10 +40,13 @@ export function Section({
     title,
     description,
     aside,
+    hideTitle = false,
     children,
     className,
 }: {
     title: ReactNode;
+    /** Only for screen readers (the design shows the fields alone). */
+    hideTitle?: boolean;
     description?: ReactNode;
     /** On the right of the title, e.g. "2 scelti". */
     aside?: ReactNode;
@@ -54,20 +58,25 @@ export function Section({
     return (
         <section
             aria-labelledby={id}
-            className={cn('flex flex-col gap-4 md:gap-3.5', className)}
+            className={cn('flex flex-col gap-3', className)}
         >
-            <div className="flex flex-col gap-1 md:gap-0.5">
+            <div
+                className={cn(
+                    'flex flex-col gap-1 md:gap-0.5',
+                    hideTitle && 'sr-only',
+                )}
+            >
                 <div className="flex items-baseline justify-between gap-3">
                     <h2
                         id={id}
-                        className="text-[22px] leading-7 font-bold md:text-xl md:leading-6.25 md:font-semibold md:tracking-[-0.45px]"
+                        className="text-[17px] leading-5.5 font-semibold tracking-[-0.01em]"
                     >
                         {title}
                     </h2>
                     {aside}
                 </div>
                 {description && (
-                    <p className="text-[15px] leading-5 text-muted-foreground md:text-[13px] md:leading-4.5">
+                    <p className="text-[13px] leading-4.5 text-muted-foreground">
                         {description}
                     </p>
                 )}

@@ -1,5 +1,4 @@
-import { Check, Eye, Lock, Upload, X } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { Check, Upload, X } from 'lucide-react';
 import {
     Field,
     pillFieldClassName,
@@ -53,16 +52,7 @@ export default function StepCertifications({ draft, update }: StepProps) {
         });
 
     return (
-        <div className="flex flex-col gap-10 md:gap-12">
-            <div className="grid grid-cols-2 gap-2 md:gap-3">
-                <InfoTile icon={Eye} title="Sul profilo">
-                    Compaiono titolo, ente e anno.
-                </InfoTile>
-                <InfoTile icon={Lock} title="Attestati privati">
-                    Li vede solo il nostro team, per l’approvazione.
-                </InfoTile>
-            </div>
-
+        <div className="flex flex-col gap-8">
             <Section
                 title={
                     <>
@@ -118,31 +108,6 @@ export default function StepCertifications({ draft, update }: StepProps) {
                     </AddButton>
                 )}
             </Section>
-        </div>
-    );
-}
-
-/** "Sul profilo", "Attestati privati": what happens to what you write. */
-function InfoTile({
-    icon: Icon,
-    title,
-    children,
-}: {
-    icon: LucideIcon;
-    title: string;
-    children: string;
-}) {
-    return (
-        <div className="flex flex-col gap-2 rounded-[20px] bg-card p-4 md:flex-row md:items-start md:gap-3 md:p-5">
-            <Icon aria-hidden="true" className="size-5 shrink-0 text-brand" />
-            <span className="flex flex-col gap-0.5">
-                <span className="text-[15px] leading-5 font-semibold">
-                    {title}
-                </span>
-                <span className="text-[13px] leading-4.5 text-muted-foreground">
-                    {children}
-                </span>
-            </span>
         </div>
     );
 }

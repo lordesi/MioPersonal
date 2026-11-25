@@ -26,7 +26,7 @@ type ComboFieldProps = {
      * "outline": grey ring, white bold text (on the photos). "filled": grey
      * fill, grey placeholder, the one field of the phones' search page.
      */
-    tone?: 'outline' | 'filled';
+    tone?: 'outline' | 'filled' | 'field';
     className?: string;
 };
 
@@ -105,10 +105,12 @@ export default function ComboField({
                 className={cn(
                     tone === 'filled'
                         ? 'flex min-h-11 items-center gap-2.5 rounded-full bg-[#7676803d] px-3.5 text-muted-foreground focus-within:bg-[#78788052]'
-                        : cn(
-                              'field-pill px-5 text-foreground',
-                              size === 'lg' ? 'min-h-13' : 'min-h-12 px-4.5',
-                          ),
+                        : tone === 'field'
+                          ? 'flex min-h-14 items-center gap-2.5 rounded-[14px] border border-input bg-card px-4 text-muted-foreground shadow-xs focus-within:border-brand'
+                          : cn(
+                                'field-pill px-5 text-foreground',
+                                size === 'lg' ? 'min-h-13' : 'min-h-12 px-4.5',
+                            ),
                 )}
             >
                 <Icon aria-hidden="true" className="size-5 shrink-0" />
@@ -138,7 +140,7 @@ export default function ComboField({
                     onKeyDown={onKeyDown}
                     className={cn(
                         'h-11 min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:opacity-100 [&::-webkit-search-cancel-button]:hidden',
-                        tone === 'filled'
+                        tone === 'filled' || tone === 'field'
                             ? 'text-[17px] tracking-[-0.43px] placeholder:text-muted-foreground'
                             : cn(
                                   'font-semibold placeholder:text-foreground',

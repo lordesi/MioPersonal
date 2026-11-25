@@ -1,8 +1,6 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import { trainerCard } from '@/components/mp/cards';
 import FiltersSheet, { countFilters } from '@/components/mp/filters-sheet';
-import SaveableCard from '@/components/mp/saveable-card';
 import {
     EmptyResults,
     ResultsGrid,
@@ -10,9 +8,11 @@ import {
     SortMenu,
     SuggestionsSection,
 } from '@/components/mp/search-results';
-import SearchTop from '@/components/mp/search-top';
-import type { WhatWhereResult } from '@/components/mp/what-where-search';
+import { FiltersButton } from '@/components/mp/search-top';
+import TrainerCard from '@/components/mp/trainer-card';
 import SearchPagination from '@/components/search/search-pagination';
+import TrainerSearchBar from '@/components/search/trainer-search-bar';
+import type { SearchDraft } from '@/components/search/trainer-search-bar';
 import { searchUrl } from '@/lib/search';
 import type { ActiveFilters, SearchFilters, SearchOption } from '@/lib/search';
 import type { CityWithCoordinates, SeoData, TrainerSummary } from '@/types';
@@ -74,8 +74,9 @@ type SearchProps = {
 };
 
 /**
- * The trainer search of the dark design: the four searches, "Cosa · Dove"
- * and "Filtri" on top, then the cards.
+ * The trainer search (designs "Ricerca A" and "Ricerca desktop"): the search
+ * "Cosa · Dove · Modalità", "Filtri" and the categories on top, then the
+ * cards.
  */
 export default function Search({
     city,
@@ -110,36 +111,31 @@ export default function Search({
     // Back to all of Italy, keeping only the sort order.
     const resetFilters = () => visit({ ordina }, null);
 
-    /** "Cosa · Dove · Cerca": a discipline, or words of the name. */
-    const search = ({ what, words, city: nextCity }: WhatWhereResult) =>
+    /** "Cerca" of the search panel: what, where and how. */
+    const search = (draft: SearchDraft) =>
         changeFilters(
-            { disciplina: what ? [what] : [], nome: words },
-            nextCity,
+            {
+                disciplina: draft.disciplina,
+                obiettivo: draft.obiettivo,
+                nome: draft.nome,
+                modalita: draft.modalita,
+            },
+            draft.city?.slug ?? null,
         );
-
-    const disciplineLabel = (slug: string) =>
-        disciplines.find((discipline) => discipline.value === slug)?.label;
-    // "Cosa" shows the one discipline chosen, or the name searched.
-    const initialWhat =
-        filters.disciplina.length === 1
-            ? {
-                  text: disciplineLabel(filters.disciplina[0]) ?? '',
-                  value: filters.disciplina[0],
-              }
-            : { text: nome ?? '', value: null };
 
     /** The cards with the heart (for clients and guests). */
     const trainerGrid = (list: TrainerSummary[]) => (
         <ResultsGrid items={list} itemKey={(trainer) => trainer.href}>
-            {(trainer) => (
-                <SaveableCard
-                    {...trainerCard(trainer)}
-                    slug={trainer.slug}
-                    favoriteKind="trainer"
-                    saved={trainer.favorite ?? false}
-                />
-            )}
+            {(trainer) => <TrainerCard trainer={trainer} />}
         </ResultsGrid>
+    );
+
+    const filtersButton = (className: string) => (
+        <FiltersButton
+            count={countFilters(sheetFilters)}
+            onClick={() => setFiltersOpen(true)}
+            className={className}
+        />
     );
 
     /** Under "Nessun trainer…": why the profiles below are there. */
@@ -165,25 +161,23 @@ export default function Search({
         <>
             <Head title={seo.title} />
 
-            <SearchTop
-                kind="trainer"
-                city={city}
-                what={{
-                    label: 'Cerca personal trainer',
-                    placeholder: 'Disciplina o nome del trainer',
-                    mobilePlaceholder: 'Nome, disciplina o città',
-                    options: disciplines,
+            <TrainerSearchBar
+                // A new search (or "Cancella i filtri") starts the panel again.
+                key={`${nome}-${city?.slug}-${filters.disciplina.join()}-${filters.obiettivo.join()}-${filters.modalita}`}
+                value={{
+                    disciplina: filters.disciplina,
+                    obiettivo: filters.obiettivo,
+                    nome,
+                    city,
+                    modalita: filters.modalita,
                 }}
+                disciplines={disciplines}
                 cities={cities}
-                initialWhat={initialWhat}
-                searchKey={`${nome}-${city?.slug}-${filters.disciplina.join()}`}
                 onSearch={search}
-                onCity={(slug) => changeFilters({}, slug)}
-                filterCount={countFilters(sheetFilters)}
-                onOpenFilters={() => setFiltersOpen(true)}
+                filters={filtersButton('size-14 border border-border bg-card')}
             />
 
-            <div className="mx-auto flex w-full max-w-300 flex-1 flex-col gap-4 px-4 pt-4 pb-16 md:gap-6 md:px-8 md:pt-6">
+            <div className="mx-auto flex w-full max-w-300 flex-1 flex-col gap-4 px-4 pt-5 pb-16 md:gap-6 md:px-8 md:pt-8">
                 <ResultsHeader
                     title={
                         total === 1
@@ -191,16 +185,23 @@ export default function Search({
                             : `${total} personal trainer ${place}`
                     }
                     sort={
-                        <SortMenu
-                            options={sortOptions}
-                            value={ordina ?? 'pertinenza'}
-                            onChange={(value) =>
-                                changeFilters({
-                                    ordina:
-                                        value === 'pertinenza' ? null : value,
-                                })
-                            }
-                        />
+                        <div className="flex items-center gap-2">
+                            {filtersButton(
+                                'h-11 px-4.5 shadow-[inset_0_0_0_1px_var(--field)] hover:bg-foreground/10 max-md:hidden',
+                            )}
+                            <SortMenu
+                                options={sortOptions}
+                                value={ordina ?? 'pertinenza'}
+                                onChange={(value) =>
+                                    changeFilters({
+                                        ordina:
+                                            value === 'pertinenza'
+                                                ? null
+                                                : value,
+                                    })
+                                }
+                            />
+                        </div>
                     }
                 />
 

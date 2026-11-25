@@ -1,5 +1,7 @@
 import { CalendarRange, ChevronDown } from 'lucide-react';
 import { useId, useState } from 'react';
+import { areaSectionTitleClassName } from '@/components/mp/area-bits';
+import RangeSheet from '@/components/trainer/home/range-sheet';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -7,45 +9,65 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import RangeSheet from '@/components/trainer/home/range-sheet';
-import { blockTitleClassName } from '@/components/trainer/ui/styles';
-import { formatDayMonthShort } from '@/lib/format';
+import { formatDayMonthShort, formatPrice } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { TrainerDashboardStats, TrainerStatsPeriod } from '@/types';
 
-const PERIODS: { value: TrainerStatsPeriod; label: string }[] = [
-    { value: 'oggi', label: 'Oggi' },
-    { value: '7', label: 'Ultimi 7 giorni' },
-    { value: '30', label: 'Ultimi 30 giorni' },
-    { value: 'intervallo', label: 'Intervallo personalizzato' },
+const PERIODS: { value: TrainerStatsPeriod; label: string; short: string }[] = [
+    { value: 'oggi', label: 'Oggi', short: 'Oggi' },
+    { value: '7', label: 'Ultimi 7 giorni', short: '7 giorni' },
+    { value: '30', label: 'Ultimi 30 giorni', short: '30 giorni' },
+    { value: '90', label: 'Ultimi 3 mesi', short: '3 mesi' },
+    {
+        value: 'intervallo',
+        label: 'Intervallo personalizzato',
+        short: 'Intervallo',
+    },
 ];
-
-const COMPARED: Record<TrainerStatsPeriod, string> = {
-    oggi: 'rispetto a ieri',
-    '7': 'rispetto ai 7 giorni prima',
-    '30': 'rispetto ai 30 giorni prima',
-    intervallo: 'rispetto al periodo prima',
-};
 
 type StatsBlockProps = {
     stats: TrainerDashboardStats;
     today: string;
     /** A new period: `periodo`, and `dal`/`al` for the custom one. */
     onChange: (period: TrainerStatsPeriod, from?: string, to?: string) => void;
-    /** Desktop: bigger numbers in the panel. */
-    size?: 'sm' | 'lg';
+    /** "Statistiche" on "Oggi", "Le tue statistiche" on "Profilo". */
+    title?: string;
+    /** The line of the earnings (only on "Oggi"). */
+    chart?: boolean;
 };
 
+/** "+12%"; null when there is nothing to compare with. */
+function percentChange(value: number, before: number): string | null {
+    if (before === 0) {
+        return null;
+    }
+
+    const change = Math.round(((value - before) / before) * 100);
+
+    return `${change > 0 ? '+' : change < 0 ? '−' : ''}${Math.abs(change)}%`;
+}
+
+/** "1,2k €" on the points of the line. */
+function shortPrice(cents: number): string {
+    const euros = Math.round(cents / 100);
+
+    return euros >= 1000
+        ? `${(euros / 1000).toFixed(euros % 1000 === 0 ? 0 : 1).replace('.', ',')}k €`
+        : `${euros} €`;
+}
+
 /**
- * "Statistiche": the visits to the public profile and the sessions of a
- * period (today, 7 or 30 days, or two dates), each with the change on the
+ * "Statistiche" (design "Trainer · Oggi · nuovo"): the period, the earnings
+ * in big with their line, then the visits to the profile, the sessions, the
+ * new clients and the requests confirmed, each with the change on the
  * period just before.
  */
 export default function StatsBlock({
     stats,
     today,
     onChange,
-    size = 'sm',
+    title = 'Statistiche',
+    chart = true,
 }: StatsBlockProps) {
     const titleId = useId();
     // "Intervallo personalizzato": the calendar of "Scegli data", from and to.
@@ -53,47 +75,61 @@ export default function StatsBlock({
     const custom = stats.period === 'intervallo';
     const label = custom
         ? `${formatDayMonthShort(stats.from)} – ${formatDayMonthShort(stats.to)}`
-        : PERIODS.find((period) => period.value === stats.period)?.label;
+        : PERIODS.find((period) => period.value === stats.period)?.short;
+    const earningsDelta = percentChange(
+        stats.earningsCents,
+        stats.earningsBeforeCents,
+    );
+    const newClientsDelta = stats.newClients - stats.newClientsBefore;
 
-    const tiles = [
+    const metrics = [
         {
             label: 'Visite al profilo',
-            value: stats.views,
-            before: stats.viewsBefore,
-            hint: null,
+            value: stats.views.toLocaleString('it-IT'),
+            delta: percentChange(stats.views, stats.viewsBefore),
         },
         {
-            label: 'Sedute prenotate',
-            value: stats.sessions,
-            before: stats.sessionsBefore,
-            hint:
-                stats.hours > 0
-                    ? `${String(stats.hours).replace('.', ',')} h di allenamento`
-                    : null,
+            label: 'Sedute fatte',
+            value: stats.sessions.toLocaleString('it-IT'),
+            delta: percentChange(stats.sessions, stats.sessionsBefore),
+        },
+        {
+            label: 'Nuovi clienti',
+            value: stats.newClients.toLocaleString('it-IT'),
+            delta:
+                newClientsDelta > 0
+                    ? `+${newClientsDelta}`
+                    : newClientsDelta < 0
+                      ? `−${Math.abs(newClientsDelta)}`
+                      : null,
+        },
+        {
+            label: 'Richieste confermate',
+            value:
+                stats.confirmedRate === null
+                    ? '–'
+                    : `${Math.round(stats.confirmedRate * 100)}%`,
+            delta: null,
         },
     ];
 
     return (
-        <section aria-labelledby={titleId} className="flex flex-col gap-3">
+        <section aria-labelledby={titleId} className="flex flex-col gap-4.5">
             <div className="flex items-center justify-between gap-3">
-                <h2 id={titleId} className={blockTitleClassName}>
-                    Statistiche
+                <h2 id={titleId} className={areaSectionTitleClassName}>
+                    {title}
                 </h2>
                 <DropdownMenu>
                     <DropdownMenuTrigger
-                        className={cn(
-                            'inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[15px] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                            size === 'lg'
-                                ? 'bg-card text-foreground'
-                                : 'text-muted-foreground',
-                        )}
+                        aria-label={`Periodo: ${label}`}
+                        className="inline-flex h-11 items-center gap-2.5 rounded-[14px] bg-card px-3.5 text-[15px] font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                         {label}
-                        <ChevronDown aria-hidden="true" className="size-4" />
+                        <ChevronDown aria-hidden="true" className="size-4.5" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
                         align="end"
-                        className="w-60 rounded-[18px] p-1.5"
+                        className="w-62 rounded-2xl border-0 bg-[#1c1e21] p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
                     >
                         <DropdownMenuRadioGroup
                             value={stats.period}
@@ -119,7 +155,7 @@ export default function StatsBlock({
                                             );
                                         }
                                     }}
-                                    className="h-10 rounded-xl text-[15px]"
+                                    className="h-11 rounded-xl text-[15px] font-semibold data-[state=checked]:bg-brand/12 data-[state=checked]:text-brand"
                                 >
                                     {period.label}
                                 </DropdownMenuRadioItem>
@@ -151,35 +187,52 @@ export default function StatsBlock({
                 onApply={(from, to) => onChange('intervallo', from, to)}
             />
 
-            <div className="grid grid-cols-2 gap-2.5">
-                {tiles.map((tile) => (
-                    <div
-                        key={tile.label}
-                        className="flex flex-col gap-2 rounded-[22px] bg-card px-4 pt-4.5 pb-4 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
-                    >
-                        <span className="text-[13px] text-muted-foreground">
-                            {tile.label}
-                        </span>
-                        <span
-                            className={cn(
-                                'font-bold tracking-[-0.5px] tabular-nums',
-                                size === 'lg'
-                                    ? 'text-[34px] leading-10'
-                                    : 'text-[28px] leading-8',
-                            )}
-                        >
-                            {tile.value.toLocaleString('it-IT')}
-                        </span>
-                        {tile.hint && (
-                            <span className="text-[13px] text-[#d4d4d4]">
-                                {tile.hint}
-                            </span>
+            <div className="flex flex-col gap-1">
+                <span className="text-sm text-muted-foreground">Guadagni</span>
+                <b className="text-[44px] leading-none font-bold tracking-[-0.03em] tabular-nums">
+                    {formatPrice(stats.earningsCents)}
+                </b>
+                {earningsDelta && (
+                    <span
+                        className={cn(
+                            'text-sm font-semibold tabular-nums',
+                            earningsDelta.startsWith('+')
+                                ? 'text-brand'
+                                : 'text-muted-foreground',
                         )}
-                        <Delta
-                            value={tile.value}
-                            before={tile.before}
-                            compared={COMPARED[stats.period]}
-                        />
+                    >
+                        {earningsDelta} rispetto al periodo prima
+                    </span>
+                )}
+            </div>
+
+            {chart && stats.earningsSeries.length > 1 && (
+                <EarningsLine series={stats.earningsSeries} />
+            )}
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+                {metrics.map((metric) => (
+                    <div key={metric.label} className="flex flex-col gap-0.5">
+                        <span className="flex items-baseline gap-2">
+                            <b className="text-[26px] leading-8 font-bold tabular-nums">
+                                {metric.value}
+                            </b>
+                            {metric.delta && (
+                                <span
+                                    className={cn(
+                                        'text-[13px] font-semibold tabular-nums',
+                                        metric.delta.startsWith('+')
+                                            ? 'text-brand'
+                                            : 'text-muted-foreground',
+                                    )}
+                                >
+                                    {metric.delta}
+                                </span>
+                            )}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                            {metric.label}
+                        </span>
                     </div>
                 ))}
             </div>
@@ -187,32 +240,81 @@ export default function StatsBlock({
     );
 }
 
-/** "+18% rispetto ai 7 giorni prima": turquoise when it grows. */
-function Delta({
-    value,
-    before,
-    compared,
+/** The turquoise line of the earnings, a dot and the value on each point. */
+function EarningsLine({
+    series,
 }: {
-    value: number;
-    before: number;
-    compared: string;
+    series: TrainerDashboardStats['earningsSeries'];
 }) {
-    if (before === 0) {
-        return null;
-    }
-
-    const change = Math.round(((value - before) / before) * 100);
-    const sign = change > 0 ? '+' : change < 0 ? '−' : '';
+    const max = Math.max(...series.map((point) => point.cents), 1) * 1.15;
+    const x = (index: number) => ((index + 0.5) / series.length) * 100;
+    const y = (cents: number) => 100 - (cents / max) * 100;
+    const points = series
+        .map((point, index) => `${x(index)},${y(point.cents)}`)
+        .join(' ');
+    const description = series
+        .map((point) => `${point.label}: ${formatPrice(point.cents)}`)
+        .join(', ');
 
     return (
-        <span
-            className={cn(
-                'text-xs tabular-nums',
-                change > 0 ? 'text-brand' : 'text-muted-foreground',
-            )}
+        <div
+            role="img"
+            aria-label={`Andamento dei guadagni. ${description}`}
+            className="flex flex-col gap-2.5"
         >
-            {sign}
-            {Math.abs(change)}% {compared}
-        </span>
+            <div className="relative h-35">
+                <svg
+                    aria-hidden="true"
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                    className="absolute inset-0 size-full overflow-visible"
+                >
+                    <polyline
+                        points={points}
+                        fill="none"
+                        stroke="var(--brand)"
+                        strokeWidth="2"
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                        vectorEffect="non-scaling-stroke"
+                    />
+                </svg>
+                {series.map((point, index) => (
+                    <span
+                        key={point.label}
+                        aria-hidden="true"
+                        className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
+                        style={{
+                            left: `${x(index)}%`,
+                            top: `${y(point.cents)}%`,
+                        }}
+                    >
+                        <span
+                            className={cn(
+                                'size-2.5 rounded-full',
+                                index === series.length - 1
+                                    ? 'bg-brand shadow-[0_0_0_4px_rgba(66,215,217,0.2)]'
+                                    : 'bg-foreground',
+                            )}
+                        />
+                        {series.length <= 7 && (
+                            <span className="absolute -top-6 text-[11px] font-semibold whitespace-nowrap text-muted-foreground tabular-nums">
+                                {shortPrice(point.cents)}
+                            </span>
+                        )}
+                    </span>
+                ))}
+            </div>
+            <div aria-hidden="true" className="flex">
+                {series.map((point) => (
+                    <span
+                        key={point.label}
+                        className="flex-1 text-center text-xs text-muted-foreground"
+                    >
+                        {point.label}
+                    </span>
+                ))}
+            </div>
+        </div>
     );
 }

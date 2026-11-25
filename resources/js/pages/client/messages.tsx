@@ -9,13 +9,13 @@ type MessagesProps = {
 };
 
 /**
- * "Messaggi" of the client: the trainers who have them among their clients.
- * The title, the list and the conversation are drawn by ChatView.
+ * The Inbox of the client: the chats with the trainers who have them among
+ * their clients, and the notifications. Drawn by ChatView.
  */
 export default function Messages({ conversations, selected }: MessagesProps) {
     return (
         <>
-            <Head title="Messaggi" />
+            <Head title="Inbox" />
 
             <ChatView
                 conversations={conversations}

@@ -81,7 +81,7 @@ export default function ReviewsBlock({
                 Recensioni
             </h2>
 
-            <div className="flex items-center gap-4 rounded-[26px] bg-card p-4 md:gap-10 md:rounded-[20px] md:border md:border-border md:bg-transparent md:p-6">
+            <div className="flex items-center gap-4 md:gap-10 md:p-6">
                 <div className="flex shrink-0 flex-col gap-1 md:gap-1.5">
                     <span className="text-[40px] leading-11 font-bold tabular-nums md:text-[56px] md:leading-none">
                         {formatRating(trainer.rating)}
@@ -121,13 +121,12 @@ export default function ReviewsBlock({
                 </ul>
             </div>
 
-            <ul className="flex flex-col gap-4 md:grid md:grid-flow-row-dense md:grid-cols-2">
+            <ul className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-x-4 md:gap-y-6">
                 {visible.map((review) => (
                     <li
                         key={review.id}
                         className={cn(
-                            'flex flex-col gap-2.5 border-b border-separator pb-4 last:border-b-0 last:pb-0 md:gap-3 md:rounded-[20px] md:border md:border-border md:p-5 md:last:border-b md:last:pb-5',
-                            review.reply && 'md:col-span-2',
+                            'flex flex-col gap-2.5 border-b border-white/17 pb-4 md:gap-3 md:border-b-0 md:pb-0',
                         )}
                     >
                         <ReviewItem
@@ -144,7 +143,7 @@ export default function ReviewsBlock({
                     <button
                         type="button"
                         onClick={showAll}
-                        className="btn-brand h-11 text-[17px] text-foreground md:h-12.5 md:w-80 md:text-brand"
+                        className="h-11 rounded-full bg-brand px-6 text-[17px] font-semibold text-black outline-none hover:brightness-105 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:h-12 md:text-base"
                     >
                         Mostra tutte le {trainer.reviewCount} recensioni
                     </button>

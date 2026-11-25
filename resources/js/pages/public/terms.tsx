@@ -250,13 +250,8 @@ export default function Terms() {
             title="Termini e condizioni d’uso"
             intro="Le regole per usare MioPersonal, sia se cerchi un trainer sia se sei un personal trainer."
             updatedOn="12 novembre 2026"
-            summary={[
-                'MioPersonal mette in contatto clienti e personal trainer indipendenti: la seduta è un accordo tra voi.',
-                'Durante la beta la piattaforma è gratuita e non gestisce pagamenti, nemmeno dei pacchetti.',
-                'Lo slot che prenoti resta riservato finché il trainer conferma, al massimo 24 ore.',
-                'Recensioni solo da chi ha svolto una seduta, nel rispetto di tutti.',
-            ]}
             sections={sections}
+            questions
         />
     );
 }

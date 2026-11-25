@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { ArrowRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
@@ -26,7 +26,7 @@ export const sectionTitleClassName =
 
 /** The filled turquoise button: "Cerca un personal trainer", "Invia messaggio". */
 export const brandFilledClassName =
-    'inline-flex h-12.5 items-center justify-center rounded-full bg-brand px-7 text-[17px] font-semibold text-[#0a0a0a] outline-none hover:bg-[#7fe6e7] focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-60';
+    'inline-flex h-14 items-center justify-center rounded-full bg-brand px-7 text-[17px] font-semibold text-black outline-none hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-60';
 
 /** The turquoise outline with white text: "Sei un trainer?", "Gestisci le preferenze". */
 export const brandOutlineClassName =
@@ -34,14 +34,14 @@ export const brandOutlineClassName =
 
 /** The big number of the error pages: "404", "500"; turquoise and light on desktop. */
 export const errorNumberClassName =
-    'text-[120px] leading-26 font-bold tracking-[-0.06em] text-brand tabular-nums md:text-[220px] md:leading-45 md:font-light';
+    'text-[112px] leading-[0.9] font-bold tracking-[-0.06em] text-brand tabular-nums md:text-[160px]';
 
 /** The small turquoise line over a title: "Errore 404". */
 export const eyebrowClassName =
-    'text-[13px] font-semibold tracking-[0.08em] text-brand uppercase';
+    'text-xs font-bold tracking-[0.08em] text-brand uppercase';
 
-/** A dark card: #1c1c1c, round corners of 26px. */
-export const darkCardClassName = 'rounded-[26px] bg-card';
+/** A dark card: the card color (#121315), round corners of 22px. */
+export const darkCardClassName = 'rounded-[22px] bg-card';
 
 /** "Home / Come funziona". */
 export function PageBreadcrumb({ current }: { current: string }) {
@@ -86,10 +86,10 @@ export function IconBadge({
     );
 }
 
-/** A dark card with an icon, a title, a line and the turquoise arrow. */
+/** A dark card (design "Prova da qui"): the icon in a turquoise box, a title, a line and the turquoise chevron. */
 export function LinkCard({
     href,
-    icon,
+    icon: Icon,
     title,
     children,
 }: {
@@ -104,19 +104,22 @@ export function LinkCard({
             href={href}
             className={cn(
                 darkCardClassName,
-                'flex h-full items-center gap-3 px-4 py-3.5 outline-none hover:bg-[#232323] focus-visible:ring-[3px] focus-visible:ring-ring/50 md:gap-4 md:p-6',
+                'flex h-full items-center gap-3.5 border border-separator p-4 outline-none hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring',
             )}
         >
-            <IconBadge icon={icon} />
-            <span className="flex flex-1 flex-col gap-0.5 md:gap-1">
-                <span className="text-[17px] font-semibold md:text-xl md:leading-6.25 md:tracking-[-0.45px]">
-                    {title}
-                </span>
-                <span className="text-[13px] leading-4.5 text-muted-foreground md:text-[15px] md:leading-5.25">
+            <span
+                aria-hidden="true"
+                className="flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft text-brand"
+            >
+                <Icon className="size-5.5" />
+            </span>
+            <span className="flex flex-1 flex-col gap-0.5">
+                <span className="text-[17px] font-semibold">{title}</span>
+                <span className="text-sm text-muted-foreground">
                     {children}
                 </span>
             </span>
-            <ArrowRight
+            <ChevronRight
                 aria-hidden="true"
                 className="size-5 shrink-0 text-brand"
             />

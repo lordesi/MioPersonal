@@ -28,7 +28,7 @@ export default function SessionHistory({
         return (
             <section
                 aria-labelledby="storico-vuoto"
-                className="flex flex-wrap items-center gap-4 rounded-[20px] border bg-card p-5 md:p-6"
+                className="flex flex-wrap items-center gap-4"
             >
                 <span className="flex size-12 flex-none items-center justify-center rounded-[14px] bg-secondary">
                     <History aria-hidden="true" className="size-5.5" />
@@ -51,12 +51,10 @@ export default function SessionHistory({
     return (
         <section
             aria-labelledby="sedute-svolte"
-            className="flex flex-col gap-2.5 rounded-3xl border bg-card p-5 md:p-6"
+            className="flex flex-col gap-2.5"
         >
-            <h2
-                id="sedute-svolte"
-                className="text-xl font-bold tracking-[-0.02em]"
-            >
+            {/* The dialog "Sedute passate" shows the title. */}
+            <h2 id="sedute-svolte" className="sr-only">
                 Sedute svolte
             </h2>
 
@@ -70,7 +68,7 @@ export default function SessionHistory({
                 <Button
                     type="button"
                     variant="ghost"
-                    className="-mx-5 -mb-5 h-11 rounded-none rounded-b-3xl border-t text-sm font-semibold md:-mx-6 md:-mb-6"
+                    className="h-11 rounded-full text-sm font-semibold"
                     aria-expanded={showAll}
                     onClick={() => setShowAll(!showAll)}
                 >
@@ -114,10 +112,10 @@ function PastSessionItem({ session }: { session: ClientPastSession }) {
         });
 
     return (
-        <li className="flex flex-col gap-3 border-t border-border/70 py-4">
+        <li className="flex flex-col gap-3 border-b border-separator py-4 last:border-b-0">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-3.5">
-                <span className="flex h-14 w-13 flex-none flex-col items-center justify-center rounded-[14px] bg-primary text-primary-foreground tabular-nums">
-                    <span className="text-[10px] leading-3 font-bold tracking-[0.08em] text-primary-foreground/65 uppercase">
+                <span className="flex h-14 w-13 flex-none flex-col items-center justify-center rounded-[14px] bg-secondary text-foreground tabular-nums">
+                    <span className="text-[10px] leading-3 font-bold tracking-[0.08em] text-muted-foreground uppercase">
                         {date.weekday}
                     </span>
                     <span className="text-xl leading-6 font-bold">
@@ -145,7 +143,7 @@ function PastSessionItem({ session }: { session: ClientPastSession }) {
                         <Button
                             type="button"
                             variant="outline"
-                            className="h-9.5 rounded-[10px] px-3.5 text-[13px] font-semibold"
+                            className="h-9.5 rounded-full px-3.5 text-[13px] font-semibold"
                             onClick={() => setWriting(true)}
                         >
                             <Star aria-hidden="true" className="size-3.5" />
@@ -163,7 +161,7 @@ function PastSessionItem({ session }: { session: ClientPastSession }) {
                     )}
                     <Button
                         asChild
-                        className="h-9.5 rounded-[10px] px-3.5 text-[13px] font-semibold"
+                        className="h-9.5 rounded-full px-3.5 text-[13px] font-semibold text-black"
                     >
                         <Link href={session.trainerHref}>
                             <RotateCcw

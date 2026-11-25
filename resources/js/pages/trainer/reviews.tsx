@@ -33,15 +33,11 @@ export default function Reviews({ summary, reviews }: ReviewsProps) {
             <Head title="Recensioni" />
 
             <ProfilePage
-                title={
-                    <>
-                        Le tue <strong>recensioni</strong>
-                    </>
-                }
-                intro="Cosa scrivono i clienti dopo una seduta. Una risposta gentile la leggono tutti."
+                title="Recensioni"
+                intro="Le risposte le leggono tutti."
             >
                 {reviews.length === 0 ? (
-                    <div className="flex flex-col items-center gap-3 rounded-[26px] bg-card px-6 py-12 text-center">
+                    <div className="flex flex-col items-center gap-3 rounded-[24px] bg-card px-6 py-10 text-center">
                         <span className="flex size-13 items-center justify-center rounded-full bg-brand-soft text-brand">
                             <Star aria-hidden="true" className="size-6" />
                         </span>
@@ -71,7 +67,7 @@ export default function Reviews({ summary, reviews }: ReviewsProps) {
                                 role="group"
                                 aria-label="Filtra recensioni"
                                 aria-controls={listId}
-                                className="flex flex-wrap gap-2"
+                                className="-mx-4 flex [scrollbar-width:none] gap-2 overflow-x-auto px-4 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden"
                             >
                                 {filters.map((item) => (
                                     <button
@@ -79,19 +75,16 @@ export default function Reviews({ summary, reviews }: ReviewsProps) {
                                         type="button"
                                         aria-pressed={filter === item.value}
                                         onClick={() => setFilter(item.value)}
-                                        className="chip"
+                                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold whitespace-nowrap text-foreground shadow-[inset_0_0_0_1px_var(--input)] outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:bg-brand aria-pressed:text-black aria-pressed:shadow-none"
                                     >
-                                        {item.label}
-                                        <span className="text-muted-foreground tabular-nums">
-                                            {item.count}
-                                        </span>
+                                        {item.label} {item.count}
                                     </button>
                                 ))}
                             </div>
 
-                            <div id={listId} className="flex flex-col gap-3.5">
+                            <div id={listId} className="flex flex-col">
                                 {shown.length === 0 ? (
-                                    <p className="rounded-[26px] border border-dashed border-field px-6 py-10 text-center text-[15px] text-muted-foreground">
+                                    <p className="rounded-[24px] bg-card px-6 py-8 text-center text-[15px] text-muted-foreground">
                                         {filter === 'toReply'
                                             ? 'Hai risposto a tutte le recensioni.'
                                             : 'Nessuna recensione con risposta, per ora.'}

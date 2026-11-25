@@ -1,6 +1,5 @@
 import {
     Building2,
-    Check,
     DoorOpen,
     House,
     MapPin,
@@ -69,9 +68,9 @@ const placeIcons: Record<PlaceType, LucideIcon> = {
 /** The line under each place, as in the design. */
 const placeHints: Record<PlaceType, string> = {
     gym: 'Una palestra di MioPersonal',
-    studio: 'Il tuo studio',
+    studio: 'Il tuo studio o palestra',
     home: 'Vai tu dal cliente',
-    park: 'Al parco',
+    park: 'Parchi e spazi pubblici',
     online: 'In videochiamata',
 };
 
@@ -124,12 +123,16 @@ const toggle = <T,>(list: T[], value: T, max: number) =>
  * city above the places, as in the design.
  */
 export default function StepPlaces({
+    part,
     draft,
     update,
     disciplines,
     cities,
     gymOptions,
-}: StepProps) {
+}: StepProps & {
+    /** "Discipline" (step 4) or "Dove alleni" (step 5); left out: both. */
+    part?: 'disciplines' | 'places';
+}) {
     const cityNeeded = draft.places.length === 0 || needsCity(draft);
     // "In palestra" (a gym of MioPersonal) only while the gyms are switched on.
     const withGyms = useFeatures().gyms;
@@ -137,14 +140,63 @@ export default function StepPlaces({
         (option) => withGyms || option.value !== 'gym',
     );
 
+    const placesPart = (
+        <div className="flex flex-col gap-8">
+            <div
+                role="group"
+                aria-label="Dove alleni"
+                className="grid grid-cols-2 gap-2.5"
+            >
+                {places.map((option) => (
+                    <PlaceCard
+                        key={option.value}
+                        place={option.value}
+                        label={option.label}
+                        on={draft.places.includes(option.value)}
+                        onToggle={() =>
+                            update({
+                                places: toggle(
+                                    draft.places,
+                                    option.value,
+                                    placeOptions.length,
+                                ),
+                            })
+                        }
+                    />
+                ))}
+            </div>
+
+            <CitySection
+                draft={draft}
+                update={update}
+                cities={cities}
+                optional={!cityNeeded}
+            />
+
+            {withGyms && draft.places.includes('gym') && (
+                <GymPicker
+                    draft={draft}
+                    update={update}
+                    gymOptions={gymOptions}
+                />
+            )}
+            {draft.places.includes('studio') && (
+                <Studios draft={draft} update={update} />
+            )}
+        </div>
+    );
+
+    if (part === 'places') {
+        return placesPart;
+    }
+
     return (
-        <div className="flex flex-col gap-10 md:gap-12">
+        <div className="flex flex-col gap-8">
             <Section
                 title="Discipline"
                 aside={
                     <Counter>
                         {draft.disciplines.length} di {MAX_DISCIPLINES}
-                        <span className="hidden md:inline"> al massimo</span>
                     </Counter>
                 }
             >
@@ -169,14 +221,7 @@ export default function StepPlaces({
             </Section>
 
             <Section
-                title={
-                    <>
-                        <span className="md:hidden">Obiettivi</span>
-                        <span className="hidden md:inline">
-                            Obiettivi su cui lavori
-                        </span>
-                    </>
-                }
+                title="Obiettivi dei clienti"
                 aside={
                     <Counter>
                         {draft.goals.length} di {MAX_GOALS}
@@ -196,59 +241,7 @@ export default function StepPlaces({
                     }
                 />
             </Section>
-
-            {/* Phones: the city after the places; desktop: before. */}
-            <div className="flex flex-col gap-10 md:flex-col-reverse md:gap-12">
-                <Section
-                    title="Dove alleni"
-                    aside={<Counter>Anche più di uno</Counter>}
-                >
-                    <div
-                        className={cn(
-                            'grid grid-cols-2 gap-2',
-                            places.length > 4
-                                ? 'md:grid-cols-5'
-                                : 'md:grid-cols-4',
-                        )}
-                    >
-                        {places.map((option) => (
-                            <PlaceCard
-                                key={option.value}
-                                place={option.value}
-                                label={option.label}
-                                on={draft.places.includes(option.value)}
-                                onToggle={() =>
-                                    update({
-                                        places: toggle(
-                                            draft.places,
-                                            option.value,
-                                            placeOptions.length,
-                                        ),
-                                    })
-                                }
-                            />
-                        ))}
-                    </div>
-
-                    {withGyms && draft.places.includes('gym') && (
-                        <GymPicker
-                            draft={draft}
-                            update={update}
-                            gymOptions={gymOptions}
-                        />
-                    )}
-                    {draft.places.includes('studio') && (
-                        <Studios draft={draft} update={update} />
-                    )}
-                </Section>
-
-                <CitySection
-                    draft={draft}
-                    update={update}
-                    cities={cities}
-                    optional={!cityNeeded}
-                />
-            </div>
+            {part === undefined && placesPart}
         </div>
     );
 }
@@ -274,40 +267,26 @@ function PlaceCard({
             aria-checked={on}
             onClick={onToggle}
             className={cn(
-                'relative flex w-full flex-col items-start gap-2.5 rounded-[20px] p-4 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                'flex min-h-30 w-full flex-col items-start justify-between gap-3.5 rounded-2xl p-4 text-left text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 on
-                    ? 'border border-brand text-foreground'
-                    : 'border border-dashed border-border text-muted-foreground hover:border-field',
-                // Phones: "Online" takes the whole row, icon and text side by side.
-                place === 'online' &&
-                    'col-span-2 flex-row items-center gap-3 md:col-span-1 md:flex-col md:items-start md:gap-2.5',
+                    ? 'bg-brand/8 shadow-[inset_0_0_0_1.5px_var(--brand)]'
+                    : 'shadow-[inset_0_0_0_1px_var(--input)] hover:bg-foreground/4',
             )}
         >
             <span
                 aria-hidden="true"
                 className={cn(
-                    'flex size-9 shrink-0 items-center justify-center rounded-full',
-                    on ? 'border border-brand text-brand' : 'bg-muted',
+                    'flex size-11 shrink-0 items-center justify-center rounded-xl',
+                    on ? 'bg-brand text-black' : 'bg-secondary',
                 )}
             >
-                <Icon className="size-5" />
+                <Icon className="size-5.5" />
             </span>
             <span className="flex flex-col gap-0.5">
-                <span className="text-[15px] font-semibold">{label}</span>
+                <span className="text-[17px] font-semibold">{label}</span>
                 <span className="text-[13px] leading-4.5 text-muted-foreground">
                     {placeHints[place]}
                 </span>
-            </span>
-            <span
-                aria-hidden="true"
-                className={cn(
-                    'absolute top-3 right-3 flex size-5.5 items-center justify-center rounded-[7px]',
-                    on
-                        ? 'text-brand shadow-[inset_0_0_0_1.5px_var(--brand)]'
-                        : 'shadow-[inset_0_0_0_1.5px_var(--field)]',
-                )}
-            >
-                {on && <Check className="size-3.5" strokeWidth={3} />}
             </span>
         </button>
     );
@@ -551,7 +530,7 @@ function CitySection({
                 <ComboField
                     label="Città"
                     icon={MapPin}
-                    placeholder="Cerca la tua città"
+                    placeholder="Es. Bergamo"
                     options={cities.filter(
                         (city) => !draft.otherCities.includes(city.value),
                     )}
@@ -565,6 +544,7 @@ function CitySection({
                         update({ city: option.value });
                     }}
                     autoComplete="address-level2"
+                    tone="field"
                 />
             </div>
 

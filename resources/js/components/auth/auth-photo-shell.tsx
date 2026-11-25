@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { X } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { DarkLogo } from '@/components/mp/dark-header';
 import { BrandMark } from '@/components/layout/brand-logo';
@@ -10,9 +11,34 @@ import { home } from '@/routes';
 export const authLinkClassName =
     'flex min-h-11 items-center text-[15px] font-semibold text-brand outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
-/** The main button: turquoise outline, 50px. */
+/** The main button: filled turquoise, 56px (design "Accedi", "Inviami il link"). */
 export const authButtonClassName =
-    'btn-brand h-12.5 text-[17px] disabled:pointer-events-none disabled:opacity-60';
+    'flex h-14 items-center justify-center gap-2 rounded-full bg-brand text-[17px] font-semibold tracking-[-0.43px] text-black outline-none hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-60 font-bold shadow-[0_8px_24px_rgba(66,215,217,0.28)]';
+
+/** The second choice next to it: grey outline, 56px ("Annulla", "Esci"). */
+export const authSecondaryClassName =
+    'flex h-14 items-center justify-center rounded-full border border-field text-[17px] font-semibold tracking-[-0.43px] text-foreground outline-none hover:bg-foreground/6 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-60';
+
+/**
+ * A field with a turquoise icon on the left (designs "Password dimenticata",
+ * "Nuova password"): 54px, on black, grey outline, turquoise while typing.
+ */
+export const authIconFieldClassName =
+    'h-13.5 rounded-2xl border-input bg-background pl-12 text-[17px] md:text-[17px] focus-visible:border-[1.5px] focus-visible:border-brand focus-visible:ring-0';
+
+/** "Mostra / Nascondi" inside those fields: turquoise text. */
+export const authToggleClassName =
+    'top-1/2 right-1 h-11 min-w-20 -translate-y-1/2 rounded-xl text-[15px] font-semibold text-brand hover:bg-brand/12';
+
+/** The icon of a field, on its left. */
+export function AuthFieldIcon({ icon: Icon }: { icon: LucideIcon }) {
+    return (
+        <Icon
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-4 z-10 size-5 -translate-y-1/2 text-brand"
+        />
+    );
+}
 
 /** A message over the form: "Ti abbiamo mandato il link". */
 export function AuthStatus({

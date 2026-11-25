@@ -10,7 +10,13 @@ import { useInitials } from '@/hooks/use-initials';
 /** The words of "Diventa trainer" (design "1 · Account"). */
 export const trainerAccountCopy: AccountStepCopy = {
     whoTitle: 'Chi sei',
-    terms: 'Accetto i Termini per i trainer e l’Informativa privacy',
+    terms: {
+        before: 'Accetto i ',
+        terms: 'Termini per i trainer',
+        middle: ' e l’',
+        privacy: 'Informativa privacy',
+    },
+    usernameLater: true,
 };
 
 type StepAccountProps = {
@@ -49,7 +55,7 @@ export default function StepAccount({ account, fields }: StepAccountProps) {
     }
 
     return (
-        <div className="grid items-start gap-10 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:gap-14">
+        <div className="flex flex-col gap-8">
             <Section
                 title="Il tuo account"
                 description="Diventa un account trainer: non ne serve uno nuovo."

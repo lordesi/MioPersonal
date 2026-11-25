@@ -12,11 +12,9 @@ import type { LucideIcon } from 'lucide-react';
 import type { FormEvent } from 'react';
 import {
     LinkCard,
-    brandFilledClassName,
     errorNumberClassName,
     eyebrowClassName,
     pageColumnClassName,
-    pageTitleClassName,
 } from '@/components/mp/page-bits';
 import { courseSearchUrl } from '@/lib/course';
 import { useFeatures, withFeatures } from '@/lib/features';
@@ -102,56 +100,57 @@ export default function NotFound() {
             <div
                 className={cn(
                     pageColumnClassName,
-                    'grid flex-1 items-center gap-10 pb-16 md:pb-24 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-16',
+                    'max-w-180 gap-4 pb-14 md:pb-20',
                 )}
             >
-                <div className="flex flex-col gap-5 md:gap-6">
-                    <div aria-hidden="true" className={errorNumberClassName}>
-                        404
-                    </div>
-                    <div className="flex flex-col gap-3">
-                        <p className={eyebrowClassName}>Errore 404</p>
-                        <h1 className={pageTitleClassName}>
-                            Questa pagina non esiste (più).
-                        </h1>
-                        <p className="text-[17px] text-muted-foreground md:text-xl md:leading-7">
-                            Forse il link è sbagliato, oppure il profilo del
-                            trainer non è più online. Ricominciamo da qui.
-                        </p>
-                    </div>
-                    <form
-                        role="search"
-                        aria-label="Cerca un trainer"
-                        onSubmit={submit}
-                        className="flex flex-col gap-2.5 sm:flex-row"
-                    >
-                        <label htmlFor="not-found-search" className="sr-only">
-                            Cerca un trainer
-                        </label>
-                        {/* flex-1 only in a row: in the column of phones it would squash the height. */}
-                        <div className="flex h-12.5 items-center gap-2.5 rounded-full px-4.5 shadow-[inset_0_0_0_1px_var(--field)] focus-within:shadow-[inset_0_0_0_1.5px_var(--brand)] sm:flex-1">
-                            <Search
-                                aria-hidden="true"
-                                className="size-5 text-muted-foreground"
-                            />
-                            <input
-                                id="not-found-search"
-                                name="q"
-                                type="search"
-                                placeholder="Disciplina o città, es. pilates Roma"
-                                className="min-w-0 flex-1 bg-transparent text-[17px] outline-none placeholder:text-muted-foreground"
-                            />
-                        </div>
-                        <button type="submit" className={brandFilledClassName}>
-                            Cerca
-                        </button>
-                    </form>
-                </div>
-
-                <nav
-                    aria-label="Pagine utili"
-                    className="flex flex-col gap-2.5 md:gap-3"
+                <div
+                    aria-hidden="true"
+                    className={cn(errorNumberClassName, 'pt-6 md:pt-16')}
                 >
+                    404
+                </div>
+                <p className={eyebrowClassName}>Errore 404</p>
+                <h1 className="text-[34px] leading-[1.08] font-light tracking-[-0.04em] md:text-5xl">
+                    Questa pagina <br className="md:hidden" />
+                    <b className="font-bold">non esiste (più).</b>
+                </h1>
+                <p className="text-[17px] leading-[1.4] text-muted-foreground">
+                    Forse il link è sbagliato, oppure il profilo del trainer non
+                    è più online. Ricominciamo da qui.
+                </p>
+                <form
+                    role="search"
+                    aria-label="Cerca un trainer"
+                    onSubmit={submit}
+                    className="flex flex-col gap-4"
+                >
+                    <label className="flex h-14 items-center gap-3 rounded-full border border-border bg-card px-5 focus-within:border-brand">
+                        <Search
+                            aria-hidden="true"
+                            className="size-5 shrink-0 text-brand"
+                        />
+                        <input
+                            name="q"
+                            type="search"
+                            aria-label="Cerca disciplina o città"
+                            placeholder="Disciplina o città, es. pilates Milano"
+                            className="min-w-0 flex-1 bg-transparent text-[17px] outline-none placeholder:text-muted-foreground"
+                        />
+                    </label>
+                    <button
+                        type="submit"
+                        className="flex h-14 items-center justify-center gap-2.5 rounded-full bg-brand px-5.5 text-[17px] font-bold text-black shadow-[0_8px_24px_rgba(66,215,217,0.28)] outline-none hover:brightness-105 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    >
+                        <Search
+                            aria-hidden="true"
+                            className="size-5"
+                            strokeWidth={2.4}
+                        />
+                        Cerca
+                    </button>
+                </form>
+
+                <nav aria-label="Pagine utili" className="flex flex-col gap-4">
                     <p className={eyebrowClassName}>Prova da qui</p>
                     {usefulLinks.map((link) => (
                         <LinkCard

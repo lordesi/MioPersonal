@@ -53,13 +53,6 @@ const cookies = [
         type: 'Tecnico, memoria del browser',
     },
     {
-        name: 'review-prompt-dismissed-…',
-        purpose:
-            'Ricorda nel tuo browser che hai chiuso l’invito a lasciare una recensione',
-        duration: 'Finché non svuoti i dati del browser',
-        type: 'Tecnico, memoria del browser',
-    },
-    {
         name: 'pwa-card:…',
         purpose:
             'Ricorda nel tuo browser se hai già visto il suggerimento per installare l’app e attivare le notifiche',
@@ -244,12 +237,6 @@ export default function Cookies() {
             title="Cookie policy"
             intro="Quali cookie usa MioPersonal e come puoi gestirli."
             updatedOn="18 novembre 2026"
-            summary={[
-                'Oggi usiamo solo cookie tecnici, necessari a far funzionare il sito, e un cookie anonimo nostro per contare i visitatori.',
-                'Nessun cookie di profilazione o di pubblicità, nessuno strumento di analisi esterno.',
-                'Se li aggiungeremo, li useremo solo con il tuo consenso.',
-                'Puoi cambiare la tua scelta quando vuoi da «Impostazioni cookie».',
-            ]}
             sections={sections}
         />
     );

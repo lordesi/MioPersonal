@@ -2,12 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\GroupSessionType;
-use App\Enums\GymAmenity;
 use App\Models\GroupSession;
 use App\Models\GymProfile;
 use App\Models\TrainerProfile;
-use App\Support\CatalogOptions;
 use App\Support\Features;
 use App\Support\GroupSessionCard;
 use App\Support\GymCard;
@@ -51,14 +48,6 @@ class HomeController extends Controller
             'events' => Features::events()
                 ? GroupSessionCard::many(GroupSessionCard::load(GroupSession::query()->listed()->upcoming())->orderBy('starts_at')->limit(self::EVENTS)->get())
                 : [],
-            // Options of the search form.
-            'disciplines' => CatalogOptions::disciplines(),
-            // With the center of each city: "Usa la mia posizione" finds the closest one in the browser.
-            'cities' => CatalogOptions::citiesWithCoordinates(),
-            // "Cosa" of the gyms' search ("Trainer | Palestre"): the services.
-            'amenities' => GymAmenity::options(),
-            // "Cosa" of the events' search: the type.
-            'eventTypes' => GroupSessionType::options(),
             'seo' => $this->seo(),
         ]);
     }

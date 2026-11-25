@@ -1,29 +1,45 @@
-import { Head } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import { useEffect } from 'react';
+import {
+    Award,
+    ChevronLeft,
+    Heart,
+    MapPin,
+    Share,
+    Star,
+    Video,
+} from 'lucide-react';
 import HomeShelf from '@/components/home/home-shelf';
-import { courseCard, eventCard, trainerCard } from '@/components/mp/cards';
+import { courseCard, eventCard } from '@/components/mp/cards';
 import ProfileCard from '@/components/mp/profile-card';
-import SaveableCard from '@/components/mp/saveable-card';
+import TrainerCard from '@/components/mp/trainer-card';
 import ReportDialog from '@/components/shared/report-dialog';
+import SocialIcon, { socialLabels } from '@/components/shared/social-icon';
 import {
     BookingAside,
     BookingBar,
-} from '@/components/trainer-profile/booking-panel';
-import ProfileHero from '@/components/trainer-profile/profile-hero';
+    DayTimeSection,
+    ServicesSection,
+} from '@/components/trainer-profile/profile-booking';
+import {
+    DesktopGallery,
+    MobileGallery,
+} from '@/components/trainer-profile/profile-gallery';
 import {
     CertificationsList,
-    PlacesGrid,
     ProfileBlock,
 } from '@/components/trainer-profile/profile-sections';
 import ReviewsBlock from '@/components/trainer-profile/reviews-block';
-import ServicesSheet from '@/components/trainer-profile/services-sheet';
-import SlotSheet from '@/components/trainer-profile/slot-sheet';
 import { useFavorite } from '@/hooks/use-favorite';
 import { useShare } from '@/hooks/use-share';
 import { useTrainerBooking } from '@/hooks/use-trainer-booking';
 import { courseSearchUrl } from '@/lib/course';
+import { formatRating } from '@/lib/format';
+import { trainingGoals } from '@/lib/goals';
 import { gymSearchUrl } from '@/lib/gym';
+import { hoverPrefetch } from '@/lib/prefetch';
 import { searchUrl } from '@/lib/search';
+import { cn } from '@/lib/utils';
 import { search as eventsSearch } from '@/routes/events';
 import type {
     CourseSummary,
@@ -49,11 +65,11 @@ type ProfileProps = {
 };
 
 /**
- * The public profile of a trainer, in the dark design (designs "Ibrido 2",
- * "Barra 5" and "Desktop · Profilo trainer"): the photos and the name, who
- * they are, where they train, certifications and reviews; on the right
- * (desktop) or in the bar at the bottom (phones) the booking, which opens
- * "Servizi" and "Scegli data e ora".
+ * The public profile of a trainer (designs "V1 · Foto a scorrimento" and
+ * "V1 · desktop · Griglia 1+4"): the photos, the name, who they are, the
+ * services and the calendar right in the page, certifications and reviews.
+ * The price and "Prenota" stay in the bar at the bottom (phones) or in the
+ * summary on the right (desktop).
  */
 export default function Profile({
     trainer,
@@ -68,38 +84,195 @@ export default function Profile({
     const favorite = useFavorite(trainer.slug, trainer.favorite);
     const share = useShare(trainer.name);
     const booking = useTrainerBooking(trainer);
-    // Back from the login with a time: "Scegli data e ora" opens on it.
-    const [sheet, setSheet] = useState<'services' | 'slot' | null>(
-        booking.restored ? 'slot' : null,
-    );
+
+    // Back from the login with a time: straight to "Giorno e ora".
+    useEffect(() => {
+        if (booking.restored) {
+            document.getElementById('giorno')?.scrollIntoView();
+        }
+        // Only when the page opens.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const city = trainer.city?.slug ?? null;
     // Back to the trainers of the same city.
     const citySearchHref = searchUrl({}, city);
 
+    // The gallery, or else the profile photo.
+    const slides =
+        trainer.photos.length > 0
+            ? trainer.photos
+            : trainer.portraitUrl
+              ? [{ caption: trainer.name, url: trainer.portraitUrl }]
+              : [];
+
+    const goals = trainingGoals.filter((goal) =>
+        trainer.goals.includes(goal.value),
+    );
+    // Disciplines and goals in one row; "Postura" can be both: shown once.
+    const tags = [
+        ...new Set([
+            ...trainer.disciplines,
+            ...goals.map((goal) => goal.label),
+        ]),
+    ];
+    const tagList = (className: string) =>
+        tags.length > 0 && (
+            <ul className={cn('flex flex-wrap gap-1.5 md:gap-2', className)}>
+                {tags.map((tag) => (
+                    <li
+                        key={tag}
+                        className="flex h-6.5 items-center rounded-full border border-field px-2.5 text-[13px] md:h-7.5 md:px-3 md:text-sm md:font-semibold"
+                    >
+                        {tag}
+                    </li>
+                ))}
+            </ul>
+        );
+
+    const favoriteButton = favorite.canSave
+        ? { pressed: favorite.pressed, onChange: favorite.change }
+        : null;
+
     return (
         <>
             <Head title={seo.title} />
 
-            <ProfileHero
-                trainer={trainer}
+            <MobileGallery
+                name={trainer.name}
+                slides={slides}
                 backHref={citySearchHref}
-                favorite={
-                    favorite.canSave
-                        ? {
-                              pressed: favorite.pressed,
-                              onChange: favorite.change,
-                          }
-                        : null
-                }
                 onShare={share}
+                favorite={favoriteButton}
             />
 
-            <div className="mx-auto flex w-full max-w-300 flex-col gap-6 px-4 pt-10 md:px-8">
+            <div className="mx-auto flex w-full max-w-300 flex-col px-4 pt-6 md:px-8 md:pt-26">
+                <Link
+                    prefetch={hoverPrefetch}
+                    href={citySearchHref}
+                    className="mb-2 hidden min-h-11 items-center gap-1.5 self-start text-[15px] text-muted-foreground hover:text-foreground md:flex"
+                >
+                    <ChevronLeft aria-hidden="true" className="size-4.5" />
+                    {trainer.city
+                        ? `Trainer a ${trainer.city.name}`
+                        : 'Trainer'}
+                </Link>
+
+                <DesktopGallery name={trainer.name} slides={slides} />
+
+                <header className="flex flex-col gap-3 md:mt-7 md:flex-row md:flex-wrap md:items-end md:justify-between md:gap-4">
+                    <div className="flex flex-col gap-3 md:gap-2">
+                        <h1 className="text-[28px] leading-8.5 font-bold tracking-[0.01em] md:text-[40px] md:leading-11.5 md:tracking-[-0.02em]">
+                            {trainer.name}
+                        </h1>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[15px] text-muted-foreground md:gap-x-4.5 md:text-base">
+                            {trainer.rating !== null && (
+                                <a
+                                    href="#recensioni"
+                                    className="flex items-center gap-1 font-semibold text-foreground md:gap-1.5"
+                                >
+                                    <Star
+                                        aria-hidden="true"
+                                        className="size-4.5 fill-brand text-brand"
+                                    />
+                                    {formatRating(trainer.rating)}{' '}
+                                    <span className="font-normal text-muted-foreground underline">
+                                        {trainer.reviewCount}{' '}
+                                        {trainer.reviewCount === 1
+                                            ? 'recensione'
+                                            : 'recensioni'}
+                                    </span>
+                                </a>
+                            )}
+                            {trainer.online !== 'only' &&
+                                trainer.cities.length > 0 && (
+                                    <span className="flex items-center gap-1 md:gap-1.5">
+                                        <MapPin
+                                            aria-hidden="true"
+                                            className="size-4.5"
+                                        />
+                                        {trainer.cities.join(', ')}
+                                    </span>
+                                )}
+                            {trainer.online && (
+                                <span className="flex items-center gap-1 md:gap-1.5">
+                                    <Video
+                                        aria-hidden="true"
+                                        className="size-4.5"
+                                    />
+                                    {trainer.online === 'only'
+                                        ? 'Solo online'
+                                        : 'Anche online'}
+                                </span>
+                            )}
+                            <span className="flex items-center gap-1 md:gap-1.5">
+                                <Award
+                                    aria-hidden="true"
+                                    className="size-4.5"
+                                />
+                                {trainer.experienceLabel}
+                            </span>
+                        </div>
+                        {tagList('md:hidden')}
+                        {trainer.socials.length > 0 && (
+                            <ul className="-ml-2 flex gap-1">
+                                {trainer.socials.map((social) => (
+                                    <li key={social.provider}>
+                                        <a
+                                            href={social.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer me"
+                                            aria-label={`${socialLabels[social.provider]} di ${trainer.name}: @${social.handle} (si apre in una nuova scheda)`}
+                                            title={`${socialLabels[social.provider]} · @${social.handle}`}
+                                            className="flex size-9 items-center justify-center rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&_svg]:size-4.5"
+                                        >
+                                            <SocialIcon
+                                                provider={social.provider}
+                                            />
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                    <div className="hidden gap-1 md:flex">
+                        <button
+                            type="button"
+                            onClick={share}
+                            className="flex h-11 items-center gap-2 rounded-xl px-3.5 text-[15px] font-semibold underline outline-none hover:bg-foreground/6 focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            <Share aria-hidden="true" className="size-4.5" />
+                            Condividi
+                        </button>
+                        {favoriteButton && (
+                            <button
+                                type="button"
+                                aria-pressed={favoriteButton.pressed}
+                                onClick={() =>
+                                    favoriteButton.onChange(
+                                        !favoriteButton.pressed,
+                                    )
+                                }
+                                className="flex h-11 items-center gap-2 rounded-xl px-3.5 text-[15px] font-semibold underline outline-none hover:bg-foreground/6 focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                <Heart
+                                    aria-hidden="true"
+                                    className={cn(
+                                        'size-4.5',
+                                        favoriteButton.pressed &&
+                                            'fill-brand text-brand',
+                                    )}
+                                />
+                                {favoriteButton.pressed ? 'Salvato' : 'Salva'}
+                            </button>
+                        )}
+                    </div>
+                </header>
+
                 {invited && !preview && (
                     <p
                         role="status"
-                        className="rounded-[20px] px-4 py-3.5 text-[15px] shadow-[inset_0_0_0_1px_var(--brand)]"
+                        className="mt-6 rounded-[20px] px-4 py-3.5 text-[15px] shadow-[inset_0_0_0_1px_var(--brand)]"
                     >
                         <strong>
                             {firstName} ti ha invitato su MioPersonal.
@@ -111,7 +284,7 @@ export default function Profile({
                 {preview && (
                     <p
                         role="status"
-                        className="rounded-[20px] px-4 py-3.5 text-[15px] shadow-[inset_0_0_0_1px_var(--field)]"
+                        className="mt-6 rounded-[20px] px-4 py-3.5 text-[15px] shadow-[inset_0_0_0_1px_var(--field)]"
                     >
                         <strong>Anteprima:</strong> il profilo non è ancora
                         pubblico. Lo vedi solo tu (e il nostro team) finché non
@@ -119,8 +292,10 @@ export default function Profile({
                     </p>
                 )}
 
-                <div className="md:grid md:grid-cols-[minmax(0,1fr)_380px] md:items-start md:gap-18">
-                    <div className="flex min-w-0 flex-col gap-10 md:gap-14">
+                <div className="mt-10 md:grid md:grid-cols-[minmax(0,1fr)_360px] md:items-start md:gap-16">
+                    <div className="flex min-w-0 flex-col gap-10 md:gap-12">
+                        {tagList('hidden md:flex')}
+
                         {trainer.bio.length > 0 && (
                             <ProfileBlock id="bio-title" title="Chi sono">
                                 {trainer.bio.map((paragraph) => (
@@ -135,13 +310,17 @@ export default function Profile({
                             </ProfileBlock>
                         )}
 
-                        {trainer.places.length > 0 && (
-                            <PlacesGrid
-                                places={trainer.places}
-                                online={trainer.online}
-                                trainerFirstName={firstName}
-                            />
-                        )}
+                        <ServicesSection
+                            services={trainer.services}
+                            booking={booking}
+                        />
+
+                        <DayTimeSection
+                            booking={booking}
+                            availability={trainer.availability}
+                            waitlistDays={trainer.waitlistDays}
+                            trainerFirstName={firstName}
+                        />
 
                         {trainer.certifications.length > 0 && (
                             <CertificationsList
@@ -157,10 +336,8 @@ export default function Profile({
                     </div>
 
                     <BookingAside
-                        services={trainer.services}
                         booking={booking}
-                        onShowServices={() => setSheet('services')}
-                        onChooseTime={() => setSheet('slot')}
+                        online={trainer.online}
                         notes={[
                             trainer.confirmLabel,
                             trainer.responseTimeLabel,
@@ -219,18 +396,10 @@ export default function Profile({
                 items={trainer.similarTrainers}
                 itemKey={(item) => item.slug}
             >
-                {(item) => (
-                    <SaveableCard
-                        {...trainerCard(item)}
-                        slug={item.slug}
-                        favoriteKind="trainer"
-                        saved={item.favorite ?? false}
-                    />
-                )}
+                {(item) => <TrainerCard trainer={item} />}
             </HomeShelf>
 
-            {/* In the design it is in the footer: here, just above it. Room for the bar on phones. */}
-            <div className="mx-auto w-full max-w-300 px-4 pt-10 pb-32 md:px-8 md:pt-14 md:pb-6">
+            <div className="mx-auto w-full max-w-300 px-4 pt-10 pb-8 md:px-8 md:pt-14 md:pb-6">
                 {!preview && (
                     <ReportDialog
                         type="trainer"
@@ -241,28 +410,7 @@ export default function Profile({
                 )}
             </div>
 
-            <BookingBar
-                services={trainer.services}
-                booking={booking}
-                onShowServices={() => setSheet('services')}
-                onChooseTime={() => setSheet('slot')}
-            />
-
-            <ServicesSheet
-                open={sheet === 'services'}
-                onOpenChange={(open) => setSheet(open ? 'services' : null)}
-                services={trainer.services}
-                booking={booking}
-                onChooseTime={() => setSheet('slot')}
-            />
-            <SlotSheet
-                open={sheet === 'slot'}
-                onOpenChange={(open) => setSheet(open ? 'slot' : null)}
-                booking={booking}
-                availability={trainer.availability}
-                waitlistDays={trainer.waitlistDays}
-                onBack={() => setSheet('services')}
-            />
+            <BookingBar booking={booking} />
         </>
     );
 }

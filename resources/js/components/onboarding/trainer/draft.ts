@@ -73,7 +73,13 @@ export type SessionType = {
     /** Free text, "Seduta singola" for the first one. */
     name: string;
     prices: DurationPrice[];
+    /** The description: what you do together, who it is for. */
     note: string;
+    /**
+     * "Cosa è incluso" (on the profile: "Cosa otterrai"), one line each.
+     * Missing in a draft saved before it existed.
+     */
+    included?: string[];
     /** The online prices by duration; only those of `prices` are sent. */
     online: DurationPrice[];
     onlineNote: string;
@@ -194,6 +200,10 @@ export const NOTE_MAX = 200;
 /** Every price: up to 10.000 €, in cents. */
 export const MAX_PRICE_CENTS = 1000000;
 export const PACKAGE_SESSIONS = { min: 2, max: 50 };
+
+/** "Cosa è incluso", as in TrainerProfileRequest. */
+export const INCLUDED_MAX = 6;
+export const INCLUDED_LINE_MAX = 60;
 
 /** "Invita un amico": at most this many people, the booker included (Service::MAX_PEOPLE). */
 export const MAX_PEOPLE = 5;
@@ -515,6 +525,9 @@ export function toServicesPayload(pricing: Pricing, ownOnline: boolean) {
             name: session.name,
             prices: pricesPayload(session.prices),
             note: session.note,
+            included: (session.included ?? []).filter(
+                (line) => line.trim() !== '',
+            ),
             // Only when online has its own prices: otherwise the same prices cover it.
             ...(ownOnline
                 ? {
@@ -582,6 +595,8 @@ export function toProfilePayload(draft: TrainerDraft) {
 
 /** The step of each field, to open the first step with an error. */
 const fieldSteps: [prefix: string, step: number][] = [
+    // Asked in "Presentazione" (step 3 of the page), checked with step 2.
+    ['username', 2],
     ['headline', 2],
     ['bio', 2],
     ['experience', 2],

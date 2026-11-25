@@ -17,7 +17,7 @@ import MessageComposer from '@/components/chat/message-composer';
 import type { ComposerHandle } from '@/components/chat/message-composer';
 import PhotoViewer from '@/components/chat/photo-viewer';
 import { useChatPolling } from '@/components/chat/use-chat-polling';
-import UserAvatar from '@/components/shared/user-avatar';
+import { Initials } from '@/components/trainer/ui/bits';
 import { Button } from '@/components/ui/button';
 import {
     ATTACHMENT_DAYS,
@@ -236,30 +236,30 @@ export default function MessageThread({
             className="relative flex min-h-0 flex-1 flex-col"
             {...dragHandlers}
         >
-            <header className="flex items-center gap-3 border-b bg-card px-3 py-2.5 md:px-5">
+            {/* The glass capsule of the design ("Chat con il trainer · nuovo"). */}
+            <header className="flex items-center gap-2 px-4 pt-3 md:px-6 md:pt-4">
                 <Link
                     href={backHref}
-                    aria-label="Tutti i messaggi"
-                    className="flex size-9 flex-none items-center justify-center rounded-full hover:bg-accent md:hidden"
+                    aria-label="Tutta l’Inbox"
+                    className="flex size-11 flex-none items-center justify-center rounded-full bg-[rgba(28,30,33,0.78)] text-foreground backdrop-blur-[16px] outline-none hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring md:hidden"
                 >
-                    <ArrowLeft aria-hidden="true" className="size-4.5" />
+                    <ArrowLeft aria-hidden="true" className="size-5" />
                 </Link>
                 <Link
                     href={thread.href}
-                    className="group flex min-w-0 items-center gap-3"
+                    className="group flex min-w-0 items-center gap-3 rounded-full bg-[rgba(28,30,33,0.78)] p-1.5 pr-4 backdrop-blur-[16px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                    <UserAvatar
+                    <Initials
                         name={thread.name}
                         src={thread.avatar}
-                        size="md"
-                        className="flex-none"
+                        size={40}
                     />
                     <span className="flex min-w-0 flex-col">
-                        <span className="truncate text-[15px] leading-5 font-semibold group-hover:underline">
+                        <span className="truncate text-base leading-5 font-bold group-hover:underline">
                             {thread.name}
                         </span>
                         {otherTyping ? (
-                            <span className="truncate text-xs font-semibold text-primary">
+                            <span className="truncate text-xs font-semibold text-brand">
                                 sta scrivendo…
                             </span>
                         ) : (
@@ -279,7 +279,7 @@ export default function MessageThread({
             <div
                 ref={scroller}
                 onScroll={onScroll}
-                className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-secondary/50 bg-[radial-gradient(circle_at_1px_1px,var(--border)_1px,transparent_0)] [background-size:22px_22px] px-3 pt-2 pb-4 md:px-6"
+                className="flex min-h-0 flex-1 [scrollbar-width:none] flex-col overflow-y-auto px-4 pt-2 pb-5 md:px-6"
             >
                 {hasOlder && (
                     <Button
@@ -334,7 +334,7 @@ export default function MessageThread({
                             )}
                         >
                             {showDay && message.at && (
-                                <span className="sticky top-1 z-10 mb-3 self-center rounded-full bg-card/95 px-3 py-1 text-xs font-medium text-muted-foreground shadow-xs backdrop-blur">
+                                <span className="sticky top-1 z-10 mt-2.5 mb-2 self-center rounded-full bg-[#1c1e21] px-3 py-1.25 text-xs font-semibold text-muted-foreground">
                                     {dayLabel(message.at)}
                                 </span>
                             )}
@@ -453,12 +453,13 @@ function Bubble({ message, tail, showTime, onOpenPhoto }: BubbleProps) {
     return (
         <div
             className={cn(
-                'flex max-w-[85%] flex-col overflow-hidden rounded-[18px] shadow-xs md:max-w-[65%]',
+                'flex max-w-[78%] flex-col overflow-hidden rounded-[20px] md:max-w-[72%]',
                 message.mine
                     ? 'self-end bg-primary text-primary-foreground'
-                    : 'self-start bg-card',
-                tail && (message.mine ? 'rounded-br-md' : 'rounded-bl-md'),
-                photo ? 'p-1' : 'px-3.5 py-2',
+                    : 'self-start bg-[#1c1e21] text-foreground',
+                tail &&
+                    (message.mine ? 'rounded-br-[6px]' : 'rounded-bl-[6px]'),
+                photo ? 'p-1' : 'px-3.5 py-2.5',
             )}
         >
             {photo && (
@@ -577,7 +578,7 @@ function Bubble({ message, tail, showTime, onOpenPhoto }: BubbleProps) {
                     )}
                 >
                     {message.body && (
-                        <p className="text-[15px] leading-5.5 break-words whitespace-pre-line">
+                        <p className="text-base leading-5.5 break-words whitespace-pre-line">
                             {linkify(message.body).map((part, index) =>
                                 part.href ? (
                                     <a

@@ -192,7 +192,7 @@ class CourseSearchTest extends TestCase
                 ->where('todayLessons.0.start', '18:30'));
     }
 
-    public function test_the_home_has_the_events_and_the_options_of_the_other_searches(): void
+    public function test_the_home_has_the_events_but_no_search_options(): void
     {
         $this->get(route('home'))
             ->assertOk()
@@ -200,7 +200,8 @@ class CourseSearchTest extends TestCase
                 // "Corsi in palestra" left the home: the courses have their own search.
                 ->missing('featuredCourses')
                 ->has('events')
-                ->has('eventTypes')
-                ->has('amenities'));
+                // The search is one button ("Cerca un trainer"): its options are on the search pages.
+                ->missing('eventTypes')
+                ->missing('amenities'));
     }
 }

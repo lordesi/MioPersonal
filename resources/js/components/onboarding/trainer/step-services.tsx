@@ -1,4 +1,5 @@
-import { useId } from 'react';
+import { Check, ChevronDown, X } from 'lucide-react';
+import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
     pillFieldClassName,
@@ -25,6 +26,8 @@ import {
     emptyPackage,
     firstSessionType,
     groupPrices,
+    INCLUDED_LINE_MAX,
+    INCLUDED_MAX,
     MAX_PACKAGES,
     MAX_PEOPLE,
     MAX_SESSION_TYPES,
@@ -45,6 +48,7 @@ import {
     withCurrent,
 } from '@/components/trainer/services/pricing';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { SESSION_MINUTES } from '@/lib/booking';
 import { formatPrice } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -126,7 +130,11 @@ export default function StepServices({ draft, update }: StepProps) {
         });
     };
 
-    const addSession = () =>
+    // The open kind of session: one at a time, the first one at the start.
+    const [openSession, setOpenSession] = useState<number | null>(0);
+
+    const addSession = () => {
+        setOpenSession(pricing.sessions.length);
         change({
             sessions: [
                 ...pricing.sessions,
@@ -140,12 +148,13 @@ export default function StepServices({ draft, update }: StepProps) {
                 },
             ],
         });
+    };
 
     return (
         <div className="flex flex-col gap-10 md:gap-12">
             <Section
-                title="Quanto durano"
-                description="Le durate che i clienti possono scegliere."
+                title="Durata delle sedute"
+                description="Scegline una o più: valgono per ogni tipo di seduta."
             >
                 <ChipRow
                     label="Durate"
@@ -159,24 +168,24 @@ export default function StepServices({ draft, update }: StepProps) {
             </Section>
 
             <Section
-                title="Listino"
+                title="Le tue sedute"
+                description="Tocca una seduta per scrivere prezzi, descrizione e cosa è incluso. I clienti lo vedono nel tuo profilo."
                 aside={
                     <Counter>
-                        {pricing.sessions.length}
-                        <span className="md:hidden"> di </span>
-                        <span className="hidden md:inline">
-                            {' '}
-                            {pricing.sessions.length === 1 ? 'tipo' : 'tipi'} di
-                            seduta su{' '}
-                        </span>
-                        {MAX_SESSION_TYPES}
+                        {pricing.sessions.length} di {MAX_SESSION_TYPES}
                     </Counter>
                 }
             >
-                <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3">
+                <div className="flex flex-col border-t border-separator">
                     {pricing.sessions.map((session, index) => (
                         <SessionCard
                             key={index}
+                            open={openSession === index}
+                            onToggle={() =>
+                                setOpenSession(
+                                    openSession === index ? null : index,
+                                )
+                            }
                             session={session}
                             nameError={
                                 session.name.trim() === ''
@@ -215,12 +224,8 @@ export default function StepServices({ draft, update }: StepProps) {
             )}
 
             <Section
-                title="Extra facoltativi"
-                description={
-                    <span className="hidden md:inline">
-                        Aiutano chi è indeciso a provare e a tornare.
-                    </span>
-                }
+                title="Extra"
+                description="Facoltativi: aiutano chi è indeciso a provare e a tornare."
             >
                 <InviteFriends
                     sessions={pricing.sessions}
@@ -242,13 +247,21 @@ export default function StepServices({ draft, update }: StepProps) {
     );
 }
 
-/** A kind of session: its name, a note and a price for each duration. */
+/**
+ * A kind of session (design "Le tue sedute"): a row with the name, what is
+ * filled and the price; opened, the name, a price for each duration, the
+ * description and "Cosa è incluso".
+ */
 function SessionCard({
+    open,
+    onToggle,
     session,
     nameError,
     onChange,
     onRemove,
 }: {
+    open: boolean;
+    onToggle: () => void;
     session: SessionType;
     nameError: string | null;
     onChange: (changes: Partial<SessionType>) => void;
@@ -256,58 +269,228 @@ function SessionCard({
 }) {
     const id = useId();
     const name = session.name.trim() || 'questo tipo di seduta';
+    const included = session.included ?? [];
+    const [line, setLine] = useState('');
+    const cents = session.prices
+        .map((price) => price.priceCents)
+        .filter((value): value is number => value !== null);
+    const price =
+        cents.length === 0
+            ? '— €'
+            : cents.length < session.prices.length || new Set(cents).size > 1
+              ? `da ${formatPrice(Math.min(...cents))}`
+              : formatPrice(cents[0]);
+    const summary = [
+        session.prices.map((item) => shortDuration(item.minutes)).join(' · '),
+        session.note.trim() ? 'Descrizione pronta' : 'Senza descrizione',
+        included.length === 0
+            ? 'nulla di incluso'
+            : included.length === 1
+              ? '1 cosa inclusa'
+              : `${included.length} cose incluse`,
+    ]
+        .filter(Boolean)
+        .join(' · ');
+
+    const addLine = () => {
+        const text = line.trim();
+
+        if (text === '' || included.length >= INCLUDED_MAX) {
+            return;
+        }
+
+        onChange({ included: [...included, text] });
+        setLine('');
+    };
 
     return (
-        <DarkCard>
-            <div className="flex items-center justify-between gap-3">
-                <label
-                    htmlFor={`${id}-name`}
-                    className="text-[15px] leading-5 font-semibold"
+        <div className="border-b border-separator">
+            <button
+                type="button"
+                aria-expanded={open}
+                aria-controls={`${id}-panel`}
+                onClick={onToggle}
+                className="flex min-h-18 w-full items-center gap-3 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+                <span className="flex min-w-0 flex-1 flex-col gap-0.75">
+                    <span className="truncate text-[17px] font-semibold">
+                        {session.name.trim() || 'Nuovo tipo di seduta'}
+                    </span>
+                    <span className="text-[13px] leading-4.5 text-muted-foreground">
+                        {summary}
+                    </span>
+                </span>
+                <span className="text-[17px] font-bold whitespace-nowrap tabular-nums">
+                    {price}
+                </span>
+                <ChevronDown
+                    aria-hidden="true"
+                    className={cn(
+                        'size-5 shrink-0 text-muted-foreground transition-transform',
+                        open && 'rotate-180',
+                    )}
+                />
+            </button>
+
+            {open && (
+                <div
+                    id={`${id}-panel`}
+                    className="flex flex-col gap-5.5 pt-1 pb-6"
                 >
-                    Tipo di seduta
-                </label>
-                {onRemove && (
-                    <DeleteButton
-                        label={`Elimina ${name}`}
-                        onClick={onRemove}
-                    />
-                )}
-            </div>
-            <Input
-                id={`${id}-name`}
-                value={session.name}
-                maxLength={SESSION_NAME_MAX}
-                placeholder="Es. Seduta singola"
-                aria-invalid={nameError !== null}
-                aria-describedby={nameError ? `${id}-error` : undefined}
-                onChange={(event) => onChange({ name: event.target.value })}
-                className={cardFieldClassName}
-            />
-            {nameError && (
-                <p
-                    id={`${id}-error`}
-                    className="text-[13px] leading-4.5 text-destructive"
-                >
-                    {nameError}
-                </p>
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between gap-3">
+                            <label
+                                htmlFor={`${id}-name`}
+                                className="text-[15px] leading-5 font-semibold"
+                            >
+                                Nome
+                            </label>
+                            {onRemove && (
+                                <DeleteButton
+                                    label={`Elimina ${name}`}
+                                    onClick={onRemove}
+                                />
+                            )}
+                        </div>
+                        <Input
+                            id={`${id}-name`}
+                            value={session.name}
+                            maxLength={SESSION_NAME_MAX}
+                            placeholder="Es. Seduta singola"
+                            aria-invalid={nameError !== null}
+                            aria-describedby={
+                                nameError ? `${id}-error` : undefined
+                            }
+                            onChange={(event) =>
+                                onChange({ name: event.target.value })
+                            }
+                            className={pillFieldClassName}
+                        />
+                        {nameError && (
+                            <p
+                                id={`${id}-error`}
+                                className="text-[13px] leading-4.5 text-destructive"
+                            >
+                                {nameError}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                        <span className="text-[15px] leading-5 font-semibold">
+                            Prezzo
+                        </span>
+                        <PriceRows
+                            prices={session.prices}
+                            label={(minutes) =>
+                                `Prezzo di ${name}, ${shortDuration(minutes)}`
+                            }
+                            onChange={(prices) => onChange({ prices })}
+                            empty="Scegli almeno una durata qui sopra."
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-baseline justify-between">
+                            <label
+                                htmlFor={`${id}-note`}
+                                className="text-[15px] leading-5 font-semibold"
+                            >
+                                Descrizione
+                            </label>
+                            <span className="text-[13px] text-muted-foreground tabular-nums">
+                                {session.note.length}/{NOTE_MAX}
+                            </span>
+                        </div>
+                        <Textarea
+                            id={`${id}-note`}
+                            rows={3}
+                            maxLength={NOTE_MAX}
+                            value={session.note}
+                            placeholder="Cosa fate insieme, a chi è adatta, cosa portare"
+                            onChange={(event) =>
+                                onChange({ note: event.target.value })
+                            }
+                            className="min-h-26 rounded-[14px] border-input bg-card px-4 py-3.5 text-[17px] leading-5.5 focus-visible:border-brand focus-visible:ring-0 md:text-[17px]"
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        <span className="text-[15px] leading-5 font-semibold">
+                            Cosa è incluso
+                        </span>
+                        {included.length > 0 && (
+                            <ul className="flex flex-col gap-1.5">
+                                {included.map((item, index) => (
+                                    <li
+                                        key={`${item}-${index}`}
+                                        className="flex min-h-11 items-center gap-2.5 rounded-xl bg-card pr-1 pl-3.5 text-[15px]"
+                                    >
+                                        <Check
+                                            aria-hidden="true"
+                                            className="size-4 shrink-0 text-brand"
+                                            strokeWidth={2.5}
+                                        />
+                                        <span className="min-w-0 flex-1 break-words">
+                                            {item}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            aria-label={`Rimuovi «${item}»`}
+                                            onClick={() =>
+                                                onChange({
+                                                    included: included.filter(
+                                                        (_, i) => i !== index,
+                                                    ),
+                                                })
+                                            }
+                                            className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-foreground/6 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                        >
+                                            <X
+                                                aria-hidden="true"
+                                                className="size-4"
+                                            />
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        {included.length < INCLUDED_MAX && (
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    className={cn(
+                                        pillFieldClassName,
+                                        'min-w-0 flex-1 text-[17px]',
+                                    )}
+                                    value={line}
+                                    maxLength={INCLUDED_LINE_MAX}
+                                    aria-label={`Cosa è incluso in ${name}`}
+                                    placeholder="Aggiungi una voce"
+                                    onChange={(event) =>
+                                        setLine(event.target.value)
+                                    }
+                                    onKeyDown={(event) => {
+                                        // Enter adds the line instead of going to the next step.
+                                        if (event.key === 'Enter') {
+                                            event.preventDefault();
+                                            addLine();
+                                        }
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={addLine}
+                                    disabled={line.trim() === ''}
+                                    className="h-14 shrink-0 rounded-[14px] border border-input px-4 text-[15px] font-semibold outline-none hover:bg-foreground/6 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                                >
+                                    Aggiungi
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
             )}
-            <Input
-                aria-label={`Nota di ${name}, facoltativa`}
-                value={session.note}
-                maxLength={NOTE_MAX}
-                placeholder="Nota: es. a domicilio o al parco"
-                onChange={(event) => onChange({ note: event.target.value })}
-                className={cn(cardFieldClassName, 'font-normal')}
-            />
-            <PriceRows
-                prices={session.prices}
-                label={(minutes) =>
-                    `Prezzo di ${name}, ${shortDuration(minutes)}`
-                }
-                onChange={(prices) => onChange({ prices })}
-                empty="Scegli almeno una durata qui sopra."
-            />
-        </DarkCard>
+        </div>
     );
 }
 

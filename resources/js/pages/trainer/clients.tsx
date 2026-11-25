@@ -1,121 +1,48 @@
-import { Head, router, usePoll } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { Head, router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import AddSessionDialog from '@/components/trainer/area/add-session-dialog';
-import AddClientDialog from '@/components/trainer/clients/add-client-dialog';
-import ClientsDesktop from '@/components/trainer/clients/clients-desktop';
-import ClientsMobile from '@/components/trainer/clients/clients-mobile';
-import {
-    clientFilters,
-    neverWritten,
-} from '@/components/trainer/clients/filters';
-import type {
-    ClientFilter,
-    ClientsProps,
-    ClientsView,
-} from '@/components/trainer/clients/types';
+import ClientsView from '@/components/trainer/clients/clients-view';
+import type { ClientGroup } from '@/components/trainer/clients/clients-view';
+import type { ClientsProps } from '@/components/trainer/clients/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { romeParts } from '@/lib/calendar';
-import { LIST_POLL_MS } from '@/lib/chat';
-import { clients as clientsPage } from '@/routes/trainer';
-import {
-    hide as hideToContact,
-    restore as restoreToContact,
-} from '@/routes/trainer/clients/to-contact';
+import { clients as clientsPage, messages } from '@/routes/trainer';
 import type { TrainerClient } from '@/types';
 
 /** The props a change of client reloads. */
-const OPEN_PROPS = [
-    'selectedId',
-    'selectedRecordId',
-    'chat',
-    'thread',
-    'chats',
-    'trainerArea',
-];
-
-/** "Ancora da contattare": saved on the account, the list reloads. */
-const HIDE_OPTIONS = {
-    only: ['clients'],
-    preserveScroll: true,
-    preserveState: true,
-};
+const OPEN_PROPS = ['selectedId', 'selectedRecordId', 'trainerArea'];
 
 /**
- * "Clienti": the clients and their messages in one page (what "Clienti" and
- * "Messaggi" were). The card of a client and its conversation open in place.
- * Desktop and phones have two different drawings on the same data.
+ * "Clienti" of the trainer: the grid of the clients and, in place, the card
+ * of the one chosen (`?con=` or `?cliente=`). The chats are in the Inbox:
+ * the old addresses with `?chat=1` go there.
  */
 export default function Clients(props: ClientsProps) {
-    const {
-        clients,
-        chats,
-        selectedRecordId,
-        query,
-        messageMatches,
-        invite,
-        sessionOptions,
-    } = props;
+    const { clients, selectedRecordId, chat, sessionOptions, seriesServices } =
+        props;
     const isMobile = useIsMobile();
-    const [search, setSearch] = useState(query);
-    const [filter, setFilter] = useState<ClientFilter>('all');
-    const [listView, setListView] = useState<ClientsView>('chat');
-    const [adding, setAdding] = useState(false);
-    const [booking, setBooking] = useState<TrainerClient | null>(null);
+    const [search, setSearch] = useState('');
+    const [group, setGroup] = useState<ClientGroup>('all');
+    // "Nuova seduta": with this client, or with nobody chosen yet (the "+").
+    const [booking, setBooking] = useState<TrainerClient | 'new' | null>(null);
     const today = romeParts(new Date()).date;
 
-    // New messages and the unread dots, every 20 seconds.
-    usePoll(LIST_POLL_MS, { only: ['chats', 'trainerArea'] });
-
-    // The words are searched in the messages too, on the server, after a pause.
+    // The conversation of a client lives in the Inbox now.
     useEffect(() => {
-        const words = search.trim();
-
-        if (words === query || (words.length < 2 && query === '')) {
-            return;
-        }
-
-        const timer = window.setTimeout(() => {
-            router.reload({
-                data: { q: words.length < 2 ? undefined : words },
-                only: ['query', 'messageMatches'],
+        if (chat && selectedRecordId !== null) {
+            router.visit(messages.url({ query: { con: selectedRecordId } }), {
+                replace: true,
             });
-        }, 350);
+        }
+    }, [chat, selectedRecordId]);
 
-        return () => window.clearTimeout(timer);
-    }, [search, query]);
-
-    const visible = useMemo(() => {
-        const current =
-            clientFilters.find((item) => item.value === filter) ??
-            clientFilters[0];
-        const words = search.trim().toLowerCase();
-
-        return clients
-            .filter((client) => current.matches(client, chats))
-            .filter(
-                (client) =>
-                    words === '' ||
-                    client.name.toLowerCase().includes(words) ||
-                    (query.toLowerCase() === words &&
-                        messageMatches.includes(client.recordId)),
-            );
-    }, [clients, chats, filter, search, query, messageMatches]);
-
-    // The client of the address; on desktop the first of the list otherwise.
-    const chosen =
+    const selected =
         clients.find((client) => client.recordId === selectedRecordId) ?? null;
-    const selected = chosen ?? (isMobile ? null : (visible[0] ?? null));
 
-    const open = (client: TrainerClient | null, chat = false) => {
+    const open = (client: TrainerClient | null) => {
         router.get(
             clientsPage.url({
-                query:
-                    client === null
-                        ? {}
-                        : {
-                              con: client.recordId,
-                              ...(chat ? { chat: 1 } : {}),
-                          },
+                query: client === null ? {} : { con: client.recordId },
             }),
             {},
             {
@@ -126,42 +53,9 @@ export default function Clients(props: ClientsProps) {
         );
     };
 
-    const toContact = clients.filter(
-        (client) => neverWritten(client, chats) && !client.contactHidden,
-    );
-    const hiddenCount = clients.filter(
-        (client) => neverWritten(client, chats) && client.contactHidden,
-    ).length;
-
-    const view = {
-        ...props,
-        view: listView,
-        onView: setListView,
-        visible,
-        filter,
-        onFilter: setFilter,
-        search,
-        onSearch: setSearch,
-        selected,
-        open,
-        onBook: setBooking,
-        onAdd: () => setAdding(true),
-        toContact,
-        hiddenCount,
-        onHide: (client: TrainerClient) =>
-            router.post(hideToContact.url(client.recordId), {}, HIDE_OPTIONS),
-        onRestore: () => router.delete(restoreToContact.url(), HIDE_OPTIONS),
-    };
-
     return (
         <>
-            <Head title="Clienti" />
-
-            <AddClientDialog
-                open={adding}
-                onOpenChange={setAdding}
-                invite={invite}
-            />
+            <Head title={selected ? selected.name : 'Clienti'} />
 
             {sessionOptions && (
                 <AddSessionDialog
@@ -170,17 +64,34 @@ export default function Clients(props: ClientsProps) {
                     options={sessionOptions}
                     date={today}
                     today={today}
-                    clientId={booking?.recordId}
+                    clientId={
+                        booking !== null && booking !== 'new'
+                            ? booking.recordId
+                            : undefined
+                    }
                 />
             )}
 
-            {isMobile ? (
-                <ClientsMobile {...view} />
-            ) : (
-                <ClientsDesktop {...view} />
-            )}
+            <ClientsView
+                clients={clients}
+                selected={selected}
+                seriesServices={seriesServices}
+                sessionOptions={sessionOptions}
+                open={open}
+                group={group}
+                onGroup={setGroup}
+                search={search}
+                onSearch={setSearch}
+                onAddSession={sessionOptions ? () => setBooking('new') : null}
+                onBook={setBooking}
+                onChat={(client) =>
+                    router.visit(
+                        messages.url({ query: { con: client.recordId } }),
+                    )
+                }
+            />
         </>
     );
 }
 
-Clients.layout = { section: 'clients', fill: true };
+Clients.layout = { section: 'clients' };

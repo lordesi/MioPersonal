@@ -62,11 +62,7 @@ export default function Profile({
             <Head title="Modifica profilo" />
 
             <ProfilePage
-                title={
-                    <>
-                        Modifica <strong>profilo</strong>
-                    </>
-                }
+                title="Modifica profilo"
                 intro="Quello che i clienti vedono di te quando ti cercano. Le modifiche sono subito sul profilo."
             >
                 {draft === null || rating === null ? (

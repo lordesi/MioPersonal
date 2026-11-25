@@ -1,58 +1,64 @@
-import { Link } from '@inertiajs/react';
-import { Eye } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
 import { BrandMark } from '@/components/layout/brand-logo';
+import { inboxLabel } from '@/components/layout/client-nav';
 import type { TrainerNavSection } from '@/components/layout/trainer-nav';
 import {
     profileNavItem,
     trainerNavItems,
 } from '@/components/layout/trainer-nav';
 import { Initials } from '@/components/trainer/ui/bits';
-import { glassClassName } from '@/components/trainer/ui/styles';
+import { hoverPrefetch } from '@/lib/prefetch';
 import { cn } from '@/lib/utils';
 import { today } from '@/routes/trainer';
-import { hoverPrefetch } from '@/lib/prefetch';
 
 type TrainerSidebarProps = {
     current: TrainerNavSection | null;
-    /** Requests waiting: a dot on "Home". */
+    /** Requests waiting: a dot on "Oggi". */
     pendingCount: number;
-    /** Conversations not read: a dot on "Clienti". */
+    /** Conversations not read: a dot on "Inbox". */
     unreadChats: number;
-    publicProfileHref: string | null;
     userName: string;
     avatar?: string | null;
 };
 
 /**
- * The side menu of the trainer area on desktop (Vetro 1): a glass pill with
- * the icons of Home, Calendario and Clienti, and at the bottom the public
- * profile and the trainer's photo, which opens "Profilo".
+ * The side menu of the trainer area on desktop (design "Trainer · nuovo"):
+ * the dark pill with Oggi, Calendario, Clienti and Inbox, and at the bottom
+ * the trainer's photo (or initials), which opens "Profilo".
  */
 export default function TrainerSidebar({
     current,
     pendingCount,
     unreadChats,
-    publicProfileHref,
     userName,
     avatar,
 }: TrainerSidebarProps) {
     const profile = profileNavItem();
-    const dots = { home: pendingCount, clients: unreadChats } as Partial<
-        Record<TrainerNavSection, number>
-    >;
+    const unreadNotifications = usePage().props.auth?.unreadNotifications ?? 0;
+    const onProfile = current === 'profile';
+
+    const labelOf = (section: TrainerNavSection, title: string) => {
+        if (section === 'home' && pendingCount > 0) {
+            return `${title}, ${dotLabel('home', pendingCount)}`;
+        }
+
+        if (section === 'inbox') {
+            return inboxLabel(unreadChats, unreadNotifications);
+        }
+
+        return title;
+    };
+    const hasDot = (section: TrainerNavSection) =>
+        (section === 'home' && pendingCount > 0) ||
+        (section === 'inbox' && unreadChats + unreadNotifications > 0);
 
     return (
-        <aside
-            className={cn(
-                'sticky top-4 flex h-[calc(100dvh-2rem)] w-20 shrink-0 flex-col items-center gap-8 rounded-full pt-6 pb-3.5',
-                glassClassName,
-            )}
-        >
+        <aside className="sticky top-4 flex h-[calc(100dvh-2rem)] w-21 shrink-0 flex-col items-center gap-8 rounded-full border border-separator bg-[rgba(18,19,21,0.72)] pt-6 pb-3.5 backdrop-blur-[24px]">
             <Link
                 prefetch={hoverPrefetch}
                 href={today()}
-                aria-label="MioPersonal, Home"
-                className="flex rounded-full text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                aria-label="MioPersonal, Oggi"
+                className="flex rounded-full text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <BrandMark className="h-5.5 w-9" />
             </Link>
@@ -63,37 +69,29 @@ export default function TrainerSidebar({
             >
                 {trainerNavItems().map((item) => {
                     const active = item.section === current;
-                    const dot = dots[item.section] ?? 0;
 
                     return (
                         <Link
                             prefetch={hoverPrefetch}
                             key={item.section}
                             href={item.href}
-                            aria-label={
-                                dot > 0
-                                    ? `${item.title}, ${dotLabel(item.section, dot)}`
-                                    : item.title
-                            }
+                            aria-label={labelOf(item.section, item.title)}
                             title={item.title}
                             aria-current={active ? 'page' : undefined}
                             className={cn(
-                                'relative flex size-13 items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                                'relative flex size-13 items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring',
                                 active
-                                    ? 'bg-brand text-[#0a0a0a] shadow-[0_8px_24px_0_rgba(66,215,217,0.28)]'
+                                    ? 'bg-brand text-black shadow-[0_8px_24px_rgba(66,215,217,0.28)]'
                                     : 'text-muted-foreground hover:bg-white/5 hover:text-foreground',
                             )}
                         >
-                            <item.icon
-                                aria-hidden="true"
-                                className="size-5.5"
-                            />
-                            {dot > 0 && (
+                            <item.icon aria-hidden="true" className="size-6" />
+                            {hasDot(item.section) && (
                                 <span
                                     aria-hidden="true"
                                     className={cn(
-                                        'absolute top-2 right-2 size-2.5 rounded-full shadow-[0_0_0_2px_#1c1c1c]',
-                                        active ? 'bg-[#0a0a0a]' : 'bg-brand',
+                                        'absolute top-2.5 right-2.5 size-2.25 rounded-full shadow-[0_0_0_2px_#121315]',
+                                        active ? 'bg-black' : 'bg-brand',
                                     )}
                                 />
                             )}
@@ -102,38 +100,36 @@ export default function TrainerSidebar({
                 })}
             </nav>
 
-            <div className="mt-auto flex flex-col items-center gap-3">
-                {publicProfileHref && (
-                    <Link
-                        href={publicProfileHref}
-                        prefetch={hoverPrefetch}
-                        aria-label="Vedi profilo pubblico"
-                        title="Vedi profilo pubblico"
-                        className="flex size-11 items-center justify-center rounded-full border border-white/12 bg-white/6 text-brand transition-colors outline-none hover:bg-white/10 focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                    >
-                        <Eye aria-hidden="true" className="size-5" />
-                    </Link>
+            <Link
+                prefetch={hoverPrefetch}
+                href={profile.href}
+                aria-label={profile.title}
+                title={profile.title}
+                aria-current={onProfile ? 'page' : undefined}
+                className={cn(
+                    'mt-auto flex size-13 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    onProfile &&
+                        avatar &&
+                        'shadow-[0_0_0_2px_#121315,0_0_0_4px_var(--brand)]',
                 )}
-                <Link
-                    prefetch={hoverPrefetch}
-                    href={profile.href}
-                    aria-label={profile.title}
-                    title={profile.title}
-                    aria-current={current === 'profile' ? 'page' : undefined}
+            >
+                <Initials
+                    name={userName}
+                    src={avatar}
+                    size={52}
                     className={cn(
-                        'flex size-13 items-center justify-center rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                        current === 'profile'
-                            ? 'shadow-[0_0_0_3px_#1c1c1c,0_0_0_5px_#42d7d9]'
-                            : 'shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]',
+                        'text-[15px] font-bold',
+                        onProfile
+                            ? 'bg-brand text-black'
+                            : 'bg-secondary text-foreground',
                     )}
-                >
-                    <Initials name={userName} src={avatar} size={52} />
-                </Link>
-            </div>
+                />
+            </Link>
         </aside>
     );
 }
 
+/** "1 richiesta da confermare", "2 conversazioni da leggere". */
 export function dotLabel(section: TrainerNavSection, count: number): string {
     if (section === 'home') {
         return count === 1

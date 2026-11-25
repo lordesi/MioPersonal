@@ -1,6 +1,5 @@
 import { router } from '@inertiajs/react';
 import type { VisitOptions } from '@inertiajs/core';
-import { Check, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -14,10 +13,10 @@ import type { TrainerPastSession } from '@/types';
 type Outcome = 'done' | 'missed';
 
 const ITEM =
-    'h-9 gap-1.5 rounded-[9px] text-[13px] leading-4.5 font-medium text-muted-foreground first:rounded-[9px] last:rounded-[9px] hover:bg-card hover:text-foreground data-[state=on]:bg-primary data-[state=on]:font-semibold data-[state=on]:text-primary-foreground';
+    'h-8 rounded-full px-3 text-[13px] leading-4.5 font-semibold text-muted-foreground first:rounded-full last:rounded-full hover:bg-transparent hover:text-foreground data-[state=on]:bg-brand data-[state=on]:text-black';
 
 /**
- * "Effettuata | Saltata" on a card of "Ultimi 7 giorni" and on a row of
+ * "Fatta | Saltata" on a card of "Ultimi 7 giorni" and on a row of
  * "Sedute passate". A session is done by
  * itself: "Saltata" marks that the client didn't come, "Effettuata" takes it
  * back. One click undoes the other, so no confirmation. The server checks the
@@ -61,16 +60,14 @@ export default function SessionOutcomeToggle({
             disabled={processing || !session.canChangeNoShow}
             aria-label={`Esito seduta di ${day}, ${formatTimeSpan(session.start, session.hours)}`}
             className={cn(
-                'grid grid-cols-2 gap-1 rounded-xl bg-secondary p-1',
+                'inline-flex gap-0.5 rounded-full bg-card p-0.75',
                 className,
             )}
         >
             <ToggleGroupItem value="done" className={ITEM}>
-                <Check aria-hidden="true" className="size-3.5" />
-                Effettuata
+                Fatta
             </ToggleGroupItem>
             <ToggleGroupItem value="missed" className={ITEM}>
-                <X aria-hidden="true" className="size-3.5" />
                 Saltata
             </ToggleGroupItem>
         </ToggleGroup>

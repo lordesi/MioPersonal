@@ -20,7 +20,10 @@ import type { AccountSettings } from '@/types';
 type AccessSectionProps = Pick<
     AccountSettings,
     'email' | 'hasPassword' | 'passwordChangedAt' | 'providers'
->;
+> & {
+    /** Only a part, on a page of its own: the email, or password and Google. */
+    part?: 'email' | 'password';
+};
 
 /** Email (read only), password and sign-in with Google. */
 export default function AccessSection({
@@ -28,6 +31,7 @@ export default function AccessSection({
     hasPassword,
     passwordChangedAt,
     providers,
+    part,
 }: AccessSectionProps) {
     const google = providers.find((provider) => provider.name === 'Google');
 
@@ -39,35 +43,41 @@ export default function AccessSection({
         >
             <div className="flex flex-col">
                 {/* The settings open only with a verified email. */}
-                <div className="flex flex-wrap items-center gap-3 border-t py-3.5">
-                    <span className="flex min-w-55 flex-1 flex-col gap-0.5">
-                        <span className="text-[13px] leading-4.5 font-semibold text-muted-foreground">
-                            Email
+                {part !== 'password' && (
+                    <div className="flex flex-wrap items-center gap-3 border-t py-3.5">
+                        <span className="flex min-w-55 flex-1 flex-col gap-0.5">
+                            <span className="text-[13px] leading-4.5 font-semibold text-muted-foreground">
+                                Email
+                            </span>
+                            <span className="text-[15px] leading-5.5 font-semibold break-all">
+                                {email}
+                            </span>
                         </span>
-                        <span className="text-[15px] leading-5.5 font-semibold break-all">
-                            {email}
+                        <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-muted px-2.5 text-xs font-semibold">
+                            <Check
+                                aria-hidden="true"
+                                strokeWidth={3}
+                                className="size-3"
+                            />
+                            Verificata
                         </span>
-                    </span>
-                    <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-muted px-2.5 text-xs font-semibold">
-                        <Check
-                            aria-hidden="true"
-                            strokeWidth={3}
-                            className="size-3"
-                        />
-                        Verificata
-                    </span>
-                </div>
-                <PasswordForm
-                    hasPassword={hasPassword}
-                    changedAt={passwordChangedAt}
-                />
-                {google && (google.available || google.connected) && (
-                    <GoogleRow
-                        connected={google.connected}
-                        available={google.available}
+                    </div>
+                )}
+                {part !== 'email' && (
+                    <PasswordForm
                         hasPassword={hasPassword}
+                        changedAt={passwordChangedAt}
                     />
                 )}
+                {part !== 'email' &&
+                    google &&
+                    (google.available || google.connected) && (
+                        <GoogleRow
+                            connected={google.connected}
+                            available={google.available}
+                            hasPassword={hasPassword}
+                        />
+                    )}
             </div>
         </SettingsSection>
     );

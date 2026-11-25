@@ -1,16 +1,19 @@
-import { Head, Link } from '@inertiajs/react';
-import { Check, ChevronLeft } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { ChevronLeft } from 'lucide-react';
 import { useId, useState } from 'react';
+import { toast } from 'sonner';
+import {
+    AreaSwitch,
+    CountPill,
+    areaTitleClassName,
+    carbCardClassName,
+} from '@/components/mp/area-bits';
 import HandledRequests from '@/components/trainer/area/handled-requests';
 import RequestCard from '@/components/trainer/home/request-card';
 import { useRequestAnswer } from '@/components/trainer/home/use-request-answer';
-import { CountChip } from '@/components/trainer/ui/bits';
-import {
-    pageTitleClassName,
-    roundOutlineClassName,
-} from '@/components/trainer/ui/styles';
 import { cn } from '@/lib/utils';
-import { today } from '@/routes/trainer';
+import { profile } from '@/routes/trainer';
+import { autoConfirm as autoConfirmRoute } from '@/routes/trainer/requests';
 import type { TrainerBookingRequest, TrainerHandledRequest } from '@/types';
 
 type RequestsProps = {
@@ -18,23 +21,24 @@ type RequestsProps = {
     requests: TrainerBookingRequest[];
     /** Answered or expired in the last 30 days, the latest on top. */
     handled: TrainerHandledRequest[];
-    /** Off: "Gestite" suggests it when requests expired without an answer. */
+    /** "Conferma automatica": the new requests are confirmed at once. */
     autoConfirm: boolean;
 };
 
 type Tab = 'pending' | 'done';
 
 /**
- * "Richieste": every request waiting for an answer and the ones already
- * answered ("Gestite"). "Home" shows the same requests; the notifications of
- * a new request open this page.
+ * "Richieste" (design "Trainer · Richieste · nuovo"): "Da confermare", with
+ * Accetta, Rifiuta and the switch of the automatic confirmation, and
+ * "Gestite". "Oggi" shows the same requests; the notifications of a new
+ * request open this page.
  */
 export default function Requests({
     requests,
     handled,
     autoConfirm,
 }: RequestsProps) {
-    const listId = useId();
+    const panelId = useId();
     const [tab, setTab] = useState<Tab>(
         requests.length === 0 && handled.length > 0 ? 'done' : 'pending',
     );
@@ -42,26 +46,29 @@ export default function Requests({
 
     const tabs: { value: Tab; label: string; count: number }[] = [
         { value: 'pending', label: 'Da confermare', count: requests.length },
-        { value: 'done', label: 'Gestite', count: handled.length },
+        { value: 'done', label: 'Gestite', count: 0 },
     ];
 
     return (
-        <div className="flex max-w-260 flex-col gap-5">
+        <>
             <Head title="Richieste" />
 
-            <header className="flex flex-wrap items-center gap-3">
-                <Link
-                    href={today()}
-                    aria-label="Torna alla Home"
-                    className={roundOutlineClassName}
-                >
-                    <ChevronLeft aria-hidden="true" className="size-5.5" />
-                </Link>
-                <h1 className={cn(pageTitleClassName, 'mr-auto')}>Richieste</h1>
+            <div className="flex max-w-240 flex-col gap-5">
+                <div className="flex flex-col gap-1">
+                    <Link
+                        href={profile()}
+                        className="-ml-1 inline-flex min-h-11 items-center gap-1 self-start text-base font-semibold text-brand outline-none hover:text-brand-hover focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        <ChevronLeft aria-hidden="true" className="size-5" />
+                        Profilo
+                    </Link>
+                    <h1 className={areaTitleClassName}>Richieste</h1>
+                </div>
+
                 <div
                     role="tablist"
-                    aria-label="Filtra richieste"
-                    className="grid grid-cols-2 rounded-full bg-card p-1"
+                    aria-label="Richieste"
+                    className="-mx-4 flex border-b border-separator md:mx-0"
                 >
                     {tabs.map((item) => (
                         <button
@@ -69,79 +76,123 @@ export default function Requests({
                             type="button"
                             role="tab"
                             aria-selected={tab === item.value}
-                            aria-controls={listId}
+                            aria-controls={panelId}
                             onClick={() => setTab(item.value)}
                             className={cn(
-                                'flex h-10 items-center justify-center gap-2 rounded-full px-4 text-[15px] font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                                'relative flex h-12 flex-1 items-center justify-center gap-2 text-base font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
                                 tab === item.value
-                                    ? 'text-brand shadow-[inset_0_0_0_1.5px_var(--brand)]'
-                                    : 'text-muted-foreground',
+                                    ? 'text-foreground after:absolute after:inset-x-[24%] after:-bottom-px after:h-0.75 after:rounded-t-[3px] after:bg-brand'
+                                    : 'text-muted-foreground hover:text-foreground',
                             )}
                         >
                             {item.label}
-                            <span className="tabular-nums">{item.count}</span>
+                            {item.count > 0 && (
+                                <CountPill>{item.count}</CountPill>
+                            )}
                         </button>
                     ))}
                 </div>
-            </header>
 
-            <div id={listId} role="tabpanel" className="flex flex-col gap-3">
-                {tab === 'pending' &&
-                    (requests.length === 0 ? (
-                        <div
-                            role="status"
-                            className="flex flex-col items-center gap-2.5 rounded-[26px] bg-[#121212] px-6 py-14 text-center shadow-[inset_0_0_0_1px_#2c2c2c]"
-                        >
-                            <span className="flex size-13 items-center justify-center rounded-full bg-brand-soft text-brand">
-                                <Check
-                                    aria-hidden="true"
-                                    className="size-6"
-                                    strokeWidth={2.5}
-                                />
-                            </span>
-                            <span className="text-lg font-semibold">
-                                Non hai richieste in attesa
-                            </span>
-                            <span className="max-w-105 text-[15px] text-muted-foreground">
-                                Quando un cliente chiede una seduta la trovi qui
-                                e in Home.
-                            </span>
-                        </div>
-                    ) : (
+                <div
+                    id={panelId}
+                    role="tabpanel"
+                    className="flex flex-col gap-5"
+                >
+                    {tab === 'pending' && (
                         <>
-                            <span className="flex items-center gap-2 text-[15px] text-muted-foreground">
-                                <CountChip
-                                    count={requests.length}
-                                    tone="brand"
-                                />
-                                Rispondi entro la scadenza: dopo, lo slot torna
-                                libero.
-                            </span>
-                            <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3">
-                                {requests.map((request) => (
-                                    <RequestCard
-                                        key={request.id}
-                                        request={request}
-                                        busy={busyId !== null}
-                                        onConfirm={(weekly) =>
-                                            answer(request, 'confirmed', weekly)
-                                        }
-                                        onDecline={() =>
-                                            answer(request, 'declined')
-                                        }
-                                    />
-                                ))}
-                            </div>
+                            {requests.length === 0 ? (
+                                <div
+                                    role="status"
+                                    className={cn(
+                                        carbCardClassName,
+                                        'flex flex-col gap-1 p-6',
+                                    )}
+                                >
+                                    <b className="text-[17px] font-semibold">
+                                        Nessuna richiesta da confermare
+                                    </b>
+                                    <span className="text-[15px] leading-5 text-muted-foreground">
+                                        Quando un cliente chiede una seduta la
+                                        trovi qui e in Oggi.
+                                    </span>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-2.5">
+                                    {requests.map((request) => (
+                                        <RequestCard
+                                            key={request.id}
+                                            request={request}
+                                            busy={busyId !== null}
+                                            onConfirm={(weekly) =>
+                                                answer(
+                                                    request,
+                                                    'confirmed',
+                                                    weekly,
+                                                )
+                                            }
+                                            onDecline={() =>
+                                                answer(request, 'declined')
+                                            }
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                            <AutoConfirmSwitch on={autoConfirm} />
                         </>
-                    ))}
+                    )}
 
-                {tab === 'done' && (
-                    <HandledRequests
-                        handled={handled}
-                        autoConfirm={autoConfirm}
-                    />
-                )}
+                    {tab === 'done' && <HandledRequests handled={handled} />}
+                </div>
             </div>
+        </>
+    );
+}
+
+/** "Conferma automatica": saved at once (TrainerAutoConfirmController). */
+function AutoConfirmSwitch({ on }: { on: boolean }) {
+    const labelId = useId();
+    const noteId = useId();
+    const [saving, setSaving] = useState(false);
+
+    const toggle = () =>
+        router.patch(
+            autoConfirmRoute.url(),
+            { auto_confirm: !on },
+            {
+                preserveScroll: true,
+                only: ['autoConfirm'],
+                onStart: () => setSaving(true),
+                onFinish: () => setSaving(false),
+                onError: () =>
+                    toast.error('Non siamo riusciti a salvare. Riprova.'),
+            },
+        );
+
+    return (
+        <div className="flex min-h-16 items-center gap-3.5 border-b border-separator py-2.5">
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <b
+                    id={labelId}
+                    className="text-[17px] leading-5.5 font-semibold"
+                >
+                    Conferma automatica
+                </b>
+                <span
+                    id={noteId}
+                    className="text-[15px] leading-5 text-muted-foreground"
+                >
+                    {on
+                        ? 'Le nuove richieste si confermano da sole.'
+                        : 'Senza risposta in tempo, la richiesta si annulla.'}
+                </span>
+            </span>
+            <AreaSwitch
+                checked={on}
+                onToggle={toggle}
+                disabled={saving}
+                labelledBy={labelId}
+                describedBy={noteId}
+            />
         </div>
     );
 }

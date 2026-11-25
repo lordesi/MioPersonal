@@ -46,6 +46,8 @@ type MenuItem = {
 
 type AccountCapsuleMenuProps = {
     variant: AccountCapsuleVariant;
+    /** The photo without the turquoise ring (the home). */
+    plain?: boolean;
 };
 
 const ROLE_LABELS = {
@@ -138,6 +140,7 @@ const itemClassName =
  */
 export default function AccountCapsuleMenu({
     variant,
+    plain = false,
 }: AccountCapsuleMenuProps) {
     const page = usePage();
     const { auth } = page.props;
@@ -155,7 +158,11 @@ export default function AccountCapsuleMenu({
         <DropdownMenuPrimitive.Root modal={false}>
             <DropdownMenuPrimitive.Trigger
                 aria-label={`Menu account di ${name}`}
-                className="flex size-11 shrink-0 items-center justify-center rounded-full shadow-[0_0_0_2px_#0a0a0a,0_0_0_4px_#42d7d9] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent data-[state=open]:shadow-[0_0_0_2px_#0a0a0a,0_0_0_4px_#7fe6e7]"
+                className={cn(
+                    'flex size-11 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent',
+                    !plain &&
+                        'shadow-[0_0_0_2px_#0a0a0a,0_0_0_4px_#42d7d9] data-[state=open]:shadow-[0_0_0_2px_#0a0a0a,0_0_0_4px_#7fe6e7]',
+                )}
             >
                 <Initials name={name} src={avatar} size={44} />
             </DropdownMenuPrimitive.Trigger>
@@ -177,7 +184,10 @@ export default function AccountCapsuleMenu({
                             name={name}
                             src={avatar}
                             size={44}
-                            className="shadow-[0_0_0_2px_#1c1c1c,0_0_0_4px_#42d7d9]"
+                            className={cn(
+                                !plain &&
+                                    'shadow-[0_0_0_2px_#1c1c1c,0_0_0_4px_#42d7d9]',
+                            )}
                         />
                         <span className="min-w-0 flex-1 truncate text-base leading-5.25 font-semibold tracking-[-0.31px]">
                             {name}

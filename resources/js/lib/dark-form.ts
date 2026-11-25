@@ -3,9 +3,9 @@
  * MioPersonal design system: the shadcn components with these classes.
  */
 
-/** A text field: 50px, rounded, on the card color (design "TextField"). */
+/** A text field: 54px, rounded, on the card color, grey outline (design "TextField"). */
 export const darkFieldClassName =
-    'h-12.5 rounded-[14px] bg-card px-4 text-[17px] md:text-[17px]';
+    'h-13.5 rounded-2xl border-input bg-card px-4 text-[17px] md:text-[17px]';
 
 /**
  * A switch with outlines only: grey and off on the left, turquoise and on

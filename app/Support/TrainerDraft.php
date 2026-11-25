@@ -95,6 +95,7 @@ final class TrainerDraft
                 'name' => $first->name,
                 'prices' => self::prices($rows),
                 'note' => $first->note ?? '',
+                'included' => $first->included ?? [],
                 'online' => self::prices($onlineRows),
                 'onlineNote' => $onlineRows->first()->note ?? '',
                 // "Invita un amico": 1 = only the booker.
@@ -104,7 +105,7 @@ final class TrainerDraft
         })->all();
 
         return [
-            'sessions' => $sessions ?: [['name' => 'Seduta singola', 'prices' => [], 'note' => '', 'online' => [], 'onlineNote' => '', 'maxPeople' => 1, 'group' => []]],
+            'sessions' => $sessions ?: [['name' => 'Seduta singola', 'prices' => [], 'note' => '', 'included' => [], 'online' => [], 'onlineNote' => '', 'maxPeople' => 1, 'group' => []]],
             'onlineSamePrice' => $online->isEmpty(),
             'firstSession' => [
                 'enabled' => $first !== null,

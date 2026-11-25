@@ -21,7 +21,6 @@ import {
     pillFieldClassName,
     Section,
 } from '@/components/onboarding/dark-fields';
-import { shellLinkClassName } from '@/components/onboarding/dark-shell';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useAccountCheck } from '@/hooks/use-account-check';
@@ -52,7 +51,10 @@ export type AccountStepCopy = {
     /** "Il link della palestra"; without it the username is under "Chi sei". */
     linkTitle?: string;
     linkDescription?: string;
-    terms: string;
+    /** The words of the terms: "Termini" and "Informativa" are the links. */
+    terms: { before: string; terms: string; middle: string; privacy: string };
+    /** "Diventa trainer": the username is asked later, in "Presentazione". */
+    usernameLater?: boolean;
 };
 
 /** The words of "Registra la palestra". */
@@ -61,7 +63,12 @@ export const gymAccountCopy: AccountStepCopy = {
     whoDescription: 'Chi gestisce il profilo della palestra.',
     linkTitle: 'Il link della palestra',
     linkDescription: 'L’indirizzo che condividi con i clienti.',
-    terms: 'Accetto i Termini e l’Informativa privacy',
+    terms: {
+        before: 'Accetto i ',
+        terms: 'Termini',
+        middle: ' e l’',
+        privacy: 'Informativa privacy',
+    },
 };
 
 /**
@@ -86,7 +93,7 @@ export default function StepAccount({
     // The answer of the check is newer than the error of the last submit.
     const emailError = emailCheck.error ?? errors.email;
 
-    const username = (
+    const username = copy.usernameLater ? null : (
         <UsernameField
             dark
             error={errors.username}
@@ -125,11 +132,12 @@ export default function StepAccount({
     );
 
     return (
-        <div className="grid items-start gap-10 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:gap-14">
-            <div className="flex flex-col gap-10 md:gap-9">
+        <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-8">
                 <Section
                     title={copy.whoTitle}
                     description={copy.whoDescription}
+                    hideTitle={copy.usernameLater}
                 >
                     <div className="grid grid-cols-2 gap-2.5 md:gap-3">
                         {nameField('first_name')}
@@ -147,8 +155,8 @@ export default function StepAccount({
                     </Section>
                 )}
 
-                <Section title="Contatti">
-                    <div className="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] md:items-start md:gap-3">
+                <Section title="Contatti" hideTitle={copy.usernameLater}>
+                    <div className="flex flex-col gap-4">
                         <FormField
                             label="Email"
                             error={emailError}
@@ -194,9 +202,14 @@ export default function StepAccount({
                 </Section>
             </div>
 
-            <div className="flex flex-col gap-10 md:gap-9">
-                <Section title="Password">
+            <div className="flex flex-col gap-8">
+                <Section title="Password" hideTitle={copy.usernameLater}>
                     <div className="flex flex-col gap-3">
+                        {copy.usernameLater && (
+                            <span className={fieldLabelClassName}>
+                                Password
+                            </span>
+                        )}
                         <PasswordField
                             aria-label="Password"
                             aria-invalid={!!errors.password}
@@ -235,20 +248,18 @@ export function TermsCard({
     onChange,
     error,
 }: {
-    label: string;
+    label: AccountStepCopy['terms'];
     accepted: boolean;
     onChange: (accepted: boolean) => void;
     error?: string;
 }) {
     const termsId = useId();
     const termsErrorId = `${termsId}-error`;
+    const link = 'font-semibold text-brand hover:text-brand-hover';
 
     return (
-        <section className="flex flex-col gap-1 rounded-[26px] bg-card p-4 md:gap-1.5 md:rounded-[20px] md:bg-transparent md:p-5 md:shadow-[inset_0_0_0_1px_var(--border)]">
-            <label
-                htmlFor={termsId}
-                className="flex min-h-11 cursor-pointer items-center gap-3 text-[17px] leading-5.5 font-semibold"
-            >
+        <div className="flex flex-col gap-1">
+            <div className="flex min-h-14 items-center gap-3.5 py-2">
                 <Checkbox
                     id={termsId}
                     checked={accepted}
@@ -257,27 +268,55 @@ export function TermsCard({
                     aria-describedby={error ? termsErrorId : undefined}
                     className={darkCheckboxClassName}
                 />
-                {label}
-            </label>
-            <div className="flex flex-wrap gap-x-5 pl-8.5">
-                <a
-                    href={terms.url()}
-                    target="_blank"
-                    rel="noopener"
-                    className={shellLinkClassName}
+                <label
+                    htmlFor={termsId}
+                    className="flex-1 cursor-pointer text-[15px] leading-5.25 font-medium"
                 >
-                    Leggi i Termini
-                </a>
-                <a
-                    href={privacy.url()}
-                    target="_blank"
-                    rel="noopener"
-                    className={shellLinkClassName}
-                >
-                    Leggi l’Informativa
-                </a>
+                    {label.before}
+                    <a
+                        href={terms.url()}
+                        target="_blank"
+                        rel="noopener"
+                        className={link}
+                    >
+                        {label.terms}
+                    </a>
+                    {label.middle}
+                    <a
+                        href={privacy.url()}
+                        target="_blank"
+                        rel="noopener"
+                        className={link}
+                    >
+                        {label.privacy}
+                    </a>
+                </label>
             </div>
             <DarkError id={termsErrorId} message={error} />
-        </section>
+        </div>
+    );
+}
+
+/**
+ * The username of a guest on its own: "Diventa trainer" asks it in
+ * "Presentazione" (step 3), with the link the profile will have.
+ */
+export function AccountUsernameField({
+    errors,
+    bind,
+    usernameLinkPrefix,
+}: Pick<StepAccountProps, 'errors' | 'bind' | 'usernameLinkPrefix'>) {
+    return (
+        <UsernameField
+            dark
+            error={errors.username}
+            linkPrefix={usernameLinkPrefix}
+            suggestion={usernameFromName(
+                bind('first_name').value,
+                bind('last_name').value,
+            )}
+            bind={bind('username')}
+            inputClassName={pillFieldClassName}
+        />
     );
 }
