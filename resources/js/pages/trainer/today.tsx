@@ -1,10 +1,8 @@
 import { Head, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
-import HomeDesktop from '@/components/trainer/home/home-desktop';
-import HomeMobile from '@/components/trainer/home/home-mobile';
+import HomeView from '@/components/trainer/home/home-view';
 import type { HomeProps } from '@/components/trainer/home/types';
 import { useRequestAnswer } from '@/components/trainer/home/use-request-answer';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { addHours } from '@/lib/format';
 import { today as todayPage } from '@/routes/trainer';
 import type { TrainerStatsPeriod } from '@/types';
@@ -13,12 +11,10 @@ import type { TrainerStatsPeriod } from '@/types';
 const DAY_PROPS = ['day', 'week', 'daySessions', 'next'];
 
 /**
- * "Home" of the trainer: the requests to confirm (what "Richieste" was in
- * the menu) and the overview of the day. Desktop and phones have two
- * different drawings (home-desktop.tsx, home-mobile.tsx) on the same data.
+ * "Oggi" of the trainer: the requests to confirm (what "Richieste" was in
+ * the menu) and the overview of the day (home-view.tsx).
  */
 export default function Today(props: HomeProps) {
-    const isMobile = useIsMobile();
     const [now] = useState(() => new Date());
     const { busyId, answer } = useRequestAnswer([
         'requests',
@@ -121,8 +117,8 @@ export default function Today(props: HomeProps) {
 
     return (
         <>
-            <Head title="Home" />
-            {isMobile ? <HomeMobile {...view} /> : <HomeDesktop {...view} />}
+            <Head title="Oggi" />
+            <HomeView {...view} />
         </>
     );
 }

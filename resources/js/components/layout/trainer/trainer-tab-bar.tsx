@@ -1,13 +1,9 @@
-import { Link } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
+import { inboxLabel } from '@/components/layout/client-nav';
 import type { TrainerNavSection } from '@/components/layout/trainer-nav';
-import {
-    profileNavItem,
-    trainerNavItems,
-} from '@/components/layout/trainer-nav';
+import { trainerNavItems } from '@/components/layout/trainer-nav';
 import { dotLabel } from '@/components/layout/trainer/trainer-sidebar';
-import { glassClassName } from '@/components/trainer/ui/styles';
-import { cn } from '@/lib/utils';
-import { tabBarPrefetch } from '@/lib/prefetch';
+import AreaTabBar from '@/components/mp/area-tab-bar';
 
 type TrainerTabBarProps = {
     current: TrainerNavSection | null;
@@ -16,65 +12,47 @@ type TrainerTabBarProps = {
 };
 
 /**
- * The tab bar of the trainer area on phones (Vetro 4): a glass pill floating
- * at the bottom with Home, Calendario, Clienti and Profilo.
+ * The tab bar of the trainer area on phones (design "Trainer · nuovo"):
+ * Oggi, Calendario, Clienti and Inbox. "Profilo" opens from the photo at
+ * the top of the pages. Dots: the requests on Oggi, chats and notifications
+ * not read on Inbox.
  */
 export default function TrainerTabBar({
     current,
     pendingCount,
     unreadChats,
 }: TrainerTabBarProps) {
-    const items = [...trainerNavItems(), profileNavItem()];
-    const dots = { home: pendingCount, clients: unreadChats } as Partial<
-        Record<TrainerNavSection, number>
-    >;
+    const unreadNotifications = usePage().props.auth?.unreadNotifications ?? 0;
 
     return (
-        <div className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex justify-center">
-            <nav
-                aria-label="Navigazione principale"
-                className={cn(
-                    'pointer-events-auto flex h-18 items-center gap-2.5 rounded-full p-1.75',
-                    glassClassName,
-                )}
-            >
-                {items.map((item) => {
-                    const active = item.section === current;
-                    const dot = dots[item.section] ?? 0;
+        <AreaTabBar
+            current={current}
+            tabs={trainerNavItems().map((item) => {
+                const base = {
+                    key: item.section,
+                    label: item.title,
+                    icon: item.icon,
+                    href: item.href,
+                };
 
-                    return (
-                        <Link
-                            prefetch={tabBarPrefetch}
-                            data-prefetch="mount"
-                            key={item.section}
-                            href={item.href}
-                            aria-label={
-                                dot > 0
-                                    ? `${item.title}, ${dotLabel(item.section, dot)}`
-                                    : item.title
-                            }
-                            aria-current={active ? 'page' : undefined}
-                            className={cn(
-                                'relative flex h-14 w-17 items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                                active
-                                    ? 'bg-brand text-[#0a0a0a] shadow-[0_8px_24px_0_rgba(66,215,217,0.28)]'
-                                    : 'text-muted-foreground',
-                            )}
-                        >
-                            <item.icon aria-hidden="true" className="size-6" />
-                            {dot > 0 && (
-                                <span
-                                    aria-hidden="true"
-                                    className={cn(
-                                        'absolute top-2.5 right-4 size-2.5 rounded-full shadow-[0_0_0_2px_#1c1c1c]',
-                                        active ? 'bg-[#0a0a0a]' : 'bg-brand',
-                                    )}
-                                />
-                            )}
-                        </Link>
-                    );
-                })}
-            </nav>
-        </div>
+                if (item.section === 'home' && pendingCount > 0) {
+                    return {
+                        ...base,
+                        dot: true,
+                        ariaLabel: `${item.title}, ${dotLabel('home', pendingCount)}`,
+                    };
+                }
+
+                if (item.section === 'inbox') {
+                    return {
+                        ...base,
+                        dot: unreadChats + unreadNotifications > 0,
+                        ariaLabel: inboxLabel(unreadChats, unreadNotifications),
+                    };
+                }
+
+                return base;
+            })}
+        />
     );
 }

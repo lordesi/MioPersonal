@@ -46,6 +46,7 @@ import { cn } from '@/lib/utils';
 import { whatsAppUrl } from '@/lib/whatsapp';
 import { calendar, clients as clientsPage, services } from '@/routes/trainer';
 import type { SeriesService, TrainerClient } from '@/types';
+import ClientSummary from '@/components/trainer/clients/client-summary';
 
 type Tab = 'sedute' | 'dati' | 'note';
 
@@ -243,6 +244,8 @@ export default function ClientDetail({
                     />
                 </div>
             )}
+
+            <ClientSummary client={client} />
 
             <div
                 role="tablist"

@@ -1,29 +1,28 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { BrandMark } from '@/components/layout/brand-logo';
 import type { ClientNavSection } from '@/components/layout/client-nav';
 import {
     clientNavItems,
     clientProfileNavItem,
-    messagesLabel,
+    inboxLabel,
 } from '@/components/layout/client-nav';
 import { Initials } from '@/components/trainer/ui/bits';
-import { glassClassName } from '@/components/trainer/ui/styles';
 import { cn } from '@/lib/utils';
 import { home } from '@/routes/client';
 import { hoverPrefetch } from '@/lib/prefetch';
 
 type ClientSidebarProps = {
     current: ClientNavSection | null;
-    /** Conversations not read: a dot on "Messaggi". */
+    /** Conversations not read: a dot on "Inbox". */
     unreadChats: number;
     userName: string;
     avatar?: string | null;
 };
 
 /**
- * The side menu of the client area on tablets and desktop: the glass pill of
- * the trainer area with Home, Cerca and Messaggi, and at the bottom the
- * client's photo, which opens "Profilo".
+ * The side menu of the client area on tablets and desktop: the dark pill
+ * with Home, Cerca and Inbox, and at the bottom the client's photo (or
+ * initials), which opens "Profilo".
  */
 export default function ClientSidebar({
     current,
@@ -32,12 +31,13 @@ export default function ClientSidebar({
     avatar,
 }: ClientSidebarProps) {
     const profile = clientProfileNavItem();
+    const unreadNotifications = usePage().props.auth?.unreadNotifications ?? 0;
+    const onProfile = current === 'profile';
 
     return (
         <aside
             className={cn(
-                'sticky top-4 flex h-[calc(100dvh-2rem)] w-20 shrink-0 flex-col items-center gap-8 rounded-full pt-6 pb-3.5',
-                glassClassName,
+                'sticky top-4 flex h-[calc(100dvh-2rem)] w-21 shrink-0 flex-col items-center gap-8 rounded-full border border-separator bg-[rgba(18,19,21,0.72)] pt-6 pb-3.5 backdrop-blur-[24px]',
             )}
         >
             <Link
@@ -55,7 +55,9 @@ export default function ClientSidebar({
             >
                 {clientNavItems().map((item) => {
                     const active = item.section === current;
-                    const dot = item.section === 'messages' && unreadChats > 0;
+                    const dot =
+                        item.section === 'messages' &&
+                        unreadChats + unreadNotifications > 0;
 
                     return (
                         <Link
@@ -64,28 +66,28 @@ export default function ClientSidebar({
                             href={item.href}
                             aria-label={
                                 item.section === 'messages'
-                                    ? messagesLabel(unreadChats)
+                                    ? inboxLabel(
+                                          unreadChats,
+                                          unreadNotifications,
+                                      )
                                     : item.title
                             }
                             title={item.title}
                             aria-current={active ? 'page' : undefined}
                             className={cn(
-                                'relative flex size-13 items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                                'relative flex size-13 items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring',
                                 active
-                                    ? 'bg-brand text-[#0a0a0a] shadow-[0_8px_24px_0_rgba(66,215,217,0.28)]'
+                                    ? 'bg-brand text-black shadow-[0_8px_24px_rgba(66,215,217,0.28)]'
                                     : 'text-muted-foreground hover:bg-white/5 hover:text-foreground',
                             )}
                         >
-                            <item.icon
-                                aria-hidden="true"
-                                className="size-5.5"
-                            />
+                            <item.icon aria-hidden="true" className="size-6" />
                             {dot && (
                                 <span
                                     aria-hidden="true"
                                     className={cn(
-                                        'absolute top-2 right-2 size-2.5 rounded-full shadow-[0_0_0_2px_#1c1c1c]',
-                                        active ? 'bg-[#0a0a0a]' : 'bg-brand',
+                                        'absolute top-2.5 right-2.5 size-2.25 rounded-full shadow-[0_0_0_2px_#121315]',
+                                        active ? 'bg-black' : 'bg-brand',
                                     )}
                                 />
                             )}
@@ -99,15 +101,25 @@ export default function ClientSidebar({
                 href={profile.href}
                 aria-label={profile.title}
                 title={profile.title}
-                aria-current={current === 'profile' ? 'page' : undefined}
+                aria-current={onProfile ? 'page' : undefined}
                 className={cn(
-                    'mt-auto flex size-13 items-center justify-center rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                    current === 'profile'
-                        ? 'shadow-[0_0_0_3px_#1c1c1c,0_0_0_5px_#42d7d9]'
-                        : 'shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]',
+                    'mt-auto flex size-13 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    onProfile &&
+                        avatar &&
+                        'shadow-[0_0_0_2px_#121315,0_0_0_4px_var(--brand)]',
                 )}
             >
-                <Initials name={userName} src={avatar} size={52} />
+                <Initials
+                    name={userName}
+                    src={avatar}
+                    size={52}
+                    className={cn(
+                        'text-[15px] font-bold',
+                        onProfile
+                            ? 'bg-brand text-black'
+                            : 'bg-secondary text-foreground',
+                    )}
+                />
             </Link>
         </aside>
     );

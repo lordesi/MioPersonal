@@ -23,6 +23,8 @@ type TrainerCardProps = {
     trainer: TrainerSummary;
     /** The fixed width of the rows that scroll sideways (250px); in a grid it fills the cell. */
     rail?: boolean;
+    /** Two cards side by side on phones ("Preferiti"): smaller text. */
+    size?: 'md' | 'sm';
     className?: string;
 };
 
@@ -35,8 +37,10 @@ type TrainerCardProps = {
 export default function TrainerCard({
     trainer,
     rail = false,
+    size = 'md',
     className,
 }: TrainerCardProps) {
+    const small = size === 'sm';
     const getInitials = useInitials();
     const favorite = useFavorite(
         trainer.slug,
@@ -85,17 +89,38 @@ export default function TrainerCard({
                         </span>
                     )}
                 </span>
-                <span className="mt-3 truncate text-[17px] leading-5.5 font-semibold">
+                <span
+                    className={cn(
+                        'mt-3 truncate font-semibold',
+                        small
+                            ? 'text-[15px] leading-5 lg:text-[17px] lg:leading-5.5'
+                            : 'text-[17px] leading-5.5',
+                    )}
+                >
                     {discipline
                         ? `${trainer.name} · ${discipline}`
                         : trainer.name}
                 </span>
-                <span className="mt-0.5 truncate text-[15px] leading-5 text-muted-foreground">
+                <span
+                    className={cn(
+                        'mt-0.5 truncate text-muted-foreground',
+                        small
+                            ? 'text-[13px] leading-4.5 lg:text-[15px] lg:leading-5'
+                            : 'text-[15px] leading-5',
+                    )}
+                >
                     {trainer.city === 'Solo online'
                         ? trainer.city
                         : `${trainer.city} · ${trainingModeLabel(trainer.online)}`}
                 </span>
-                <span className="mt-0.5 truncate text-[15px] leading-5 text-muted-foreground">
+                <span
+                    className={cn(
+                        'mt-0.5 truncate text-muted-foreground',
+                        small
+                            ? 'text-[13px] leading-4.5 lg:text-[15px] lg:leading-5'
+                            : 'text-[15px] leading-5',
+                    )}
+                >
                     <b className="font-semibold text-foreground">{price}</b> a
                     seduta · {rating}
                 </span>

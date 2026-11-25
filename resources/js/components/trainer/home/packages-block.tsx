@@ -2,8 +2,8 @@ import { Link } from '@inertiajs/react';
 import { ChevronDown, Plus } from 'lucide-react';
 import { useId, useState } from 'react';
 import { Initials, PackageRing } from '@/components/trainer/ui/bits';
+import { areaSectionTitleClassName } from '@/components/mp/area-bits';
 import {
-    blockTitleClassName,
     brandButtonClassName,
     pressableRowClassName,
 } from '@/components/trainer/ui/styles';
@@ -38,7 +38,7 @@ export default function PackagesBlock({
     return (
         <section aria-labelledby={titleId} className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3">
-                <h2 id={titleId} className={blockTitleClassName}>
+                <h2 id={titleId} className={areaSectionTitleClassName}>
                     Pacchetti attivi
                 </h2>
                 {variant === 'tiles' ? (
@@ -46,7 +46,7 @@ export default function PackagesBlock({
                         href={services()}
                         aria-label="Crea pacchetto"
                         title="Crea pacchetto"
-                        className={cn(brandButtonClassName, 'size-11 px-0')}
+                        className="flex size-11 items-center justify-center rounded-full bg-brand text-black outline-none hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                         <Plus
                             aria-hidden="true"
@@ -70,7 +70,7 @@ export default function PackagesBlock({
             </div>
 
             {packages.length === 0 ? (
-                <p className="rounded-[22px] border border-dashed border-[#3a3a3a] px-4 py-5 text-[15px] text-muted-foreground">
+                <p className="rounded-[24px] bg-card px-4 py-5 text-[15px] text-muted-foreground">
                     Nessun pacchetto in corso
                 </p>
             ) : variant === 'tiles' ? (
@@ -87,10 +87,10 @@ export default function PackagesBlock({
                                     },
                                 })}
                                 className={cn(
-                                    'flex flex-col gap-3.5 rounded-3xl p-4 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                                    'flex flex-col gap-3.5 rounded-[24px] p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring',
                                     hot
-                                        ? 'bg-brand text-[#0a0a0a]'
-                                        : 'bg-card text-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]',
+                                        ? 'bg-brand text-black'
+                                        : 'bg-card text-foreground',
                                 )}
                             >
                                 <span className="flex items-center justify-between">

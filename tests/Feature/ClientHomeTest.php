@@ -197,7 +197,7 @@ class ClientHomeTest extends TestCase
             );
     }
 
-    public function test_up_to_six_trainers_and_gyms_are_suggested()
+    public function test_up_to_four_trainers_and_gyms_are_suggested()
     {
         TrainerProfile::factory()->approved()->count(8)->create();
         GymProfile::factory()->approved()->count(8)->create();
@@ -205,8 +205,8 @@ class ClientHomeTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get(route('client.home'))
             ->assertInertia(fn (Assert $page) => $page
-                ->has('trainers', 6)
-                ->has('gyms', 6)
+                ->has('trainers', 4)
+                ->has('gyms', 4)
             );
     }
 

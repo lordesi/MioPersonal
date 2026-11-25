@@ -195,7 +195,7 @@ export type TrainerWeekDay = {
 };
 
 /** The period of "Statistiche": `?periodo=`. */
-export type TrainerStatsPeriod = 'oggi' | '7' | '30' | 'intervallo';
+export type TrainerStatsPeriod = 'oggi' | '7' | '30' | '90' | 'intervallo';
 
 /** "Statistiche" of "Home", with the same numbers of the period before. */
 export type TrainerDashboardStats = {
@@ -209,6 +209,16 @@ export type TrainerDashboardStats = {
     sessions: number;
     sessionsBefore: number;
     hours: number;
+    /** "Guadagni": the price of the confirmed sessions of the period. */
+    earningsCents: number;
+    earningsBeforeCents: number;
+    /** The points of the line: days, weeks or months. */
+    earningsSeries: { label: string; cents: number }[];
+    /** Added to "Clienti" in the period. */
+    newClients: number;
+    newClientsBefore: number;
+    /** 0–1: of the requests answered (or expired), the confirmed ones; null without any. */
+    confirmedRate: number | null;
 };
 /** "Sposta" and "Annulla seduta" of a confirmed session (TrainerSessions::change). */
 export type SessionChange = {

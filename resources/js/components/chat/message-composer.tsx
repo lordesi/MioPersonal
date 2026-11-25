@@ -288,7 +288,7 @@ export default function MessageComposer({
     return (
         <form
             onSubmit={send}
-            className="flex flex-col gap-2 border-t bg-card px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+            className="flex flex-col gap-2 px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:px-6 md:pb-6"
         >
             {(hasFiles || preparing > 0) && (
                 <div className="flex flex-col gap-1.5">
@@ -362,7 +362,7 @@ export default function MessageComposer({
                 </div>
             )}
 
-            <div className="flex items-end gap-1.5">
+            <div className="flex items-end gap-1.5 rounded-[26px] bg-[rgba(28,30,33,0.78)] p-1.25 backdrop-blur-[16px]">
                 <input
                     ref={photoInput}
                     type="file"
@@ -420,7 +420,7 @@ export default function MessageComposer({
                                 ? 'Aggiungi un messaggio'
                                 : 'Scrivi un messaggio'
                         }
-                        className="block field-sizing-content max-h-36 min-h-10.5 w-full resize-none rounded-[20px] border bg-secondary px-4 py-2.5 text-[17px] leading-5.5 transition-colors outline-none focus:border-foreground/40 focus:bg-card md:text-[15px]"
+                        className="block field-sizing-content max-h-36 min-h-10.5 w-full resize-none bg-transparent px-1 py-2.5 text-[17px] leading-5.5 outline-none placeholder:text-muted-foreground md:text-base"
                     />
                     {body.length >= COUNTER_FROM && (
                         <span
@@ -440,7 +440,7 @@ export default function MessageComposer({
                     size="icon"
                     disabled={!canSend}
                     aria-label="Invia"
-                    className="size-10.5 flex-none rounded-full transition-transform active:scale-95"
+                    className="size-10.5 flex-none rounded-full bg-brand text-black transition-transform hover:bg-brand-hover active:scale-95"
                 >
                     {sending ? (
                         <LoaderCircle

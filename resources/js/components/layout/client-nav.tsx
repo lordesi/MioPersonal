@@ -50,14 +50,14 @@ export type ClientNavItem = {
     href: string;
 };
 
-/** Home, Cerca, Messaggi; Profilo is drawn apart (avatar on desktop, 4th tab on phones). */
+/** Home, Cerca, Inbox; Profilo is drawn apart (avatar on desktop, 4th tab on phones). */
 export function clientNavItems(): ClientNavItem[] {
     return [
         { section: 'home', title: 'Home', icon: House, href: home.url() },
         { section: 'search', title: 'Cerca', icon: Search, href: searchUrl() },
         {
             section: 'messages',
-            title: 'Messaggi',
+            title: 'Inbox',
             icon: MessageCircle,
             href: messages.url(),
         },
@@ -71,13 +71,31 @@ export const clientProfileNavItem = (): ClientNavItem => ({
     href: profile.url(),
 });
 
-/** The label of "Messaggi" with the dot: "Messaggi, 2 non letti". */
-export function messagesLabel(unread: number): string {
-    if (unread <= 0) {
-        return 'Messaggi';
+/**
+ * The label of "Inbox" with the dot: the chats not read and the new
+ * notifications. "Inbox, 2 chat da leggere e 1 notifica nuova".
+ */
+export function inboxLabel(
+    unreadChats: number,
+    unreadNotifications = 0,
+): string {
+    const parts: string[] = [];
+
+    if (unreadChats > 0) {
+        parts.push(
+            unreadChats === 1
+                ? '1 chat da leggere'
+                : `${unreadChats} chat da leggere`,
+        );
     }
 
-    return unread === 1
-        ? 'Messaggi, 1 conversazione da leggere'
-        : `Messaggi, ${unread} conversazioni da leggere`;
+    if (unreadNotifications > 0) {
+        parts.push(
+            unreadNotifications === 1
+                ? '1 notifica nuova'
+                : `${unreadNotifications} notifiche nuove`,
+        );
+    }
+
+    return parts.length === 0 ? 'Inbox' : `Inbox, ${parts.join(' e ')}`;
 }

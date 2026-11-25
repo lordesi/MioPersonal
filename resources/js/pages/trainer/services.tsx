@@ -48,11 +48,7 @@ export default function Services({
             <Head title="Servizi e prezzi" />
 
             <ProfilePage
-                title={
-                    <>
-                        Servizi e <strong>prezzi</strong>
-                    </>
-                }
+                title="Servizi e prezzi"
                 intro="Quanto durano le sedute, quanto costano e gli extra per i clienti. Le modifiche sono subito sul profilo."
             >
                 {pricing === null ? (

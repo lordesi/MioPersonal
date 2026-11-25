@@ -43,11 +43,7 @@ export default function SharePage({ card, reason }: ShareProps) {
             <Head title="Condividi profilo" />
 
             <ProfilePage
-                title={
-                    <>
-                        Condividi il tuo <strong>profilo</strong>
-                    </>
-                }
+                title="Condividi profilo"
                 intro="Il link per la bio di Instagram, il codice QR e l'immagine per le storie."
             >
                 {card === null ? (

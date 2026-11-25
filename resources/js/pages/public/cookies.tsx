@@ -53,13 +53,6 @@ const cookies = [
         type: 'Tecnico, memoria del browser',
     },
     {
-        name: 'review-prompt-dismissed-…',
-        purpose:
-            'Ricorda nel tuo browser che hai chiuso l’invito a lasciare una recensione',
-        duration: 'Finché non svuoti i dati del browser',
-        type: 'Tecnico, memoria del browser',
-    },
-    {
         name: 'pwa-card:…',
         purpose:
             'Ricorda nel tuo browser se hai già visto il suggerimento per installare l’app e attivare le notifiche',

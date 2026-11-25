@@ -86,18 +86,20 @@ class MessagesTest extends TestCase
                 ->has('thread.messages', 2));
     }
 
-    /** The messages of the trainer live in "Clienti": the old address opens the conversation there. */
-    public function test_the_old_messages_page_of_the_trainer_opens_clienti()
+    /** The Inbox of the trainer: the chats with the clients, "?con=" opens one. */
+    public function test_the_trainer_has_an_inbox_with_the_chats()
     {
         $record = $this->pair();
 
         $this->actingAs($this->trainerOf($record))
             ->get(route('trainer.messages', ['con' => $record->id]))
-            ->assertRedirect(route('trainer.clients', ['con' => $record->id, 'chat' => 1]));
-
-        $this->actingAs($this->trainerOf($record))
-            ->get(route('trainer.messages'))
-            ->assertRedirect(route('trainer.clients'));
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('trainer/messages')
+                ->has('conversations', 1)
+                ->where('conversations.0.recordId', $record->id)
+                ->where('selected.recordId', $record->id)
+                ->where('selected.name', $this->clientOf($record)->name)
+                ->has('trainerArea'));
     }
 
     public function test_the_list_shows_new_messages_until_the_conversation_is_opened()

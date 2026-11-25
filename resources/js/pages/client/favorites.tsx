@@ -1,9 +1,13 @@
 import { Head, Link } from '@inertiajs/react';
 import { Heart } from 'lucide-react';
 import { useState } from 'react';
-import FavoriteTrainerCard from '@/components/client/favorite-trainer-card';
 import GymCard from '@/components/gym/gym-card';
-import PageHeading from '@/components/trainer/area/page-heading';
+import {
+    areaButtonClassName,
+    areaTitleClassName,
+    carbCardClassName,
+} from '@/components/mp/area-bits';
+import TrainerCard from '@/components/mp/trainer-card';
 import SegmentedTabs from '@/components/trainer/area/segmented-tabs';
 import { Button } from '@/components/ui/button';
 import type { FavoriteKind } from '@/hooks/use-favorite';
@@ -73,10 +77,13 @@ export default function Favorites({
         <>
             <Head title="Preferiti" />
 
-            <PageHeading
-                title="Preferiti"
-                description={`Hai salvato ${countLabel}`}
-            />
+            <header className="flex flex-col gap-1">
+                <h1 className={areaTitleClassName}>Preferiti</h1>
+                <p className="text-[15px] leading-5 text-muted-foreground md:text-[17px]">
+                    {countLabel}{' '}
+                    {kept.trainers + kept.gyms === 1 ? 'salvato' : 'salvati'}
+                </p>
+            </header>
 
             {withGyms && (
                 <SegmentedTabs
@@ -104,23 +111,20 @@ export default function Favorites({
                             action="Cerca un trainer"
                         />
                     ) : (
-                        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,300px),1fr))] gap-5">
-                            {trainers.map((trainer) => (
-                                <FavoriteTrainerCard
-                                    key={trainer.slug}
-                                    trainer={trainer}
-                                    removed={removed.trainers.includes(
-                                        trainer.slug,
-                                    )}
-                                    onRemovedChange={(isRemoved) =>
-                                        setRemovedFor(
-                                            'trainers',
-                                            trainer.slug,
-                                            isRemoved,
-                                        )
-                                    }
-                                />
-                            ))}
+                        <div className="flex flex-col gap-6">
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-6 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-7">
+                                {trainers.map((trainer) => (
+                                    <TrainerCard
+                                        key={trainer.slug}
+                                        trainer={{ ...trainer, favorite: true }}
+                                        size="sm"
+                                    />
+                                ))}
+                            </div>
+                            <p className="text-[13px] leading-4.5 text-muted-foreground">
+                                Tocca il cuore su un profilo o nei risultati
+                                della ricerca per salvarlo qui.
+                            </p>
                         </div>
                     )
                 ) : kept.gyms === 0 ? (
@@ -189,18 +193,23 @@ type EmptyStateProps = {
 
 function EmptyState({ title, href, action }: EmptyStateProps) {
     return (
-        <div className="flex flex-col items-center gap-2.5 rounded-[20px] border border-dashed border-input bg-card px-4 py-12 text-center">
-            <span className="flex size-12 items-center justify-center rounded-full bg-muted">
-                <Heart aria-hidden="true" className="size-5" />
+        <div
+            className={`${carbCardClassName} flex flex-col items-center gap-3 p-6 text-center`}
+        >
+            <span className="flex size-13 items-center justify-center rounded-full bg-[#1c1e21] text-muted-foreground">
+                <Heart aria-hidden="true" className="size-6" />
             </span>
-            <strong className="text-lg">{title}</strong>
-            <span className="max-w-90 text-sm text-muted-foreground">
+            <strong className="text-[17px] font-semibold">{title}</strong>
+            <span className="max-w-90 text-[15px] leading-5 text-muted-foreground">
                 Tocca il cuore su un profilo o nei risultati della ricerca per
                 ritrovarlo qui.
             </span>
-            <Button asChild className="h-11 rounded-lg px-4.5">
-                <Link href={href}>{action}</Link>
-            </Button>
+            <Link
+                href={href}
+                className={`${areaButtonClassName('primary', 'md')} mt-1`}
+            >
+                {action}
+            </Link>
         </div>
     );
 }

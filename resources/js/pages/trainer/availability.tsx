@@ -35,11 +35,7 @@ export default function Availability({
             <Head title="Le tue disponibilità" />
 
             <ProfilePage
-                title={
-                    <>
-                        Le tue <strong>disponibilità</strong>
-                    </>
-                }
+                title="Disponibilità"
                 intro="Gli orari in cui i clienti possono prenotarti e le regole delle prenotazioni."
             >
                 {availability === null ? (

@@ -31,6 +31,11 @@ class TrainerProfileHubController extends Controller
             'me' => [
                 'name' => $user->name,
                 'avatar' => $user->avatar,
+                // "Boxe e Functional · Milano", under the name.
+                'subtitle' => $profile === null ? null : collect([
+                    $profile->disciplines->take(2)->pluck('name')->join(', ', ' e '),
+                    $profile->city?->name,
+                ])->filter()->join(' · '),
                 // "miopersonal.it/trainer/giulia-rossi", null until the registration is sent.
                 'publicUrl' => $profile === null ? null : route('trainers.show', $profile->slug),
             ],
@@ -48,6 +53,8 @@ class TrainerProfileHubController extends Controller
                 'reviews' => $profile->rating_count,
                 'rating' => $profile->rating(),
             ],
+            // "Le tue statistiche": the numbers of "Oggi", with the same periods.
+            'stats' => $profile === null ? null : TrainerDashboardController::stats($profile, TrainerDashboardController::period($request)),
         ]);
     }
 }

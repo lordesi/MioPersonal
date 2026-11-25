@@ -30,7 +30,7 @@ export default function TrainerProposalCard({
         });
 
     return (
-        <article className="flex flex-col gap-3.5 rounded-xl border-[1.5px] border-foreground bg-card p-4 md:p-5">
+        <article className="flex flex-col gap-3.5 rounded-[24px] bg-card p-4 shadow-[inset_0_0_0_1.5px_var(--brand)] md:p-5">
             <div className="flex items-start gap-3">
                 <span className="flex size-10 flex-none items-center justify-center rounded-full bg-foreground text-background">
                     <CalendarPlus aria-hidden="true" className="size-4.5" />

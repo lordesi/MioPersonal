@@ -1,36 +1,35 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowRight, Plus } from 'lucide-react';
+import { CalendarDays, CalendarPlus } from 'lucide-react';
 import { useState } from 'react';
-import LaterSessionRow from '@/components/client/later-session-row';
-import NextSessionHero from '@/components/client/next-session-hero';
-import ProposalCard from '@/components/client/proposal-card';
-import ReviewPrompt, {
-    sessionToReview,
-} from '@/components/client/review-prompt';
-import NoUpcomingSessions from '@/components/client/no-upcoming-sessions';
-import PackageCarousel from '@/components/client/package-carousel';
+import {
+    BookingDetailsDialog,
+    LaterTimeline,
+    NextBookingCard,
+    PackageCard,
+} from '@/components/client/bookings/booking-blocks';
+import type { TimelineItem } from '@/components/client/bookings/booking-blocks';
 import PendingBookingCard from '@/components/client/pending-booking-card';
+import ProposalCard from '@/components/client/proposal-card';
+import SessionHistory from '@/components/client/session-history';
 import TrainerProposalCard from '@/components/client/trainer-proposal-card';
 import UpcomingEvents from '@/components/events/upcoming-events';
-import SessionHistory from '@/components/client/session-history';
-import YourTrainersPanel from '@/components/client/your-trainers-panel';
-import PageHeading from '@/components/trainer/area/page-heading';
-import Panel from '@/components/trainer/area/panel';
-import { Button } from '@/components/ui/button';
-import { romeParts } from '@/lib/calendar';
-import { formatDayLong } from '@/lib/format';
-import { courseSearchUrl } from '@/lib/course';
-import { useFeatures, withFeatures } from '@/lib/features';
-import { gymSearchUrl } from '@/lib/gym';
+import {
+    AreaRow,
+    areaButtonClassName,
+    areaSectionTitleClassName,
+    areaTitleClassName,
+    carbCardClassName,
+} from '@/components/mp/area-bits';
+import DarkDialog from '@/components/mp/dark-dialog';
 import { searchUrl } from '@/lib/search';
-import { search as eventsSearch } from '@/routes/events';
+import { cn } from '@/lib/utils';
 import type {
-    GroupSessionSummary,
     ClientPackage,
     ClientPastSession,
     ClientPendingBooking,
     ClientTrainer,
     ClientUpcomingBooking,
+    GroupSessionSummary,
 } from '@/types';
 
 /** An upcoming session with a "Sposta" proposal of the trainer. */
@@ -52,12 +51,12 @@ type BookingsProps = {
 };
 
 /**
- * "Le mie prenotazioni" (docs/design/cliente-dashboard.html): what is booked,
- * what waits for an answer and what was done. The client's "Panoramica" is
- * pages/client/home.tsx.
+ * "Prenotazioni" of the client (design "Prenotazioni · V2"): what waits for
+ * an answer, the next session, the ones "Più avanti" (with the requests
+ * still to confirm), the packages and "Sedute passate". Desktop: the
+ * sessions on the left, the packages on the right.
  */
 export default function Bookings({
-    firstName,
     upcoming,
     pending,
     past,
@@ -66,13 +65,16 @@ export default function Bookings({
     events,
 }: BookingsProps) {
     const [now] = useState(() => new Date());
-    // All of Italy: the client's preferences only change the order.
-    const bookUrl = searchUrl();
+    const [details, setDetails] = useState<ClientUpcomingBooking | null>(null);
+    const [request, setRequest] = useState<ClientPendingBooking | null>(null);
+    const [showPast, setShowPast] = useState(false);
     const [next, ...later] = upcoming;
-    // "Com'è andata?": read once, localStorage is only in the browser.
-    const [toReview] = useState(() =>
-        typeof window === 'undefined' ? null : sessionToReview(past, now),
-    );
+
+    // "Scrivi": the conversation with the trainer, when there is one.
+    const messageHrefOf = (trainerHref: string) =>
+        trainers.find((trainer) => trainer.href === trainerHref)?.messageHref ??
+        null;
+
     // "Sposta": the trainer waits for an answer, on top of everything.
     const proposals = upcoming.filter(
         (booking): booking is ProposalBooking => booking.proposal !== null,
@@ -80,182 +82,188 @@ export default function Bookings({
     // "Aggiungi seduta" of the trainer: the client answers.
     const trainerProposals = pending.filter((booking) => booking.fromTrainer);
     const waiting = pending.filter(
-        (booking) => booking.status !== 'cancelled' && !booking.fromTrainer,
+        (booking) => booking.status === 'pending' && !booking.fromTrainer,
     );
-    const cancelledByTrainer = pending.filter(
-        (booking) => booking.status === 'cancelled',
+    // Refused, expired or cancelled by the trainer: told once, on top.
+    const closed = pending.filter(
+        (booking) => booking.status !== 'pending' && !booking.fromTrainer,
     );
-    // "Riprendi con …": the trainer of the last session, when nothing is booked.
-    const resumeTrainer = trainers.find((trainer) => trainer.booked) ?? null;
-    const resumeSessionsLeft = packages
-        .filter((pack) => pack.trainerHref === resumeTrainer?.href)
-        .reduce((sum, pack) => sum + pack.total - pack.booked, 0);
-    const otherSearches = withFeatures(
-        [
-            {
-                label: 'Palestre',
-                href: gymSearchUrl(),
-                feature: 'gyms' as const,
-            },
-            {
-                label: 'Corsi',
-                href: courseSearchUrl(),
-                feature: 'courses' as const,
-            },
-            {
-                label: 'Eventi',
-                href: eventsSearch.url(),
-                feature: 'events' as const,
-            },
-        ],
-        useFeatures(),
+    const toAnswer =
+        trainerProposals.length + proposals.length + closed.length > 0;
+
+    const timeline: TimelineItem[] = [
+        ...later.map((booking) => ({ kind: 'upcoming' as const, booking })),
+        ...waiting.map((booking) => ({ kind: 'pending' as const, booking })),
+    ].sort((a, b) => a.booking.start.localeCompare(b.booking.start));
+
+    const bookButton = (
+        <Link
+            href={searchUrl()}
+            className={areaButtonClassName('primary', 'md')}
+        >
+            Prenota una seduta
+        </Link>
     );
 
     return (
         <>
-            <Head title="Le mie prenotazioni" />
+            <Head title="Prenotazioni" />
 
-            <PageHeading
-                eyebrow={formatDayLong(romeParts(now).date)}
-                title={`Ciao ${firstName}`}
-                action={
-                    <div className="flex flex-wrap gap-2">
-                        <Button
-                            asChild
-                            className="h-11.5 rounded-xl px-5 text-[15px] font-semibold"
+            <header className="flex items-center justify-between gap-4">
+                <h1 className={areaTitleClassName}>Prenotazioni</h1>
+                <div className="hidden md:block">{bookButton}</div>
+            </header>
+
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-12">
+                <div className="flex min-w-0 flex-col gap-8 lg:gap-9">
+                    {toAnswer && (
+                        <section
+                            aria-labelledby="answer-title"
+                            className="flex flex-col gap-3"
                         >
-                            <Link href={bookUrl}>
-                                <Plus aria-hidden="true" strokeWidth={2.5} />
-                                Prenota una seduta
-                            </Link>
-                        </Button>
-                    </div>
-                }
-            />
-
-            {/* The other searches, one tap away (the ones switched on). */}
-            {otherSearches.length > 0 && (
-                <nav
-                    aria-label="Esplora"
-                    className="-mt-2 flex [scrollbar-width:none] gap-2 overflow-x-auto"
-                >
-                    {otherSearches.map((link) => (
-                        <Link
-                            key={link.label}
-                            href={link.href}
-                            className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full border bg-card px-3.5 text-sm font-medium hover:bg-accent"
-                        >
-                            {link.label}
-                            <ArrowRight
-                                aria-hidden="true"
-                                className="size-3.5"
-                            />
-                        </Link>
-                    ))}
-                </nav>
-            )}
-
-            <div className="flex flex-wrap items-start gap-5">
-                <div className="flex min-w-0 flex-[3_1_540px] flex-col gap-5">
-                    {toReview && (
-                        <ReviewPrompt key={toReview.id} session={toReview} />
-                    )}
-
-                    {trainerProposals.length > 0 && (
-                        <Panel title="Sedute proposte" className="gap-3">
+                            <h2
+                                id="answer-title"
+                                className={areaSectionTitleClassName}
+                            >
+                                Da rispondere
+                            </h2>
                             {trainerProposals.map((booking) => (
                                 <TrainerProposalCard
                                     key={booking.id}
                                     booking={booking}
                                 />
                             ))}
-                        </Panel>
-                    )}
-
-                    {proposals.length > 0 && (
-                        <Panel title="Nuovo orario proposto" className="gap-3">
                             {proposals.map((booking) => (
                                 <ProposalCard
                                     key={booking.id}
                                     booking={booking}
                                 />
                             ))}
-                        </Panel>
-                    )}
-
-                    {cancelledByTrainer.length > 0 && (
-                        <Panel title="Annullate dal trainer" className="gap-3">
-                            {cancelledByTrainer.map((booking) => (
+                            {closed.map((booking) => (
                                 <PendingBookingCard
                                     key={booking.id}
                                     booking={booking}
                                 />
                             ))}
-                        </Panel>
+                        </section>
                     )}
 
                     {next ? (
-                        <NextSessionHero booking={next} now={now} />
+                        <NextBookingCard
+                            booking={next}
+                            now={now}
+                            messageHref={messageHrefOf(next.trainerHref)}
+                            onDetails={() => setDetails(next)}
+                        />
                     ) : (
-                        <NoUpcomingSessions
-                            bookUrl={bookUrl}
-                            trainer={resumeTrainer}
-                            packageSessionsLeft={resumeSessionsLeft}
+                        <div
+                            className={cn(
+                                carbCardClassName,
+                                'flex flex-col items-center gap-3 p-6 text-center',
+                            )}
+                        >
+                            <span className="flex size-13 items-center justify-center rounded-full bg-[#1c1e21] text-muted-foreground">
+                                <CalendarPlus
+                                    aria-hidden="true"
+                                    className="size-6"
+                                />
+                            </span>
+                            <p className="text-[17px] font-semibold">
+                                Nessuna seduta in programma
+                            </p>
+                            <p className="max-w-80 text-[15px] leading-5 text-muted-foreground">
+                                Trova un trainer vicino a te e prenota la
+                                prossima.
+                            </p>
+                            <div className="mt-1">{bookButton}</div>
+                        </div>
+                    )}
+
+                    {timeline.length > 0 && (
+                        <LaterTimeline
+                            items={timeline}
+                            onOpen={(item) =>
+                                item.kind === 'upcoming'
+                                    ? setDetails(item.booking)
+                                    : setRequest(item.booking)
+                            }
                         />
                     )}
 
-                    {waiting.length > 0 && (
-                        <Panel title="In attesa di conferma" className="gap-3">
-                            {waiting.map((booking) => (
-                                <PendingBookingCard
-                                    key={booking.id}
-                                    booking={booking}
-                                />
-                            ))}
-                        </Panel>
-                    )}
-
-                    {later.length > 0 && (
-                        <Panel title="Più avanti" className="gap-3.5">
-                            <ul className="flex flex-col gap-2.5">
-                                {later.map((booking) => (
-                                    <LaterSessionRow
-                                        key={booking.id}
-                                        booking={booking}
-                                        now={now}
-                                    />
-                                ))}
-                            </ul>
-                        </Panel>
-                    )}
-
-                    {/* Places taken in the events and in the gyms' courses. */}
+                    {/* Places taken in the events (only while they are switched on). */}
                     <UpcomingEvents
                         events={events}
                         title="Corsi ed eventi prenotati"
                         id="my-events-title"
                         showAll={false}
                     />
-
-                    <SessionHistory sessions={past} />
                 </div>
 
-                <div className="flex min-w-0 flex-[2_1_320px] flex-col gap-5">
-                    {/* "Pacchetti" in "Profilo" opens here. */}
+                <div className="flex min-w-0 flex-col gap-8">
                     {packages.length > 0 && (
-                        <div id="pacchetti" className="scroll-mt-6">
-                            <PackageCarousel packages={packages} />
-                        </div>
+                        <section
+                            id="pacchetti"
+                            aria-labelledby="packages-title"
+                            className="flex scroll-mt-6 flex-col gap-3"
+                        >
+                            <h2
+                                id="packages-title"
+                                className={areaSectionTitleClassName}
+                            >
+                                Pacchetti
+                            </h2>
+                            {packages.map((pack) => (
+                                <PackageCard
+                                    key={pack.id}
+                                    pack={pack}
+                                    renewHref={
+                                        messageHrefOf(pack.trainerHref) ??
+                                        pack.trainerHref
+                                    }
+                                />
+                            ))}
+                        </section>
                     )}
 
-                    {trainers.length > 0 && (
-                        <YourTrainersPanel
-                            trainers={trainers}
-                            searchHref={bookUrl}
+                    <div>
+                        <AreaRow
+                            title="Sedute passate"
+                            icon={CalendarDays}
+                            value={past.length > 0 ? past.length : undefined}
+                            onClick={() => setShowPast(true)}
                         />
-                    )}
+                    </div>
                 </div>
             </div>
+
+            <BookingDetailsDialog
+                booking={details}
+                now={now}
+                messageHref={
+                    details ? messageHrefOf(details.trainerHref) : null
+                }
+                onOpenChange={(open) => !open && setDetails(null)}
+            />
+
+            <DarkDialog
+                open={request !== null}
+                onOpenChange={(open) => !open && setRequest(null)}
+                title="Richiesta inviata"
+                className="md:max-w-130"
+            >
+                {request && <PendingBookingCard booking={request} />}
+            </DarkDialog>
+
+            <DarkDialog
+                open={showPast}
+                onOpenChange={setShowPast}
+                title="Sedute passate"
+                className="md:max-w-160"
+            >
+                <div className="-mx-1 max-h-[70dvh] overflow-y-auto px-1">
+                    <SessionHistory sessions={past} />
+                </div>
+            </DarkDialog>
         </>
     );
 }

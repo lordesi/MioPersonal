@@ -2,7 +2,6 @@ import { Link, usePage } from '@inertiajs/react';
 import { ChevronLeft } from 'lucide-react';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import AreaGlow from '@/components/layout/area-glow';
 import ClientSidebar from '@/components/layout/client/client-sidebar';
 import ClientTabBar from '@/components/layout/client/client-tab-bar';
 import type { ClientSection } from '@/components/layout/client-nav';
@@ -26,8 +25,8 @@ type ClientLayoutProps = {
 };
 
 /**
- * The client area, dark with a turquoise glow like the trainer area. Phones:
- * the page and the floating tab bar (Home, Cerca, Messaggi, Profilo).
+ * The client area, on the black of the "carbone" design. Phones: the page
+ * and the floating tab bar (Home, Cerca, Inbox, Profilo).
  * Tablets and desktop: the glass side menu and the page on the right. The
  * area is never rendered on the server, so the two drawings never mismatch.
  */
@@ -49,7 +48,8 @@ export default function ClientLayout({
         return () => document.documentElement.classList.remove('theme-dark');
     }, []);
 
-    const back = inProfile && (
+    // "Impostazioni" draws its own: "‹ Profilo" on the list, "‹ Impostazioni" inside.
+    const back = inProfile && section !== 'settings' && (
         <Link
             href={profile()}
             className="-mb-2 inline-flex min-h-11 items-center gap-1 self-start text-[17px] text-brand outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
@@ -62,10 +62,9 @@ export default function ClientLayout({
     if (isMobile) {
         return (
             <div className="theme-dark relative min-h-dvh bg-background text-foreground">
-                {!inProfile && <AreaGlow />}
                 <main
                     className={cn(
-                        'relative flex flex-col gap-6 px-4 pt-6',
+                        'relative flex flex-col gap-8 px-4 pt-6',
                         fill ? 'pb-28' : 'pb-32',
                     )}
                 >
@@ -79,7 +78,6 @@ export default function ClientLayout({
 
     return (
         <div className="theme-dark relative flex min-h-dvh gap-6 bg-background p-4 text-foreground lg:gap-10">
-            {!inProfile && <AreaGlow />}
             <ClientSidebar
                 current={current}
                 unreadChats={clientArea?.unreadChats ?? 0}
@@ -88,7 +86,7 @@ export default function ClientLayout({
             />
             <main
                 className={cn(
-                    'relative flex w-full min-w-0 flex-1 flex-col gap-6',
+                    'relative flex w-full min-w-0 flex-1 flex-col gap-8',
                     // Full-height pages use the whole width, like "Clienti" of the trainer.
                     fill
                         ? 'h-[calc(100dvh-2rem)]'

@@ -92,7 +92,11 @@ export default function DarkHeader({ className }: { className?: string }) {
                     />
                 )}
                 <div className="flex items-center gap-2 md:gap-4">
-                    {user ? (
+                    {user && onPhoto ? (
+                        // The home: only the photo, no "La mia area" nor the
+                        // bell (both are in the menu).
+                        <AccountCapsuleMenu variant={variant} plain />
+                    ) : user ? (
                         <>
                             <Link
                                 prefetch={hoverPrefetch}

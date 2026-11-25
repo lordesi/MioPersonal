@@ -69,6 +69,7 @@ use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RobotsController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\TrainerAutoConfirmController;
 use App\Http\Controllers\TrainerAvailabilityController;
 use App\Http\Controllers\TrainerBookingRequestController;
 use App\Http\Controllers\TrainerCalendarController;
@@ -387,6 +388,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // "Vedi tutte" of the last 7 days in "Panoramica".
         Route::get('sedute-passate', TrainerPastSessionsController::class)->name('past-sessions');
         Route::get('richieste', TrainerRequestsController::class)->name('requests');
+        // "Conferma automatica", the switch of "Richieste".
+        Route::patch('richieste/conferma-automatica', TrainerAutoConfirmController::class)->name('requests.auto-confirm');
         // The answer to a booking request, from "Richieste".
         Route::controller(TrainerBookingRequestController::class)->prefix('richieste/{booking}')->whereNumber('booking')->group(function () {
             Route::post('accetta', 'accept')->name('requests.accept');

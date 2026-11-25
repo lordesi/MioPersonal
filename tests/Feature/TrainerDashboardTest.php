@@ -212,4 +212,43 @@ class TrainerDashboardTest extends TestCase
                 ->where('stats.sessions', 3)
             );
     }
+
+    /** "Guadagni" with its line, and "Richieste confermate", for the period chosen. */
+    public function test_the_earnings_and_the_requests_confirmed_of_a_period()
+    {
+        $now = CarbonImmutable::parse('2026-10-15 09:00', 'Europe/Rome');
+        $this->travelTo($now);
+        $trainer = TrainerProfile::factory()->approved()->create();
+        Booking::factory()->for($trainer)->confirmed()->at($now->subDays(2)->setTime(10, 0))->create(['price_cents' => 4500]);
+        Booking::factory()->for($trainer)->confirmed()->at($now->setTime(18, 0))->create(['price_cents' => 6000]);
+        // The 7 days before.
+        Booking::factory()->for($trainer)->confirmed()->at($now->subDays(10)->setTime(10, 0))->create(['price_cents' => 3000]);
+        // Refused, and one still waiting (not answered yet: not counted).
+        Booking::factory()->for($trainer)->status(BookingStatus::Declined)->at($now->addDays(3)->setTime(9, 0))->create();
+        Booking::factory()->for($trainer)->at($now->addDays(4)->setTime(9, 0))->create();
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.today'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('stats.earningsCents', 10500)
+                ->where('stats.earningsBeforeCents', 3000)
+                // One point a day for 7 days, Friday to Thursday.
+                ->has('stats.earningsSeries', 7)
+                ->where('stats.earningsSeries.0.label', 'V')
+                ->where('stats.earningsSeries.4.cents', 4500)
+                ->where('stats.earningsSeries.6.cents', 6000)
+                // 3 confirmed of the 4 answered.
+                ->where('stats.confirmedRate', 0.75)
+            );
+
+        // "Ultimi 3 mesi": one point a month.
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.today', ['periodo' => '90']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('stats.period', '90')
+                ->has('stats.earningsSeries', 4)
+                ->where('stats.earningsSeries.0.label', 'Lug')
+                ->where('stats.earningsSeries.3.cents', 13500)
+            );
+    }
 }

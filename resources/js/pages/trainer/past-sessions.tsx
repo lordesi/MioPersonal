@@ -2,7 +2,6 @@ import { Head } from '@inertiajs/react';
 import { History } from 'lucide-react';
 import SearchPagination from '@/components/search/search-pagination';
 import ProfilePage from '@/components/trainer/profile-pages/profile-page';
-import { today } from '@/routes/trainer';
 import PastSessionList from '@/components/trainer/dashboard/past-session-list';
 import OutcomeFilters, {
     filterUrl,
@@ -42,13 +41,12 @@ export default function PastSessions({
             <Head title="Sedute passate" />
 
             <ProfilePage
-                title={
-                    <>
-                        Sedute <strong>passate</strong>
-                    </>
+                title="Sedute passate"
+                action={
+                    counts.all > 0 ? (
+                        <OutcomeFilters current={filter} counts={counts} />
+                    ) : undefined
                 }
-                intro="Le sedute confermate, una volta finite. Una seduta saltata si può segnare nei primi 7 giorni."
-                back={{ href: today.url(), label: 'Home' }}
             >
                 {counts.all === 0 ? (
                     <div className="flex flex-col items-center gap-3 rounded-[26px] bg-card px-6 py-12 text-center">
@@ -65,11 +63,9 @@ export default function PastSessions({
                 ) : (
                     <>
                         <PastWeekSummary summary={lastWeek} />
-                        <div className="flex min-w-0 flex-col gap-4">
-                            <OutcomeFilters current={filter} counts={counts} />
-
+                        <div className="flex min-w-0 flex-col gap-1">
                             {sessions.length === 0 ? (
-                                <div className="rounded-[26px] border border-dashed border-field px-6 py-10 text-center text-[15px] text-muted-foreground">
+                                <div className="rounded-[24px] bg-card px-6 py-8 text-center text-[15px] text-muted-foreground">
                                     Nessuna seduta con questo esito.
                                 </div>
                             ) : (
@@ -85,6 +81,10 @@ export default function PastSessions({
                                     />
                                 </>
                             )}
+                            <p className="pt-3 text-[13px] text-muted-foreground">
+                                Puoi segnare una seduta come saltata entro 7
+                                giorni.
+                            </p>
                         </div>
                     </>
                 )}
@@ -93,5 +93,5 @@ export default function PastSessions({
     );
 }
 
-// Part of "Le tue prenotazioni" in the menu.
-PastSessions.layout = { section: 'today' };
+// A page of "Profilo" (design): "‹ Profilo" on top.
+PastSessions.layout = { section: 'past-sessions' };

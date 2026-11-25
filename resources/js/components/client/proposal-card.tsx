@@ -36,7 +36,7 @@ export default function ProposalCard({ booking }: ProposalCardProps) {
         return (
             <p
                 role="status"
-                className="rounded-xl border bg-card p-4 text-sm text-muted-foreground"
+                className="rounded-[24px] bg-card p-4 text-sm text-muted-foreground"
             >
                 Seduta annullata, senza costi. Abbiamo avvisato{' '}
                 {booking.trainerFirstName}.
@@ -45,9 +45,9 @@ export default function ProposalCard({ booking }: ProposalCardProps) {
     }
 
     return (
-        <article className="flex flex-col gap-3.5 rounded-xl border-[1.5px] border-foreground bg-card p-4 md:p-5">
+        <article className="flex flex-col gap-3.5 rounded-[24px] bg-card p-4 shadow-[inset_0_0_0_1.5px_var(--brand)] md:p-5">
             <div className="flex items-start gap-3">
-                <span className="flex size-10 flex-none items-center justify-center rounded-full bg-foreground text-background">
+                <span className="flex size-10 flex-none items-center justify-center rounded-full bg-brand-soft text-brand">
                     <CalendarClock aria-hidden="true" className="size-4.5" />
                 </span>
                 <div className="flex min-w-0 flex-col gap-1">

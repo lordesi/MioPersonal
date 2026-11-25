@@ -1,149 +1,231 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-import { PencilLine, Settings } from 'lucide-react';
-import ClientProfileList from '@/components/client/profile/profile-list';
-import { Initials } from '@/components/trainer/ui/bits';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
-    brandButtonClassName,
-    pageTitleClassName,
-    panelClassName,
-    softButtonClassName,
-} from '@/components/trainer/ui/styles';
-import { useIsMobile } from '@/hooks/use-mobile';
+    CalendarDays,
+    CircleAlert,
+    Dumbbell,
+    Heart,
+    MessageCircle,
+    Pencil,
+    Settings,
+    User,
+} from 'lucide-react';
+import { useState } from 'react';
+import {
+    AreaRow,
+    AreaRowGroup,
+    areaButtonClassName,
+    areaTitleClassName,
+} from '@/components/mp/area-bits';
+import DarkDialog from '@/components/mp/dark-dialog';
+import { Initials } from '@/components/trainer/ui/bits';
+import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { cn } from '@/lib/utils';
+import { logout } from '@/routes';
 import { settings } from '@/routes/account';
 import { bookings, favorites } from '@/routes/client';
 import { edit as editProfile } from '@/routes/client/profile';
+import { show as contactPage } from '@/routes/contact';
+import { privacy } from '@/routes/legal';
 
 type ProfileProps = {
+    city: string | null;
     upcomingCount: number;
     activePackages: number;
+    sessionsDone: number;
+    trainersCount: number;
 };
 
+/** "1 attivo", "2 attivi"; null without packages. */
+export function packagesLabel(count: number): string | null {
+    if (count === 0) {
+        return null;
+    }
+
+    return count === 1 ? '1 attivo' : `${count} attivi`;
+}
+
 /**
- * "Profilo" of the client. Phones: the list like the iOS settings. Desktop,
- * like the trainer's "Profilo": the compact list in a column on the left and,
- * on the right, the client at a glance with the numbers of their activity.
+ * "Profilo" of the client (design "Profilo cliente · nuovo"): the photo with
+ * the pencil, the name and the city, three numbers, then LA MIA ATTIVITÀ,
+ * ACCOUNT and AIUTO, and "Esci". Desktop: the person on the left, the lists
+ * on the right.
  */
 export default function Profile({
+    city,
     upcomingCount,
     activePackages,
+    sessionsDone,
+    trainersCount,
 }: ProfileProps) {
-    const isMobile = useIsMobile();
-    const counts = { upcomingCount, activePackages };
+    const { auth } = usePage().props;
+    const [askLogout, setAskLogout] = useState(false);
+    const cleanup = useMobileNavigation();
+    const favoritesCount = auth.favoritesCount ?? 0;
+
+    const stats = [
+        { value: sessionsDone, label: 'Sedute fatte' },
+        { value: trainersCount, label: 'Trainer' },
+        { value: favoritesCount, label: 'Preferiti' },
+    ];
 
     return (
         <>
             <Head title="Profilo" />
-            {isMobile ? (
-                <>
-                    <h1 className="text-[34px] leading-10.25 font-bold tracking-[0.4px]">
-                        Profilo
-                    </h1>
-                    <ClientProfileList size="lg" {...counts} />
-                </>
-            ) : (
-                // Like the trainer's: the column next to the side menu, full height.
-                <div className="flex h-full min-h-0 gap-6">
-                    <section
-                        aria-label="Sezioni del profilo"
+
+            <h1 className={cn(areaTitleClassName, '-mb-1')}>Profilo</h1>
+
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[380px_minmax(0,1fr)] lg:items-start lg:gap-16">
+                <div className="flex flex-col gap-8 lg:gap-7">
+                    <div className="flex items-center gap-4.5">
+                        <span className="relative size-22 shrink-0">
+                            <Initials
+                                name={auth.user.name}
+                                src={auth.user.avatar}
+                                size={88}
+                                className="bg-[#1c1e21] text-[29px] text-foreground"
+                            />
+                            <Link
+                                href={editProfile()}
+                                aria-label="Modifica profilo"
+                                className="absolute -right-0.5 -bottom-0.5 flex size-8.5 items-center justify-center rounded-full bg-brand text-black shadow-[0_0_0_4px_#000] outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                <Pencil aria-hidden="true" className="size-4" />
+                            </Link>
+                        </span>
+                        <div className="flex min-w-0 flex-col gap-1">
+                            <span className="truncate text-2xl leading-7.5 font-bold tracking-[-0.02em]">
+                                {auth.user.name}
+                            </span>
+                            {city && (
+                                <span className="text-[15px] leading-5 text-muted-foreground">
+                                    {city}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    <ul aria-label="Le tue statistiche" className="flex gap-5">
+                        {stats.map((stat) => (
+                            <li
+                                key={stat.label}
+                                className="flex flex-1 flex-col gap-1.5"
+                            >
+                                <b className="text-[32px] leading-none font-bold tracking-[-0.02em] tabular-nums">
+                                    {stat.value}
+                                </b>
+                                <span className="text-sm text-muted-foreground">
+                                    {stat.label}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
+                <div className="flex flex-col gap-8">
+                    <AreaRowGroup title="La mia attività">
+                        <AreaRow
+                            title="Prenotazioni"
+                            icon={CalendarDays}
+                            href={bookings.url()}
+                            value={
+                                upcomingCount > 0 ? upcomingCount : undefined
+                            }
+                        />
+                        <AreaRow
+                            title="Pacchetti"
+                            icon={Dumbbell}
+                            href={`${bookings.url()}#pacchetti`}
+                            value={packagesLabel(activePackages) ?? undefined}
+                        />
+                        <AreaRow
+                            title="Preferiti"
+                            icon={Heart}
+                            href={favorites.url()}
+                            value={
+                                favoritesCount > 0 ? favoritesCount : undefined
+                            }
+                        />
+                    </AreaRowGroup>
+
+                    <AreaRowGroup title="Account">
+                        <AreaRow
+                            title="Modifica profilo"
+                            icon={User}
+                            href={editProfile.url()}
+                        />
+                        <AreaRow
+                            title="Impostazioni"
+                            icon={Settings}
+                            href={settings.url()}
+                        />
+                    </AreaRowGroup>
+
+                    <AreaRowGroup title="Aiuto">
+                        <AreaRow
+                            title="Centro assistenza"
+                            icon={MessageCircle}
+                            href={contactPage.url()}
+                            external
+                        />
+                        <AreaRow
+                            title="Privacy e termini"
+                            icon={CircleAlert}
+                            href={privacy.url()}
+                            external
+                        />
+                    </AreaRowGroup>
+
+                    <div>
+                        <button
+                            type="button"
+                            aria-haspopup="dialog"
+                            onClick={() => setAskLogout(true)}
+                            className={cn(
+                                areaButtonClassName('ghost', 'md'),
+                                '-ml-5 text-[#ff7a7a]',
+                            )}
+                        >
+                            Esci
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <DarkDialog
+                open={askLogout}
+                onOpenChange={setAskLogout}
+                title="Vuoi uscire?"
+                description="Potrai rientrare quando vuoi con la tua email."
+            >
+                <div className="flex flex-col gap-2.5 md:flex-row-reverse md:justify-start">
+                    <Link
+                        href={logout()}
+                        as="button"
+                        onClick={() => {
+                            cleanup();
+                            router.flushAll();
+                        }}
                         className={cn(
-                            panelClassName,
-                            'h-full w-80 shrink-0 [scrollbar-width:none] overflow-y-auto px-3 py-4',
+                            areaButtonClassName('destructive', 'md'),
+                            'w-full md:w-auto',
                         )}
                     >
-                        <h1 className="mx-2.5 mt-1 mb-4.5 text-[28px] leading-8.5 font-bold tracking-[0.38px]">
-                            Profilo
-                        </h1>
-                        <ClientProfileList size="sm" {...counts} />
-                    </section>
-                    <Overview {...counts} />
+                        Esci
+                    </Link>
+                    <button
+                        type="button"
+                        onClick={() => setAskLogout(false)}
+                        className={cn(
+                            areaButtonClassName('outline', 'md'),
+                            'w-full md:w-auto',
+                        )}
+                    >
+                        Annulla
+                    </button>
                 </div>
-            )}
+            </DarkDialog>
         </>
     );
 }
 
-/** Desktop: the client at a glance, the way to edit, the numbers. */
-function Overview({ upcomingCount, activePackages }: ProfileProps) {
-    const { auth } = usePage().props;
-    const tiles = [
-        {
-            label: 'Prenotazioni in programma',
-            value: upcomingCount,
-            href: bookings.url(),
-        },
-        {
-            label: 'Pacchetti attivi',
-            value: activePackages,
-            href: `${bookings.url()}#pacchetti`,
-        },
-        {
-            label: 'Preferiti',
-            value: auth.favoritesCount ?? 0,
-            href: favorites.url(),
-        },
-    ];
-
-    return (
-        <div className="flex max-w-240 min-w-0 flex-1 [scrollbar-width:none] flex-col gap-6 overflow-y-auto pt-6 pr-4 pb-6">
-            <div className="flex flex-col gap-1.5">
-                <h2 className={pageTitleClassName}>Il tuo profilo</h2>
-                <p className="text-[15px] text-muted-foreground">
-                    Le tue prenotazioni, i pacchetti e i trainer che hai
-                    salvato.
-                </p>
-            </div>
-
-            <section className={cn(panelClassName, 'flex flex-col gap-5 p-6')}>
-                <div className="flex flex-wrap items-center gap-5">
-                    <Initials
-                        name={auth.user.name}
-                        src={auth.user.avatar}
-                        size={96}
-                        className="shadow-[0_0_0_3px_#0a0a0a,0_0_0_5px_#42d7d9]"
-                    />
-                    <div className="flex min-w-0 flex-1 flex-col gap-1">
-                        <span className="truncate text-[22px] leading-7 font-bold">
-                            {auth.user.name}
-                        </span>
-                        <span className="truncate text-[15px] text-muted-foreground">
-                            {auth.user.email}
-                        </span>
-                    </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    <Link href={editProfile()} className={brandButtonClassName}>
-                        <PencilLine aria-hidden="true" className="size-4.5" />
-                        Modifica profilo
-                    </Link>
-                    <Link
-                        href={settings()}
-                        className={cn(softButtonClassName, 'h-11')}
-                    >
-                        <Settings aria-hidden="true" className="size-4.5" />
-                        Impostazioni account
-                    </Link>
-                </div>
-            </section>
-
-            <div className="grid grid-cols-3 gap-2.5">
-                {tiles.map((tile) => (
-                    <Link
-                        key={tile.label}
-                        href={tile.href}
-                        className="flex flex-col gap-1.5 rounded-[22px] bg-card p-4.5 outline-none hover:bg-[#232323] focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                    >
-                        <span className="text-[13px] text-muted-foreground">
-                            {tile.label}
-                        </span>
-                        <span className="text-[28px] leading-8 font-bold tabular-nums">
-                            {tile.value}
-                        </span>
-                    </Link>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-Profile.layout = { section: 'profile', fill: true };
+Profile.layout = { section: 'profile' };

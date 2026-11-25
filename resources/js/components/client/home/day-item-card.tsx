@@ -1,8 +1,14 @@
 import { Link } from '@inertiajs/react';
 import { ChevronDown, MapPin, MessageCircle, Navigation } from 'lucide-react';
 import { useId } from 'react';
+import {
+    AreaBadge,
+    areaButtonClassName,
+    openCardClassName,
+    roundButtonClassName,
+} from '@/components/mp/area-bits';
+import type { BadgeTone } from '@/components/mp/area-bits';
 import { Initials } from '@/components/trainer/ui/bits';
-import { roundOutlineClassName } from '@/components/trainer/ui/styles';
 import { addDays, romeParts } from '@/lib/calendar';
 import { formatDayLong, formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -16,6 +22,13 @@ type DayItemCardProps = {
 };
 
 type Badge = { label: string; tone: 'soon' | 'normal' | 'pending' | 'done' };
+
+const BADGE_TONES: Record<Badge['tone'], BadgeTone> = {
+    soon: 'solid',
+    normal: 'neutral',
+    pending: 'warning',
+    done: 'neutral',
+};
 
 /**
  * A session or an event of the chosen day in the client's "Home". Closed:
@@ -38,10 +51,8 @@ export default function DayItemCard({
     return (
         <article
             className={cn(
-                'flex flex-col gap-4 rounded-[26px] bg-card',
-                open
-                    ? 'p-4 shadow-[inset_0_0_0_2px_#42d7d9]'
-                    : 'px-4 py-3 shadow-[inset_0_0_0_1px_#2c2c2c]',
+                'flex flex-col gap-4.5 rounded-[24px] bg-card',
+                open ? cn('p-4', openCardClassName) : 'py-3 pr-3 pl-4',
                 badge.tone === 'done' && !open && 'text-muted-foreground',
             )}
         >
@@ -71,33 +82,24 @@ export default function DayItemCard({
                         {time} · {item.activity}
                     </span>
                 </span>
-                <span
-                    className={cn(
-                        'shrink-0 rounded-full px-3 py-1.5 text-[13px] leading-4.5 font-semibold whitespace-nowrap',
-                        badge.tone === 'soon' && 'bg-brand text-[#0a0a0a]',
-                        badge.tone === 'normal' &&
-                            'bg-secondary text-foreground',
-                        badge.tone === 'pending' &&
-                            'bg-secondary text-[#ff9230]',
-                        badge.tone === 'done' &&
-                            'bg-secondary text-muted-foreground',
-                    )}
-                >
+                <AreaBadge tone={BADGE_TONES[badge.tone]}>
                     {badge.label}
+                </AreaBadge>
+                <span className="flex size-10 shrink-0 items-center justify-center">
+                    <ChevronDown
+                        aria-hidden="true"
+                        className={cn(
+                            'size-5 text-muted-foreground transition-transform duration-150',
+                            open && 'rotate-180',
+                        )}
+                    />
                 </span>
-                <ChevronDown
-                    aria-hidden="true"
-                    className={cn(
-                        'size-5 shrink-0 text-muted-foreground transition-transform',
-                        open && 'rotate-180',
-                    )}
-                />
             </button>
 
             {open && (
                 <div id={panelId} className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-1">
-                        <span className="text-[28px] leading-8.5 font-bold tracking-[0.38px] text-foreground tabular-nums">
+                    <div className="flex flex-col gap-1.5">
+                        <span className="text-[28px] leading-8.5 font-bold tracking-[-0.01em] text-foreground tabular-nums">
                             {time}
                         </span>
                         <span className="flex items-center gap-1.5 text-[15px] leading-5 text-muted-foreground">
@@ -108,7 +110,7 @@ export default function DayItemCard({
                             {item.placeLabel}
                         </span>
                         {item.packageLabel && (
-                            <span className="mt-2 self-start rounded-full bg-brand-soft px-2.5 py-1 text-[13px] leading-4.5 font-semibold text-brand">
+                            <span className="mt-1 self-start rounded-full bg-brand-soft px-3 py-1.25 text-[13px] leading-4.5 font-semibold text-brand">
                                 {item.packageLabel}
                             </span>
                         )}
@@ -118,13 +120,13 @@ export default function DayItemCard({
                             </p>
                         )}
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex gap-2.5">
                         {item.messageHref && (
                             <Link
                                 href={item.messageHref}
                                 aria-label={`Scrivi a ${firstName}`}
                                 title="Scrivi"
-                                className={cn(roundOutlineClassName, 'size-13')}
+                                className={roundButtonClassName}
                             >
                                 <MessageCircle
                                     aria-hidden="true"
@@ -139,7 +141,7 @@ export default function DayItemCard({
                                 rel="noopener noreferrer"
                                 aria-label={`Indicazioni per ${item.placeLabel}`}
                                 title="Indicazioni"
-                                className={cn(roundOutlineClassName, 'size-13')}
+                                className={roundButtonClassName}
                             >
                                 <Navigation
                                     aria-hidden="true"
@@ -149,7 +151,10 @@ export default function DayItemCard({
                         )}
                         <Link
                             href={item.detailsHref}
-                            className="inline-flex h-13 flex-1 items-center justify-center rounded-full bg-brand px-5 text-[17px] font-semibold tracking-[-0.43px] text-[#0a0a0a] outline-none hover:bg-[#7fe6e7] focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                            className={cn(
+                                areaButtonClassName('primary', 'lg'),
+                                'flex-1',
+                            )}
                         >
                             Vedi dettagli
                         </Link>
@@ -170,7 +175,7 @@ function badgeOf(item: ClientDayItem, now: Date): Badge {
     }
 
     if (item.status === 'pending') {
-        return { label: 'In attesa', tone: 'pending' };
+        return { label: 'Da confermare', tone: 'pending' };
     }
 
     if (end <= now) {

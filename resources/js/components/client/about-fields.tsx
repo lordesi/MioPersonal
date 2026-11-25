@@ -6,7 +6,7 @@ import type {
     PreferencesData,
 } from '@/components/client/preferences-fields';
 import { Field, pillClassName } from '@/components/client/profile-field';
-import NumberedSection from '@/components/trainer/area/numbered-section';
+import AccordionSection from '@/components/client/accordion-section';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -69,7 +69,6 @@ const WEIGHT_MAX_KG = 250;
 const NONE = 'none';
 
 type AboutFieldsProps = {
-    step: number;
     data: PreferencesData;
     setData: <K extends keyof PreferencesData>(
         key: K,
@@ -84,7 +83,6 @@ type AboutFieldsProps = {
  * only with their own consent, and unticking it deletes them.
  */
 export default function AboutFields({
-    step,
     data,
     setData,
     birthYears,
@@ -104,18 +102,18 @@ export default function AboutFields({
     }
 
     return (
-        <NumberedSection
-            step={step}
-            title={
-                <>
-                    Su di te{' '}
-                    <span className="text-sm font-medium text-muted-foreground">
-                        · facoltativo
-                    </span>
-                </>
+        <AccordionSection
+            title="Su di te"
+            summary={
+                fitnessLevels.find(
+                    (level) => level.value === data.fitness_level,
+                )?.label ?? 'Facoltativo'
             }
-            description="Lo leggono solo i trainer a cui chiedi una seduta: li aiuta a prepararla su misura per te."
         >
+            <p className="text-[15px] leading-5 text-muted-foreground">
+                Lo leggono solo i trainer a cui chiedi una seduta: li aiuta a
+                prepararla su misura per te.
+            </p>
             <div className="grid gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-2">
                     <Label htmlFor={birthYearId} className="font-semibold">
@@ -339,7 +337,7 @@ export default function AboutFields({
                     </div>
                 )}
             </div>
-        </NumberedSection>
+        </AccordionSection>
     );
 }
 

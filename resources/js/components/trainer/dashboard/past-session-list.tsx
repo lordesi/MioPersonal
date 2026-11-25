@@ -1,8 +1,7 @@
 import { Link } from '@inertiajs/react';
-import { Clock, Lock } from 'lucide-react';
-import UserAvatar from '@/components/shared/user-avatar';
-import PackageCells from '@/components/trainer/dashboard/package-cells';
+import { Lock } from 'lucide-react';
 import SessionOutcomeToggle from '@/components/trainer/dashboard/session-outcome-toggle';
+import { Initials } from '@/components/trainer/ui/bits';
 import { hoursAmountLabel, romeParts, sessionsLabel } from '@/lib/calendar';
 import {
     addHours,
@@ -29,19 +28,15 @@ export default function PastSessionList({
         const hours = daySessions.reduce((sum, s) => sum + s.hours, 0);
 
         return (
-            <section
-                key={date}
-                aria-label={label}
-                className="flex flex-col gap-2"
-            >
-                <h2 className="mt-1 flex items-baseline justify-between gap-2 px-1 text-sm font-bold">
+            <section key={date} aria-label={label} className="flex flex-col">
+                <h2 className="flex items-baseline justify-between gap-2 pt-3 text-xs font-semibold tracking-[0.02em] text-muted-foreground uppercase">
                     <span>{label}</span>
-                    <span className="text-[13px] font-medium text-muted-foreground tabular-nums">
+                    <span className="normal-case tabular-nums">
                         {sessionsLabel(daySessions.length)} ·{' '}
                         {hoursAmountLabel(hours)}
                     </span>
                 </h2>
-                <ul className="overflow-hidden rounded-[20px] border bg-card">
+                <ul>
                     {daySessions.map((session) => (
                         <PastSessionRow key={session.id} session={session} />
                     ))}
@@ -52,102 +47,70 @@ export default function PastSessionList({
 }
 
 /**
- * Time, client, service and package, then "Effettuata | Saltata" while it can
- * be changed. A missed one has the time greyed out and struck through.
+ * The time, the client, the service and the package, then "Fatta | Saltata"
+ * while it can be changed. A missed one has the time struck through.
  */
 function PastSessionRow({ session }: { session: TrainerPastSession }) {
     const missed = session.noShow;
+    const position = session.package
+        ? ` · seduta ${session.package.position} di ${session.package.total}`
+        : '';
 
     return (
-        <li className="flex flex-wrap items-center gap-x-4.5 gap-y-3.5 border-t px-4.5 py-4 first:border-t-0 hover:bg-muted/40">
+        <li className="flex flex-wrap items-center gap-x-3.5 gap-y-2.5 border-b border-separator py-3.5">
             <span
                 className={cn(
-                    'flex h-14 w-16 flex-none flex-col items-center justify-center rounded-[14px] tabular-nums',
-                    missed
-                        ? 'bg-secondary text-muted-foreground line-through'
-                        : 'bg-primary text-primary-foreground',
+                    'flex w-12 flex-none flex-col tabular-nums',
+                    missed && 'text-muted-foreground line-through',
                 )}
             >
-                <span className="text-[15px] leading-5 font-bold">
+                <b className="text-base leading-5 font-bold">
                     {formatTime(session.start)}
-                </span>
-                <span
-                    className={cn(
-                        'text-xs leading-4',
-                        missed
-                            ? 'text-muted-foreground'
-                            : 'text-primary-foreground/60',
-                    )}
-                >
+                </b>
+                <span className="text-[13px] leading-4.5 text-muted-foreground">
                     {formatTime(addHours(session.start, session.hours))}
                 </span>
             </span>
 
-            <span className="flex min-w-0 flex-[1_1_200px] items-center gap-3">
-                <UserAvatar
-                    name={session.clientName}
-                    className="size-9.5 text-xs font-bold"
-                />
-                <span className="flex min-w-0 flex-1 flex-col gap-1.25">
-                    <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                        <span className="text-[15px] leading-5.5 font-semibold">
-                            {session.clientId === null ? (
-                                session.clientName
-                            ) : (
-                                <Link
-                                    href={clients({
-                                        query: { cliente: session.clientId },
-                                    })}
-                                    className="hover:underline"
-                                >
-                                    {session.clientName}
-                                </Link>
-                            )}
-                        </span>
-                        <span
-                            className={cn(
-                                'inline-flex h-5.5 items-center rounded-full px-2 text-[11px] leading-3.5 font-bold',
-                                missed
-                                    ? 'border border-input text-muted-foreground'
-                                    : 'bg-secondary text-foreground',
-                            )}
-                        >
-                            {missed ? 'Saltata' : 'Effettuata'}
-                        </span>
-                    </span>
-                    <span className="text-[13px] leading-4.5 text-muted-foreground">
+            <span className="flex min-w-0 flex-[1_1_180px] items-center gap-3">
+                <Initials name={session.clientName} size={40} />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <b className="truncate text-base leading-5.5 font-semibold">
+                        {session.clientId === null ? (
+                            session.clientName
+                        ) : (
+                            <Link
+                                href={clients({
+                                    query: { cliente: session.clientId },
+                                })}
+                                className="outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                {session.clientName}
+                            </Link>
+                        )}
+                    </b>
+                    <span className="truncate text-sm leading-5 text-muted-foreground">
                         {session.serviceName}
+                        {position}
                     </span>
-                    {/* Above 20 the cells would be too thin (as in PackageProgress). */}
-                    {session.package && session.package.total <= 20 && (
-                        <PackageCells
-                            position={session.package.position}
-                            total={session.package.total}
-                            missed={missed}
-                            className="max-w-50"
-                        />
-                    )}
                 </span>
             </span>
 
-            <span className="ml-auto flex flex-none flex-col items-end gap-1.5">
-                {session.canChangeNoShow && (
-                    <SessionOutcomeToggle session={session} className="w-59" />
-                )}
-                <span className="inline-flex items-center gap-1.5 text-xs leading-4 text-muted-foreground tabular-nums">
-                    {session.canChangeNoShow ? (
-                        <>
-                            <Clock aria-hidden="true" className="size-3" />
-                            Modificabile fino a{' '}
+            <span className="ml-auto flex flex-none flex-col items-end gap-1">
+                {session.canChangeNoShow ? (
+                    <>
+                        <SessionOutcomeToggle session={session} />
+                        <span className="text-[11px] leading-3.5 text-muted-foreground tabular-nums">
+                            Fino a{' '}
                             {formatDayShort(session.noShowUntil).toLowerCase()}
-                        </>
-                    ) : (
-                        <>
-                            <Lock aria-hidden="true" className="size-3" />
-                            Non più modificabile
-                        </>
-                    )}
-                </span>
+                        </span>
+                    </>
+                ) : (
+                    <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-card px-3 text-[13px] font-semibold text-muted-foreground">
+                        <Lock aria-hidden="true" className="size-3" />
+                        {missed ? 'Saltata' : 'Fatta'}
+                    </span>
+                )}
             </span>
         </li>
     );

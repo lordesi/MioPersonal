@@ -40,7 +40,7 @@ export default function PendingBookingCard({
               : 'pending';
 
     return (
-        <article className="flex flex-col gap-3 rounded-xl border bg-card p-3.5 md:p-5">
+        <article className="flex flex-col gap-3 rounded-[24px] bg-card p-4 md:p-5">
             <TrainerRow
                 name={booking.trainerName}
                 href={booking.trainerHref}
