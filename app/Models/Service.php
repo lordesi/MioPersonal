@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $price_per_hour
  * @property bool $fixed_duration
  * @property string|null $note
+ * @property list<string>|null $included
  * @property bool $online_only
  * @property int|null $package_sessions
  * @property int $sort
@@ -27,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'name', 'kind', 'minutes', 'price_cents', 'group_prices', 'price_per_hour', 'fixed_duration', 'note',
-    'online_only', 'package_sessions', 'sort', 'is_active',
+    'online_only', 'package_sessions', 'sort', 'is_active', 'included',
 ])]
 class Service extends Model
 {
@@ -46,6 +47,7 @@ class Service extends Model
             'minutes' => 'integer',
             'price_cents' => 'integer',
             'group_prices' => 'array',
+            'included' => 'array',
             'price_per_hour' => 'boolean',
             'fixed_duration' => 'boolean',
             'online_only' => 'boolean',

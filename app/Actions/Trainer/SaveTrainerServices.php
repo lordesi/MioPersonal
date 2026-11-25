@@ -110,8 +110,8 @@ class SaveTrainerServices
      * The kinds of session of the form, with their prices by duration.
      * Without separate online prices, `online` is empty.
      *
-     * @param  list<array{name: string, note?: string|null, prices: list<array{minutes: int|string, price_cents: int|string}>, online_prices?: list<array{minutes: int|string, price_cents: int|string}>|null, online_note?: string|null, group_prices?: list<array{people: int|string, minutes: int|string, price_cents: int|string}>|null}>  $sessions
-     * @return list<array{name: string, note: string|null, prices: array<int, int>, online: array<int, int>, online_note: string|null, groups: array<int, array<int, int>>}>
+     * @param  list<array{name: string, note?: string|null, included?: list<string>|null, prices: list<array{minutes: int|string, price_cents: int|string}>, online_prices?: list<array{minutes: int|string, price_cents: int|string}>|null, online_note?: string|null, group_prices?: list<array{people: int|string, minutes: int|string, price_cents: int|string}>|null}>  $sessions
+     * @return list<array{name: string, note: string|null, included: list<string>|null, prices: array<int, int>, online: array<int, int>, online_note: string|null, groups: array<int, array<int, int>>}>
      */
     private static function sessionTypes(array $sessions, bool $ownOnlinePrices): array
     {
@@ -120,6 +120,8 @@ class SaveTrainerServices
         return array_map(fn (array $session) => [
             'name' => trim($session['name']),
             'note' => $note($session['note'] ?? null),
+            // "Cosa è incluso": the lines written, without the empty ones.
+            'included' => array_values(array_filter(array_map(fn (string $line) => trim($line), $session['included'] ?? []), fn (string $line) => $line !== '')) ?: null,
             'prices' => self::pricesByMinutes($session['prices']),
             'online' => $ownOnlinePrices && filled($session['online_prices'] ?? null)
                 ? self::pricesByMinutes($session['online_prices'])
@@ -167,7 +169,7 @@ class SaveTrainerServices
      * @param  array<string, mixed>  $data
      *                                      The rows of a kind of session in person also keep its prices for more
      *                                      people ("Invita un amico"), as {"2": 7000, "3": 9000}.
-     * @param  list<array{name: string, note: string|null, prices: array<int, int>, online: array<int, int>, online_note: string|null, groups: array<int, array<int, int>>}>  $sessions
+     * @param  list<array{name: string, note: string|null, included: list<string>|null, prices: array<int, int>, online: array<int, int>, online_note: string|null, groups: array<int, array<int, int>>}>  $sessions
      */
     private function saveRows(TrainerProfile $profile, array $data, array $sessions): void
     {
@@ -193,12 +195,12 @@ class SaveTrainerServices
                 $rows[] = [
                     'kind' => 'session', 'name' => $session['name'], 'minutes' => $minutes, 'price_cents' => $cents,
                     'group_prices' => $session['groups'][$minutes] ?? null,
-                    'fixed_duration' => false, 'note' => $session['note'],
+                    'fixed_duration' => false, 'note' => $session['note'], 'included' => $session['included'],
                 ];
             }
 
             foreach ($session['online'] as $minutes => $cents) {
-                $rows[] = ['kind' => 'session', 'name' => $session['name'], 'minutes' => $minutes, 'price_cents' => $cents, 'fixed_duration' => false, 'note' => $session['online_note'], 'online_only' => true];
+                $rows[] = ['kind' => 'session', 'name' => $session['name'], 'minutes' => $minutes, 'price_cents' => $cents, 'fixed_duration' => false, 'note' => $session['online_note'], 'included' => $session['included'], 'online_only' => true];
             }
         }
 
@@ -242,6 +244,7 @@ class SaveTrainerServices
                 'online_only' => false,
                 'package_sessions' => null,
                 'note' => null,
+                'included' => null,
                 ...$row,
                 'sort' => $index,
                 'is_active' => true,

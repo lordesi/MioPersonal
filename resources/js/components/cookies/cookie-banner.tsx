@@ -120,7 +120,7 @@ export default function CookieBanner({
                             type="button"
                             onClick={onAccept}
                             disabled={disabled}
-                            className="btn-brand h-12.5 text-[17px] tracking-[-0.43px]"
+                            className="flex h-14 items-center justify-center gap-2 rounded-full bg-brand text-[17px] font-semibold tracking-[-0.43px] text-black outline-none hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-60"
                         >
                             Accetta tutti
                         </button>
@@ -128,7 +128,7 @@ export default function CookieBanner({
                             type="button"
                             onClick={onManage}
                             disabled={disabled}
-                            className="flex h-12.5 items-center justify-center rounded-full text-[17px] font-semibold tracking-[-0.43px] shadow-[inset_0_0_0_1px_var(--field)] outline-none hover:bg-foreground/5 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-60 md:bg-[rgba(10,10,10,0.55)] md:shadow-[inset_0_0_0_1.5px_var(--foreground)] md:hover:bg-foreground/10"
+                            className="flex h-14 items-center justify-center rounded-full border border-field text-[17px] font-semibold tracking-[-0.43px] outline-none hover:bg-foreground/6 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-60"
                         >
                             Solo quelli necessari
                         </button>

@@ -7,7 +7,6 @@ use App\Enums\GymPlanPeriod;
 use App\Models\City;
 use App\Models\GymProfile;
 use App\Models\GymPromotion;
-use App\Models\TrainerProfile;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Database\Seeders\CatalogSeeder;
@@ -183,16 +182,5 @@ class GymProfileTest extends TestCase
             ->assertSee(route('gyms.search'), false)
             ->assertSee(route('gyms.search', 'milano'), false)
             ->assertSee(route('gyms.show', $gym->slug), false);
-    }
-
-    public function test_the_home_has_the_gyms_search_options()
-    {
-        TrainerProfile::factory()->approved()->create();
-
-        $this->get(route('home'))
-            ->assertInertia(fn (Assert $page) => $page
-                ->has('amenities', count(GymAmenity::cases()))
-                ->whereType('cities.0.lat', 'double')
-            );
     }
 }

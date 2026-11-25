@@ -60,13 +60,13 @@ export const preferredTimes: Option[] = [
 ];
 
 /** As in ClientPreferencesRequest: from 20 € to 100 € ("Nessun limite"), steps of 5 €. */
-const BUDGET_MIN_CENTS = 2000;
-const BUDGET_MAX_CENTS = 10000;
-const BUDGET_STEP_CENTS = 500;
+export const BUDGET_MIN_CENTS = 2000;
+export const BUDGET_MAX_CENTS = 10000;
+export const BUDGET_STEP_CENTS = 500;
 /** Where the slider starts while no budget is chosen. */
-const BUDGET_START_CENTS = 4500;
+export const BUDGET_START_CENTS = 4500;
 /** The scale under the slider. */
-const BUDGET_TICKS_CENTS = [2000, 4000, 6000, 8000, 10000];
+export const BUDGET_TICKS_CENTS = [2000, 4000, 6000, 8000, 10000];
 
 /** As in CompleteProfileController::updatePhoto (max:5120). */
 const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
@@ -557,10 +557,13 @@ function BudgetField({
  * "Carica una foto": the file input is hidden, the button opens it. The photo
  * is saved right away, then the new auth.user.avatar comes back with the page.
  */
-function PhotoUpload({ name, src }: { name: string; src?: string | null }) {
-    const getInitials = useInitials();
+/**
+ * Choose, crop and save the profile photo (CompleteProfileController): the
+ * file input, "Ritaglia la foto" and the upload; also used by the steps of
+ * "Completa il tuo profilo".
+ */
+export function usePhotoUpload() {
     const inputRef = useRef<HTMLInputElement>(null);
-    const errorId = useId();
     const [uploading, setUploading] = useState(false);
     const [removing, setRemoving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -635,6 +638,34 @@ function PhotoUpload({ name, src }: { name: string; src?: string | null }) {
             onFinish: () => setRemoving(false),
         });
     };
+
+    return {
+        inputRef,
+        choose,
+        cropSrc,
+        closeCrop,
+        upload,
+        remove,
+        uploading,
+        removing,
+        error,
+    };
+}
+
+function PhotoUpload({ name, src }: { name: string; src?: string | null }) {
+    const getInitials = useInitials();
+    const errorId = useId();
+    const {
+        inputRef,
+        choose,
+        cropSrc,
+        closeCrop,
+        upload,
+        remove,
+        uploading,
+        removing,
+        error,
+    } = usePhotoUpload();
 
     let uploadLabel = 'Carica una foto';
 

@@ -9,7 +9,6 @@ import {
     placeOptions,
     weeklyHours,
 } from '@/components/onboarding/trainer/draft';
-import { rangeLabel } from '@/components/onboarding/trainer/step-hours';
 import { shortDuration } from '@/components/trainer/services/pricing';
 import { Checkbox } from '@/components/ui/checkbox';
 import { darkCheckboxClassName } from '@/lib/dark-form';
@@ -32,17 +31,17 @@ type StepReviewProps = {
     onConfirmedChange: (confirmed: boolean) => void;
     /** "Modifica": opens that step. */
     onEdit: (step: number) => void;
+    /** A photo chosen or already saved. */
+    hasPhoto: boolean;
     error?: string;
 };
-
-const shortDays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 
 const plural = (n: number, one: string, many: string) =>
     `${n} ${n === 1 ? one : many}`;
 
 /**
- * Step 7 "Riepilogo": every step in a few lines with its "Modifica", then
- * the confirmation that the information is true.
+ * Step 9 "Riepilogo" (design "Controlla e invia"): every step in one line
+ * with its "Modifica", then the confirmation that the information is true.
  */
 export default function StepReview({
     draft,
@@ -54,6 +53,7 @@ export default function StepReview({
     confirmed,
     onConfirmedChange,
     onEdit,
+    hasPhoto,
     error,
 }: StepReviewProps) {
     const confirmId = useId();
@@ -80,219 +80,117 @@ export default function StepReview({
         (item) => item.title.trim() !== '',
     );
 
+    const sessions = draft.pricing.sessions.flatMap((session) =>
+        session.prices.map(
+            (price) =>
+                `${shortDuration(price.minutes)} ${price.priceCents !== null ? formatPrice(price.priceCents) : '—'}`,
+        ),
+    );
+
     return (
-        <div className="flex flex-col gap-8 md:gap-10">
-            <ul className="flex flex-col rounded-[26px] bg-card px-4 md:rounded-[20px] md:bg-transparent md:px-0">
+        <div className="flex flex-col gap-6">
+            <ul className="flex flex-col">
                 {!editing && (
                     <Row title="Account" onEdit={() => onEdit(1)}>
-                        <Main>{join([name, email])}</Main>
-                        <Sub>Termini per i trainer accettati</Sub>
+                        {join([name, email])}
                     </Row>
                 )}
-                <Row title="Profilo pubblico" onEdit={() => onEdit(2)}>
-                    <Main>{draft.headline}</Main>
-                    <Sub>
-                        {join([
-                            'Foto, presentazione',
-                            experience && `${experience} di esperienza`,
-                            draft.instagram.trim() &&
-                                `@${draft.instagram.trim().replace(/^@/, '')}`,
-                        ])}
-                    </Sub>
+                <Row title="Foto profilo" onEdit={() => onEdit(2)}>
+                    {hasPhoto ? 'Caricata' : 'Da aggiungere'}
                 </Row>
-                <Row title="Discipline e luoghi" onEdit={() => onEdit(3)}>
-                    <ul className="flex flex-wrap gap-1.5">
-                        {draft.disciplines.map((slug) => (
-                            <li
-                                key={slug}
-                                className="inline-flex h-8 items-center rounded-full px-3 text-[13px] font-semibold text-brand shadow-[inset_0_0_0_1px_var(--brand)]"
-                            >
-                                {labelOf(disciplines, slug)}
-                            </li>
-                        ))}
-                    </ul>
-                    <Sub>Obiettivi: {goalNames.join(', ')}</Sub>
-                    <Sub>
-                        {join([placeNames.join(', '), cityNames.join(', ')])}
-                    </Sub>
+                <Row title="Presentazione" onEdit={() => onEdit(3)}>
+                    {join([draft.headline.trim(), experience])}
                 </Row>
-                <Row title="Servizi e prezzi" onEdit={() => onEdit(4)}>
-                    <Main>
-                        {minPrice !== null ? (
-                            <>
-                                a partire da{' '}
-                                <strong className="text-brand">
-                                    {formatPrice(minPrice)}
-                                </strong>{' '}
-                                / seduta
-                            </>
-                        ) : (
-                            'Prezzi da completare'
-                        )}
-                    </Main>
-                    {draft.pricing.sessions.map((session, index) => (
-                        <Sub key={index}>
-                            {session.name.trim() || 'Tipo di seduta'}:{' '}
-                            {session.prices
-                                .map(
-                                    (price) =>
-                                        `${shortDuration(price.minutes)} ${price.priceCents !== null ? formatPrice(price.priceCents) : '—'}`,
-                                )
-                                .join(' · ')}
-                            {session.maxPeople > 1 &&
-                                ` · fino a ${session.maxPeople} persone`}
-                        </Sub>
-                    ))}
-                    {(first.enabled || draft.pricing.packages.length > 0) && (
-                        <Sub>
-                            {join([
-                                first.enabled &&
-                                    (first.priceCents === 0
-                                        ? 'Prima seduta gratuita'
-                                        : `Prima seduta a ${formatPrice(first.priceCents ?? 0)}`),
-                                draft.pricing.packages.length > 0 &&
-                                    plural(
-                                        draft.pricing.packages.length,
-                                        'pacchetto',
-                                        'pacchetti',
-                                    ),
-                            ])}
-                        </Sub>
-                    )}
+                <Row title="Discipline" onEdit={() => onEdit(4)}>
+                    {join([
+                        draft.disciplines
+                            .map((slug) => labelOf(disciplines, slug))
+                            .join(', '),
+                        goalNames.length > 0 &&
+                            `Obiettivi: ${goalNames.join(', ')}`,
+                    ])}
                 </Row>
-                <Row title="Orari e regole" onEdit={() => onEdit(5)}>
-                    <Main>
-                        {join([
-                            `${formatHours(weeklyHours(draft.hours))} a settimana`,
-                            `preavviso ${formatHours(draft.rules.noticeHours)}`,
-                        ])}
-                    </Main>
-                    <dl className="grid grid-cols-[3rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-[13px] leading-4.5">
-                        {draft.hours.map((hours, day) =>
-                            hours.length > 0 ? (
-                                <div key={day} className="contents">
-                                    <dt className="text-muted-foreground">
-                                        {shortDays[day]}
-                                    </dt>
-                                    <dd className="tabular-nums">
-                                        {hours.map(rangeLabel).join(' · ')}
-                                    </dd>
-                                </div>
-                            ) : null,
-                        )}
-                    </dl>
-                    <Sub>
-                        {draft.autoConfirm
-                            ? 'Conferma automatica'
-                            : 'Conferma manuale'}
-                    </Sub>
+                <Row title="Dove alleni" onEdit={() => onEdit(5)}>
+                    {join([placeNames.join(', '), cityNames.join(', ')])}
                 </Row>
-                <Row
-                    title="Certificazioni"
-                    optional
-                    onEdit={() => onEdit(6)}
-                    editLabel={
-                        certifications.length === 0 ? 'Aggiungi' : undefined
-                    }
-                >
-                    <Main>
-                        {certifications.length === 0
-                            ? 'Nessuna certificazione'
-                            : plural(
-                                  certifications.length,
-                                  'certificazione',
-                                  'certificazioni',
-                              )}
-                    </Main>
-                    <Sub>
-                        {certifications.length === 0
-                            ? 'Puoi aggiungerle anche dopo, da Modifica profilo.'
-                            : certifications
-                                  .map((item) => item.title)
-                                  .join(' · ')}
-                    </Sub>
+                <Row title="Servizi e prezzi" onEdit={() => onEdit(6)}>
+                    {join([
+                        sessions.length > 0
+                            ? sessions.join(' · ')
+                            : minPrice !== null
+                              ? `da ${formatPrice(minPrice)}`
+                              : 'Prezzi da completare',
+                        first.enabled &&
+                            (first.priceCents === 0
+                                ? 'prima seduta gratuita'
+                                : `prima seduta ${formatPrice(first.priceCents ?? 0)}`),
+                        draft.pricing.packages.length > 0 &&
+                            plural(
+                                draft.pricing.packages.length,
+                                'pacchetto',
+                                'pacchetti',
+                            ),
+                    ])}
+                </Row>
+                <Row title="Orari" onEdit={() => onEdit(7)}>
+                    {join([
+                        `${formatHours(weeklyHours(draft.hours))} a settimana`,
+                        `preavviso ${formatHours(draft.rules.noticeHours)}`,
+                        draft.autoConfirm && 'conferma automatica',
+                    ])}
+                </Row>
+                <Row title="Certificazioni" onEdit={() => onEdit(8)}>
+                    {certifications.length === 0
+                        ? 'Nessuna · puoi aggiungerle dopo'
+                        : certifications.map((item) => item.title).join(' · ')}
                 </Row>
             </ul>
 
-            <section className="flex flex-col gap-1 rounded-[26px] bg-card p-4 md:rounded-[20px] md:bg-transparent md:p-5 md:shadow-[inset_0_0_0_1px_var(--border)]">
-                <label
-                    htmlFor={confirmId}
-                    className="flex min-h-11 cursor-pointer items-center gap-3 text-[17px] leading-5.5 font-semibold"
-                >
-                    <Checkbox
-                        id={confirmId}
-                        checked={confirmed}
-                        onCheckedChange={(checked) =>
-                            onConfirmedChange(checked === true)
-                        }
-                        aria-describedby={`${confirmId}-note`}
-                        className={darkCheckboxClassName}
-                    />
-                    Confermo che le informazioni e le certificazioni sono vere.
-                </label>
-                <p
-                    id={`${confirmId}-note`}
-                    className="pl-8.5 text-[13px] leading-4.5 text-muted-foreground"
-                >
-                    Profili con dati non veritieri vengono rifiutati.
-                </p>
-                <DarkError message={error} />
-            </section>
+            <label
+                htmlFor={confirmId}
+                className="flex min-h-14 cursor-pointer items-center gap-3.5 py-2 text-[15px] leading-5.25 font-medium"
+            >
+                <Checkbox
+                    id={confirmId}
+                    checked={confirmed}
+                    onCheckedChange={(checked) =>
+                        onConfirmedChange(checked === true)
+                    }
+                    className={darkCheckboxClassName}
+                />
+                Confermo che le informazioni e le certificazioni sono vere.
+            </label>
+            <DarkError message={error} />
         </div>
     );
 }
 
-/** A step of the summary: its name, what was written and "Modifica". */
+/** A step of the summary: its name, one line and "Modifica". */
 function Row({
     title,
-    optional = false,
     onEdit,
-    editLabel = 'Modifica',
     children,
 }: {
     title: string;
-    optional?: boolean;
     onEdit: () => void;
-    editLabel?: string;
     children: ReactNode;
 }) {
     return (
-        <li className="flex items-start justify-between gap-4 border-b border-separator py-4 last:border-b-0 md:border-border md:py-5">
-            <div className="flex min-w-0 flex-col gap-1.5 md:grid md:flex-1 md:grid-cols-[12rem_minmax(0,1fr)] md:gap-x-6">
-                <h2 className="flex items-center gap-2 text-[13px] leading-4.5 font-semibold tracking-[0.6px] text-muted-foreground uppercase md:pt-0.5">
-                    {title}
-                    {optional && (
-                        <span className="rounded-full px-2 py-0.5 text-[11px] tracking-normal normal-case shadow-[inset_0_0_0_1px_var(--field)]">
-                            Facoltativo
-                        </span>
-                    )}
-                </h2>
-                <div className="flex min-w-0 flex-col gap-1.5">{children}</div>
-            </div>
+        <li className="flex items-center gap-3.5 border-b border-separator py-4">
+            <span className="flex min-w-0 flex-1 flex-col gap-0.75">
+                <span className="text-[17px] font-semibold">{title}</span>
+                <span className="text-[15px] leading-5 break-words text-muted-foreground">
+                    {children}
+                </span>
+            </span>
             <button
                 type="button"
                 onClick={onEdit}
-                aria-label={`${editLabel}: ${title}`}
-                className={cn(shellLinkClassName, '-my-2.5 shrink-0')}
+                aria-label={`Modifica: ${title}`}
+                className={cn(shellLinkClassName, 'shrink-0')}
             >
-                {editLabel}
+                Modifica
             </button>
         </li>
-    );
-}
-
-function Main({ children }: { children: ReactNode }) {
-    return (
-        <p className="text-[17px] leading-5.5 font-semibold break-words">
-            {children}
-        </p>
-    );
-}
-
-function Sub({ children }: { children: ReactNode }) {
-    return (
-        <p className="text-[13px] leading-4.5 text-muted-foreground">
-            {children}
-        </p>
     );
 }

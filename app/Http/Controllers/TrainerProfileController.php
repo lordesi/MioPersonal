@@ -356,7 +356,7 @@ class TrainerProfileController extends Controller
      * A client with a package of this trainer finds it first, "Il tuo
      * pacchetto": its sessions are already paid.
      *
-     * @return list<array{id: int, packageId: int|null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool, repeatable: bool, sessions: int|null}>
+     * @return list<array{id: int, packageId: int|null, name: string, durationLabel: string, note: string, included: list<string>, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool, repeatable: bool, sessions: int|null}>
      */
     private function services(TrainerProfile $profile, ?User $viewer): array
     {
@@ -367,7 +367,7 @@ class TrainerProfileController extends Controller
      * The viewer's bought packages with sessions still to book. The id is
      * negative, so it never matches the id of a service.
      *
-     * @return list<array{id: int, packageId: int, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool, repeatable: bool, sessions: int|null}>
+     * @return list<array{id: int, packageId: int, name: string, durationLabel: string, note: string, included: list<string>, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool, repeatable: bool, sessions: int|null}>
      */
     private function packages(TrainerProfile $profile, ?User $viewer): array
     {
@@ -391,6 +391,7 @@ class TrainerProfileController extends Controller
                     'name' => 'Il tuo pacchetto',
                     'durationLabel' => ($remaining === 1 ? '1 seduta rimasta' : "{$remaining} sedute rimaste").' · '.self::minutesLabel($package->minutes),
                     'note' => $package->name,
+                    'included' => [],
                     'priceCents' => 0,
                     'options' => [['serviceId' => -$package->id, 'minutes' => $package->minutes, 'priceCents' => 0, 'groupPrices' => []]],
                     'mostBooked' => false,
@@ -403,7 +404,7 @@ class TrainerProfileController extends Controller
     }
 
     /**
-     * @return list<array{id: int, packageId: null, name: string, durationLabel: string, note: string, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool, repeatable: bool, sessions: int|null}>
+     * @return list<array{id: int, packageId: null, name: string, durationLabel: string, note: string, included: list<string>, priceCents: int, options: list<array{serviceId: int, minutes: int, priceCents: int, groupPrices: list<array{people: int, priceCents: int}>}>, mostBooked: bool, repeatable: bool, sessions: int|null}>
      */
     private function bookableServices(TrainerProfile $profile, ?User $viewer): array
     {
@@ -449,6 +450,8 @@ class TrainerProfileController extends Controller
                 'name' => $first->displayName(),
                 'durationLabel' => $this->durationLabel($first, $longest),
                 'note' => $first->note ?? '',
+                // "Cosa otterrai": what the trainer wrote, without empty lines.
+                'included' => array_values(array_filter(array_map('strval', $first->included ?? []), fn (string $line) => trim($line) !== '')),
                 // The lowest price: "da 25 €" when the price depends on the duration.
                 'priceCents' => min($first->price_cents, ...array_column($options, 'priceCents')),
                 'options' => $options,

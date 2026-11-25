@@ -228,7 +228,7 @@ export default function ContactForm({
                                 }
                                 aria-describedby={describedBy}
                                 aria-invalid={!!errors.message}
-                                className="min-h-36 resize-y rounded-[14px] bg-card px-4 py-3.5 text-[17px] leading-5.5 md:min-h-42 md:text-[17px]"
+                                className="min-h-36 resize-y rounded-[14px] border-input bg-card px-4 py-3.5 text-[17px] leading-5.5 md:min-h-42 md:text-[17px]"
                             />
                         )}
                     </FormField>

@@ -262,12 +262,6 @@ export default function Privacy() {
             title="Informativa sulla privacy"
             intro="Come MioPersonal raccoglie e usa i tuoi dati quando cerchi un trainer, prenoti una seduta o ti iscrivi come personal trainer."
             updatedOn="23 novembre 2026"
-            summary={[
-                'Raccogliamo solo i dati che servono a farti trovare un trainer e a gestire le prenotazioni.',
-                'Email e telefono arrivano al trainer solo dopo che ha confermato una tua prenotazione.',
-                'Non vendiamo i tuoi dati e non li usiamo per pubblicità.',
-                'Puoi correggere i tuoi dati o eliminare l’account dalle Impostazioni, oppure scrivendoci.',
-            ]}
             sections={sections}
         />
     );

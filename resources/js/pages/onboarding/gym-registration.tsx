@@ -405,13 +405,8 @@ export default function GymRegistration({
                 }}
             >
                 <DarkShell
-                    {...gymShell}
+                    steps={gymShell.steps}
                     step={step}
-                    reached={reached}
-                    firstStep={firstStep}
-                    onSelect={goTo}
-                    onBack={step > firstStep ? () => goTo(step - 1) : undefined}
-                    hero={guestStart}
                     title={titles[step]}
                     intro={
                         step === LAST_STEP ? (
@@ -425,14 +420,12 @@ export default function GymRegistration({
                     footer={
                         <ShellFooter
                             back={back}
-                            status={
-                                !canContinue[step] ? missing[step] : undefined
-                            }
-                            noteAbove={
-                                step === 3 ? servicesSummary(draft) : undefined
-                            }
                             noteBelow={
-                                guestStart ? (
+                                !canContinue[step] ? (
+                                    missing[step]
+                                ) : step === 3 ? (
+                                    servicesSummary(draft)
+                                ) : guestStart ? (
                                     <>
                                         Hai già registrato la palestra?{' '}
                                         <Link
@@ -458,10 +451,6 @@ export default function GymRegistration({
                                 {step === LAST_STEP
                                     ? 'Invia per approvazione'
                                     : 'Continua'}
-                                <ArrowRight
-                                    aria-hidden="true"
-                                    className="size-4.5 md:hidden"
-                                />
                             </button>
                         </ShellFooter>
                     }

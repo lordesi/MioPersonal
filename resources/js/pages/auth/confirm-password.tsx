@@ -1,12 +1,15 @@
 import { Form, Head } from '@inertiajs/react';
+import { Lock } from 'lucide-react';
 import AuthPhotoShell, {
+    AuthFieldIcon,
+    authIconFieldClassName,
+    authToggleClassName,
     AuthIntro,
     authButtonClassName,
 } from '@/components/auth/auth-photo-shell';
 import FormField from '@/components/auth/form-field';
 import PasswordField from '@/components/auth/password-field';
 import { Spinner } from '@/components/ui/spinner';
-import { darkFieldClassName } from '@/lib/dark-form';
 import { store } from '@/routes/password/confirm';
 
 /** Fortify's "conferma la password" before a protected page (route password.confirm). */
@@ -48,7 +51,9 @@ export default function ConfirmPassword() {
                                         autoFocus
                                         autoComplete="current-password"
                                         placeholder="La tua password"
-                                        className={darkFieldClassName}
+                                        icon={<AuthFieldIcon icon={Lock} />}
+                                        className={authIconFieldClassName}
+                                        toggleClassName={authToggleClassName}
                                     />
                                 )}
                             </FormField>

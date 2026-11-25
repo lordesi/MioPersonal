@@ -21,7 +21,7 @@ export function Counter({ children }: { children: ReactNode }) {
     );
 }
 
-/** A dark card: #1c1c1c, round corners. */
+/** A group of fields: the design shows them on the page, a line under each. */
 export function DarkCard({
     children,
     className,
@@ -32,7 +32,7 @@ export function DarkCard({
     return (
         <div
             className={cn(
-                'flex flex-col gap-3 rounded-[26px] bg-card p-4 md:rounded-[20px] md:p-5',
+                'flex flex-col gap-3 border-b border-separator py-4',
                 className,
             )}
         >
@@ -43,9 +43,9 @@ export function DarkCard({
 
 /** A box with a dashed line: the optional extras ("Pacchetti"). */
 export const dashedBoxClassName =
-    'flex flex-col gap-3 rounded-[20px] border border-dashed border-border p-4 md:p-5';
+    'flex flex-col gap-3 border-b border-separator py-4';
 
-/** "+ Aggiungi un tipo di seduta": a round dashed button. */
+/** "+ Aggiungi un tipo di seduta": a grey outlined button (design "Aggiungi un'altra certificazione"). */
 export function AddButton({
     children,
     className,
@@ -56,7 +56,7 @@ export function AddButton({
             type="button"
             {...props}
             className={cn(
-                'flex h-12 w-full items-center justify-center gap-2 rounded-full border border-dashed border-field text-[15px] font-semibold outline-none hover:border-brand hover:text-brand focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40',
+                'flex h-11 items-center justify-center gap-2 self-start rounded-full border border-input px-5 text-[15px] font-semibold shadow-xs outline-none hover:bg-foreground/6 focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40',
                 className,
             )}
         >
@@ -94,7 +94,7 @@ export function DeleteButton({
     );
 }
 
-/** A price in euros in a round field, "€" on the right. */
+/** A price in euros, "€" on the right: the field of the design system. */
 export function EuroField({
     className,
     ...props
@@ -103,7 +103,7 @@ export function EuroField({
         <EuroInput
             {...props}
             className={cn(
-                'h-13 rounded-full border-0 bg-transparent pr-2 pl-3 shadow-[inset_0_0_0_1px_var(--field)] focus-within:border-0 focus-within:shadow-[inset_0_0_0_1.5px_var(--brand)] focus-within:ring-0 has-aria-invalid:shadow-[inset_0_0_0_1.5px_var(--destructive)] md:h-12.5 [&_input]:text-[17px] [&>span]:text-[17px]',
+                'h-14 rounded-[14px] border border-input bg-card pr-3 pl-3 shadow-xs focus-within:border-brand focus-within:ring-0 has-aria-invalid:border-destructive md:h-14 [&_input]:text-[17px] [&_input]:font-semibold [&>span]:text-[17px] [&>span]:text-muted-foreground',
                 className,
             )}
         />

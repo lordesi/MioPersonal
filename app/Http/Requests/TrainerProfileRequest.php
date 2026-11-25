@@ -64,6 +64,12 @@ class TrainerProfileRequest extends FormRequest
 
     public const NOTE_MAX = 200;
 
+    /** "Cosa è incluso" of a kind of session: at most this many lines. */
+    public const INCLUDED_MAX = 6;
+
+    /** One line of "Cosa è incluso". */
+    public const INCLUDED_LINE_MAX = 60;
+
     /**
      * "Instagram": "@giulia.fit", "instagram.com/giulia.fit/" or the full link
      * all become "giulia.fit".
@@ -177,6 +183,8 @@ class TrainerProfileRequest extends FormRequest
             'sessions.*.prices.*.minutes' => ['required', 'integer', Rule::in(TrainerProfile::SESSION_MINUTES)],
             'sessions.*.prices.*.price_cents' => ['required', 'integer', 'min:100', 'max:'.self::MAX_PRICE_CENTS],
             'sessions.*.note' => ['nullable', 'string', 'max:'.self::NOTE_MAX],
+            'sessions.*.included' => ['nullable', 'array', 'max:'.self::INCLUDED_MAX],
+            'sessions.*.included.*' => ['required', 'string', 'max:'.self::INCLUDED_LINE_MAX],
             'sessions.*.online_prices' => ['nullable', 'array'],
             'sessions.*.online_prices.*.minutes' => ['required', 'integer', Rule::in(TrainerProfile::SESSION_MINUTES)],
             'sessions.*.online_prices.*.price_cents' => ['required', 'integer', 'min:100', 'max:'.self::MAX_PRICE_CENTS],
@@ -235,6 +243,9 @@ class TrainerProfileRequest extends FormRequest
             'packages.*.minutes.*' => 'Scegli la durata delle sedute del pacchetto.',
             'packages.*.price_cents.*' => 'Il prezzo di un pacchetto deve essere tra 1 e 10.000 €.',
             'sessions.*.note.max' => 'Le note possono avere al massimo 200 caratteri.',
+            'sessions.*.included.max' => 'In «Cosa è incluso» puoi scrivere al massimo '.self::INCLUDED_MAX.' voci.',
+            'sessions.*.included.*.max' => 'Ogni voce di «Cosa è incluso» può avere al massimo '.self::INCLUDED_LINE_MAX.' caratteri.',
+            'sessions.*.included.*.*' => 'Scrivi ogni voce di «Cosa è incluso».',
             'sessions.*.online_note.max' => 'Le note possono avere al massimo 200 caratteri.',
             'first_session.note.max' => 'Le note possono avere al massimo 200 caratteri.',
             'packages.*.note.max' => 'Le note possono avere al massimo 200 caratteri.',

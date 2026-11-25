@@ -1,5 +1,8 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { Mail } from 'lucide-react';
 import AuthPhotoShell, {
+    AuthFieldIcon,
+    authIconFieldClassName,
     AuthIntro,
     AuthStatus,
     authButtonClassName,
@@ -8,7 +11,6 @@ import AuthPhotoShell, {
 import FormField from '@/components/auth/form-field';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
-import { darkFieldClassName } from '@/lib/dark-form';
 import { login } from '@/routes';
 import { email } from '@/routes/password';
 
@@ -57,19 +59,22 @@ export default function ForgotPassword({ status }: { status?: string }) {
 
                             <FormField label="Email" error={errors.email}>
                                 {({ id, describedBy }) => (
-                                    <Input
-                                        id={id}
-                                        aria-describedby={describedBy}
-                                        aria-invalid={!!errors.email}
-                                        type="email"
-                                        name="email"
-                                        inputMode="email"
-                                        required
-                                        autoFocus
-                                        autoComplete="email"
-                                        placeholder="nome@esempio.it"
-                                        className={darkFieldClassName}
-                                    />
+                                    <div className="relative">
+                                        <AuthFieldIcon icon={Mail} />
+                                        <Input
+                                            id={id}
+                                            aria-describedby={describedBy}
+                                            aria-invalid={!!errors.email}
+                                            type="email"
+                                            name="email"
+                                            inputMode="email"
+                                            required
+                                            autoFocus
+                                            autoComplete="email"
+                                            placeholder="nome@esempio.it"
+                                            className={authIconFieldClassName}
+                                        />
+                                    </div>
                                 )}
                             </FormField>
 

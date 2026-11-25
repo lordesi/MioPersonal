@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { ArrowRight, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { AccountField } from '@/components/auth/account-fields';
@@ -13,14 +13,15 @@ import DarkShell, {
     shellNextClassName,
     shellSendClassName,
 } from '@/components/onboarding/dark-shell';
+import { AccountUsernameField } from '@/components/onboarding/account-step';
 import ChangeRequestNotice from '@/components/onboarding/trainer/change-request-notice';
 import type { TrainerDraft } from '@/components/onboarding/trainer/draft';
 import {
+    BIO_MIN,
     initialDraft,
     isCertificationValid,
     isFilled,
     isPricingComplete,
-    isProfileComplete,
     stepOfField,
     toPayload,
     weeklyHours,
@@ -33,20 +34,15 @@ import {
 import StepAccount from '@/components/onboarding/trainer/step-account';
 import StepCertifications from '@/components/onboarding/trainer/step-certifications';
 import StepErrors from '@/components/onboarding/trainer/step-errors';
-import StepHours, {
-    hoursSummary,
-} from '@/components/onboarding/trainer/step-hours';
+import StepHours from '@/components/onboarding/trainer/step-hours';
 import StepPlaces, {
     placesChecks,
 } from '@/components/onboarding/trainer/step-places';
 import StepProfile, {
-    profileStatus,
     usePhotoPreview,
 } from '@/components/onboarding/trainer/step-profile';
 import StepReview from '@/components/onboarding/trainer/step-review';
-import StepServices, {
-    servicesSummary,
-} from '@/components/onboarding/trainer/step-services';
+import StepServices from '@/components/onboarding/trainer/step-services';
 import Submitted, {
     submittedIntro,
 } from '@/components/onboarding/trainer/submitted';
@@ -58,84 +54,114 @@ import { today } from '@/routes/trainer';
 import { check, store } from '@/routes/trainer/register';
 import type { CatalogOption, CityOption } from '@/types';
 
-const LAST_STEP = 7;
+/** The screens of the design "Diventa trainer · N di 9". */
+const SCREENS = [
+    'Account',
+    'Foto profilo',
+    'Presentazione',
+    'Discipline',
+    'Dove alleni',
+    'Servizi e prezzi',
+    'Orari',
+    'Certificazioni',
+    'Riepilogo',
+];
 
-/** What the dark shell shows of "Diventa trainer". */
-const trainerShell = {
-    steps: [
-        'Account',
-        'Profilo',
-        'Discipline',
-        'Servizi',
-        'Orari',
-        'Certificazioni',
-        'Riepilogo',
-    ],
-    eyebrow: 'Diventa trainer',
-    heroImage: '/images/design/pro-trainer.webp',
-    heroClassName: 'object-[50%_25%]',
-};
+const LAST_STEP = SCREENS.length;
 
-/** Phones and desktop have their own words in the design. */
-function title(phone: ReactNode, desktop: ReactNode) {
-    return (
-        <>
-            <span className="md:hidden">{phone}</span>
-            <span className="hidden md:inline">{desktop}</span>
-        </>
-    );
+/**
+ * The step the server checks for each screen (TrainerRegistrationStepRequest,
+ * fieldSteps in draft.ts): photo and presentation are its step 2,
+ * disciplines and places its step 3.
+ */
+const SERVER_STEP = [0, 1, 2, 2, 3, 3, 4, 5, 6, 7];
+
+/** The screens that only show the first part of a server step. */
+const FIRST_HALVES = [2, 4];
+
+/** The screen of a field with an error. */
+function screenOfField(field: string): number {
+    const serverStep = stepOfField(field);
+
+    if (serverStep === 2) {
+        return field.startsWith('photo') ? 2 : 3;
+    }
+
+    if (serverStep === 3) {
+        return field.startsWith('disciplines') || field.startsWith('goals')
+            ? 4
+            : 5;
+    }
+
+    return serverStep === 1 ? 1 : serverStep + 2;
 }
 
-/** The titles of the design: light, with the key words in bold. */
-const titles: Record<number, ReactNode> = {
-    2: title(
-        <>
-            Il tuo <strong>profilo pubblico</strong>.
-        </>,
-        <>
-            Il tuo <strong>profilo</strong>
-        </>,
-    ),
-    3: title(
-        <>
-            Cosa insegni e <strong>dove alleni</strong>.
-        </>,
-        <>
-            Discipline e <strong>luoghi</strong>
-        </>,
-    ),
-    4: title(
-        <>
-            Le tue <strong>sedute</strong> e i <strong>prezzi</strong>.
-        </>,
-        <>
-            Servizi e <strong>prezzi</strong>
-        </>,
-    ),
-    5: title(
-        <>
-            Quando <strong>alleni</strong> e come <strong>prenotano</strong>.
-        </>,
-        <>
-            Orari e <strong>regole</strong>
-        </>,
-    ),
-    6: title(
-        <>
-            La tua <strong>formazione</strong>.
-        </>,
-        <>
-            Formazione e <strong>certificazioni</strong>
-        </>,
-    ),
-    7: title(
-        <>
-            Ci siamo: <strong>controlla e invia</strong>.
-        </>,
-        <>
-            La tua <strong>candidatura</strong>
-        </>,
-    ),
+/** The titles of the design, the key word in bold, and the line under them. */
+const titles: Record<number, { title: ReactNode; intro?: ReactNode }> = {
+    2: {
+        title: (
+            <>
+                Aggiungi una <strong>foto</strong>
+            </>
+        ),
+        intro: 'È la prima cosa che vedono i clienti quando ti cercano.',
+    },
+    3: {
+        title: (
+            <>
+                Presentati ai <strong>clienti</strong>
+            </>
+        ),
+        intro: 'Poche righe su chi sei e come lavori.',
+    },
+    4: {
+        title: (
+            <>
+                Cosa <strong>insegni</strong>?
+            </>
+        ),
+        intro: 'Scegli le discipline e gli obiettivi con cui aiuti i clienti.',
+    },
+    5: {
+        title: (
+            <>
+                Dove <strong>alleni</strong>?
+            </>
+        ),
+        intro: 'Puoi sceglierne più di uno.',
+    },
+    6: {
+        title: (
+            <>
+                Quanto costa una <strong>seduta</strong>?
+            </>
+        ),
+        intro: 'Scegli le durate, scrivi i prezzi, aggiungi gli extra se vuoi.',
+    },
+    7: {
+        title: (
+            <>
+                Quando <strong>lavori</strong>?
+            </>
+        ),
+        intro: 'I clienti potranno prenotare solo in questi orari.',
+    },
+    8: {
+        title: (
+            <>
+                La tua <strong>formazione</strong>
+            </>
+        ),
+        intro: 'Titolo, ente e anno compaiono sul profilo. Gli attestati li vede solo il nostro team.',
+    },
+    9: {
+        title: (
+            <>
+                Controlla e <strong>invia</strong>
+            </>
+        ),
+        intro: 'Il nostro team verifica il profilo prima di pubblicarlo.',
+    },
 };
 
 type TrainerRegistrationProps = {
@@ -161,7 +187,7 @@ type TrainerRegistrationProps = {
 };
 
 /**
- * "Diventa trainer": 7 steps, then the team checks the profile. "Continua"
+ * "Diventa trainer": 9 screens, then the team checks the profile. "Continua"
  * asks the server to check the fields of the step (nothing is saved);
  * "Invia per approvazione" creates the account and the profile.
  */
@@ -228,13 +254,12 @@ export default function TrainerRegistration({
             <>
                 <Head title="Profilo inviato" />
                 <DarkShell
-                    {...trainerShell}
+                    steps={SCREENS}
                     step={null}
-                    hero
                     icon={<Check aria-hidden="true" strokeWidth={2.5} />}
                     title={
                         <>
-                            Profilo <strong>inviato</strong>.
+                            Profilo <strong>inviato</strong>
                         </>
                     }
                     intro={submittedIntro(authUser?.name)}
@@ -282,61 +307,39 @@ export default function TrainerRegistration({
     const certificationsDone = draft.certifications.filter(isFilled);
     const missingPlaces = placesChecks(draft).filter((item) => !item.done);
 
+    const missing = (labels: string[]) =>
+        missingPlaces.some((item) => labels.includes(item.label));
+
     const canContinue: Record<number, boolean> = {
         1: account
             ? form.data.terms
             : form.data.first_name.trim() !== '' &&
               form.data.last_name.trim() !== '' &&
-              form.data.username.trim() !== '' &&
               form.data.email.trim() !== '' &&
               form.data.phone.trim() !== '' &&
               meetsPasswordRequirements(form.data.password) &&
               form.data.terms,
-        // Step 2: everything is required (photo, headline, bio, experience).
-        2: isProfileComplete(draft),
-        3: missingPlaces.length === 0,
-        // Step 4: a price for each duration, and every optional part complete.
+        2: photo !== null,
+        // Headline, bio and experience; a guest also chooses the username.
+        3:
+            draft.headline.trim() !== '' &&
+            draft.bio.trim().length >= BIO_MIN &&
+            draft.experience !== '' &&
+            (editing || account !== null || form.data.username.trim() !== ''),
+        4: !missing(['una disciplina', 'un obiettivo']),
+        5: missingPlaces.length === 0,
+        // A price for each duration, and every optional part complete.
         // "Ridotta" is at least 1 €: 0 is "Gratuita".
-        4:
+        6:
             isPricingComplete(draft) &&
             (!firstSession.enabled ||
                 firstSession.priceCents === 0 ||
                 (firstSession.priceCents ?? 0) >= 100),
         // At least one hour open in the week, or nobody can book.
-        5: weeklyHours(draft.hours) > 0,
+        7: weeklyHours(draft.hours) > 0,
         // Optional, but a started certification needs title, issuer and a real year.
-        6: draft.certifications.every(isCertificationValid),
-        7: confirmed,
-    };
-
-    // The line next to "Continua" (desktop) or above it (phones).
-    const ready = 'Tutto pronto per questo passo';
-    const statuses: Record<number, string> = {
-        1: canContinue[1]
-            ? ready
-            : account
-              ? 'Accetta i termini per continuare'
-              : 'Compila i campi e accetta i termini per continuare',
-        2: profileStatus(draft, photo !== null),
-        3:
-            missingPlaces.length === 0
-                ? ready
-                : `Scegli almeno ${missingPlaces.map((item) => item.label).join(', ')}`,
-        4: canContinue[4]
-            ? servicesSummary(draft)
-            : 'Scrivi un prezzo per ogni durata',
-        5:
-            weeklyHours(draft.hours) > 0
-                ? hoursSummary(draft.hours)
-                : 'Accendi almeno un giorno',
-        6: canContinue[6]
-            ? certificationsDone.length === 0
-                ? 'Facoltativo: puoi saltarlo'
-                : ready
-            : 'Completa titolo, ente e anno',
-        7: confirmed
-            ? `${LAST_STEP - firstStep} passi completati: pronto per l’invio`
-            : 'Spunta la conferma per inviare',
+        8: draft.certifications.every(isCertificationValid),
+        9: confirmed,
     };
 
     const goTo = (next: number) => {
@@ -356,24 +359,43 @@ export default function TrainerRegistration({
     });
 
     // "Continua": the server checks the fields of this step now, so its
-    // errors show up here and not after "Invia per approvazione".
+    // errors show up here and not after "Invia per approvazione". The first
+    // half of a server step (photo, disciplines) is checked with the second.
     const checkStep = () => {
+        if (FIRST_HALVES.includes(step)) {
+            goTo(step + 1);
+
+            return;
+        }
+
+        const serverStep = SERVER_STEP[step];
+
         form.transform((data) =>
             Object.fromEntries(
                 Object.entries(payload(data)).filter(
-                    ([field]) => stepOfField(field) === step,
+                    ([field]) => stepOfField(field) === serverStep,
                 ),
             ),
         );
-        form.post(check.url(step), {
+        form.post(check.url(serverStep), {
             queryStringArrayFormat: 'indices',
             // The draft stays, and no extra entries in the browser history.
             preserveState: true,
             preserveScroll: true,
             replace: true,
             onSuccess: () => goTo(step + 1),
-            // Up to "Da sistemare in questo passo:".
-            onError: () => window.scrollTo({ top: 0 }),
+            // An error of the screen before (the photo, the disciplines): back there.
+            onError: (errors) => {
+                const first = Math.min(
+                    ...Object.keys(errors).map(screenOfField),
+                );
+
+                if (first < step) {
+                    goTo(first);
+                } else {
+                    window.scrollTo({ top: 0 });
+                }
+            },
         });
     };
 
@@ -384,19 +406,19 @@ export default function TrainerRegistration({
             queryStringArrayFormat: 'indices',
             // Sent: the draft of this browser is not needed any more.
             onSuccess: () => clearDraft(userId),
-            // Open the first step with an error.
+            // Open the first screen with an error.
             onError: (errors) =>
                 goTo(
                     Math.max(
                         firstStep,
-                        Math.min(...Object.keys(errors).map(stepOfField)),
+                        Math.min(...Object.keys(errors).map(screenOfField)),
                     ),
                 ),
         });
     };
 
     const stepErrors = Object.entries(form.errors)
-        .filter(([field]) => step > 1 && stepOfField(field) === step)
+        .filter(([field]) => step > 1 && screenOfField(field) === step)
         .map(([, message]) => message);
 
     const bind = (field: AccountField) => ({
@@ -411,36 +433,31 @@ export default function TrainerRegistration({
             <button
                 type="button"
                 onClick={saveAndExit}
-                className="flex h-11 items-center rounded-full bg-[rgba(10,10,10,0.55)] px-4.5 text-[15px] font-semibold shadow-[inset_0_0_0_1.5px_var(--foreground)] outline-none hover:bg-foreground/10 focus-visible:ring-[3px] focus-visible:ring-ring/50 md:h-auto md:bg-transparent md:px-0 md:text-brand md:shadow-none md:hover:bg-transparent md:hover:underline"
+                className="flex h-9 items-center rounded-full px-3.5 text-[15px] font-semibold text-foreground outline-none hover:bg-foreground/6 focus-visible:ring-2 focus-visible:ring-ring"
             >
                 Salva ed esci
             </button>
-        ) : guestStart ? (
-            <p className="hidden items-center gap-2 text-[15px] text-muted-foreground md:flex">
-                Hai già un account?
-                <Link href={login()} className={shellLinkClassName}>
-                    Accedi
-                </Link>
-            </p>
         ) : undefined;
 
-    const back =
-        step === firstStep ? (
-            <Link href={exitHref} className={shellBackClassName}>
-                Annulla
-            </Link>
-        ) : (
-            <button
-                type="button"
-                onClick={() => goTo(step - 1)}
-                className={shellBackClassName}
-            >
-                Indietro
-            </button>
-        );
-
-    // Step 6 without certifications: "Salta questo passo" next to "Continua".
-    const canSkip = step === 6 && certificationsDone.length === 0;
+    // Step 8 without certifications: "Salta questo passo" instead of "Indietro".
+    const canSkip = step === 8 && certificationsDone.length === 0;
+    const back = canSkip ? (
+        <button
+            type="button"
+            onClick={() => goTo(step + 1)}
+            className={shellBackClassName}
+        >
+            Salta questo passo
+        </button>
+    ) : step > firstStep ? (
+        <button
+            type="button"
+            onClick={() => goTo(step - 1)}
+            className={shellBackClassName}
+        >
+            Indietro
+        </button>
+    ) : undefined;
 
     return (
         <>
@@ -464,54 +481,35 @@ export default function TrainerRegistration({
                 }}
             >
                 <DarkShell
-                    {...trainerShell}
+                    steps={SCREENS}
                     step={step}
-                    reached={reached}
-                    firstStep={firstStep}
-                    onSelect={goTo}
-                    onBack={step > firstStep ? () => goTo(step - 1) : undefined}
-                    hero={step === 1}
+                    optional={step === 8}
                     title={
                         step === 1 ? (
                             account ? (
                                 <>
-                                    Diventa <strong>trainer</strong>.
+                                    Diventa <strong>trainer</strong>
                                 </>
                             ) : (
                                 <>
-                                    Crea il tuo <strong>account trainer</strong>
-                                    .
+                                    Crea il tuo <strong>account</strong>
                                 </>
                             )
                         ) : (
-                            <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                <span>{titles[step]}</span>
-                                {step === 6 && (
-                                    <span className="rounded-full px-3 py-1 text-[13px] font-semibold tracking-normal text-muted-foreground shadow-[inset_0_0_0_1px_var(--field)]">
-                                        Facoltativo
-                                    </span>
-                                )}
-                            </span>
+                            titles[step].title
                         )
                     }
                     intro={
-                        step === 2 ? (
-                            <span className="md:hidden">
-                                È la prima cosa che vede chi ti cerca.
-                            </span>
-                        ) : step === LAST_STEP ? (
-                            <span className="hidden md:inline">
-                                Dai un’ultima occhiata. Dopo l’invio il nostro
-                                team controlla il profilo prima di pubblicarlo.
-                            </span>
-                        ) : undefined
+                        step === 1
+                            ? account
+                                ? 'Il tuo account resta lo stesso: accetta i termini per i trainer.'
+                                : 'Bastano due minuti. Poi ti chiediamo come lavori.'
+                            : titles[step].intro
                     }
                     topRight={topRight}
                     footer={
                         <ShellFooter
                             back={back}
-                            status={statuses[step]}
-                            noteAbove={statuses[step]}
                             noteBelow={
                                 guestStart ? (
                                     <>
@@ -523,14 +521,6 @@ export default function TrainerRegistration({
                                             Accedi
                                         </Link>
                                     </>
-                                ) : canSkip ? (
-                                    <button
-                                        type="button"
-                                        onClick={() => goTo(step + 1)}
-                                        className="min-h-11 font-semibold text-foreground underline underline-offset-3"
-                                    >
-                                        Salta questo passo
-                                    </button>
                                 ) : step === LAST_STEP && previewHref ? (
                                     <Link
                                         href={previewHref}
@@ -541,24 +531,6 @@ export default function TrainerRegistration({
                                 ) : undefined
                             }
                         >
-                            {/* Desktop: the extra link before the button. */}
-                            {canSkip && (
-                                <button
-                                    type="button"
-                                    onClick={() => goTo(step + 1)}
-                                    className={`${shellBackClassName} hidden md:flex`}
-                                >
-                                    Salta questo passo
-                                </button>
-                            )}
-                            {step === LAST_STEP && previewHref && (
-                                <Link
-                                    href={previewHref}
-                                    className={`${shellLinkClassName} hidden md:flex`}
-                                >
-                                    Vedi l’anteprima del profilo
-                                </Link>
-                            )}
                             <button
                                 type="submit"
                                 disabled={!canContinue[step] || form.processing}
@@ -572,10 +544,6 @@ export default function TrainerRegistration({
                                 {step === LAST_STEP
                                     ? 'Invia per approvazione'
                                     : 'Continua'}
-                                <ArrowRight
-                                    aria-hidden="true"
-                                    className="size-4.5 md:hidden"
-                                />
                             </button>
                         </ShellFooter>
                     }
@@ -626,16 +594,27 @@ export default function TrainerRegistration({
                             }}
                         />
                     )}
-                    {step === 2 && (
+                    {(step === 2 || step === 3) && (
                         <StepProfile
+                            part={step === 2 ? 'photo' : 'about'}
                             draft={draft}
                             update={update}
                             name={fullName}
                             photo={photo}
+                            username={
+                                !editing && !account ? (
+                                    <AccountUsernameField
+                                        errors={form.errors}
+                                        bind={bind}
+                                        usernameLinkPrefix={usernameLinkPrefix}
+                                    />
+                                ) : undefined
+                            }
                         />
                     )}
-                    {step === 3 && (
+                    {(step === 4 || step === 5) && (
                         <StepPlaces
+                            part={step === 4 ? 'disciplines' : 'places'}
                             draft={draft}
                             update={update}
                             disciplines={disciplines}
@@ -643,14 +622,14 @@ export default function TrainerRegistration({
                             gymOptions={gyms}
                         />
                     )}
-                    {step === 4 && (
+                    {step === 6 && (
                         <StepServices draft={draft} update={update} />
                     )}
-                    {step === 5 && <StepHours draft={draft} update={update} />}
-                    {step === 6 && (
+                    {step === 7 && <StepHours draft={draft} update={update} />}
+                    {step === 8 && (
                         <StepCertifications draft={draft} update={update} />
                     )}
-                    {step === 7 && (
+                    {step === 9 && (
                         <StepReview
                             draft={draft}
                             name={fullName}
@@ -661,6 +640,7 @@ export default function TrainerRegistration({
                             confirmed={confirmed}
                             onConfirmedChange={setConfirmed}
                             onEdit={goTo}
+                            hasPhoto={photo !== null}
                         />
                     )}
                 </DarkShell>

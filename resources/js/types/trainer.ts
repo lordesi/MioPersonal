@@ -48,7 +48,10 @@ export type TrainerService = {
     name: string;
     /** e.g. "da 30 min a 2 ore", "1 ora", "10 × 1 ora" */
     durationLabel: string;
+    /** The trainer's description of the service. */
     note: string;
+    /** "Cosa otterrai": short lines written by the trainer; may be empty. */
+    included: string[];
     /** The lowest price of the options ("da 25 €" when there are more). */
     priceCents: number;
     /** Shortest first. */

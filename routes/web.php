@@ -33,6 +33,7 @@ use App\Http\Controllers\ClientRescheduleController;
 use App\Http\Controllers\ClientReviewController;
 use App\Http\Controllers\ClientSessionProposalController;
 use App\Http\Controllers\ClientSharingController;
+use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\CompleteProfileController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CookieConsentController;
@@ -124,6 +125,8 @@ Route::get('palestre/{city:slug?}', GymSearchController::class)->middleware('fea
 Route::get('palestra/{slug}', GymProfileController::class)->middleware(['feature:gyms', 'legacy-slug:gym'])->name('gyms.show');
 // /corsi = the courses of the gyms in all of Italy, /corsi/torino = one city (404 if unknown).
 Route::get('corsi/{city:slug?}', CourseSearchController::class)->middleware('feature:courses')->name('courses.search');
+// The categories switched off: "Palestre arrivano presto" (on: their search).
+Route::get('in-arrivo/{kind}', ComingSoonController::class)->whereIn('kind', ['palestre', 'corsi', 'eventi'])->name('coming-soon');
 // "Prenota questo slot" for guests: login or sign-up, then back to the profile.
 Route::get('trainer/{slug}/prenota', [BookingController::class, 'start'])->middleware(['auth', 'legacy-slug:trainer'])->name('trainers.book.start');
 // "Novità": new trainers and gyms, in Italy or in a city (404 if unknown).

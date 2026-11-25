@@ -1,9 +1,10 @@
 import { Form, Head } from '@inertiajs/react';
+import { UserX } from 'lucide-react';
 import AuthPhotoShell, {
     AuthIntro,
     authButtonClassName,
+    authSecondaryClassName,
 } from '@/components/auth/auth-photo-shell';
-import { darkSecondaryButtonClassName } from '@/components/mp/dark-dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { formatDayLong } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,13 @@ export default function AccountDeletion({
                 // No way out but the buttons below: the account is on hold.
                 mobileAction={<span />}
             >
+                <span
+                    aria-hidden="true"
+                    className="order-first flex size-13 items-center justify-center rounded-full bg-[#ff7a7a24] text-[#ff7a7a]"
+                >
+                    <UserX className="size-6" />
+                </span>
+
                 <AuthIntro>
                     Hai chiesto di eliminare il tuo account: i tuoi dati
                     verranno cancellati{' '}
@@ -64,10 +72,7 @@ export default function AccountDeletion({
                 <Form {...logout.form()} className="flex flex-col">
                     <button
                         type="submit"
-                        className={cn(
-                            darkSecondaryButtonClassName,
-                            'md:w-full',
-                        )}
+                        className={cn(authSecondaryClassName, 'w-full')}
                     >
                         Esci
                     </button>

@@ -1,6 +1,10 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
+import { Lock, Mail } from 'lucide-react';
 import AuthPhotoShell, {
+    AuthFieldIcon,
+    authIconFieldClassName,
+    authToggleClassName,
     AuthStatus,
     authButtonClassName,
     authLinkClassName,
@@ -13,7 +17,6 @@ import PasswordRequirements, {
 } from '@/components/auth/password-requirements';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
-import { darkFieldClassName } from '@/lib/dark-form';
 import { cn } from '@/lib/utils';
 import { login } from '@/routes';
 import { request, update } from '@/routes/password';
@@ -78,17 +81,20 @@ export default function ResetPassword({ token, email }: Props) {
 
                             <FormField label="Email">
                                 {({ id }) => (
-                                    <Input
-                                        id={id}
-                                        type="email"
-                                        value={email}
-                                        readOnly
-                                        autoComplete="username"
-                                        className={cn(
-                                            darkFieldClassName,
-                                            'text-muted-foreground',
-                                        )}
-                                    />
+                                    <div className="relative">
+                                        <AuthFieldIcon icon={Mail} />
+                                        <Input
+                                            id={id}
+                                            type="email"
+                                            value={email}
+                                            readOnly
+                                            autoComplete="username"
+                                            className={cn(
+                                                authIconFieldClassName,
+                                                'text-muted-foreground',
+                                            )}
+                                        />
+                                    </div>
                                 )}
                             </FormField>
 
@@ -112,7 +118,9 @@ export default function ResetPassword({ token, email }: Props) {
                                         onChange={(event) =>
                                             setPassword(event.target.value)
                                         }
-                                        className={darkFieldClassName}
+                                        icon={<AuthFieldIcon icon={Lock} />}
+                                        className={authIconFieldClassName}
+                                        toggleClassName={authToggleClassName}
                                     />
                                 )}
                             </FormField>
@@ -135,7 +143,9 @@ export default function ResetPassword({ token, email }: Props) {
                                         name="password_confirmation"
                                         required
                                         autoComplete="new-password"
-                                        className={darkFieldClassName}
+                                        icon={<AuthFieldIcon icon={Lock} />}
+                                        className={authIconFieldClassName}
+                                        toggleClassName={authToggleClassName}
                                     />
                                 )}
                             </FormField>

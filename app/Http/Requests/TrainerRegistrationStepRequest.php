@@ -12,8 +12,12 @@ use Illuminate\Support\Str;
  */
 class TrainerRegistrationStepRequest extends TrainerProfileRequest
 {
-    /** The step of each field, as fieldSteps in draft.ts. The account (step 1) is the rest. */
+    /**
+     * The step of each field, as fieldSteps in draft.ts. The account (step 1)
+     * is the rest; the username is asked with the presentation (step 2).
+     */
     private const FIELD_STEPS = [
+        'username' => 2,
         'headline' => 2,
         'bio' => 2,
         'experience' => 2,

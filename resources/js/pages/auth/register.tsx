@@ -156,7 +156,7 @@ function ChooseType() {
                     </fieldset>
                     <button
                         type="submit"
-                        className="btn-brand mt-auto h-12.5 w-full text-[17px] md:mt-0 md:w-90"
+                        className="mt-auto flex h-14 w-full items-center justify-center gap-2 rounded-full bg-brand text-[17px] font-semibold tracking-[-0.43px] text-black outline-none hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-60 md:mt-0 md:w-90"
                     >
                         Continua
                     </button>
@@ -300,7 +300,7 @@ function ClientAccount({ googleEnabled }: { googleEnabled: boolean }) {
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="btn-brand h-12.5 text-[17px]"
+                                    className="flex h-14 items-center justify-center gap-2 rounded-full bg-brand text-[17px] font-semibold tracking-[-0.43px] text-black outline-none hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-60"
                                 >
                                     {processing && <Spinner />}
                                     Crea account

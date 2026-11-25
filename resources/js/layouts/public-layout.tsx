@@ -42,6 +42,7 @@ const DARK_PAGES = [
     'public/invite',
     'public/not-found',
     'public/error',
+    'public/coming-soon',
 ];
 
 type PublicLayoutProps = {

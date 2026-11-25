@@ -244,12 +244,6 @@ export default function Cookies() {
             title="Cookie policy"
             intro="Quali cookie usa MioPersonal e come puoi gestirli."
             updatedOn="18 novembre 2026"
-            summary={[
-                'Oggi usiamo solo cookie tecnici, necessari a far funzionare il sito, e un cookie anonimo nostro per contare i visitatori.',
-                'Nessun cookie di profilazione o di pubblicità, nessuno strumento di analisi esterno.',
-                'Se li aggiungeremo, li useremo solo con il tuo consenso.',
-                'Puoi cambiare la tua scelta quando vuoi da «Impostazioni cookie».',
-            ]}
             sections={sections}
         />
     );
