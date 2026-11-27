@@ -1,40 +1,33 @@
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import {
+    BigMonth,
+    HourRows,
+    PeriodBar,
+    SessionList,
+    SmallMonth,
+    ViewTabs,
+    periodOf,
+} from '@/components/trainer/calendar/calendar-bits';
+import {
+    Avatar,
     SessionDetails,
-    WeekSummary,
-} from '@/components/trainer/area/calendar-side';
-import MonthCalendar from '@/components/trainer/area/month-calendar';
-import DayAgenda from '@/components/trainer/calendar/day-agenda';
-import MiniMonth from '@/components/trainer/calendar/mini-month';
-import TimeGrid from '@/components/trainer/calendar/time-grid';
+} from '@/components/trainer/calendar/session-row';
 import type { CalendarViewProps } from '@/components/trainer/calendar/types';
-import ViewMenu from '@/components/trainer/calendar/view-switch';
-import {
-    brandFilledButtonClassName,
-    listLabelClassName,
-    pageTitleClassName,
-    panelClassName,
-    pressableRowClassName,
-    roundSoftClassName,
-    softButtonClassName,
-} from '@/components/trainer/ui/styles';
-import {
-    addDays,
-    hourLabel,
-    mondayOf,
-    monthName,
-    sessionsLabel,
-    shiftMonth,
-    weekDates,
-} from '@/lib/calendar';
-import { formatDayLong, formatDayRange } from '@/lib/format';
-import { cn } from '@/lib/utils';
+import WeekTimeGrid from '@/components/trainer/calendar/week-time-grid';
+import { mondayOf, monthName, sessionsLabel, weekDates } from '@/lib/calendar';
+import { formatDayLong } from '@/lib/format';
+
+/** "2026-11" → "Novembre 2026". */
+function monthTitle(month: string): string {
+    return monthName(month).replace(/^./u, (letter) => letter.toUpperCase());
+}
 
 /**
- * "Calendario" on desktop (Calendario A): on the left the small month and
- * the sessions of the chosen day; on the right the day hour by hour (or the
- * week, or the month), with the view menu and "Aggiungi seduta" as on
- * phones (design "Calendario · Settimana" and "Mese").
+ * "Calendario" on desktop (design "Trainer · Calendario · nuovo ·
+ * desktop"): the title, the three views in the middle and "+" on the right,
+ * then the period with its arrows. "Giorno" is the small month and the day
+ * hour by hour; "Settimana" the 7 days hour by hour with the details of the
+ * session chosen on the right; "Mese" the big month with the sessions of
+ * the chosen day on the right.
  */
 export default function CalendarDesktop(props: CalendarViewProps) {
     const {
@@ -45,293 +38,210 @@ export default function CalendarDesktop(props: CalendarViewProps) {
         maxDate,
         items,
         monthCounts,
-        sessionOptions,
-        now,
+        canAdd,
         selectedDay,
         selectedId,
         onSelect,
         show,
         onAdd,
         onPickSlot,
-        onAddOnDay,
         draft,
+        context,
     } = props;
     const week = weekDates(mondayOf(selectedDay));
-    const month = focus.slice(0, 7);
+    const period = periodOf(view, selectedDay, focus, minDate, maxDate);
     const dayItems = items
         .filter((item) => item.date === selectedDay)
         .sort((a, b) => a.from - b.from);
+    const weekCount = items.filter((item) => week.includes(item.date)).length;
     const selected = items.find((item) => item.id === selectedId) ?? null;
-
-    const period = {
-        day: {
-            kicker:
-                selectedDay === today
-                    ? 'Oggi'
-                    : selectedDay < today
-                      ? 'Giorno passato'
-                      : 'In programma',
-            title: formatDayLong(selectedDay),
-            previous: addDays(selectedDay, -1),
-            next: addDays(selectedDay, 1),
-            canGoBack: selectedDay > minDate,
-            canGoForward: selectedDay < maxDate,
-            unit: 'Giorno',
-        },
-        week: {
-            kicker: 'Settimana',
-            title: `${formatDayRange(week[0], week[6])} ${week[6].slice(0, 4)}`,
-            previous: addDays(week[0], -7),
-            next: addDays(week[0], 7),
-            canGoBack: week[0] > minDate,
-            canGoForward: week[6] < maxDate,
-            unit: 'Settimana',
-        },
-        month: {
-            kicker: 'Mese',
-            title: monthName(month).replace(/^./u, (letter) =>
-                letter.toUpperCase(),
-            ),
-            previous: `${shiftMonth(month, -1)}-01`,
-            next: `${shiftMonth(month, 1)}-01`,
-            canGoBack: `${month}-01` > minDate,
-            canGoForward: month < maxDate.slice(0, 7),
-            unit: 'Mese',
-        },
-    }[view];
-
-    // The small month shows the month of the chosen day.
-    const counts =
-        selectedDay.slice(0, 7) === month
-            ? monthCounts
-            : Object.fromEntries(
-                  items.map((item) => [
-                      item.date,
-                      items.filter((other) => other.date === item.date).length,
-                  ]),
-              );
+    const toggle = (id: number) => onSelect(selectedId === id ? null : id);
 
     return (
-        <div className="flex h-full min-h-0 gap-6">
-            <section
-                aria-label="Scegli il giorno"
-                className={cn(
-                    panelClassName,
-                    'flex w-72 shrink-0 [scrollbar-width:none] flex-col gap-5 overflow-y-auto px-3 py-4 xl:w-85',
-                )}
-            >
-                <div className="flex items-center justify-between px-2.5 pt-1">
-                    <h1 className={pageTitleClassName}>Calendario</h1>
-                    <button
-                        type="button"
-                        disabled={selectedDay === today && view === 'day'}
-                        onClick={() => show('day', today)}
-                        className={cn(softButtonClassName, 'h-9')}
-                    >
-                        Oggi
-                    </button>
+        <div className="flex flex-col">
+            <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-6">
+                <h1 className="m-0 text-[40px] leading-[1.08] font-bold tracking-[-0.03em]">
+                    Calendario
+                </h1>
+                <ViewTabs
+                    view={view}
+                    onChange={(next) => show(next, selectedDay)}
+                    className="w-100"
+                />
+                <div className="justify-self-end">
+                    {canAdd && (
+                        <button
+                            type="button"
+                            onClick={(event) => onAdd(event.currentTarget)}
+                            aria-label="Aggiungi una seduta"
+                            className="flex size-11 cursor-pointer items-center justify-center rounded-full border-0 bg-[#42D7D9] text-black outline-none hover:bg-[#7FE6E7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#42D7D9]"
+                        >
+                            <svg
+                                width="22"
+                                height="22"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.6"
+                                strokeLinecap="round"
+                                aria-hidden="true"
+                            >
+                                <path d="M12 5v14M5 12h14" />
+                            </svg>
+                        </button>
+                    )}
                 </div>
+            </header>
 
-                <MiniMonth
-                    month={selectedDay.slice(0, 7)}
-                    selectedDay={selectedDay}
-                    today={today}
-                    counts={counts}
-                    minDate={minDate}
-                    maxDate={maxDate}
-                    onPick={(date) =>
-                        show(view === 'month' ? 'month' : 'day', date)
-                    }
+            <div className="mt-7 flex flex-col gap-6">
+                <PeriodBar
+                    view={view}
+                    title={period.title}
+                    canGoBack={period.canGoBack}
+                    canGoForward={period.canGoForward}
+                    onBack={() => show(view, period.previous)}
+                    onForward={() => show(view, period.next)}
                 />
 
-                {selected && view !== 'day' ? (
-                    <SessionDetails
-                        item={selected}
-                        today={today}
-                        onClose={() => onSelect(null)}
-                    />
-                ) : (
-                    <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center justify-between">
-                            <h2 className={listLabelClassName}>
-                                Sedute del giorno
-                            </h2>
-                            <span className="pr-2.5 text-xs text-muted-foreground">
+                {view === 'day' && (
+                    <div className="grid grid-cols-[340px_minmax(0,1fr)] items-start gap-14">
+                        <div className="flex flex-col gap-2.5">
+                            <b className="text-base font-bold">
+                                {monthTitle(selectedDay.slice(0, 7))}
+                            </b>
+                            <SmallMonth
+                                month={selectedDay.slice(0, 7)}
+                                counts={monthCounts}
+                                selectedDay={selectedDay}
+                                today={today}
+                                minDate={minDate}
+                                maxDate={maxDate}
+                                onPick={(date) => show('day', date)}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-3">
+                            <span className="text-[15px] leading-5 text-muted-foreground">
                                 {sessionsLabel(dayItems.length)}
                             </span>
+                            <HourRows
+                                date={selectedDay}
+                                today={today}
+                                items={dayItems}
+                                selectedId={selectedId}
+                                onToggle={toggle}
+                                onAddAt={canAdd ? onPickSlot : null}
+                                context={context}
+                            />
                         </div>
-                        {dayItems.length > 0 && (
-                            <div className="flex flex-col gap-0.5 rounded-[18px] bg-card p-1">
-                                {dayItems.map((item) => (
-                                    <button
-                                        key={item.key}
-                                        type="button"
-                                        aria-current={item.id === selectedId}
-                                        onClick={() => {
-                                            onSelect(item.id);
-
-                                            if (view !== 'day') {
-                                                show('day', item.date);
-                                            }
-                                        }}
-                                        className={cn(
-                                            'flex items-center gap-3 rounded-[14px] p-2.5 text-left',
-                                            pressableRowClassName,
-                                            item.id === selectedId &&
-                                                'bg-brand-soft',
-                                        )}
-                                    >
-                                        <span className="w-11 shrink-0 text-[15px] font-bold tabular-nums">
-                                            {hourLabel(item.from)}
-                                        </span>
-                                        <span className="flex min-w-0 flex-1 flex-col">
-                                            <span className="truncate text-[15px] font-semibold">
-                                                {item.title}
-                                            </span>
-                                            <span className="truncate text-[13px] text-muted-foreground">
-                                                {item.detail}
-                                            </span>
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {item.kind === 'pending'
-                                                ? 'In attesa'
-                                                : new Date(item.end) <= now
-                                                  ? 'Completata'
-                                                  : 'In programma'}
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
                     </div>
                 )}
 
-                <WeekSummary
-                    days={week}
-                    items={items}
-                    selectedDay={selectedDay}
-                />
-            </section>
-
-            <main
-                className={cn(
-                    'flex min-w-0 flex-1 [scrollbar-width:none] flex-col gap-5 overflow-y-auto pt-6 pr-6',
-                    // The week fills the window down to its bottom edge.
-                    view === 'week' ? 'pb-4' : 'pb-12',
-                )}
-            >
-                <header className="flex flex-wrap items-center gap-3">
-                    <div className="flex min-w-0 flex-1 basis-60 flex-col gap-0.5">
-                        <span className="text-[15px] text-muted-foreground">
-                            {period.kicker}
+                {view === 'week' && (
+                    <div className="flex flex-col gap-3">
+                        <span className="text-[15px] leading-5 text-muted-foreground">
+                            {sessionsLabel(weekCount)}
                         </span>
-                        <h2 className={pageTitleClassName}>{period.title}</h2>
-                    </div>
-                    <div className="ml-auto flex shrink-0 items-center gap-2">
-                        <button
-                            type="button"
-                            disabled={!period.canGoBack}
-                            onClick={() => show(view, period.previous)}
-                            aria-label={`${period.unit} precedente`}
-                            title={`${period.unit} precedente`}
-                            className={roundSoftClassName}
-                        >
-                            <ChevronLeft
-                                aria-hidden="true"
-                                className="size-4.5"
+                        <div className="flex items-start gap-5">
+                            <WeekTimeGrid
+                                days={week}
+                                items={items}
+                                today={today}
+                                selectedDay={selectedDay}
+                                selectedId={selectedId}
+                                onSelect={onSelect}
+                                onPickDay={(date) => show('week', date)}
+                                onAddAt={canAdd ? onPickSlot : null}
+                                draft={draft}
+                                context={context}
                             />
-                        </button>
-                        <button
-                            type="button"
-                            disabled={!period.canGoForward}
-                            onClick={() => show(view, period.next)}
-                            aria-label={`${period.unit} successivo`}
-                            title={`${period.unit} successivo`}
-                            className={roundSoftClassName}
-                        >
-                            <ChevronRight
-                                aria-hidden="true"
-                                className="size-4.5"
-                            />
-                        </button>
-                        <ViewMenu
-                            view={view}
-                            onChange={(next) => show(next, selectedDay)}
-                        />
-                        {sessionOptions && (
-                            <button
-                                type="button"
-                                onClick={(event) => onAdd(event.currentTarget)}
-                                aria-label="Aggiungi seduta"
-                                className={cn(
-                                    brandFilledButtonClassName,
-                                    'w-11 px-0 xl:w-auto xl:px-5',
-                                )}
+                            <aside
+                                aria-label="Dettagli della seduta"
+                                className="sticky top-6 flex w-85 shrink-0 flex-col gap-4 rounded-3xl bg-[#121315] p-5"
                             >
-                                <Plus
-                                    aria-hidden="true"
-                                    className="size-5 xl:size-4.5"
-                                    strokeWidth={2.5}
-                                />
-                                <span className="hidden xl:inline">
-                                    Aggiungi seduta
-                                </span>
-                            </button>
-                        )}
+                                {selected ? (
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar
+                                                name={selected.title}
+                                                size={44}
+                                            />
+                                            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                                                <b className="truncate text-lg leading-5.5 font-semibold">
+                                                    {selected.title}
+                                                </b>
+                                                <span className="truncate text-sm leading-5 text-muted-foreground">
+                                                    {selected.detail}
+                                                </span>
+                                            </span>
+                                            <button
+                                                type="button"
+                                                aria-label="Chiudi"
+                                                onClick={() => onSelect(null)}
+                                                className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-[#1C1E21] text-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#42D7D9]"
+                                            >
+                                                <svg
+                                                    width="16"
+                                                    height="16"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    aria-hidden="true"
+                                                >
+                                                    <path d="M18 6 6 18M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <SessionDetails
+                                            key={selected.id}
+                                            item={selected}
+                                            kind={context.kindOf(selected)}
+                                            context={context}
+                                        />
+                                    </div>
+                                ) : (
+                                    <p className="m-0 text-[15px] leading-5 text-muted-foreground">
+                                        Tocca una seduta per vedere orario, note
+                                        e per spostarla o annullarla.
+                                    </p>
+                                )}
+                            </aside>
+                        </div>
                     </div>
-                </header>
+                )}
 
-                <section
-                    aria-label={period.title}
-                    className={cn(
-                        panelClassName,
-                        view === 'day' && 'px-4 py-2',
-                        view === 'week' &&
-                            'min-h-80 flex-1 overflow-hidden pt-3 pr-3',
-                        view === 'month' && 'px-3 pt-2 pb-3',
-                    )}
-                >
-                    {view === 'day' && (
-                        <DayAgenda
-                            date={selectedDay}
-                            items={dayItems}
-                            today={today}
-                            now={now}
-                            openId={selectedId}
-                            onToggle={(id) =>
-                                onSelect(selectedId === id ? null : id)
-                            }
-                        />
-                    )}
-                    {view === 'week' && (
-                        <TimeGrid
-                            days={week}
+                {view === 'month' && (
+                    <div className="grid grid-cols-[minmax(0,1fr)_320px] items-start gap-10">
+                        <BigMonth
+                            month={focus.slice(0, 7)}
                             items={items}
-                            today={today}
-                            now={now}
                             selectedDay={selectedDay}
-                            selectedId={selectedId}
-                            onSelect={(item) => onSelect(item.id)}
-                            row={56}
-                            surface="panel"
-                            onPickSlot={onPickSlot}
-                            draft={draft}
-                            height="fill"
-                            onPickDay={(date) => show('week', date)}
-                        />
-                    )}
-                    {view === 'month' && (
-                        <MonthCalendar
-                            month={month}
-                            items={items}
                             today={today}
-                            selectedDay={selectedDay}
-                            onOpenDay={(date) => show('day', date)}
-                            onAddOnDay={sessionOptions ? onAddOnDay : undefined}
+                            onPick={(date) => show('month', date)}
+                            kindOf={context.kindOf}
                         />
-                    )}
-                </section>
-            </main>
+                        <div className="flex flex-col gap-3">
+                            <h3 className="m-0 text-lg font-bold">
+                                {formatDayLong(selectedDay)}
+                            </h3>
+                            {dayItems.length > 0 ? (
+                                <SessionList
+                                    items={dayItems}
+                                    selectedId={selectedId}
+                                    onToggle={toggle}
+                                    context={context}
+                                />
+                            ) : (
+                                <p className="m-0 text-[15px] leading-5 text-muted-foreground">
+                                    Nessuna seduta.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

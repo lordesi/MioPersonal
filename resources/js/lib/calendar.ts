@@ -141,6 +141,8 @@ export type CalendarItem = {
     phone: string | null;
     /** "Seduta 2 di 10"; null for a single session. */
     package: { position: number; total: number } | null;
+    /** "Pagamento": the total, in cents. */
+    priceCents: number;
     guestNames: string[];
     inviteLink: string | null;
     trainerNote: string | null;
@@ -215,6 +217,7 @@ export function calendarItems(events: CalendarEvent[]): CalendarItem[] {
             trainerNote: event.trainerNote,
             phone: event.phone,
             package: event.package,
+            priceCents: event.priceCents,
             guestNames: event.guestNames,
         };
     });

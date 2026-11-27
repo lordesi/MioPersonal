@@ -34,8 +34,10 @@ export function monthTitle(year: number, month: number): string {
 export type CalendarDay = {
     /** Not clickable: past, closed, out of reach. */
     disabled: boolean;
-    /** A past day: struck through. */
+    /** A past day: faded grey, nothing else. */
     past?: boolean;
+    /** A day the trainer does not work: a grey outline and a diagonal line. */
+    unavailable?: boolean;
     /** Clickable but with nothing free (a full day): light grey. */
     dim?: boolean;
     /** The turquoise dot under the number: free times on this day. */
@@ -157,7 +159,9 @@ export default function MonthCalendar({
                                     !info.disabled &&
                                     !info.dim &&
                                     'font-medium',
-                                info.past && 'line-through',
+                                info.past && 'text-[#45484d]',
+                                info.unavailable &&
+                                    'overflow-hidden shadow-[inset_0_0_0_1px_var(--field)]',
                                 info.dim && 'text-muted-foreground',
                                 isToday &&
                                     !pressed &&
@@ -169,6 +173,12 @@ export default function MonthCalendar({
                                 between && 'bg-brand-soft text-brand',
                             )}
                         >
+                            {info.unavailable && (
+                                <span
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top_right,transparent_calc(50%-0.6px),var(--field)_calc(50%-0.6px),var(--field)_calc(50%+0.6px),transparent_calc(50%+0.6px))]"
+                                />
+                            )}
                             {Number(date.slice(8))}
                             {info.dot && (
                                 <span

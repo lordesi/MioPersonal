@@ -11,6 +11,8 @@ type ProfilePageProps = {
     title: ReactNode;
     /** Under the title, grey. */
     intro?: ReactNode;
+    /** E.g. "hidden md:block": the intro only on desktop. */
+    introClassName?: string;
     /** Right of the title on desktop, e.g. "Vedi profilo pubblico". */
     action?: ReactNode;
     /** Where "‹" goes back to: "Profilo" unless said otherwise. */
@@ -28,6 +30,7 @@ type ProfilePageProps = {
 export default function ProfilePage({
     title,
     intro,
+    introClassName,
     action,
     back: customBack,
     children,
@@ -60,7 +63,12 @@ export default function ProfilePage({
                             {title}
                         </h1>
                         {intro && (
-                            <p className="text-[15px] leading-5 text-muted-foreground md:text-[17px] md:leading-6">
+                            <p
+                                className={cn(
+                                    'text-[15px] leading-5 text-muted-foreground md:text-[17px] md:leading-6',
+                                    introClassName,
+                                )}
+                            >
                                 {intro}
                             </p>
                         )}
@@ -77,24 +85,34 @@ export default function ProfilePage({
 export { Section as ProfileSection } from '@/components/onboarding/dark-fields';
 
 /**
- * "Salva modifiche" of a Profilo page, as the bottom of a step. Phones: stuck
- * above the tab bar over a fade. Desktop: a line above, the status on the
- * left, the filled button on the right. A submit button of its form.
+ * "Salva modifiche" of a Profilo page, at the end of the page (it does not
+ * follow the scroll). Desktop: the status on the left and the filled button
+ * on the right, a line above; `start`: the button on the left, without the
+ * line. A submit button of its form.
  */
 export function SaveBar({
     status,
     disabled,
     saving,
     label = 'Salva modifiche',
+    start = false,
 }: {
     /** "Modifiche non salvate", "Controlla i campi segnati"… */
     status?: string;
     disabled: boolean;
     saving: boolean;
     label?: string;
+    start?: boolean;
 }) {
     return (
-        <div className="sticky bottom-24 z-10 -mx-4 flex flex-col gap-2 bg-[linear-gradient(180deg,rgba(10,10,10,0)_0%,#0a0a0a_35%)] px-4 pt-6 pb-2 md:static md:mx-0 md:flex-row md:items-center md:justify-end md:gap-6 md:border-t md:border-border md:bg-none md:px-0 md:pt-6 md:pb-0">
+        <div
+            className={cn(
+                'flex flex-col gap-2 pt-2 md:flex-row md:items-center md:gap-6',
+                start
+                    ? 'md:justify-start'
+                    : 'md:justify-end md:border-t md:border-border md:pt-6',
+            )}
+        >
             {status && (
                 <p
                     role="status"
@@ -109,6 +127,7 @@ export function SaveBar({
                 className={cn(
                     brandFilledButtonClassName,
                     'h-13 w-full text-[17px] md:h-12.5 md:w-70',
+                    start && 'md:h-14 md:w-auto md:min-w-55 md:px-6',
                 )}
             >
                 {saving ? 'Salvataggio…' : label}

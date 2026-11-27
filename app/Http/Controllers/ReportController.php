@@ -8,7 +8,6 @@ use App\Models\Report;
 use App\Models\Review;
 use App\Models\TrainerProfile;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -16,8 +15,9 @@ use Inertia\Inertia;
 
 /**
  * "Segnala" on trainer profiles, gym profiles and reviews: the team sees the
- * report in "Admin · Segnalazioni". One open report per person and content:
- * reporting it again only updates the reason.
+ * report in "Admin · Segnalazioni". A review is reported only by the trainer
+ * who received it. One open report per person and content: reporting it
+ * again only updates the reason.
  */
 class ReportController extends Controller
 {
@@ -37,8 +37,14 @@ class ReportController extends Controller
         $user = $request->user();
         $reportable = $this->find($data['type'], $data['target']);
 
-        // Nobody reports their own profile, or a review of their own profile.
-        if ($this->ownerId($reportable) === $user->id) {
+        // Reviews: only the trainer who received them. Profiles: anybody but their owner.
+        if ($reportable instanceof Review) {
+            if ($reportable->trainerProfile->user_id !== $user->id) {
+                Inertia::flash('toast', ['type' => 'error', 'message' => 'Solo il trainer che ha ricevuto la recensione può segnalarla.']);
+
+                return back();
+            }
+        } elseif ($reportable->user_id === $user->id) {
             Inertia::flash('toast', ['type' => 'error', 'message' => 'Non puoi segnalare il tuo profilo.']);
 
             return back();
@@ -70,15 +76,6 @@ class ReportController extends Controller
             'trainer' => TrainerProfile::query()->approved()->where('slug', $target)->firstOrFail(),
             'gym' => GymProfile::query()->approved()->where('slug', $target)->firstOrFail(),
             default => Review::query()->notHidden()->whereKey((int) $target)->firstOrFail(),
-        };
-    }
-
-    private function ownerId(Model $reportable): ?int
-    {
-        return match (true) {
-            $reportable instanceof Review => $reportable->trainerProfile->user_id,
-            $reportable instanceof TrainerProfile, $reportable instanceof GymProfile => $reportable->user_id,
-            default => null,
         };
     }
 }

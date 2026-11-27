@@ -26,7 +26,7 @@ class ReportTest extends TestCase
         $this->assertDatabaseCount('reports', 0);
     }
 
-    public function test_a_user_reports_a_trainer_a_gym_and_a_review()
+    public function test_a_user_reports_a_trainer_and_a_gym_and_a_trainer_a_review_they_received()
     {
         $user = User::factory()->create();
         $trainer = TrainerProfile::factory()->approved()->create();
@@ -38,9 +38,10 @@ class ReportTest extends TestCase
             ->assertRedirect(route('trainers.show', $trainer->slug))
             ->assertInertiaFlash('toast.type', 'success');
         $this->actingAs($user)->post(route('reports.store'), ['type' => 'gym', 'target' => $gym->slug, 'reason' => 'spam']);
-        $this->actingAs($user)->post(route('reports.store'), ['type' => 'review', 'target' => (string) $review->id, 'reason' => 'offensive']);
+        $this->actingAs($review->trainerProfile->user)->post(route('reports.store'), ['type' => 'review', 'target' => (string) $review->id, 'reason' => 'offensive']);
 
         $this->assertSame(3, Report::count());
+        $this->assertSame($review->trainerProfile->user_id, Report::query()->whereMorphedTo('reportable', $review)->sole()->reporter_id);
         $report = Report::query()->whereMorphedTo('reportable', $trainer)->sole();
         $this->assertSame(ReportReason::Fake, $report->reason);
         $this->assertSame('Foto rubate', $report->details);
@@ -73,12 +74,28 @@ class ReportTest extends TestCase
         $this->assertDatabaseCount('reports', 0);
     }
 
+    public function test_only_the_trainer_who_received_a_review_can_report_it()
+    {
+        $review = Review::factory()->create();
+        $otherTrainer = TrainerProfile::factory()->approved()->create();
+
+        foreach ([User::factory()->create(), $review->client, $otherTrainer->user] as $user) {
+            $this->actingAs($user)->post(route('reports.store'), ['type' => 'review', 'target' => (string) $review->id, 'reason' => 'offensive'])
+                ->assertInertiaFlash('toast.type', 'error');
+        }
+
+        $this->assertDatabaseCount('reports', 0);
+    }
+
     public function test_the_team_hides_a_reported_review_and_closes_every_report_of_it()
     {
         $review = Review::factory()->create();
-        foreach (User::factory()->count(2)->create() as $user) {
-            $this->actingAs($user)->post(route('reports.store'), ['type' => 'review', 'target' => (string) $review->id, 'reason' => 'offensive']);
-        }
+        $this->actingAs($review->trainerProfile->user)->post(route('reports.store'), ['type' => 'review', 'target' => (string) $review->id, 'reason' => 'offensive']);
+        // An older report of the same review, from before only its trainer could report it.
+        $older = new Report(['reason' => ReportReason::Spam]);
+        $older->reporter()->associate(User::factory()->create());
+        $older->reportable()->associate($review);
+        $older->save();
 
         $admin = User::factory()->admin()->create();
         $this->actingAs($admin)->get(route('admin.reports'))

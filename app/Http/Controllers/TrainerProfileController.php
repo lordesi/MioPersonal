@@ -72,6 +72,8 @@ class TrainerProfileController extends Controller
             ],
             // Not approved yet: the trainer (or the team) is looking at a preview.
             'preview' => ! $profile->isApproved(),
+            // The trainer looking at their own profile: only they can report its reviews.
+            'ownProfile' => $request->user() !== null && $request->user()->id === $profile->user_id,
             // The link of "Invita i tuoi clienti" (TrainerClientsController::invite).
             'invited' => $request->boolean('invito'),
             // "Mostra tutte le recensioni": sent only when the page asks for it

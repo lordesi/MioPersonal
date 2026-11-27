@@ -75,7 +75,8 @@ class AdminActivityLogTest extends TestCase
     public function test_closing_a_report_is_recorded()
     {
         $review = Review::factory()->create();
-        $this->actingAs(User::factory()->create())
+        // Only the trainer who received a review can report it.
+        $this->actingAs($review->trainerProfile->user)
             ->post(route('reports.store'), ['type' => 'review', 'target' => (string) $review->id, 'reason' => 'spam']);
 
         $this->actingAs($this->admin)->post(route('admin.reports.resolve', Report::sole()), ['resolution' => 'removed']);

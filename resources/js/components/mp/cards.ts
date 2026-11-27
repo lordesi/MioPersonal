@@ -17,11 +17,7 @@ type CardData = Omit<ProfileCardProps, 'favorite' | 'className'>;
 
 const onlineLabels = { also: 'Anche', only: 'Solo' } as const;
 
-/** "domani 18:00" → "Domani 18:00": it stands alone in the card. */
-const capitalize = (text: string) =>
-    text.charAt(0).toUpperCase() + text.slice(1);
-
-/** A trainer of the searches and of the home: rating, online, first free slot. */
+/** A trainer of the searches and of the home: rating and reviews, online. */
 export function trainerCard(trainer: TrainerSummary): CardData {
     const stats: CardStat[] = [];
     const price = formatPrice(trainer.priceFromCents);
@@ -42,13 +38,6 @@ export function trainerCard(trainer: TrainerSummary): CardData {
             ? { value: 'Online', label: onlineLabels[trainer.online] }
             : { value: 'In sede', label: 'Modalità' },
     );
-
-    stats.push({
-        value: trainer.nextSlotLabel
-            ? capitalize(trainer.nextSlotLabel)
-            : 'Nessuno',
-        label: 'Primo slot',
-    });
 
     return {
         name: trainer.name,

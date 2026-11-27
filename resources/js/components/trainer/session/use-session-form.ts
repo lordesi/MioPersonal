@@ -2,16 +2,19 @@ import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { labelMinutes, minutesLabel } from '@/components/mp/wheel-picker';
 import { store } from '@/routes/trainer/calendar/sessions';
-import type { InvitePrompt, SessionOptions } from '@/types';
+import type { SessionOptions } from '@/types';
 
 type Errors = Partial<Record<string, string>>;
 
-/** The client: someone of the list, or someone new written in the form. */
+/** CLIENTE: "Cliente esistente" (from the list) or "Nuovo cliente". */
 export type ClientMode = 'search' | 'new';
 
 /** Shortest and longest session (CreateTrainerSession::MIN/MAX_MINUTES). */
 export const MIN_MINUTES = 15;
 export const MAX_MINUTES = 240;
+
+/** How many clients the list shows at once (design: 4). */
+const LIST_SIZE = 4;
 
 export type SessionFormStart = {
     /** "YYYY-MM-DD": the day chosen in the calendar. */
@@ -22,35 +25,26 @@ export type SessionFormStart = {
     today: string;
     /** "Prenota" from a client's card. */
     clientId?: number;
-    /**
-     * The sheet of phones has one field, "Nome e cognome": a name not in the
-     * list is a new client. The popover of desktop has "Cerca cliente" (only
-     * the list) and "Nuovo cliente" (Nome + Cognome).
-     */
-    layout: 'sheet' | 'popover';
 };
 
 /**
- * The state of "Aggiungi seduta", shared by the glass sheet of phones and
- * the popover of desktop: who, which session, when, and the notes. `save`
- * sends it to TrainerManualSessionController::store.
+ * The state of "Nuova seduta", shared by the sheet of phones and the
+ * popover of desktop (design "Trainer · Popover · nuovo"): the client, when,
+ * which session, how long, where, the note. `save` sends it to
+ * TrainerManualSessionController::store.
  */
 export function useSessionForm(
     options: SessionOptions,
     start: SessionFormStart,
 ) {
     const { clients, services, places } = options;
-    const preselected = clients.find((item) => item.id === start.clientId);
 
-    const [clientId, setClientId] = useState<number | null>(
-        preselected?.id ?? null,
-    );
     const [mode, setMode] = useState<ClientMode>('search');
-    // Phones: "Nome e cognome" (a search of the list or a new name).
-    // Desktop: the search of "Cerca cliente".
-    const [query, setQuery] = useState(preselected?.name ?? '');
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
+    const [clientId, setClientId] = useState<number | null>(
+        clients.find((item) => item.id === start.clientId)?.id ?? null,
+    );
+    const [query, setQuery] = useState('');
+    const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
     const [serviceId, setServiceId] = useState(services[0]?.id ?? 0);
@@ -65,51 +59,31 @@ export function useSessionForm(
     const [processing, setProcessing] = useState(false);
 
     const chosen = clients.find((item) => item.id === clientId) ?? null;
-    const service = services.find((item) => item.id === serviceId) ?? null;
     const endMinutes = Math.min(labelMinutes(time) + minutes, 24 * 60);
     const needle = query.trim().toLowerCase();
-    const matches =
-        needle === '' || chosen
-            ? []
-            : clients
-                  .filter((item) => item.name.toLowerCase().includes(needle))
-                  .slice(0, 6);
-
-    /** The name of the new client: "Nome e cognome" or Nome + Cognome. */
-    const newName =
-        start.layout === 'sheet'
-            ? query.trim()
-            : mode === 'new'
-              ? `${firstName} ${lastName}`.trim()
-              : null;
-
-    const pick = (id: number | null) => {
-        setClientId(id);
-        setQuery(clients.find((item) => item.id === id)?.name ?? '');
-    };
+    const found = clients.filter((item) =>
+        item.name.toLowerCase().includes(needle),
+    );
+    // The client chosen stays in sight, first, while searching others.
+    const list =
+        chosen && !found.slice(0, LIST_SIZE).includes(chosen)
+            ? [chosen, ...found.filter((item) => item !== chosen)]
+            : found;
 
     return {
         clients,
         services,
         places,
         chosen,
-        service,
-        matches,
+        /** The clients of the list under the search. */
+        matches: list.slice(0, LIST_SIZE),
         mode,
-        setMode: (next: ClientMode) => {
-            setMode(next);
-            setClientId(null);
-        },
+        setMode,
         query,
-        setQuery: (value: string) => {
-            setQuery(value);
-            setClientId(null);
-        },
-        pick,
-        firstName,
-        setFirstName,
-        lastName,
-        setLastName,
+        setQuery,
+        pick: setClientId,
+        name,
+        setName,
         phone,
         setPhone,
         email,
@@ -131,30 +105,18 @@ export function useSessionForm(
         setTime,
         /** "19:00": the end, from the start and the minutes. */
         end: minutesLabel(endMinutes),
-        setEnd: (value: string) =>
-            setMinutes(
-                Math.min(
-                    MAX_MINUTES,
-                    Math.max(
-                        MIN_MINUTES,
-                        labelMinutes(value) - labelMinutes(time),
-                    ),
-                ),
-            ),
         placeId,
         setPlaceId,
         note,
         setNote,
         errors,
         processing,
-        /** The client gets a proposal to accept ("Invia proposta"). */
-        proposal: chosen?.registered ?? false,
-        /** A new person: the contacts are asked. */
-        isNew: chosen === null && newName !== null,
         clientError:
             errors.client_record_id ??
             errors.new_client ??
-            errors['new_client.name'],
+            errors['new_client.name'] ??
+            errors['new_client.email'] ??
+            errors['new_client.phone'],
         whenError: errors.date ?? errors.start ?? errors.time ?? errors.minutes,
         /** The other messages of the server, once each. */
         otherErrors: [
@@ -166,6 +128,8 @@ export function useSessionForm(
                                 'client_record_id',
                                 'new_client',
                                 'new_client.name',
+                                'new_client.email',
+                                'new_client.phone',
                                 'date',
                                 'start',
                                 'time',
@@ -175,15 +139,15 @@ export function useSessionForm(
                     .map(([, message]) => message ?? ''),
             ),
         ].filter(Boolean),
-        save: (onSaved: (invite: InvitePrompt | null) => void) =>
+        save: (onSaved: () => void) =>
             router.post(
                 store.url(),
                 {
-                    client_record_id: chosen?.id ?? null,
+                    client_record_id: mode === 'search' ? clientId : null,
                     new_client:
-                        chosen || newName === null
-                            ? null
-                            : { name: newName, email, phone },
+                        mode === 'new'
+                            ? { name: name.trim(), email, phone }
+                            : null,
                     service_id: serviceId,
                     date,
                     time,
@@ -197,15 +161,7 @@ export function useSessionForm(
                     onStart: () => setProcessing(true),
                     onFinish: () => setProcessing(false),
                     onError: setErrors,
-                    // "Invita Marco su Miopersonal": only for someone without an account.
-                    onSuccess: (page) =>
-                        onSaved(
-                            (
-                                page.flash as
-                                    | { invitePrompt?: InvitePrompt }
-                                    | undefined
-                            )?.invitePrompt ?? null,
-                        ),
+                    onSuccess: onSaved,
                 },
             ),
     };

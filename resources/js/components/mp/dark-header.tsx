@@ -3,8 +3,7 @@ import { Menu } from 'lucide-react';
 import AccountCapsuleMenu from '@/components/layout/account-capsule-menu';
 import { BrandMark } from '@/components/layout/brand-logo';
 import NotificationBell from '@/components/layout/notification-bell';
-import CategoryNav, { categoryOfSoon } from '@/components/mp/category-nav';
-import type { ComingSoonKind } from '@/components/mp/category-nav';
+import CategoryNav from '@/components/mp/category-nav';
 import type { SearchKind } from '@/components/search/search-kind-toggle';
 import {
     DropdownMenu,
@@ -55,30 +54,16 @@ const SEARCH_PAGES: Record<string, SearchKind> = {
  * page: on the home, on its photo, with "Accedi" as plain text.
  */
 export default function DarkHeader({ className }: { className?: string }) {
-    const page = usePage<{
-        city?: { slug: string } | null;
-        kind?: ComingSoonKind;
-    }>();
+    const page = usePage<{ city?: { slug: string } | null }>();
     const user = page.props.auth?.user;
     const onPhoto = page.component === 'public/home';
     const role = user?.role;
     const variant = role === 'trainer' || role === 'gym' ? role : 'client';
 
-    const category =
-        page.component === 'public/coming-soon' && page.props.kind
-            ? categoryOfSoon(page.props.kind).value
-            : SEARCH_PAGES[page.component];
+    const category = SEARCH_PAGES[page.component];
 
     return (
-        <header
-            className={cn(
-                'absolute inset-x-0 top-0 z-20',
-                // The searches draw the line under their own bar.
-                page.component === 'public/coming-soon' &&
-                    'md:border-b md:border-separator',
-                className,
-            )}
-        >
+        <header className={cn('absolute inset-x-0 top-0 z-20', className)}>
             <nav
                 aria-label="Principale"
                 className="mx-auto flex h-16 max-w-300 items-center justify-between gap-4 px-4 pt-2.5 md:h-auto md:min-h-22 md:px-8 md:py-4.5"
@@ -120,7 +105,12 @@ export default function DarkHeader({ className }: { className?: string }) {
                             <Link
                                 prefetch={hoverPrefetch}
                                 href={trainerRegister()}
-                                className="hidden min-h-11 items-center text-[15px] font-medium text-foreground hover:text-brand md:flex"
+                                className={cn(
+                                    'hidden min-h-11 items-center text-[15px] font-medium text-foreground hover:text-brand md:flex',
+                                    // The home (design "Home · desktop"): bigger, next to the glass pill.
+                                    onPhoto &&
+                                        'md:px-2 md:text-base md:font-semibold',
+                                )}
                             >
                                 Sei un trainer?
                             </Link>
@@ -130,7 +120,7 @@ export default function DarkHeader({ className }: { className?: string }) {
                                 className={cn(
                                     'inline-flex h-11 items-center rounded-full px-4.5 text-[15px] font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring md:px-5 md:font-medium md:hover:text-brand',
                                     onPhoto
-                                        ? 'h-10 text-base'
+                                        ? 'h-10 text-base md:h-11 md:bg-foreground/12 md:px-5.5 md:font-semibold md:backdrop-blur-md md:hover:bg-foreground/18 md:hover:text-foreground'
                                         : 'max-md:border max-md:border-white/12 max-md:bg-card',
                                 )}
                             >

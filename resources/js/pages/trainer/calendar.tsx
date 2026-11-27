@@ -1,12 +1,19 @@
 import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AddSessionDialog from '@/components/trainer/area/add-session-dialog';
 import type { PopoverAnchor } from '@/components/trainer/area/add-session-dialog';
 import type { CalendarView } from '@/components/trainer/area/calendar-nav';
 import CalendarDesktop from '@/components/trainer/calendar/calendar-desktop';
 import CalendarMobile from '@/components/trainer/calendar/calendar-mobile';
+import ReschedulePanel from '@/components/trainer/calendar/reschedule-panel';
+import type { SessionRowContext } from '@/components/trainer/calendar/session-row';
+import {
+    nextSessionId,
+    sessionKind,
+} from '@/components/trainer/calendar/session-status';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { calendarItems, romeParts } from '@/lib/calendar';
+import type { CalendarItem } from '@/lib/calendar';
 import { calendar } from '@/routes/trainer';
 import type { CalendarEvent, SessionOptions } from '@/types';
 
@@ -33,9 +40,11 @@ const viewParams: Record<CalendarView, string> = {
 };
 
 /**
- * "Calendario": the day hour by hour (the default), the week or the month.
- * Desktop and phones have two different drawings on the same data
- * (calendar-desktop.tsx, calendar-mobile.tsx).
+ * "Calendario" (design "Trainer · Calendario · nuovo"): the day hour by
+ * hour (the default), the week or the month. Desktop and phones have two
+ * different drawings on the same data (calendar-desktop.tsx,
+ * calendar-mobile.tsx). "+" and a free hour open "Nuova seduta"; a session
+ * opens its details, with "Sposta" and "Annulla".
  */
 export default function Calendar({
     view,
@@ -47,19 +56,42 @@ export default function Calendar({
     sessionOptions,
 }: CalendarProps) {
     const isMobile = useIsMobile();
-    const [now] = useState(() => new Date());
+    const [now, setNow] = useState(() => new Date());
     const today = romeParts(now).date;
-    const items = calendarItems(events);
+
+    // "Tra 1 h 30" and "Fatta" follow the clock.
+    useEffect(() => {
+        const timer = window.setInterval(() => setNow(new Date()), 60_000);
+
+        return () => window.clearInterval(timer);
+    }, []);
+
+    // The sessions cancelled in this visit stay in the list as "Annullata".
+    const [cancelled, setCancelled] = useState<CalendarItem[]>([]);
+    const items = useMemo(() => {
+        const gone = new Set(cancelled.map((item) => item.id));
+
+        return [
+            ...calendarItems(events).filter((item) => !gone.has(item.id)),
+            ...cancelled,
+        ];
+    }, [events, cancelled]);
 
     // The day chosen and the session open: back to the shown day after each move.
     const [selectedDay, setSelectedDay] = useState(focus);
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [shownFocus, setShownFocus] = useState(focus);
-    // "Aggiungi seduta": the day, the hour clicked in the grid, where it opens.
+    // "Nuova seduta": the day, the hour clicked, where it opens.
     const [adding, setAdding] = useState<{
         date: string;
         time?: string;
         anchor: PopoverAnchor | null;
+        fromSlot: boolean;
+    } | null>(null);
+    // "Sposta": the session and the button it opens from.
+    const [moving, setMoving] = useState<{
+        item: CalendarItem;
+        anchor: PopoverAnchor;
     } | null>(null);
 
     if (focus !== shownFocus) {
@@ -70,6 +102,10 @@ export default function Calendar({
     /** Loads only the bookings of the new period: the page stays as it is. */
     const show = (nextView: CalendarView, day: string) => {
         setSelectedDay(day);
+
+        if (nextView !== view) {
+            setSelectedId(null);
+        }
 
         router.get(
             calendar.url({
@@ -92,6 +128,31 @@ export default function Calendar({
         );
     };
 
+    const nextId = nextSessionId(
+        items.filter((item) => !cancelled.includes(item)),
+        today,
+        now,
+    );
+    const context: SessionRowContext = {
+        now,
+        desktop: !isMobile,
+        kindOf: (item) =>
+            sessionKind(item, now, nextId, cancelled.includes(item)),
+        onMove: (item, button) =>
+            setMoving({
+                item,
+                anchor: {
+                    rect: button.getBoundingClientRect(),
+                    placement: 'side',
+                },
+            }),
+        onCancelled: (item) =>
+            setCancelled((list) => [
+                ...list.filter((other) => other.id !== item.id),
+                item,
+            ]),
+    };
+
     const viewProps = {
         view,
         focus,
@@ -100,21 +161,19 @@ export default function Calendar({
         maxDate,
         items,
         monthCounts: Array.isArray(monthCounts) ? {} : monthCounts,
-        sessionOptions,
-        now,
+        canAdd: sessionOptions !== null,
         selectedDay,
         selectedId,
         onSelect: setSelectedId,
         show,
-        onAdd: (button?: HTMLElement) =>
+        onAdd: (button: HTMLElement) =>
             setAdding({
                 date: selectedDay,
-                anchor: button
-                    ? {
-                          rect: button.getBoundingClientRect(),
-                          placement: 'below',
-                      }
-                    : null,
+                anchor: {
+                    rect: button.getBoundingClientRect(),
+                    placement: 'below',
+                },
+                fromSlot: false,
             }),
         onPickSlot: (date: string, time: string, cell: HTMLElement) =>
             setAdding({
@@ -124,16 +183,19 @@ export default function Calendar({
                     rect: cell.getBoundingClientRect(),
                     placement: 'side',
                 },
+                fromSlot: true,
             }),
-        onAddOnDay: (date: string, cell: HTMLElement) =>
+        onAddOnDay: (date: string, button: HTMLElement) =>
             setAdding({
                 date,
                 anchor: {
-                    rect: cell.getBoundingClientRect(),
+                    rect: button.getBoundingClientRect(),
                     placement: 'side',
                 },
+                fromSlot: false,
             }),
         draft: adding?.time ? { date: adding.date, time: adding.time } : null,
+        context,
     };
 
     return (
@@ -148,7 +210,17 @@ export default function Calendar({
                     date={adding?.date ?? selectedDay}
                     time={adding?.time}
                     anchor={adding?.anchor}
+                    fromSlot={adding?.fromSlot ?? false}
                     today={today}
+                />
+            )}
+
+            {moving && (
+                <ReschedulePanel
+                    key={moving.item.id}
+                    item={moving.item}
+                    anchor={isMobile ? null : moving.anchor}
+                    onClose={() => setMoving(null)}
                 />
             )}
 
@@ -161,4 +233,4 @@ export default function Calendar({
     );
 }
 
-Calendar.layout = { section: 'calendar', fill: true };
+Calendar.layout = { section: 'calendar' };

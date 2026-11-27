@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { useId, useState } from 'react';
 import InputError from '@/components/input-error';
 import { areaButtonClassName } from '@/components/mp/area-bits';
+import ReportDialog from '@/components/shared/report-dialog';
 import { Initials } from '@/components/trainer/ui/bits';
 import { formatPastDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -14,7 +15,8 @@ const REPLY_MAX = 1000;
 /**
  * A client's review in "Recensioni" (design "Trainer · Recensioni · nuovo"):
  * who, when and the stars, the text, then the trainer's public reply or
- * "Rispondi". One reply only: it cannot be changed.
+ * "Rispondi". One reply only: it cannot be changed. "Segnala" sends the
+ * review to the team (only its trainer can report it).
  */
 export default function ReviewReplyCard({
     review,
@@ -150,6 +152,13 @@ export default function ReviewReplyCard({
                     </button>
                 </div>
             )}
+            <ReportDialog
+                type="review"
+                target={review.id}
+                label="Segnala"
+                className="self-end"
+                contentClassName="theme-dark"
+            />
         </article>
     );
 }

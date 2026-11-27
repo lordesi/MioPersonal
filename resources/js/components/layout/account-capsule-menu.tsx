@@ -50,12 +50,6 @@ type AccountCapsuleMenuProps = {
     plain?: boolean;
 };
 
-const ROLE_LABELS = {
-    client: 'Cliente',
-    trainer: 'Trainer',
-    gym: 'Palestra',
-} as const;
-
 /**
  * Groups of links split by separators; "Esci" comes after the last one.
  * The same for each role: the area, the profile (and the public page of a
@@ -135,8 +129,8 @@ const itemClassName =
 
 /**
  * The account menu of the public headers ("Menu C"): the avatar with the
- * turquoise ring opens a glass capsule with the name and the role, and
- * under it the glass list of links. The same on phones and desktop.
+ * turquoise ring opens the glass list of links (no name nor role on top).
+ * The same on phones and desktop.
  */
 export default function AccountCapsuleMenu({
     variant,
@@ -174,29 +168,6 @@ export default function AccountCapsuleMenu({
                     collisionPadding={16}
                     className="theme-dark z-50 flex w-75 max-w-[calc(100vw-2rem)] flex-col gap-3 bg-transparent! font-sans text-foreground outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-2"
                 >
-                    <div
-                        className={cn(
-                            'flex items-center gap-3 rounded-full py-2 pr-3 pl-2',
-                            glass,
-                        )}
-                    >
-                        <Initials
-                            name={name}
-                            src={avatar}
-                            size={44}
-                            className={cn(
-                                !plain &&
-                                    'shadow-[0_0_0_2px_#1c1c1c,0_0_0_4px_#42d7d9]',
-                            )}
-                        />
-                        <span className="min-w-0 flex-1 truncate text-base leading-5.25 font-semibold tracking-[-0.31px]">
-                            {name}
-                        </span>
-                        <span className="shrink-0 rounded-full bg-brand px-2.5 py-0.75 text-xs leading-4 font-semibold text-[#0a0a0a]">
-                            {ROLE_LABELS[variant]}
-                        </span>
-                    </div>
-
                     <div
                         className={cn(
                             'flex flex-col gap-0.5 rounded-[28px] p-2',

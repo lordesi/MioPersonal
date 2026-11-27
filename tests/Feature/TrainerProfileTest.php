@@ -221,6 +221,18 @@ class TrainerProfileTest extends TestCase
             );
     }
 
+    public function test_only_the_trainer_of_the_profile_sees_it_as_their_own()
+    {
+        $profile = TrainerProfile::factory()->approved()->create();
+
+        $this->get(route('trainers.show', $profile->slug))
+            ->assertInertia(fn (Assert $page) => $page->where('ownProfile', false));
+        $this->actingAs(User::factory()->create())->get(route('trainers.show', $profile->slug))
+            ->assertInertia(fn (Assert $page) => $page->where('ownProfile', false));
+        $this->actingAs($profile->user)->get(route('trainers.show', $profile->slug))
+            ->assertInertia(fn (Assert $page) => $page->where('ownProfile', true));
+    }
+
     public function test_the_average_counts_only_the_reviews_not_hidden()
     {
         $profile = TrainerProfile::factory()->approved()->create();

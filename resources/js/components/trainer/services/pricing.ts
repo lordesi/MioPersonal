@@ -3,12 +3,10 @@ import type {
     Pricing,
     SessionType,
 } from '@/components/onboarding/trainer/draft';
-import { onlinePrices } from '@/components/onboarding/trainer/draft';
-import { formatDuration, formatPrice } from '@/lib/format';
 
 /**
  * The calculations of "Servizi e prezzi", without the screen: columns of
- * the price list, package savings, the rows of the preview.
+ * the price list and package savings.
  */
 
 /** "Prima seduta per nuovi clienti": not offered, free or at a lower price. */
@@ -93,113 +91,4 @@ export function packageComparison(
                 ? Math.round((savingCents / separateCents) * 100)
                 : 0,
     };
-}
-
-/** A row of "Così ti vedono i clienti". */
-export type PreviewRow = {
-    key: string;
-    name: string;
-    /** "Nuovi clienti", "Risparmi 20%". */
-    badge?: string;
-    meta: string;
-    price: string;
-};
-
-/**
- * "50 €" for one duration, "da 50 €" for more, or "Prezzo da impostare"
- * while no price is written.
- */
-function fromPrice(cents: (number | null)[]): string {
-    const prices = cents.filter((price): price is number => price !== null);
-
-    if (prices.length === 0) {
-        return 'Prezzo da impostare';
-    }
-
-    const lowest = formatPrice(Math.min(...prices));
-
-    return cents.length > 1 ? `da ${lowest}` : lowest;
-}
-
-/**
- * The services as clients will see them, in the order of the profile: the
- * first session, each kind of session (and its online prices), the packages.
- * A kind of session without durations doesn't show up.
- */
-export function previewRows(
-    pricing: Pricing,
-    firstMode: FirstSessionMode,
-    ownOnline: boolean,
-): PreviewRow[] {
-    const rows: PreviewRow[] = [];
-    const first = pricing.firstSession;
-
-    if (firstMode !== 'off') {
-        rows.push({
-            key: 'first',
-            name: 'Prima seduta',
-            badge: 'Nuovi clienti',
-            meta: `${formatDuration(first.minutes)} · solo per chi prenota la prima volta`,
-            price:
-                firstMode === 'free'
-                    ? 'Gratuita'
-                    : first.priceCents
-                      ? formatPrice(first.priceCents)
-                      : 'Prezzo da impostare',
-        });
-    }
-
-    pricing.sessions.forEach((session, index) => {
-        if (session.prices.length === 0) {
-            return;
-        }
-
-        const name = session.name.trim() || NEW_SESSION_NAME;
-        const durations =
-            session.prices
-                .map((price) => shortDuration(price.minutes))
-                .join(' · ') +
-            (session.maxPeople > 1
-                ? ` · fino a ${session.maxPeople} persone`
-                : '');
-        const meta = (note: string) =>
-            note.trim() ? `${durations} · ${note.trim()}` : durations;
-
-        rows.push({
-            key: `session-${index}`,
-            name,
-            meta: meta(session.note),
-            price: fromPrice(session.prices.map((price) => price.priceCents)),
-        });
-
-        if (ownOnline) {
-            rows.push({
-                key: `online-${index}`,
-                name: `${name} (online)`,
-                meta: meta(session.onlineNote),
-                price: fromPrice(
-                    onlinePrices(session).map((price) => price.priceCents),
-                ),
-            });
-        }
-    });
-
-    pricing.packages.forEach((item, index) => {
-        const { savingCents, percent } = packageComparison(
-            item,
-            pricing.sessions,
-        );
-
-        rows.push({
-            key: `package-${index}`,
-            name: `Pacchetto ${item.sessions} sedute da ${formatDuration(item.minutes)}`,
-            badge: savingCents > 0 ? `Risparmi ${percent}%` : undefined,
-            meta: item.priceCents
-                ? `${formatPrice(Math.round(item.priceCents / item.sessions))} a seduta`
-                : 'Prezzo da impostare',
-            price: item.priceCents ? formatPrice(item.priceCents) : '—',
-        });
-    });
-
-    return rows;
 }

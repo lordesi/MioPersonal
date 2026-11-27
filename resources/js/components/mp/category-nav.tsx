@@ -3,24 +3,19 @@ import { Building2, Dumbbell, Flag, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { SearchKind } from '@/components/search/search-kind-toggle';
 import { courseSearchUrl } from '@/lib/course';
-import { useFeatures } from '@/lib/features';
+import { useFeatures, withFeatures } from '@/lib/features';
 import type { FeatureName } from '@/lib/features';
 import { gymSearchUrl } from '@/lib/gym';
 import { hoverPrefetch } from '@/lib/prefetch';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
-import { comingSoon } from '@/routes';
 import { search as eventsSearch } from '@/routes/events';
-
-/** The address word of "In arrivo" for each category switched off. */
-export type ComingSoonKind = 'palestre' | 'corsi' | 'eventi';
 
 type Category = {
     value: SearchKind;
     label: string;
     icon: LucideIcon;
     feature?: FeatureName;
-    soon?: ComingSoonKind;
     /** Its search, in the same city. */
     url: (city: string | null) => string;
 };
@@ -37,7 +32,6 @@ export const categories: Category[] = [
         label: 'Palestre',
         icon: Building2,
         feature: 'gyms',
-        soon: 'palestre',
         url: (city) => gymSearchUrl({}, city),
     },
     {
@@ -45,7 +39,6 @@ export const categories: Category[] = [
         label: 'Corsi',
         icon: Users,
         feature: 'courses',
-        soon: 'corsi',
         url: (city) => courseSearchUrl({}, city),
     },
     {
@@ -53,14 +46,9 @@ export const categories: Category[] = [
         label: 'Eventi',
         icon: Flag,
         feature: 'events',
-        soon: 'eventi',
         url: (city) => eventsSearch.url(city ? { city } : undefined),
     },
 ];
-
-/** The category of an "In arrivo" page. */
-export const categoryOfSoon = (kind: ComingSoonKind) =>
-    categories.find((category) => category.soon === kind) ?? categories[1];
 
 type CategoryNavProps = {
     current: SearchKind | null;
@@ -71,32 +59,31 @@ type CategoryNavProps = {
 
 /**
  * "Trainer · Palestre · Corsi · Eventi" (design "CategoryNav"): an icon in a
- * box, turquoise on the current one, and the name underlined. A category
- * switched off (lib/features.ts) opens its "In arrivo" page.
+ * box, turquoise on the current one, and the name underlined. Only the
+ * categories switched on (lib/features.ts): with the trainers alone there is
+ * nothing to switch to, and nothing shows.
  */
 export default function CategoryNav({
     current,
     city = null,
     className,
 }: CategoryNavProps) {
-    const features = useFeatures();
+    const shown = withFeatures(categories, useFeatures());
+
+    if (shown.length < 2) {
+        return null;
+    }
 
     return (
         <nav
             aria-label="Categoria"
             className={cn(
-                'grid grid-cols-4 md:grid-cols-[repeat(4,96px)]',
+                'grid auto-cols-fr grid-flow-col md:auto-cols-[96px]',
                 className,
             )}
         >
-            {categories.map((category) => {
-                const on =
-                    category.feature === undefined ||
-                    features[category.feature];
-                const href =
-                    on || !category.soon
-                        ? category.url(city)
-                        : comingSoon.url(category.soon);
+            {shown.map((category) => {
+                const href = category.url(city);
                 const active = category.value === current;
                 const Icon = category.icon;
 

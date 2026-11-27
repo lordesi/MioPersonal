@@ -117,7 +117,7 @@ export default function GymProfileEdit({
                     update={change}
                     errors={errors}
                 />
-                <div className="sticky bottom-20 z-10 flex justify-end rounded-[20px] border bg-card/95 p-3 shadow-lg backdrop-blur-sm md:bottom-4">
+                <div className="flex justify-end rounded-[20px] border bg-card p-3">
                     <Button
                         type="submit"
                         disabled={!ready || form.processing}

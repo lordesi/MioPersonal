@@ -215,11 +215,7 @@ export default function HomeView(props: HomeViewProps) {
 
                 {!isMobile && (
                     <div className="flex min-w-0 flex-col gap-8">
-                        {requestsBlock || (
-                            <p className="flex items-center rounded-full bg-card px-4.5 py-3 text-[15px] text-muted-foreground">
-                                Nessuna richiesta da confermare
-                            </p>
-                        )}
+                        {requestsBlock}
                         <PackagesBlock packages={packages} variant="tiles" />
                     </div>
                 )}

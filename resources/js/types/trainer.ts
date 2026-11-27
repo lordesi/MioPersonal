@@ -370,6 +370,8 @@ export type CalendarEvent = SessionChange & {
     phone: string | null;
     /** "Seduta 2 di 10" as numbers; null for a single session. */
     package: { position: number; total: number } | null;
+    /** "Pagamento": the total of the session, in cents. */
+    priceCents: number;
     kind: 'confirmed' | 'pending';
     /** "Invita un amico": the friends who joined the client. */
     guestNames: string[];
@@ -385,7 +387,13 @@ export type CalendarEvent = SessionChange & {
 
 /** "Aggiungi seduta": who, what and where. */
 export type SessionOptions = {
-    clients: { id: number; name: string; registered: boolean }[];
+    clients: {
+        id: number;
+        name: string;
+        registered: boolean;
+        /** The package still going, "Boxe · 7 di 10"; null without one. */
+        detail: string | null;
+    }[];
     services: {
         id: number;
         name: string;
@@ -525,7 +533,7 @@ export type TrainerAvailability = {
 };
 
 /**
- * "Giorni e settimane diverse" (App\Support\TrainerDayOverrides::blocks):
+ * "Per settimana" and "Ferie e chiusure" (App\Support\TrainerDayOverrides::blocks):
  * days in a row with the same note, all closed or all with their own hours.
  */
 export type TrainerDayOverrideBlock = {

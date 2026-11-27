@@ -18,7 +18,7 @@ type ReviewsBlockProps = {
     >;
     /** Every review: undefined until "Mostra tutte" asks the server for them. */
     allReviews?: TrainerReview[];
-    /** "Segnala" under each review: not in the preview of a profile. */
+    /** "Segnala" under each review: only for the trainer who received them. */
     canReport: boolean;
 };
 
@@ -170,10 +170,6 @@ export default function ReviewsBlock({
                             </button>
                         )
                     ))}
-                <p className="text-[13px] text-muted-foreground">
-                    Solo chi ha fatto una seduta con {firstName} può lasciare
-                    una recensione.
-                </p>
             </div>
         </section>
     );

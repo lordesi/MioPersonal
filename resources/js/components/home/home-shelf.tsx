@@ -38,7 +38,7 @@ export default function HomeShelf<T>({
             <div className="flex items-center justify-between gap-4 px-4 md:px-0">
                 <h2
                     id={id}
-                    className="text-[22px] leading-7 font-bold tracking-[-0.02em] md:text-[28px] md:leading-8.5"
+                    className="text-[22px] leading-7 font-bold tracking-[-0.02em] md:text-[30px] md:leading-9"
                 >
                     {title}
                 </h2>

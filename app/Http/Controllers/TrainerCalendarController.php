@@ -7,6 +7,7 @@ use App\Enums\BookingStatus;
 use App\Enums\PlaceType;
 use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Booking;
+use App\Models\ClientPackage;
 use App\Models\Service;
 use App\Models\TrainerClient;
 use App\Models\TrainerPlace;
@@ -95,6 +96,8 @@ class TrainerCalendarController extends Controller
                     'phone' => $booking->client->phone ?? $booking->trainerClient?->phone,
                     // "Seduta 2 di 10"; null for a single session.
                     'package' => TrainerPastSessions::packageProgress($booking),
+                    // "Pagamento" in the details: the total of the session.
+                    'priceCents' => $booking->price_cents,
                     'kind' => $booking->status === BookingStatus::Confirmed ? 'confirmed' : 'pending',
                     // "Aggiungi seduta": waiting for the client, not for the trainer.
                     'fromTrainer' => $booking->requested_by === BookingActor::Trainer,
@@ -153,17 +156,34 @@ class TrainerCalendarController extends Controller
      * single sessions they offer and their places (not "Online": that comes
      * with the online services).
      *
-     * @return array{clients: list<array{id: int, name: string, registered: bool}>, services: list<array{id: int, name: string, minutes: int, priceCents: int}>, places: list<array{id: int, label: string}>}
+     * @return array{clients: list<array{id: int, name: string, registered: bool, detail: string|null}>, services: list<array{id: int, name: string, minutes: int, priceCents: int}>, places: list<array{id: int, label: string}>}
      */
     public function sessionOptions(TrainerProfile $profile): array
     {
+        // Under the name in the list: the package still going, "Boxe · 7 di 10".
+        $packages = $profile->clientPackages()
+            ->bought()
+            ->whereNotNull('client_id')
+            ->withSessionCounts()
+            ->oldest('bought_at')
+            ->get()
+            ->filter(fn (ClientPackage $package) => ($package->done_count ?? 0) < $package->sessions_total)
+            // The oldest one first: the one about to end.
+            ->unique('client_id')
+            ->keyBy('client_id');
+
         return [
             'clients' => array_values($profile->clientRecords()->with('user')->get()
-                ->map(fn (TrainerClient $record) => [
-                    'id' => $record->id,
-                    'name' => $record->user->name ?? $record->name,
-                    'registered' => $record->isRegistered(),
-                ])
+                ->map(function (TrainerClient $record) use ($packages): array {
+                    $package = $record->user_id === null ? null : $packages->get($record->user_id);
+
+                    return [
+                        'id' => $record->id,
+                        'name' => $record->user->name ?? $record->name,
+                        'registered' => $record->isRegistered(),
+                        'detail' => $package === null ? null : "{$package->name} · ".($package->done_count ?? 0)." di {$package->sessions_total}",
+                    ];
+                })
                 ->sortBy(fn (array $client) => mb_strtolower($client['name']))
                 ->values()
                 ->all()),

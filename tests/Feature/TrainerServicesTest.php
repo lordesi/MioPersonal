@@ -60,7 +60,8 @@ class TrainerServicesTest extends TestCase
                 ->where('pricing.sessions.0.name', 'Seduta singola')
                 ->where('pricing.sessions.0.prices', [['minutes' => 60, 'priceCents' => 4000], ['minutes' => 120, 'priceCents' => 7500]])
                 ->where('pricing.firstSession.enabled', false)
-                ->where('asksOnlinePrice', false)
+                ->missing('asksOnlinePrice')
+                ->missing('booked')
             );
     }
 

@@ -53,6 +53,8 @@ type ProfileProps = {
     trainer: TrainerProfile;
     /** Not approved yet: only its trainer and the team can see it. */
     preview: boolean;
+    /** The trainer looking at their own profile: "Segnala" under the reviews. */
+    ownProfile: boolean;
     /** Opened from the trainer's invite link: "Marco ti ha invitato". */
     invited: boolean;
     /** Every review, loaded by "Mostra tutte le recensioni". */
@@ -74,6 +76,7 @@ type ProfileProps = {
 export default function Profile({
     trainer,
     preview,
+    ownProfile,
     invited,
     allReviews,
     events,
@@ -331,17 +334,14 @@ export default function Profile({
                         <ReviewsBlock
                             trainer={trainer}
                             allReviews={allReviews}
-                            canReport={!preview}
+                            canReport={ownProfile && !preview}
                         />
                     </div>
 
                     <BookingAside
                         booking={booking}
                         online={trainer.online}
-                        notes={[
-                            trainer.confirmLabel,
-                            trainer.responseTimeLabel,
-                        ]}
+                        notes={[trainer.responseTimeLabel]}
                         trainerFirstName={firstName}
                     />
                 </div>

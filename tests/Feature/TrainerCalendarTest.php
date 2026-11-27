@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Enums\BookingStatus;
 use App\Models\Booking;
+use App\Models\ClientPackage;
 use App\Models\TrainerProfile;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -49,6 +51,30 @@ class TrainerCalendarTest extends TestCase
                 ->where('events.0.kind', 'confirmed')
                 ->where('events.1.id', $waiting->id)
                 ->where('events.1.kind', 'pending')
+            );
+    }
+
+    /** "Pagamento" in the details, and the package under the name in "Nuova seduta". */
+    public function test_the_price_of_each_session_and_the_package_of_each_client()
+    {
+        $trainer = TrainerProfile::factory()->approved()->create();
+        $anna = User::factory()->create(['name' => 'Anna Neri']);
+        $booking = Booking::factory()->for($trainer)->for($anna, 'client')->confirmed()->at($this->now->setTime(18, 0))->create(['price_cents' => 4500]);
+        $trainer->clientRecords()->create(['user_id' => $anna->id, 'name' => 'Anna Neri']);
+        $trainer->clientRecords()->create(['name' => 'Luca Verdi']);
+        ClientPackage::factory()->for($trainer)->for($anna, 'client')->create(['name' => 'Boxe', 'sessions_total' => 10]);
+        // Over: all the sessions done, not shown.
+        ClientPackage::factory()->for($trainer)->for($anna, 'client')->create(['name' => 'Pesi', 'sessions_total' => 0]);
+
+        $this->actingAs($trainer->user)
+            ->get(route('trainer.calendar'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('events.0.id', $booking->id)
+                ->where('events.0.priceCents', 4500)
+                ->where('sessionOptions.clients.0.name', 'Anna Neri')
+                ->where('sessionOptions.clients.0.detail', 'Boxe · 0 di 10')
+                ->where('sessionOptions.clients.1.name', 'Luca Verdi')
+                ->where('sessionOptions.clients.1.detail', null)
             );
     }
 

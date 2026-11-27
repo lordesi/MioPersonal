@@ -26,7 +26,6 @@ import {
     carbCardClassName,
 } from '@/components/mp/area-bits';
 import DarkDialog from '@/components/mp/dark-dialog';
-import StatsBlock from '@/components/trainer/home/stats-block';
 import { Initials } from '@/components/trainer/ui/bits';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { useFeatures } from '@/lib/features';
@@ -40,7 +39,6 @@ import {
     events,
     gyms,
     pastSessions,
-    profile,
     requests,
     reviews,
     services,
@@ -49,11 +47,7 @@ import {
 } from '@/routes/trainer';
 import { edit as editProfile } from '@/routes/trainer/profile';
 import { update as updateVisibility } from '@/routes/trainer/visibility';
-import type {
-    TrainerAreaData,
-    TrainerDashboardStats,
-    TrainerStatsPeriod,
-} from '@/types';
+import type { TrainerAreaData } from '@/types';
 
 type Visibility = {
     visibleInSearch: boolean;
@@ -78,50 +72,24 @@ type ProfileHubProps = {
         reviews: number;
         rating: number | null;
     } | null;
-    stats: TrainerDashboardStats | null;
 };
 
 /**
  * "Profilo" of the trainer (design "Trainer · Profilo · nuovo"): the photo
- * with the pencil, the name, the disciplines and the city, the statistics,
- * "Accetto nuove prenotazioni", then ATTIVITÀ, VETRINA, ACCOUNT, AIUTO and
- * "Esci". Desktop: the person and the numbers on the left, the lists on the
- * right.
+ * with the pencil, the name, the disciplines and the city, "Accetto nuove
+ * prenotazioni", then ATTIVITÀ, VETRINA, ACCOUNT, AIUTO and "Esci". Desktop:
+ * the person on the left, the lists on the right.
  */
 export default function ProfileHub({
     me,
     visibility,
     counts,
-    stats,
 }: ProfileHubProps) {
     const { trainerArea } = usePage<{ trainerArea?: TrainerAreaData }>().props;
     const features = useFeatures();
     const [askLogout, setAskLogout] = useState(false);
     const cleanup = useMobileNavigation();
     const pending = trainerArea?.pendingCount ?? 0;
-
-    const changePeriod = (
-        period: TrainerStatsPeriod,
-        from?: string,
-        to?: string,
-    ) => {
-        router.get(
-            profile.url({
-                query: {
-                    periodo: period === '7' ? undefined : period,
-                    dal: period === 'intervallo' ? from : undefined,
-                    al: period === 'intervallo' ? to : undefined,
-                },
-            }),
-            {},
-            {
-                only: ['stats'],
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    };
 
     return (
         <>
@@ -158,16 +126,6 @@ export default function ProfileHub({
                             )}
                         </div>
                     </div>
-
-                    {stats && (
-                        <StatsBlock
-                            stats={stats}
-                            today={stats.to}
-                            onChange={changePeriod}
-                            title="Le tue statistiche"
-                            chart={false}
-                        />
-                    )}
 
                     {visibility && <NewClientsSwitch visibility={visibility} />}
                 </div>
