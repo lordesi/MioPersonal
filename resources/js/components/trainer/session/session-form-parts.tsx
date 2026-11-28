@@ -1,15 +1,23 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { ReactNode, Ref } from 'react';
-import { labelMinutes, minutesLabel } from '@/components/mp/wheel-picker';
+import WheelPicker, {
+    labelMinutes,
+    timeOptions,
+} from '@/components/mp/wheel-picker';
 import { Avatar } from '@/components/trainer/calendar/session-row';
 import { shortDay } from '@/components/trainer/calendar/session-status';
+import type { ClientPicker } from '@/components/trainer/session/use-client-picker';
+import {
+    MAX_MINUTES,
+    MIN_MINUTES,
+} from '@/components/trainer/session/use-session-form';
 import type { SessionForm } from '@/components/trainer/session/use-session-form';
 import { Spinner } from '@/components/ui/spinner';
 import { monthCells, monthName, shiftMonth } from '@/lib/calendar';
 import { formatDayLong } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
-const focusRing =
+export const focusRing =
     'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#42D7D9]';
 
 /** "CLIENTE", "QUANDO"…: the small grey titles of the sections. */
@@ -21,7 +29,7 @@ export function SectionLabel({ children }: { children: ReactNode }) {
     );
 }
 
-function ErrorText({ children }: { children?: string }) {
+export function ErrorText({ children }: { children?: string }) {
     return children ? (
         <p role="alert" className="m-0 text-[13px] leading-4.5 text-[#FF7A7A]">
             {children}
@@ -30,7 +38,7 @@ function ErrorText({ children }: { children?: string }) {
 }
 
 /** A pill of TIPO DI SEDUTA, LUOGO and DURATA. */
-function Pill({
+export function Pill({
     on,
     onClick,
     children,
@@ -58,10 +66,10 @@ function Pill({
 }
 
 /** The fields of the panels: as `mp-field__input` of the design system. */
-const inputClassName =
+export const inputClassName =
     'w-full min-h-14 rounded-[14px] border border-[#5E6268] bg-[#121315] px-4 text-[17px] leading-5.5 tracking-[-0.43px] text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.5)] outline-none placeholder:text-muted-foreground focus-visible:border-[#42D7D9]';
 
-function TextField({
+export function TextField({
     label,
     value,
     onChange,
@@ -100,7 +108,18 @@ function TextField({
 }
 
 /** CLIENTE: someone of the list (search and choose) or someone new. */
-export function ClientSection({ form }: { form: SessionForm }) {
+export function ClientSection({
+    form,
+    error,
+}: {
+    form: ClientPicker;
+    error?: string;
+}) {
+    const listId = useId();
+    const searchRef = useRef<HTMLInputElement>(null);
+    // The list opens from the search bar; closed, only the client chosen shows.
+    const [listOpen, setListOpen] = useState(false);
+    const shown = listOpen ? form.matches : form.chosen ? [form.chosen] : [];
     const segment = (on: boolean) =>
         cn(
             'h-9.5 flex-1 cursor-pointer rounded-full border-0 text-sm font-semibold',
@@ -133,7 +152,19 @@ export function ClientSection({ form }: { form: SessionForm }) {
             </div>
 
             {form.mode === 'search' ? (
-                <div className="flex flex-col gap-2">
+                <div
+                    className="flex flex-col gap-2"
+                    // Out of the search and of the list: it closes.
+                    onBlur={(event) => {
+                        if (
+                            !event.currentTarget.contains(
+                                event.relatedTarget as Node | null,
+                            )
+                        ) {
+                            setListOpen(false);
+                        }
+                    }}
+                >
                     <div className="relative flex items-center">
                         <span className="pointer-events-none absolute left-3.5 flex text-muted-foreground">
                             <svg
@@ -152,26 +183,33 @@ export function ClientSection({ form }: { form: SessionForm }) {
                             </svg>
                         </span>
                         <input
+                            ref={searchRef}
                             type="search"
                             aria-label="Cerca un cliente"
+                            aria-expanded={listOpen}
+                            aria-controls={listId}
                             placeholder="Cerca un cliente"
                             value={form.query}
-                            onChange={(event) =>
-                                form.setQuery(event.target.value)
-                            }
+                            onFocus={() => setListOpen(true)}
+                            onClick={() => setListOpen(true)}
+                            onChange={(event) => {
+                                form.setQuery(event.target.value);
+                                setListOpen(true);
+                            }}
                             className={cn(
                                 inputClassName,
                                 'min-h-11.5 rounded-full pl-10.5',
                             )}
                         />
                     </div>
-                    {form.matches.length > 0 ? (
+                    {shown.length > 0 ? (
                         <div
+                            id={listId}
                             role="radiogroup"
                             aria-label="Cliente"
                             className="flex flex-col gap-0.5"
                         >
-                            {form.matches.map((client) => {
+                            {shown.map((client) => {
                                 const on = form.chosen?.id === client.id;
 
                                 return (
@@ -180,7 +218,16 @@ export function ClientSection({ form }: { form: SessionForm }) {
                                         type="button"
                                         role="radio"
                                         aria-checked={on}
-                                        onClick={() => form.pick(client.id)}
+                                        // The search keeps the focus: the list doesn't close under the finger.
+                                        onMouseDown={(event) =>
+                                            event.preventDefault()
+                                        }
+                                        onClick={() => {
+                                            form.pick(client.id);
+                                            form.setQuery('');
+                                            setListOpen(false);
+                                            searchRef.current?.blur();
+                                        }}
                                         className={cn(
                                             'flex w-full cursor-pointer items-center gap-3 rounded-2xl border-0 px-2.5 py-2 text-left text-foreground',
                                             focusRing,
@@ -226,12 +273,16 @@ export function ClientSection({ form }: { form: SessionForm }) {
                                 );
                             })}
                         </div>
-                    ) : (
+                    ) : form.clients.length === 0 ? (
                         <p className="m-0 px-1 text-[13px] text-muted-foreground">
-                            {form.clients.length === 0
-                                ? 'Non hai ancora clienti: aggiungine uno nuovo.'
-                                : 'Nessun cliente con questo nome.'}
+                            Non hai ancora clienti: aggiungine uno nuovo.
                         </p>
+                    ) : (
+                        listOpen && (
+                            <p className="m-0 px-1 text-[13px] text-muted-foreground">
+                                Nessun cliente con questo nome.
+                            </p>
+                        )
                     )}
                 </div>
             ) : (
@@ -261,7 +312,7 @@ export function ClientSection({ form }: { form: SessionForm }) {
                     </div>
                 </div>
             )}
-            <ErrorText>{form.clientError}</ErrorText>
+            <ErrorText>{error}</ErrorText>
         </div>
     );
 }
@@ -485,14 +536,14 @@ export function DayPickerPanel({
     );
 }
 
-/** The starts of "Scegli l’ora": every 15 minutes, 06:00 to 23:45. */
-const STARTS = Array.from({ length: (24 - 6) * 4 }, (_, index) =>
-    minutesLabel(6 * 60 + index * 15),
-);
-/** FINE: the start plus these minutes. */
-const LENGTHS = [30, 45, 60, 90, 120, 150];
+/** INIZIO of "Scegli l’ora": every 15 minutes, 06:00 to 23:45. */
+const START_OPTIONS = timeOptions(6 * 60, 24 * 60 - 15, 15);
 
-/** "Scegli l’ora": INIZIO and FINE side by side, then "Fatto". */
+/**
+ * "Scegli l’ora": the wheels INIZIO and FINE side by side, as "Nuova
+ * fascia", then "Fatto". FINE goes from 15 minutes to 4 hours after the
+ * start, not past midnight.
+ */
 export function TimePickerPanel({
     form,
     onDone,
@@ -500,23 +551,18 @@ export function TimePickerPanel({
     form: SessionForm;
     onDone: () => void;
 }) {
-    const startsRef = useRef<HTMLDivElement>(null);
     const startMinutes = labelMinutes(form.time);
-    const wheel = (on: boolean) =>
-        cn(
-            'h-11 w-full shrink-0 cursor-pointer rounded-[14px] border-0 tabular-nums',
-            focusRing,
-            on
-                ? 'bg-[rgba(66,215,217,0.14)] text-[22px] font-bold text-[#42D7D9]'
-                : 'bg-transparent text-[17px] font-medium text-muted-foreground hover:text-foreground',
-        );
-
-    // The start chosen in sight when it opens.
-    useEffect(() => {
-        startsRef.current
-            ?.querySelector<HTMLElement>('[aria-pressed="true"]')
-            ?.scrollIntoView({ block: 'center' });
-    }, []);
+    const endOptions = timeOptions(
+        startMinutes + MIN_MINUTES,
+        Math.min(startMinutes + MAX_MINUTES, 24 * 60),
+        15,
+    );
+    // A length not on the quarter hour (a service of 50 minutes) is a row too.
+    const ends = endOptions.some((option) => option.value === form.end)
+        ? endOptions
+        : [...endOptions, { value: form.end, label: form.end }].sort(
+              (a, b) => labelMinutes(a.value) - labelMinutes(b.value),
+          );
 
     return (
         <div
@@ -525,54 +571,27 @@ export function TimePickerPanel({
             className="flex flex-col gap-3.5"
         >
             <b className="text-[17px] font-bold">{formatDayLong(form.date)}</b>
-            <div className="flex items-start gap-2.5">
-                <div className="flex flex-1 flex-col gap-1.5">
-                    <span className="text-center text-[13px] font-semibold text-muted-foreground">
-                        INIZIO
-                    </span>
-                    <div
-                        ref={startsRef}
-                        className="flex h-71 [scrollbar-width:none] flex-col gap-0.5 overflow-y-auto"
-                    >
-                        {STARTS.map((time) => (
-                            <button
-                                key={time}
-                                type="button"
-                                aria-pressed={time === form.time}
-                                onClick={() => form.setTime(time)}
-                                className={wheel(time === form.time)}
-                            >
-                                {time}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+            <div className="flex items-start gap-3">
+                <WheelPicker
+                    label="Inizio"
+                    options={START_OPTIONS}
+                    value={form.time}
+                    onChange={form.setTime}
+                />
                 <span
                     aria-hidden="true"
-                    className="pt-8.5 text-xl text-muted-foreground"
+                    className="mt-[94px] text-[22px] text-muted-foreground"
                 >
                     –
                 </span>
-                <div className="flex flex-1 flex-col gap-1.5">
-                    <span className="text-center text-[13px] font-semibold text-muted-foreground">
-                        FINE
-                    </span>
-                    <div className="flex flex-col gap-0.5">
-                        {LENGTHS.filter(
-                            (length) => startMinutes + length <= 24 * 60,
-                        ).map((length) => (
-                            <button
-                                key={length}
-                                type="button"
-                                aria-pressed={form.minutes === length}
-                                onClick={() => form.setMinutes(length)}
-                                className={wheel(form.minutes === length)}
-                            >
-                                {minutesLabel(startMinutes + length)}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                <WheelPicker
+                    label="Fine"
+                    options={ends}
+                    value={form.end}
+                    onChange={(value) =>
+                        form.setMinutes(labelMinutes(value) - startMinutes)
+                    }
+                />
             </div>
             <div className="flex items-center justify-between gap-3">
                 <span className="text-[15px] font-semibold text-[#42D7D9] tabular-nums">
@@ -589,6 +608,45 @@ export function TimePickerPanel({
                     Fatto
                 </button>
             </div>
+        </div>
+    );
+}
+
+/**
+ * PACCHETTO, for a client with a package still to use: "Dal pacchetto"
+ * (chosen at first, the session is free) or "Seduta singola".
+ */
+export function PackageSection({ form }: { form: SessionForm }) {
+    const item = form.clientPackage;
+
+    if (!item) {
+        return null;
+    }
+
+    return (
+        <div className="flex flex-col gap-2.5">
+            <SectionLabel>PACCHETTO</SectionLabel>
+            <div className="flex flex-wrap gap-1.5">
+                <Pill
+                    on={form.usePackage}
+                    onClick={() => {
+                        form.setUsePackage(true);
+                        form.setMinutes(item.minutes);
+                    }}
+                >
+                    {item.name} ·{' '}
+                    {item.remaining === 1
+                        ? '1 rimasta'
+                        : `${item.remaining} rimaste`}
+                </Pill>
+                <Pill
+                    on={!form.usePackage}
+                    onClick={() => form.setUsePackage(false)}
+                >
+                    Seduta singola
+                </Pill>
+            </div>
+            <ErrorText>{form.packageError}</ErrorText>
         </div>
     );
 }

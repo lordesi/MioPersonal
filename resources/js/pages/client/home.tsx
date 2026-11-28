@@ -222,8 +222,8 @@ export default function Home({
     );
 }
 
-/** Phones: a card of 250 px in a row that snaps; from lg up a grid of 4. */
-const railItemClassName = 'w-62.5 shrink-0 snap-start lg:w-auto';
+/** Phones: a card of 272 px in a row that snaps; from lg up a grid of 4. */
+const railItemClassName = 'w-68 shrink-0 snap-start lg:w-auto';
 
 function Suggestions({
     id,

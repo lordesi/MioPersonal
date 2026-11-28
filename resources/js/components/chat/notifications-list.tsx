@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import {
     Bell,
     CalendarDays,
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import InboxEmpty from '@/components/chat/inbox-empty';
 import { areaEyebrowClassName } from '@/components/mp/area-bits';
 import type { AppNotification } from '@/lib/notifications';
 import {
@@ -46,25 +47,50 @@ function iconOf(item: AppNotification): LucideIcon {
 }
 
 /**
+ * The list loaded last, by account: opening "Notifiche" again shows it at
+ * once, while the new one loads behind (no "Carico…" every time).
+ */
+let kept: { userId: number; items: AppNotification[] } | null = null;
+
+/**
  * "Notifiche" of the Inbox (design "Inbox · notifiche · nuovo"): "Nuove"
  * with "Segna come lette", then "Precedenti". Each one opens its page.
  * Loaded in the background, like the bell (NotificationController).
  */
 export default function NotificationsList() {
-    const [items, setItems] = useState<AppNotification[] | null>(null);
+    const userId = usePage().props.auth?.user?.id ?? 0;
+    const [items, setShown] = useState<AppNotification[] | null>(() =>
+        kept?.userId === userId ? kept.items : null,
+    );
     const [failed, setFailed] = useState(false);
+
+    const setItems = (
+        next: (current: AppNotification[] | null) => AppNotification[] | null,
+    ) =>
+        setShown((current) => {
+            const value = next(current);
+            kept = value === null ? null : { userId, items: value };
+
+            return value;
+        });
 
     useEffect(() => {
         let alive = true;
 
         fetchNotifications()
-            .then(({ notifications }) => alive && setItems(notifications))
+            .then(({ notifications }) => {
+                if (alive) {
+                    kept = { userId, items: notifications };
+                    setShown(notifications);
+                }
+            })
+            // With a list already shown, it stays: only none at all is an error.
             .catch(() => alive && setFailed(true));
 
         return () => {
             alive = false;
         };
-    }, []);
+    }, [userId]);
 
     const fresh = items?.filter((item) => !item.read) ?? [];
     const old = items?.filter((item) => item.read) ?? [];
@@ -79,10 +105,10 @@ export default function NotificationsList() {
         markAllNotificationsRead()
             // The dot on the bell and on "Inbox".
             .then(() => router.reload({ only: ['auth'] }))
-            .catch(() => setItems(before));
+            .catch(() => setItems(() => before));
     };
 
-    if (failed) {
+    if (failed && items === null) {
         return (
             <p role="status" className={messageClassName}>
                 Non riesco a caricarle: riprova tra poco.
@@ -100,10 +126,11 @@ export default function NotificationsList() {
 
     if (items.length === 0) {
         return (
-            <p className={messageClassName}>
-                Nessuna notifica. Qui trovi conferme, promemoria e novità sulle
-                tue sedute.
-            </p>
+            <InboxEmpty
+                icon={Bell}
+                title="Nessuna notifica"
+                description="Qui trovi conferme, promemoria e novità sulle tue sedute."
+            />
         );
     }
 

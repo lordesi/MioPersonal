@@ -1,6 +1,8 @@
 import { Link } from '@inertiajs/react';
 import { ChevronDown, Plus } from 'lucide-react';
 import { useId, useState } from 'react';
+import type { MouseEvent } from 'react';
+import AddPackageDialog from '@/components/trainer/area/add-package-dialog';
 import { Initials, PackageRing } from '@/components/trainer/ui/bits';
 import { areaSectionTitleClassName } from '@/components/mp/area-bits';
 import {
@@ -9,14 +11,17 @@ import {
 } from '@/components/trainer/ui/styles';
 import { formatDayRelative, formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { clients, services } from '@/routes/trainer';
-import type { TrainerPackage } from '@/types';
+import { clients } from '@/routes/trainer';
+import type { PopoverAnchor } from '@/components/trainer/session/panel-shell';
+import type { SessionOptions, TrainerPackage } from '@/types';
 
 /** The tiles shown before "Vedi tutti". */
 const PREVIEW = 4;
 
 type PackagesBlockProps = {
     packages: TrainerPackage[];
+    /** "Aggiungi pacchetto": the clients and the packages; null without a profile. */
+    options: SessionOptions | null;
     /** Phones: tiles in two columns; desktop: rows in the side panel. */
     variant: 'tiles' | 'rows';
 };
@@ -24,28 +29,53 @@ type PackagesBlockProps = {
 /**
  * "Pacchetti attivi": the packages bought and not finished, the ones about
  * to end first, with a ring of the sessions left. A tile opens the client's
- * card. "Crea pacchetto" opens "Servizi e prezzi", where packages are made.
+ * card. "+" opens "Nuovo pacchetto" (AddPackageDialog): a package sold
+ * outside the site, given to a client.
  */
 export default function PackagesBlock({
     packages,
+    options,
     variant,
 }: PackagesBlockProps) {
     const titleId = useId();
     const listId = useId();
     const [all, setAll] = useState(false);
+    // "Nuovo pacchetto": where its popover opens on desktop.
+    const [adding, setAdding] = useState<PopoverAnchor | null>(null);
     const shown = all ? packages : packages.slice(0, PREVIEW);
+    const add = (event: MouseEvent<HTMLButtonElement>) =>
+        setAdding({
+            rect: event.currentTarget.getBoundingClientRect(),
+            placement: 'below',
+        });
+    const cardHref = (item: TrainerPackage) =>
+        clients.url({
+            query:
+                item.recordId !== null
+                    ? { con: item.recordId }
+                    : { cliente: item.clientId ?? undefined },
+        });
 
     return (
         <section aria-labelledby={titleId} className="flex flex-col gap-3">
+            {options && (
+                <AddPackageDialog
+                    open={adding !== null}
+                    onOpenChange={(next) => !next && setAdding(null)}
+                    options={options}
+                    anchor={adding}
+                />
+            )}
             <div className="flex items-center justify-between gap-3">
                 <h2 id={titleId} className={areaSectionTitleClassName}>
                     Pacchetti attivi
                 </h2>
-                {variant === 'tiles' ? (
-                    <Link
-                        href={services()}
-                        aria-label="Crea pacchetto"
-                        title="Crea pacchetto"
+                {options === null ? null : variant === 'tiles' ? (
+                    <button
+                        type="button"
+                        onClick={add}
+                        aria-label="Aggiungi pacchetto"
+                        title="Aggiungi pacchetto"
                         className="flex size-11 items-center justify-center rounded-full bg-brand text-black outline-none hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                         <Plus
@@ -53,10 +83,11 @@ export default function PackagesBlock({
                             className="size-5"
                             strokeWidth={2.5}
                         />
-                    </Link>
+                    </button>
                 ) : (
-                    <Link
-                        href={services()}
+                    <button
+                        type="button"
+                        onClick={add}
                         className={cn(brandButtonClassName, 'h-9 px-3.5')}
                     >
                         <Plus
@@ -64,8 +95,8 @@ export default function PackagesBlock({
                             className="size-4"
                             strokeWidth={2.5}
                         />
-                        Crea pacchetto
-                    </Link>
+                        Aggiungi pacchetto
+                    </button>
                 )}
             </div>
 
@@ -81,11 +112,7 @@ export default function PackagesBlock({
                         return (
                             <Link
                                 key={item.id}
-                                href={clients.url({
-                                    query: {
-                                        cliente: item.clientId ?? undefined,
-                                    },
-                                })}
+                                href={cardHref(item)}
                                 className={cn(
                                     'flex flex-col gap-3.5 rounded-[24px] p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring',
                                     hot
@@ -140,11 +167,7 @@ export default function PackagesBlock({
                         return (
                             <Link
                                 key={item.id}
-                                href={clients.url({
-                                    query: {
-                                        cliente: item.clientId ?? undefined,
-                                    },
-                                })}
+                                href={cardHref(item)}
                                 className={cn(
                                     'flex items-center gap-3 rounded-2xl px-3 py-2.5',
                                     pressableRowClassName,

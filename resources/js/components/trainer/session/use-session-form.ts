@@ -1,20 +1,19 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { labelMinutes, minutesLabel } from '@/components/mp/wheel-picker';
+import {
+    CLIENT_ERROR_KEYS,
+    clientError,
+    useClientPicker,
+} from '@/components/trainer/session/use-client-picker';
 import { store } from '@/routes/trainer/calendar/sessions';
 import type { SessionOptions } from '@/types';
 
 type Errors = Partial<Record<string, string>>;
 
-/** CLIENTE: "Cliente esistente" (from the list) or "Nuovo cliente". */
-export type ClientMode = 'search' | 'new';
-
 /** Shortest and longest session (CreateTrainerSession::MIN/MAX_MINUTES). */
 export const MIN_MINUTES = 15;
 export const MAX_MINUTES = 240;
-
-/** How many clients the list shows at once (design: 4). */
-const LIST_SIZE = 4;
 
 export type SessionFormStart = {
     /** "YYYY-MM-DD": the day chosen in the calendar. */
@@ -27,10 +26,14 @@ export type SessionFormStart = {
     clientId?: number;
 };
 
+/** The messages shown under QUANDO. */
+const WHEN_KEYS = ['date', 'start', 'time', 'minutes'];
+
 /**
  * The state of "Nuova seduta", shared by the sheet of phones and the
  * popover of desktop (design "Trainer · Popover · nuovo"): the client, when,
- * which session, how long, where, the note. `save` sends it to
+ * which session, how long, where, the note, and "Dal pacchetto" for a
+ * client with a package still to use. `save` sends it to
  * TrainerManualSessionController::store.
  */
 export function useSessionForm(
@@ -38,17 +41,21 @@ export function useSessionForm(
     start: SessionFormStart,
 ) {
     const { clients, services, places } = options;
+    const first = clients.find((item) => item.id === start.clientId);
 
-    const [mode, setMode] = useState<ClientMode>('search');
-    const [clientId, setClientId] = useState<number | null>(
-        clients.find((item) => item.id === start.clientId)?.id ?? null,
-    );
-    const [query, setQuery] = useState('');
-    const [name, setName] = useState('');
-    const [phone, setPhone] = useState('');
-    const [email, setEmail] = useState('');
+    // A package lasts its own minutes: chosen with the client.
+    const [usePackage, setUsePackage] = useState(true);
     const [serviceId, setServiceId] = useState(services[0]?.id ?? 0);
-    const [minutes, setMinutes] = useState(services[0]?.minutes ?? 60);
+    const [minutes, setMinutes] = useState(
+        first?.package?.minutes ?? services[0]?.minutes ?? 60,
+    );
+    const client = useClientPicker(clients, start.clientId, (picked) => {
+        setUsePackage(true);
+
+        if (picked.package) {
+            setMinutes(picked.package.minutes);
+        }
+    });
     const [date, setDate] = useState(
         start.date < start.today ? start.today : start.date,
     );
@@ -58,42 +65,25 @@ export function useSessionForm(
     const [errors, setErrors] = useState<Errors>({});
     const [processing, setProcessing] = useState(false);
 
-    const chosen = clients.find((item) => item.id === clientId) ?? null;
     const endMinutes = Math.min(labelMinutes(time) + minutes, 24 * 60);
-    const needle = query.trim().toLowerCase();
-    const found = clients.filter((item) =>
-        item.name.toLowerCase().includes(needle),
-    );
-    // The client chosen stays in sight, first, while searching others.
-    const list =
-        chosen && !found.slice(0, LIST_SIZE).includes(chosen)
-            ? [chosen, ...found.filter((item) => item !== chosen)]
-            : found;
+    /** The package of the client chosen, whether it is used or not. */
+    const clientPackage = client.chosen?.package ?? null;
+    const packageId = usePackage && clientPackage ? clientPackage.id : null;
 
     return {
-        clients,
+        client,
         services,
         places,
-        chosen,
-        /** The clients of the list under the search. */
-        matches: list.slice(0, LIST_SIZE),
-        mode,
-        setMode,
-        query,
-        setQuery,
-        pick: setClientId,
-        name,
-        setName,
-        phone,
-        setPhone,
-        email,
-        setEmail,
+        clientPackage,
+        /** "Dal pacchetto" chosen (true) or "Seduta singola". */
+        usePackage: packageId !== null,
+        setUsePackage,
         serviceId,
         chooseService: (id: number) => {
             setServiceId(id);
             const next = services.find((item) => item.id === id);
 
-            if (next) {
+            if (next && packageId === null) {
                 setMinutes(next.minutes);
             }
         },
@@ -102,7 +92,16 @@ export function useSessionForm(
         date,
         setDate,
         time,
-        setTime,
+        /** A new start keeps the length, as long as it ends by midnight. */
+        setTime: (next: string) => {
+            setTime(next);
+            setMinutes((current) =>
+                Math.max(
+                    MIN_MINUTES,
+                    Math.min(current, 24 * 60 - labelMinutes(next)),
+                ),
+            );
+        },
         /** "19:00": the end, from the start and the minutes. */
         end: minutesLabel(endMinutes),
         placeId,
@@ -111,13 +110,9 @@ export function useSessionForm(
         setNote,
         errors,
         processing,
-        clientError:
-            errors.client_record_id ??
-            errors.new_client ??
-            errors['new_client.name'] ??
-            errors['new_client.email'] ??
-            errors['new_client.phone'],
-        whenError: errors.date ?? errors.start ?? errors.time ?? errors.minutes,
+        clientError: clientError(errors),
+        whenError: WHEN_KEYS.map((key) => errors[key]).find(Boolean),
+        packageError: errors.client_package_id,
         /** The other messages of the server, once each. */
         otherErrors: [
             ...new Set(
@@ -125,15 +120,9 @@ export function useSessionForm(
                     .filter(
                         ([key]) =>
                             ![
-                                'client_record_id',
-                                'new_client',
-                                'new_client.name',
-                                'new_client.email',
-                                'new_client.phone',
-                                'date',
-                                'start',
-                                'time',
-                                'minutes',
+                                ...CLIENT_ERROR_KEYS,
+                                ...WHEN_KEYS,
+                                'client_package_id',
                             ].includes(key),
                     )
                     .map(([, message]) => message ?? ''),
@@ -143,16 +132,13 @@ export function useSessionForm(
             router.post(
                 store.url(),
                 {
-                    client_record_id: mode === 'search' ? clientId : null,
-                    new_client:
-                        mode === 'new'
-                            ? { name: name.trim(), email, phone }
-                            : null,
+                    ...client.fields,
                     service_id: serviceId,
                     date,
                     time,
                     minutes,
                     place_id: places.length > 1 ? placeId : null,
+                    client_package_id: packageId,
                     note,
                 },
                 {

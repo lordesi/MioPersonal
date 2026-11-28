@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use App\Enums\BookingStatus;
 use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Booking;
-use App\Models\ClientPackage;
 use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\ClientBookingData;
+use App\Support\OpenPackages;
 use App\Support\TrainerBookingRequests;
 use App\Support\TrainerPastSessions;
 use App\Support\TrainerSessions;
@@ -66,6 +66,8 @@ class TrainerDashboardController extends Controller
             'maxDate' => $today->addMonths(self::MAX_MONTHS)->toDateString(),
             // "Sposta": the free times, only when the dialog asks.
             'rescheduleSlots' => Inertia::optional(fn () => TrainerSessions::rescheduleSlots($profile, $request->integer('sposta'))),
+            // "Aggiungi pacchetto" of "Pacchetti attivi": the same clients of "Aggiungi seduta".
+            'sessionOptions' => fn () => $profile === null ? null : app(TrainerCalendarController::class)->sessionOptions($profile),
             // No profile yet (registration not sent): nothing to show.
             ...($profile === null ? self::empty($day, $request) : $this->dashboard($profile, $day, $request)),
         ]);
@@ -353,33 +355,29 @@ class TrainerDashboardController extends Controller
 
     /**
      * "Pacchetti attivi": bought and not all done yet, with the next session.
+     * Also the ones the trainer added for someone without an account.
      *
      * @return list<array<string, mixed>>
      */
     private function packages(TrainerProfile $profile): array
     {
-        /** @var Collection<int, ClientPackage> $packages */
-        $packages = $profile->clientPackages()
-            ->bought()
-            // Deleted accounts: nobody to show.
-            ->whereNotNull('client_id')
-            ->withSessionCounts()
-            ->with(['client', 'bookings' => fn ($bookings) => $bookings->active()->where('ends_at', '>', now())->orderBy('starts_at')])
-            ->oldest('bought_at')
-            ->get();
-
-        return array_values($packages
-            ->filter(fn (ClientPackage $package) => ($package->done_count ?? 0) < $package->sessions_total)
+        return array_values(OpenPackages::of($profile, [
+            'client',
+            'trainerClient',
+            'bookings' => fn ($bookings) => $bookings->active()->where('ends_at', '>', now())->orderBy('starts_at'),
+        ])
             // The ones about to end first: time to propose the next one.
-            ->sortBy(fn (ClientPackage $package) => $package->sessions_total - ($package->done_count ?? 0))
-            ->map(function (ClientPackage $package) {
+            ->sortBy(fn (array $item) => $item['package']->sessions_total - ($item['package']->done_count ?? 0))
+            ->map(function (array $item) {
+                $package = $item['package'];
                 /** @var Booking|null $next */
                 $next = $package->bookings->first();
 
                 return [
                     'id' => $package->id,
                     'clientId' => $package->client_id,
-                    'clientName' => $package->client->name ?? '',
+                    'recordId' => $item['recordId'],
+                    'clientName' => $package->client->name ?? $package->trainerClient->name ?? '',
                     'name' => $package->name,
                     'total' => $package->sessions_total,
                     'done' => $package->done_count ?? 0,

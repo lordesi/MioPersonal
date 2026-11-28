@@ -1,9 +1,11 @@
 import { Head, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import AddClientDialog from '@/components/trainer/area/add-client-dialog';
 import AddSessionDialog from '@/components/trainer/area/add-session-dialog';
 import ClientsView from '@/components/trainer/clients/clients-view';
 import type { ClientGroup } from '@/components/trainer/clients/clients-view';
 import type { ClientsProps } from '@/components/trainer/clients/types';
+import type { PopoverAnchor } from '@/components/trainer/session/panel-shell';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { romeParts } from '@/lib/calendar';
 import { clients as clientsPage, messages } from '@/routes/trainer';
@@ -23,8 +25,10 @@ export default function Clients(props: ClientsProps) {
     const isMobile = useIsMobile();
     const [search, setSearch] = useState('');
     const [group, setGroup] = useState<ClientGroup>('all');
-    // "Nuova seduta": with this client, or with nobody chosen yet (the "+").
-    const [booking, setBooking] = useState<TrainerClient | 'new' | null>(null);
+    // "Nuova seduta" from the card of a client ("Prenota").
+    const [booking, setBooking] = useState<TrainerClient | null>(null);
+    // "Nuovo cliente" (the "+"): where its popover opens on desktop.
+    const [adding, setAdding] = useState<PopoverAnchor | null>(null);
     const today = romeParts(new Date()).date;
 
     // The conversation of a client lives in the Inbox now.
@@ -64,13 +68,15 @@ export default function Clients(props: ClientsProps) {
                     options={sessionOptions}
                     date={today}
                     today={today}
-                    clientId={
-                        booking !== null && booking !== 'new'
-                            ? booking.recordId
-                            : undefined
-                    }
+                    clientId={booking?.recordId}
                 />
             )}
+
+            <AddClientDialog
+                open={adding !== null}
+                onOpenChange={(next) => !next && setAdding(null)}
+                anchor={adding}
+            />
 
             <ClientsView
                 clients={clients}
@@ -82,7 +88,7 @@ export default function Clients(props: ClientsProps) {
                 onGroup={setGroup}
                 search={search}
                 onSearch={setSearch}
-                onAddSession={sessionOptions ? () => setBooking('new') : null}
+                onAddClient={setAdding}
                 onBook={setBooking}
                 onChat={(client) =>
                     router.visit(

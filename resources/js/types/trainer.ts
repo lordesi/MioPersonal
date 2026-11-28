@@ -232,6 +232,8 @@ export type SessionChange = {
 export type TrainerPackage = {
     id: number;
     clientId: number | null;
+    /** The row of "Clienti": also for someone without an account. */
+    recordId: number | null;
     clientName: string;
     name: string;
     total: number;
@@ -393,6 +395,13 @@ export type SessionOptions = {
         registered: boolean;
         /** The package still going, "Boxe · 7 di 10"; null without one. */
         detail: string | null;
+        /** "Dal pacchetto": the one a new session uses up, null without sessions left. */
+        package: {
+            id: number;
+            name: string;
+            remaining: number;
+            minutes: number;
+        } | null;
     }[];
     services: {
         id: number;
@@ -401,6 +410,14 @@ export type SessionOptions = {
         priceCents: number;
     }[];
     places: { id: number; label: string }[];
+    /** "Aggiungi pacchetto": the packages of "Servizi e prezzi". */
+    packages: {
+        id: number;
+        name: string;
+        sessions: number;
+        minutes: number;
+        priceCents: number;
+    }[];
 };
 
 /** After a session with someone without an account: "Invita Marco su Miopersonal". */

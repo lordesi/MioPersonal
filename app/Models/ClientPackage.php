@@ -17,11 +17,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * see docs/database/analisi.md §3.4.
  *
  * Booking a package service creates it, together with its first session; it
- * is bought (`bought_at`) once that session is confirmed. The sessions used are
+ * is bought (`bought_at`) once that session is confirmed. The trainer can
+ * also add one sold outside the site ("Aggiungi pacchetto"): bought at once. The sessions used are
  * counted from the linked bookings: a cancelled one is free again.
  *
  * @property int $id
- * @property int|null $client_id null once the client deleted the account
+ * @property int|null $client_id null once the client deleted the account, or for someone without an account (`trainer_client_id`)
+ * @property int|null $trainer_client_id "Aggiungi pacchetto": the person of the trainer's list ("Clienti")
  * @property int $trainer_profile_id
  * @property int|null $service_id null once the trainer changed the services
  * @property string $name
@@ -34,10 +36,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $booked_count with withSessionCounts()
  * @property int|null $done_count with withSessionCounts()
  * @property-read User|null $client
+ * @property-read TrainerClient|null $trainerClient
  * @property-read TrainerProfile $trainerProfile
  */
 #[Fillable([
-    'client_id', 'trainer_profile_id', 'service_id',
+    'client_id', 'trainer_client_id', 'trainer_profile_id', 'service_id',
     'name', 'price_cents', 'sessions_total', 'minutes', 'bought_at',
 ])]
 class ClientPackage extends Model
@@ -64,6 +67,14 @@ class ClientPackage extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'client_id');
+    }
+
+    /**
+     * @return BelongsTo<TrainerClient, $this>
+     */
+    public function trainerClient(): BelongsTo
+    {
+        return $this->belongsTo(TrainerClient::class);
     }
 
     /**
