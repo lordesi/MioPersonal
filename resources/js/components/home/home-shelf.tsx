@@ -15,7 +15,7 @@ type HomeShelfProps<T> = {
 
 /**
  * A row of cards of the home (design Home F): on phones it scrolls sideways
- * (250px cards, a bit of the next one shows); from md up a grid of 4, the
+ * (272px cards, a bit of the next one shows); from md up a grid of 4, the
  * others behind "Vedi tutti". Hidden when empty.
  */
 export default function HomeShelf<T>({
@@ -54,7 +54,7 @@ export default function HomeShelf<T>({
                 {items.map((item) => (
                     <li
                         key={itemKey(item)}
-                        className="flex w-62.5 shrink-0 snap-start md:w-auto md:nth-[n+5]:hidden [&>*]:flex-1"
+                        className="flex w-68 shrink-0 snap-start md:w-auto md:nth-[n+5]:hidden [&>*]:flex-1"
                     >
                         {children(item)}
                     </li>

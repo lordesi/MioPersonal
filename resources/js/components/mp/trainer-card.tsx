@@ -21,7 +21,7 @@ export function trainingModeLabel(online: TrainerSummary['online']): string {
 
 type TrainerCardProps = {
     trainer: TrainerSummary;
-    /** The fixed width of the rows that scroll sideways (250px); in a grid it fills the cell. */
+    /** The fixed width of the rows that scroll sideways (272px); in a grid it fills the cell. */
     rail?: boolean;
     /** Two cards side by side on phones ("Preferiti"): smaller text. */
     size?: 'md' | 'sm';
@@ -30,9 +30,9 @@ type TrainerCardProps = {
 
 /**
  * The card of a trainer (design "TrainerCard", Home F): the square photo
- * with "Nuovo" (no reviews yet) and the heart, then name and discipline,
- * city and mode, price, rating and number of reviews. The whole card is the link; the heart (guests and
- * clients only) sits on top of it.
+ * with "Nuovo" (no reviews yet) and the heart, then the name with the rating,
+ * the discipline, city and mode, and the price "/ seduta". The whole card is
+ * the link; the heart (guests and clients only) sits on top of it.
  */
 export default function TrainerCard({
     trainer,
@@ -53,7 +53,17 @@ export default function TrainerCard({
     const isNew = trainer.rating === null;
     const rating = isNew
         ? null
-        : `★ ${formatRating(trainer.rating ?? 0)} (${trainer.reviewCount})`;
+        : {
+              score: formatRating(trainer.rating ?? 0),
+              count: trainer.reviewCount,
+          };
+    // The gray lines under the name: discipline, place, price.
+    const line = cn(
+        'truncate text-muted-foreground',
+        small
+            ? 'text-[13px] leading-4.5 lg:text-sm lg:leading-5'
+            : 'text-sm leading-5',
+    );
     const ratingLabel = isNew
         ? 'nuovo'
         : `voto ${formatRating(trainer.rating ?? 0)} su ${trainer.reviewCount === 1 ? '1 recensione' : `${trainer.reviewCount} recensioni`}`;
@@ -62,7 +72,7 @@ export default function TrainerCard({
         <article
             className={cn(
                 'group/card relative flex min-w-0 flex-col',
-                rail && 'w-62.5 shrink-0',
+                rail && 'w-68 shrink-0',
                 className,
             )}
         >
@@ -102,45 +112,56 @@ export default function TrainerCard({
                         </span>
                     )}
                 </span>
+                {/*
+                 * Like Airbnb: the title is the name alone, with the rating
+                 * on its right; the gray lines below say what and where;
+                 * the price closes the card.
+                 */}
                 <span
                     className={cn(
-                        'mt-3 truncate font-semibold',
+                        'mt-3 flex items-baseline justify-between gap-2',
                         small
-                            ? 'text-[15px] leading-5 lg:text-[17px] lg:leading-5.5'
-                            : 'text-[17px] leading-5.5',
+                            ? 'text-[15px] leading-5 lg:text-base lg:leading-5.5'
+                            : 'text-base leading-5.5',
                     )}
                 >
-                    {discipline
-                        ? `${trainer.name} · ${discipline}`
-                        : trainer.name}
+                    <span className="min-w-0 truncate font-semibold">
+                        {trainer.name}
+                    </span>
+                    {rating && (
+                        <span
+                            className={cn(
+                                'shrink-0 tabular-nums',
+                                small ? 'text-[13px] lg:text-sm' : 'text-sm',
+                            )}
+                        >
+                            ★ {rating.score}
+                            {/* Small cards on phones: no room for the count. */}
+                            <span
+                                className={cn(
+                                    'text-muted-foreground',
+                                    small && 'max-lg:hidden',
+                                )}
+                            >
+                                {' '}
+                                ({rating.count})
+                            </span>
+                        </span>
+                    )}
                 </span>
-                <span
-                    className={cn(
-                        'mt-0.5 truncate text-muted-foreground',
-                        small
-                            ? 'text-[13px] leading-4.5 lg:text-[15px] lg:leading-5'
-                            : 'text-[15px] leading-5',
-                    )}
-                >
+                {discipline && (
+                    <span className={cn('mt-0.5', line)}>{discipline}</span>
+                )}
+                <span className={cn('mt-0.5', line)}>
                     {trainer.city === 'Solo online'
                         ? trainer.city
                         : `${trainer.city} · ${trainingModeLabel(trainer.online)}`}
                 </span>
-                <span
-                    className={cn(
-                        'mt-0.5 truncate text-muted-foreground',
-                        small
-                            ? 'text-[13px] leading-4.5 lg:text-[15px] lg:leading-5'
-                            : 'text-[15px] leading-5',
-                    )}
-                >
-                    <b className="font-semibold text-foreground">{price}</b>
-                    {/* Small cards on phones: no room, the rating comes first. */}
-                    <span className={cn(small && 'max-lg:hidden')}>
-                        {' '}
-                        a seduta
-                    </span>
-                    {rating && ` · ${rating}`}
+                <span className={cn('mt-1.5', line)}>
+                    <b className="font-semibold text-foreground tabular-nums">
+                        {price}
+                    </b>{' '}
+                    / seduta
                 </span>
             </Link>
 
