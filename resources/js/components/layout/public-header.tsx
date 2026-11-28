@@ -11,7 +11,6 @@ import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import AccountCapsuleMenu from '@/components/layout/account-capsule-menu';
 import BrandLogo from '@/components/layout/brand-logo';
-import NotificationBell from '@/components/layout/notification-bell';
 import type { SearchKind } from '@/components/search/search-kind-toggle';
 import {
     searchKindUrl,
@@ -33,7 +32,7 @@ import { useFeatures, withFeatures } from '@/lib/features';
 import type { FeatureName } from '@/lib/features';
 import { openAppPrompt, useInstallMethod } from '@/lib/pwa';
 import { cn } from '@/lib/utils';
-import { dashboard, howItWorks, login, register } from '@/routes';
+import { howItWorks, login, register } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
 import { register as gymRegister } from '@/routes/gym';
 import { register as trainerRegister } from '@/routes/trainer';
@@ -138,26 +137,8 @@ export default function PublicHeader({ className }: { className?: string }) {
 
                 <div className="ml-auto flex items-center gap-2 md:gap-3">
                     {user ? (
-                        <>
-                            {/* The client has the tabs at the bottom on phones. */}
-                            <Link
-                                prefetch={hoverPrefetch}
-                                href={dashboard()}
-                                className={cn(
-                                    heroButton,
-                                    'h-10 border border-primary-foreground/60 px-3.5 font-medium hover:bg-primary-foreground/10',
-                                    variant === 'client' &&
-                                        'hidden md:inline-flex',
-                                )}
-                            >
-                                La mia area
-                            </Link>
-                            <NotificationBell
-                                tone="dark"
-                                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-                            />
-                            <AccountCapsuleMenu variant={variant} />
-                        </>
+                        // No "La mia area" nor the bell: both are in the menu.
+                        <AccountCapsuleMenu variant={variant} />
                     ) : (
                         <>
                             <ProMenu />

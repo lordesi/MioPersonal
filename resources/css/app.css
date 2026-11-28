@@ -274,13 +274,14 @@
 }
 
 /* Thin, rounded scrollbar for lists inside menus (e.g. the cities of "Dove"),
-   darker under the mouse. Use it as a class: `scrollbar-soft`. */
+   a lighter grey under the mouse. Use it as a class: `scrollbar-soft`. */
 @utility scrollbar-soft {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
 
     &:hover {
-        scrollbar-color: var(--ring) transparent;
+        scrollbar-color: color-mix(in srgb, var(--foreground) 35%, transparent)
+            transparent;
     }
 }
 

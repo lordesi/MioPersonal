@@ -96,7 +96,9 @@ export default function Search({
     const isClient = auth?.user?.role === 'client';
 
     const place = city ? `a ${city.name}` : 'in Italia';
-    const { nome, ordina, ...sheetFilters } = filters;
+    // The search bar sets what, where and how; "Filtri" the rest.
+    const { nome, ordina, disciplina, obiettivo, modalita, ...sheetFilters } =
+        filters;
 
     /** Reloads the page with the new filters, back to page 1. */
     const visit = (next: SearchFilters, nextCity = city?.slug ?? null) =>
@@ -177,14 +179,8 @@ export default function Search({
 
             <TrainerSearchBar
                 // A new search (or "Cancella i filtri") starts the panel again.
-                key={`${nome}-${city?.slug}-${filters.disciplina.join()}-${filters.obiettivo.join()}-${filters.modalita}`}
-                value={{
-                    disciplina: filters.disciplina,
-                    obiettivo: filters.obiettivo,
-                    nome,
-                    city,
-                    modalita: filters.modalita,
-                }}
+                key={`${nome}-${city?.slug}-${disciplina.join()}-${obiettivo.join()}-${modalita}`}
+                value={{ disciplina, obiettivo, nome, city, modalita }}
                 disciplines={disciplines}
                 cities={cities}
                 onSearch={search}
@@ -258,9 +254,8 @@ export default function Search({
                 open={filtersOpen}
                 onOpenChange={setFiltersOpen}
                 filters={sheetFilters}
-                disciplines={disciplines}
                 showFavorites={isClient}
-                onApply={(next) => visit({ ...next, nome, ordina })}
+                onApply={(next) => visit({ ...filters, ...next })}
             />
         </>
     );

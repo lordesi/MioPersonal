@@ -1,4 +1,4 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import {
     Building2,
     CalendarDays,
@@ -6,7 +6,6 @@ import {
     LifeBuoy,
     Search,
     Ticket,
-    User,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { FormEvent } from 'react';
@@ -22,11 +21,10 @@ import type { FeatureName } from '@/lib/features';
 import { gymSearchUrl } from '@/lib/gym';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
-import { dashboard } from '@/routes';
 import { search as eventsSearch } from '@/routes/events';
 import { show as contactPage } from '@/routes/contact';
 
-/** The four searches (the ones switched on), then "La mia area" for whoever is logged in. */
+/** The four searches (the ones switched on), then "Centro assistenza". */
 const exploreLinks: {
     title: string;
     hint: string;
@@ -65,24 +63,15 @@ const exploreLinks: {
 
 /** Shown by bootstrap/app.php for every 404 (unknown address, missing trainer…). */
 export default function NotFound() {
-    // Missing on Laravel's own error responses.
-    const user = usePage().props.auth?.user;
     const features = useFeatures();
     const usefulLinks = [
         ...withFeatures(exploreLinks, features),
-        user
-            ? {
-                  title: 'La mia area',
-                  hint: 'Prenotazioni, profilo e impostazioni',
-                  href: dashboard.url(),
-                  icon: User,
-              }
-            : {
-                  title: 'Centro assistenza',
-                  hint: 'Scrivici se pensi che sia un errore',
-                  href: contactPage.url(),
-                  icon: LifeBuoy,
-              },
+        {
+            title: 'Centro assistenza',
+            hint: 'Scrivici se pensi che sia un errore',
+            href: contactPage.url(),
+            icon: LifeBuoy,
+        },
     ];
 
     const submit = (event: FormEvent<HTMLFormElement>) => {

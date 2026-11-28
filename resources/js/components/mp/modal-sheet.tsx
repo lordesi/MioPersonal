@@ -45,7 +45,7 @@ export default function ModalSheet({
                     aria-describedby={undefined}
                     className={cn(
                         // Phones: a line on the top edge only, as the sheet of the design.
-                        'theme-dark fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-[26px] shadow-[inset_0_1px_0_0_var(--border),0_24px_64px_-12px_rgba(0,0,0,0.8)] outline-none data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom',
+                        'theme-dark fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col rounded-t-[26px] bg-card! shadow-[inset_0_1px_0_0_var(--border),0_24px_64px_-12px_rgba(0,0,0,0.8)] outline-none data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom',
                         'md:top-1/2 md:bottom-auto md:left-1/2 md:max-h-[88dvh] md:w-[calc(100%-4rem)] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[26px] md:shadow-[inset_0_0_0_1px_var(--field),0_24px_64px_-12px_rgba(0,0,0,0.8)] md:data-[state=closed]:slide-out-to-bottom-0 md:data-[state=closed]:zoom-out-95 md:data-[state=open]:slide-in-from-bottom-0 md:data-[state=open]:zoom-in-95',
                         widths[size],
                     )}

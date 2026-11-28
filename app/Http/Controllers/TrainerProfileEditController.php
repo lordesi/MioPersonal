@@ -47,10 +47,6 @@ class TrainerProfileEditController extends Controller
             'maxGalleryPhotos' => TrainerProfile::MAX_GALLERY_PHOTOS,
             // "Collega Instagram / TikTok / ...": saved right away by TrainerSocialController.
             'socials' => TrainerSocials::props($request),
-            // "Nuovo" or the stars in "Così ti vedono nella ricerca".
-            'rating' => $profile
-                ? ['value' => $profile->rating(), 'count' => $profile->rating_count]
-                : null,
         ]);
     }
 

@@ -15,6 +15,7 @@ import DeleteAccountSection from '@/components/account/delete-account-section';
 import NotificationsSection from '@/components/account/notifications-section';
 import PersonalDataSection from '@/components/account/personal-data-section';
 import { BareSettingsSection } from '@/components/account/settings-section';
+import AutoConfirmSwitch from '@/components/account/trainer/auto-confirm-switch';
 import {
     SettingsSubpage,
     useSettingsView,
@@ -44,6 +45,8 @@ type TrainerSettingsProps = {
     /** Null until the registration is sent, or while Google is not set up. */
     googleCalendar: TrainerGoogleCalendar | null;
     visibility: TrainerVisibility | null;
+    /** "Conferma automatica"; null until the registration is sent. */
+    autoConfirm: boolean | null;
 };
 
 const VIEWS = {
@@ -62,8 +65,9 @@ type View = keyof typeof VIEWS;
 
 /**
  * "Impostazioni" of the trainer (design "Trainer · Impostazioni · nuovo"):
- * ACCOUNT, PREFERENZE, VISIBILITÀ DEL PROFILO with "Metti in pausa" right
- * in the list, ALTRO, then "Chiudi il profilo da trainer". Each row opens
+ * ACCOUNT, PREFERENZE, RICHIESTE ("Conferma automatica"), VISIBILITÀ DEL
+ * PROFILO with "Metti in pausa" right in the list, ALTRO, then "Chiudi il
+ * profilo da trainer". Each row opens
  * its page ("#notifiche"), with "‹ Impostazioni".
  */
 export default function TrainerSettings({
@@ -71,6 +75,7 @@ export default function TrainerSettings({
     contacts,
     googleCalendar,
     visibility,
+    autoConfirm,
 }: TrainerSettingsProps) {
     const [view, open] = useSettingsView<View>(
         Object.keys(VIEWS) as View[],
@@ -202,6 +207,12 @@ export default function TrainerSettings({
                         />
                     )}
                 </AreaRowGroup>
+
+                {autoConfirm !== null && (
+                    <AreaRowGroup title="Richieste">
+                        <AutoConfirmSwitch on={autoConfirm} />
+                    </AreaRowGroup>
+                )}
 
                 {visibility && (
                     <AreaRowGroup title="Visibilità del profilo">

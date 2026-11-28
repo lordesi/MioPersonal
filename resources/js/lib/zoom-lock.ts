@@ -23,6 +23,22 @@ import { isStandalone } from '@/lib/pwa';
 export const VIEWPORT = 'width=device-width, initial-scale=1';
 export const VIEWPORT_LOCKED = `${VIEWPORT}, maximum-scale=1, user-scalable=no`;
 
+/**
+ * The pages whose photo goes up to the top of the phone, under the clock
+ * and the battery (`viewport-fit=cover`): they leave the room for them
+ * with env(safe-area-inset-*). Same list in resources/views/app.blade.php.
+ */
+const EDGE_TO_EDGE = ['public/profile'];
+
+/** The `content` of the viewport meta for a page. */
+export function viewportContent(component: string, isLocked: boolean): string {
+    const base = isLocked ? VIEWPORT_LOCKED : VIEWPORT;
+
+    return EDGE_TO_EDGE.includes(component)
+        ? `${base}, viewport-fit=cover`
+        : base;
+}
+
 /** The private areas: everything but the public pages. */
 export function isAppPage(component: string): boolean {
     return !component.startsWith('public/');
@@ -44,11 +60,11 @@ function locked(): boolean {
     return document.documentElement.classList.contains('zoom-locked');
 }
 
-function apply(isLocked: boolean): void {
+function apply(component: string, isLocked: boolean): void {
     document.documentElement.classList.toggle('zoom-locked', isLocked);
     document
         .querySelector('meta[name="viewport"]')
-        ?.setAttribute('content', isLocked ? VIEWPORT_LOCKED : VIEWPORT);
+        ?.setAttribute('content', viewportContent(component, isLocked));
 }
 
 export function setUpZoomLock(): void {
@@ -59,11 +75,19 @@ export function setUpZoomLock(): void {
     const installed = isStandalone();
 
     if (installed) {
-        apply(true);
+        // The first page: locked, keeping the full screen the server set.
+        const meta = document.querySelector('meta[name="viewport"]');
+        const cover = meta?.getAttribute('content')?.includes('viewport-fit');
+        document.documentElement.classList.add('zoom-locked');
+        meta?.setAttribute(
+            'content',
+            cover ? `${VIEWPORT_LOCKED}, viewport-fit=cover` : VIEWPORT_LOCKED,
+        );
     }
 
     router.on('navigate', (event) => {
-        apply(isZoomLocked(event.detail.page.component, installed));
+        const { component } = event.detail.page;
+        apply(component, isZoomLocked(component, installed));
     });
 
     // Safari: the pinch of iPhone and iPad, and of the trackpad of the Mac in

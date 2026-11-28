@@ -38,18 +38,18 @@ class TrainerRequestsTest extends TestCase
         $trainer = TrainerProfile::factory()->approved()->create(['auto_confirm' => false]);
 
         $this->actingAs($trainer->user)
-            ->from(route('trainer.requests'))
-            ->patch(route('trainer.requests.auto-confirm'), ['auto_confirm' => true])
-            ->assertRedirect(route('trainer.requests'));
+            ->from(route('trainer.settings'))
+            ->patch(route('trainer.auto-confirm.update'), ['auto_confirm' => true])
+            ->assertRedirect(route('trainer.settings'));
         $this->assertTrue($trainer->fresh()->auto_confirm);
 
         $this->actingAs($trainer->user)
-            ->patch(route('trainer.requests.auto-confirm'), ['auto_confirm' => false]);
+            ->patch(route('trainer.auto-confirm.update'), ['auto_confirm' => false]);
         $this->assertFalse($trainer->fresh()->auto_confirm);
 
         // Only for trainers: a client is sent to their own area.
         $this->actingAs(User::factory()->create())
-            ->patch(route('trainer.requests.auto-confirm'), ['auto_confirm' => true])
+            ->patch(route('trainer.auto-confirm.update'), ['auto_confirm' => true])
             ->assertRedirect();
         $this->assertFalse($trainer->fresh()->auto_confirm);
     }
@@ -143,18 +143,23 @@ class TrainerRequestsTest extends TestCase
             );
     }
 
-    public function test_the_page_knows_whether_the_trainer_confirms_automatically()
+    public function test_the_settings_know_whether_the_trainer_confirms_automatically()
     {
         $manual = TrainerProfile::factory()->approved()->create(['auto_confirm' => false]);
         $automatic = TrainerProfile::factory()->approved()->create(['auto_confirm' => true]);
 
         $this->actingAs($manual->user)
-            ->get(route('trainer.requests'))
+            ->get(route('trainer.settings'))
             ->assertInertia(fn (Assert $page) => $page->where('autoConfirm', false));
 
         $this->actingAs($automatic->user)
-            ->get(route('trainer.requests'))
+            ->get(route('trainer.settings'))
             ->assertInertia(fn (Assert $page) => $page->where('autoConfirm', true));
+
+        // "Richieste" no longer has the switch.
+        $this->actingAs($automatic->user)
+            ->get(route('trainer.requests'))
+            ->assertInertia(fn (Assert $page) => $page->missing('autoConfirm'));
     }
 
     public function test_an_answer_moves_the_request_to_handled()

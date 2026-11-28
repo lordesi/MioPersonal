@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use App\Enums\Achievement;
-use App\Http\Controllers\TrainerShareController;
 use App\Models\ClientAchievement;
 use App\Models\TrainerProfile;
 use App\Models\User;
@@ -92,7 +91,7 @@ final class Achievements
                 // Named on the image only while the profile is published.
                 'trainer' => $achievement->trainerProfile === null || ! in_array($achievement->trainer_profile_id, $published, true) ? null : [
                     'name' => $achievement->trainerProfile->user->name,
-                    'link' => TrainerShareController::link($achievement->trainerProfile, 'traguardo'),
+                    'link' => $achievement->trainerProfile->shareLink('instagram', 'traguardo'),
                 ],
             ])->values()->all(),
             'next' => $next === null ? null : [

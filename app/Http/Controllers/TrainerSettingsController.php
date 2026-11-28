@@ -50,6 +50,8 @@ class TrainerSettingsController extends Controller
                 'readsBusy' => $profile->calendarConnection?->readsBusy() ?? false,
                 'busySyncedAt' => $profile->calendarConnection?->busy_synced_at?->toIso8601String(),
             ],
+            // "Conferma automatica"; null until the registration is sent.
+            'autoConfirm' => $profile?->auto_confirm,
             'contacts' => $profile === null ? null : [
                 'phone' => $user->phone,
                 'email' => $user->email,

@@ -21,7 +21,6 @@ export type TrainerSection =
     | 'profile'
     | 'reviews'
     | 'past-sessions'
-    | 'share'
     | 'settings';
 
 /** The places of the menu (sidebar on desktop, tab bar on phones). */

@@ -94,7 +94,6 @@ use App\Http\Controllers\TrainerServicesController;
 use App\Http\Controllers\TrainerSessionChangeController;
 use App\Http\Controllers\TrainerSessionNoteController;
 use App\Http\Controllers\TrainerSettingsController;
-use App\Http\Controllers\TrainerShareController;
 use App\Http\Controllers\TrainerSocialController;
 use App\Http\Controllers\WaitlistController;
 use App\Models\User;
@@ -385,8 +384,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // "Vedi tutte" of the last 7 days in "Panoramica".
         Route::get('sedute-passate', TrainerPastSessionsController::class)->name('past-sessions');
         Route::get('richieste', TrainerRequestsController::class)->name('requests');
-        // "Conferma automatica", the switch of "Richieste".
-        Route::patch('richieste/conferma-automatica', TrainerAutoConfirmController::class)->name('requests.auto-confirm');
         // The answer to a booking request, from "Richieste".
         Route::controller(TrainerBookingRequestController::class)->prefix('richieste/{booking}')->whereNumber('booking')->group(function () {
             Route::post('accetta', 'accept')->name('requests.accept');
@@ -470,9 +467,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('collegamenti/{link}', 'destroy')->whereNumber('link')->name('.destroy');
         });
         Route::controller(OrganizerEventsController::class)->middleware('feature:events')->prefix('eventi')->name('events')->group(base_path('routes/organizer-events.php'));
-        // "Condividi profilo": link, QR code and image for the Instagram stories.
-        Route::get('condividi', TrainerShareController::class)->name('share');
         Route::get('impostazioni', TrainerSettingsController::class)->name('settings');
+        // "Conferma automatica", the switch of "Impostazioni".
+        Route::patch('impostazioni/conferma-automatica', TrainerAutoConfirmController::class)->name('auto-confirm.update');
         // "Collega Google Calendar": the sessions are written on a calendar made for the app.
         Route::controller(TrainerGoogleCalendarController::class)->prefix('calendario-google')->name('google-calendar.')->group(function () {
             Route::get('collega', 'connect')->name('connect');

@@ -10,29 +10,27 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 /**
- * "Condividi profilo" (link, QR code, image for the stories) and "Invita i
- * tuoi clienti": the links carry their utm_*, so the sign-ups they bring are
- * counted.
+ * "Condividi profilo" (in "Profilo": the share sheet of the phone, or the
+ * link copied) and "Invita i tuoi clienti": the links carry their utm_*, so
+ * the sign-ups they bring are counted.
  */
 class TrainerShareTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_an_approved_trainer_gets_the_links_to_share(): void
+    public function test_profilo_has_the_link_to_share_once_the_profile_is_in_the_search(): void
     {
         $profile = TrainerProfile::factory()->approved()->create(['slug' => 'giulia-rossi']);
 
         $this->actingAs($profile->user)
-            ->get(route('trainer.share'))
+            ->get(route('trainer.profile'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('trainer/share')
-                ->where('reason', null)
-                ->where('card.name', $profile->user->name)
-                ->where('card.links.bio', route('trainers.show', [
+                ->component('trainer/profile-hub')
+                ->where('me.shareUrl', route('trainers.show', [
                     'slug' => 'giulia-rossi',
-                    'utm_source' => 'instagram',
-                    'utm_medium' => 'bio',
+                    'utm_source' => 'condividi',
+                    'utm_medium' => 'profilo',
                     'utm_campaign' => 'giulia-rossi',
                 ])));
     }
@@ -42,10 +40,17 @@ class TrainerShareTest extends TestCase
         $review = TrainerProfile::factory()->status(TrainerProfileStatus::Review)->create();
         $hidden = TrainerProfile::factory()->approved()->create(['visible_in_search' => false]);
 
-        $this->actingAs($review->user)->get(route('trainer.share'))
-            ->assertInertia(fn (Assert $page) => $page->where('card', null)->where('reason', 'review'));
-        $this->actingAs($hidden->user)->get(route('trainer.share'))
-            ->assertInertia(fn (Assert $page) => $page->where('card', null)->where('reason', 'hidden'));
+        $this->actingAs($review->user)->get(route('trainer.profile'))
+            ->assertInertia(fn (Assert $page) => $page->where('me.shareUrl', null));
+        $this->actingAs($hidden->user)->get(route('trainer.profile'))
+            ->assertInertia(fn (Assert $page) => $page->where('me.shareUrl', null));
+    }
+
+    public function test_the_old_share_page_is_gone(): void
+    {
+        $profile = TrainerProfile::factory()->approved()->create();
+
+        $this->actingAs($profile->user)->get('/area-trainer/condividi')->assertNotFound();
     }
 
     public function test_the_invite_link_shows_the_banner_and_counts_the_sign_ups(): void

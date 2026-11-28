@@ -39,8 +39,6 @@ class TrainerRequestsController extends Controller
             // No profile yet (registration not sent): nobody could book.
             'requests' => $profile === null ? [] : TrainerBookingRequests::rows(TrainerBookingRequests::query($profile)->get(), $profile),
             'handled' => $profile === null ? [] : TrainerBookingRequests::handled($profile),
-            // Off: "Gestite" suggests it when requests expired without an answer.
-            'autoConfirm' => $profile->auto_confirm ?? false,
         ]);
     }
 }

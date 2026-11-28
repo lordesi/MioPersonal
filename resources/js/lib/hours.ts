@@ -73,9 +73,30 @@ export function fromStartHours(day: (number | HourRange)[]): HourRange[] {
     );
 }
 
-/** A new range after the last one of the day: 2 hours, where there is room. */
+/**
+ * A new range of up to 2 hours: after the last one of the day or, when the
+ * day goes on until 24:00, in the first free time from 06:00. 09:00–11:00
+ * on an empty day; the last half hour on a day with no free time.
+ */
 export function nextRange(ranges: HourRange[]): HourRange {
-    const start = Math.min(ranges.at(-1)?.end ?? 9 * 60, LAST_MINUTE - STEP);
+    const day = normalizeRanges(ranges);
 
-    return { start, end: Math.min(start + 120, LAST_MINUTE) };
+    if (day.length === 0) {
+        return { start: 9 * 60, end: 11 * 60 };
+    }
+
+    const gaps = [
+        { start: day.at(-1)!.end, end: LAST_MINUTE },
+        ...day.map((range, index) => ({
+            start: index === 0 ? FIRST_MINUTE : day[index - 1].end,
+            end: range.start,
+        })),
+    ];
+    const gap = gaps.find(({ start, end }) => end - start >= STEP);
+
+    if (!gap) {
+        return { start: LAST_MINUTE - STEP, end: LAST_MINUTE };
+    }
+
+    return { start: gap.start, end: Math.min(gap.start + 120, gap.end) };
 }

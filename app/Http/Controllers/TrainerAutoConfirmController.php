@@ -7,9 +7,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 /**
- * "Conferma automatica" in "Richieste": the new requests are confirmed at
- * once, without waiting for an answer. The same setting of "Modifica
- * profilo", saved alone.
+ * "Conferma automatica" in "Impostazioni": the new requests are confirmed at
+ * once, without waiting for an answer. The same setting of "Disponibilità",
+ * saved alone.
  */
 class TrainerAutoConfirmController extends Controller
 {

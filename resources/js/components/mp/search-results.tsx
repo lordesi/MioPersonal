@@ -7,6 +7,11 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    choiceMenuContentClassName,
+    choiceMenuItemClassName,
+    choiceMenuTriggerClassName,
+} from '@/components/mp/choice-menu';
 import { cn } from '@/lib/utils';
 
 /**
@@ -36,7 +41,7 @@ export function ResultsHeader({
     );
 }
 
-/** "Ordina: Pertinenza ⌄": a dark menu with one choice. */
+/** "Ordina: Pertinenza ⌄": the menu of the period of the trainer "Statistiche". */
 export function SortMenu<T extends string>({
     options,
     value,
@@ -50,14 +55,22 @@ export function SortMenu<T extends string>({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger className="flex min-h-11 shrink-0 items-center gap-1 rounded-full px-1 text-[15px] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
-                <span className="text-muted-foreground">Ordina:</span>
-                <strong className="font-semibold">{label}</strong>
-                <ChevronDown aria-hidden="true" className="size-4" />
+            <DropdownMenuTrigger className={choiceMenuTriggerClassName}>
+                <span className="-mr-1 font-normal text-muted-foreground">
+                    Ordina:
+                </span>
+                {label}
+                <ChevronDown aria-hidden="true" className="size-4.5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent
                 align="end"
-                className="theme-dark min-w-48 rounded-2xl"
+                // In a portal, out of the dark page: theme-dark for its colours,
+                // without its black background (it wins over the utilities).
+                className={cn(
+                    'theme-dark',
+                    choiceMenuContentClassName,
+                    'bg-[#1c1e21]!',
+                )}
             >
                 <DropdownMenuRadioGroup
                     value={value}
@@ -67,7 +80,7 @@ export function SortMenu<T extends string>({
                         <DropdownMenuRadioItem
                             key={option.value}
                             value={option.value}
-                            className="min-h-11 rounded-xl text-[15px]"
+                            className={choiceMenuItemClassName}
                         >
                             {option.label}
                         </DropdownMenuRadioItem>
