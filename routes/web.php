@@ -79,6 +79,7 @@ use App\Http\Controllers\TrainerGoogleCalendarController;
 use App\Http\Controllers\TrainerGymsController;
 use App\Http\Controllers\TrainerManualSessionController;
 use App\Http\Controllers\TrainerNoShowController;
+use App\Http\Controllers\TrainerPackageController;
 use App\Http\Controllers\TrainerPastSessionsController;
 use App\Http\Controllers\TrainerPhotoController;
 use App\Http\Controllers\TrainerProfileController;
@@ -415,6 +416,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // What the trainer writes on their clients: new ones, private notes, payments.
         Route::controller(TrainerClientRecordsController::class)->prefix('clienti')->name('clients.')->group(function () {
             Route::post('/', 'store')->middleware('throttle:30,1')->name('store');
+            // "Aggiungi cliente": one person, with name and contacts.
+            Route::post('nuovo', 'add')->middleware('throttle:30,1')->name('add');
             Route::patch('{client}', 'update')->whereNumber('client')->name('update');
             Route::delete('{client}', 'destroy')->whereNumber('client')->name('destroy');
             Route::post('{client}/incassi', 'storePayment')->whereNumber('client')->name('payments.store');
@@ -427,6 +430,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('{client}/da-contattare/nascondi', 'hideToContact')->whereNumber('client')->name('to-contact.hide');
             Route::delete('da-contattare/nascosti', 'restoreToContact')->name('to-contact.restore');
         });
+        // "Aggiungi pacchetto" in "Pacchetti attivi": sold outside the site.
+        Route::post('pacchetti', [TrainerPackageController::class, 'store'])->middleware('throttle:30,1')->name('packages.store');
         // "Sedute fisse" (ogni martedì alle 18): made from the card of a client, ended from it.
         Route::controller(TrainerSeriesController::class)->prefix('clienti')->name('clients.series.')->group(function () {
             Route::post('{client}/sedute-fisse', 'store')->whereNumber('client')->middleware('throttle:20,1')->name('store');

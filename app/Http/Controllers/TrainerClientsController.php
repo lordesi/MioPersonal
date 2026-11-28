@@ -19,6 +19,7 @@ use App\Support\ClientAbout;
 use App\Support\ClientAttendance;
 use App\Support\ClientBookingData;
 use App\Support\ClientProgress;
+use App\Support\OpenPackages;
 use App\Support\TrainerPastSessions;
 use App\Support\TrainerSessions;
 use Carbon\CarbonImmutable;
@@ -205,7 +206,7 @@ class TrainerClientsController extends Controller
                 $bookings->get($record->user_id ?? 'record-'.$record->id, new Collection),
                 $now,
                 $record->user_id === null ? null : $attendance[$record->user_id],
-                $record->user_id === null ? null : $packages->get($record->user_id),
+                $packages->get($record->id),
                 $invite,
                 $profile,
                 $series->get($record->user_id, new Collection),
@@ -226,19 +227,14 @@ class TrainerClientsController extends Controller
     /**
      * The package of each client not all done yet: the most recent one.
      *
-     * @return Collection<int, ClientPackage> by client id
+     * @return Collection<int, ClientPackage> by trainer_clients id
      */
     private function packages(TrainerProfile $profile): Collection
     {
-        return $profile->clientPackages()
-            ->bought()
-            ->whereNotNull('client_id')
-            ->withSessionCounts()
-            ->oldest('bought_at')
-            ->get()
-            ->filter(fn (ClientPackage $package) => ($package->done_count ?? 0) < $package->sessions_total)
+        return OpenPackages::of($profile)
+            ->filter(fn (array $item) => $item['recordId'] !== null)
             // The last one of each client wins.
-            ->keyBy('client_id');
+            ->mapWithKeys(fn (array $item) => [$item['recordId'] => $item['package']]);
     }
 
     /**

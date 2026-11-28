@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Bookings\CreateTrainerSession;
+use App\Actions\Trainer\AddClientRecord;
 use App\Enums\BookingActor;
 use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\Booking;
@@ -27,7 +28,7 @@ class TrainerManualSessionController extends Controller
 {
     use BuildsTrainerArea;
 
-    public function store(Request $request, CreateTrainerSession $create): RedirectResponse
+    public function store(Request $request, CreateTrainerSession $create, AddClientRecord $addRecord): RedirectResponse
     {
         $profile = $this->trainerProfile($request);
 
@@ -42,6 +43,8 @@ class TrainerManualSessionController extends Controller
             'time' => ['required', 'date_format:H:i'],
             'minutes' => ['required', 'integer'],
             'place_id' => ['nullable', 'integer'],
+            // "Dal pacchetto": one of the client's packages, used up by this session.
+            'client_package_id' => ['nullable', 'integer'],
             // "Note per la seduta": the trainer's own, as "Aggiungi nota".
             'note' => ['nullable', 'string', 'max:'.TrainerSessionNoteController::NOTE_MAX],
         ], [
@@ -62,9 +65,12 @@ class TrainerManualSessionController extends Controller
 
         $record = isset($data['client_record_id'])
             ? $profile->clientRecords()->findOrFail((int) $data['client_record_id'])
-            : $this->newRecord($profile, $data['new_client']);
+            : $addRecord->handle($profile, $data['new_client']);
+        $package = isset($data['client_package_id'])
+            ? $profile->clientPackages()->find((int) $data['client_package_id']) ?? throw ValidationException::withMessages(['client_package_id' => CreateTrainerSession::PACKAGE_USED])
+            : null;
 
-        $booking = $create->handle($profile, $record, $service, $start, (int) $data['minutes'], $place);
+        $booking = $create->handle($profile, $record, $service, $start, (int) $data['minutes'], $place, $package);
         $note = $this->clean($data['note'] ?? null);
 
         if ($note !== null) {
@@ -124,31 +130,6 @@ class TrainerManualSessionController extends Controller
         $client->forceFill(['invite_prompt_dismissed_at' => now()])->save();
 
         return back();
-    }
-
-    /**
-     * "+ Aggiungi cliente" in the dialog: the same person (same email) is
-     * the row already in the list.
-     *
-     * @param  array{name: string, email?: string|null, phone?: string|null}  $data
-     */
-    private function newRecord(TrainerProfile $profile, array $data): TrainerClient
-    {
-        $email = $this->clean($data['email'] ?? null);
-
-        if ($email !== null) {
-            $existing = $profile->clientRecords()->whereRaw('lower(email) = ?', [mb_strtolower($email)])->first();
-
-            if ($existing !== null) {
-                return $existing;
-            }
-        }
-
-        return $profile->clientRecords()->create([
-            'name' => trim($data['name']),
-            'email' => $email,
-            'phone' => $this->clean($data['phone'] ?? null),
-        ]);
     }
 
     private function clean(?string $value): ?string

@@ -7,6 +7,7 @@ import {
     ClientSection,
     DayPickerPanel,
     NoteSection,
+    PackageSection,
     PanelFooter,
     SessionSections,
     TimePickerPanel,
@@ -42,7 +43,8 @@ export default function SessionSheet({
             label="Nuova seduta"
         >
             <PanelHeader title="Nuova seduta" />
-            <ClientSection form={form} />
+            <ClientSection form={form.client} error={form.clientError} />
+            <PackageSection form={form} />
             <WhenSection form={form} picker={picker} onPicker={setPicker}>
                 {picker && (
                     <div className="rounded-[20px] bg-[#0B0C0D] p-3.5">

@@ -1,7 +1,8 @@
-import { Link, router, usePage, usePoll } from '@inertiajs/react';
+import { router, usePage, usePoll } from '@inertiajs/react';
 import { MessageCircle } from 'lucide-react';
 import { useRef } from 'react';
 import ConversationList from '@/components/chat/conversation-list';
+import InboxEmpty from '@/components/chat/inbox-empty';
 import MessageThread from '@/components/chat/message-thread';
 import NotificationsList from '@/components/chat/notifications-list';
 import { CountPill, areaTitleClassName } from '@/components/mp/area-bits';
@@ -92,15 +93,11 @@ export default function ChatView({
     const list = showNotifications ? (
         <NotificationsList />
     ) : conversations.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
-            <span className="flex size-13 items-center justify-center rounded-full bg-[#1c1e21] text-muted-foreground">
-                <MessageCircle aria-hidden="true" className="size-6" />
-            </span>
-            <p className="text-[17px] font-semibold">{emptyTitle}</p>
-            <p className="max-w-80 text-[15px] leading-5 text-muted-foreground">
-                {emptyDescription}
-            </p>
-        </div>
+        <InboxEmpty
+            icon={MessageCircle}
+            title={emptyTitle}
+            description={emptyDescription}
+        />
     ) : (
         <ConversationList
             conversations={conversations}
@@ -180,6 +177,11 @@ export default function ChatView({
     );
 }
 
+/**
+ * A tab of the Inbox. Both are already on the page: the switch happens
+ * here, without asking the server again (only the address changes, so a
+ * reload or "back" keeps the tab). The open chat closes.
+ */
 function Tab({
     href,
     selected,
@@ -192,12 +194,33 @@ function Tab({
     count: number;
 }) {
     return (
-        <Link
+        <a
             href={href}
             role="tab"
             aria-selected={selected}
-            preserveScroll
-            replace
+            onClick={(event) => {
+                // A new tab or window: the browser does it.
+                if (
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey ||
+                    event.button !== 0
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                if (!selected) {
+                    router.replace({
+                        url: href,
+                        preserveScroll: true,
+                        preserveState: true,
+                        props: (props) => ({ ...props, selected: null }),
+                    });
+                }
+            }}
             className={cn(
                 'relative flex h-12 flex-1 items-center justify-center gap-2 text-base font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
                 selected
@@ -207,6 +230,6 @@ function Tab({
         >
             {label}
             {count > 0 && <CountPill>{count}</CountPill>}
-        </Link>
+        </a>
     );
 }

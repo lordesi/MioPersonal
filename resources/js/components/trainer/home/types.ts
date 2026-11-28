@@ -1,4 +1,5 @@
 import type {
+    SessionOptions,
     TrainerBookingRequest,
     TrainerDashboardStats,
     TrainerDaySession,
@@ -23,6 +24,8 @@ export type HomeProps = {
     week: TrainerWeekDay[];
     daySessions: TrainerDaySession[];
     packages: TrainerPackage[];
+    /** "Aggiungi pacchetto": the clients and the packages to choose; null without a profile. */
+    sessionOptions: SessionOptions | null;
     stats: TrainerDashboardStats;
 };
 

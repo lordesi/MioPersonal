@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Trainer\AddClientRecord;
 use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Models\ClientPayment;
 use App\Models\TrainerClient;
@@ -68,6 +69,33 @@ class TrainerClientRecordsController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => $added === 1 ? 'Cliente aggiunto.' : "{$added} clienti aggiunti."]);
 
         return back();
+    }
+
+    /**
+     * "Aggiungi cliente" (the "+" of "Clienti"): one person, with the name
+     * and the contacts. The same email is the row already in the list. The
+     * card of the client opens after.
+     */
+    public function add(Request $request, AddClientRecord $addRecord): RedirectResponse
+    {
+        $profile = $this->trainerProfile($request);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:'.TrainerClient::NAME_MAX],
+            'email' => ['nullable', 'email:rfc', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:40', 'regex:/^[0-9+().\s-]*$/'],
+        ], [
+            'name.required' => 'Scrivi il nome del cliente.',
+            'email.email' => 'Scrivi un’email valida.',
+            'phone.regex' => 'Il telefono può avere solo numeri, spazi e +.',
+        ]);
+
+        $record = $addRecord->handle($profile, $data);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => $record->wasRecentlyCreated
+            ? 'Cliente aggiunto.'
+            : 'Questa email è già di un tuo cliente: ecco la sua scheda.']);
+
+        return to_route('trainer.clients', ['con' => $record->id]);
     }
 
     /**

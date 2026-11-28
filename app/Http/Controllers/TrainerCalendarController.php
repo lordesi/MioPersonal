@@ -15,6 +15,7 @@ use App\Models\TrainerProfile;
 use App\Models\User;
 use App\Support\BookingLabels;
 use App\Support\ClientBookingData;
+use App\Support\OpenPackages;
 use App\Support\TrainerPastSessions;
 use App\Support\TrainerSessions;
 use Carbon\CarbonImmutable;
@@ -152,36 +153,44 @@ class TrainerCalendarController extends Controller
     }
 
     /**
-     * "Aggiungi seduta": the trainer's clients (with an account first), the
-     * single sessions they offer and their places (not "Online": that comes
-     * with the online services).
+     * "Aggiungi seduta" and "Aggiungi pacchetto": the trainer's clients, the
+     * single sessions they offer, their places (not "Online": that comes
+     * with the online services) and the packages of "Servizi e prezzi".
+     * A client with a package still to use has it chosen at first.
      *
-     * @return array{clients: list<array{id: int, name: string, registered: bool, detail: string|null}>, services: list<array{id: int, name: string, minutes: int, priceCents: int}>, places: list<array{id: int, label: string}>}
+     * @return array{clients: list<array{id: int, name: string, registered: bool, detail: string|null, package: array{id: int, name: string, remaining: int, minutes: int}|null}>, services: list<array{id: int, name: string, minutes: int, priceCents: int}>, places: list<array{id: int, label: string}>, packages: list<array{id: int, name: string, sessions: int, minutes: int, priceCents: int}>}
      */
     public function sessionOptions(TrainerProfile $profile): array
     {
-        // Under the name in the list: the package still going, "Boxe · 7 di 10".
-        $packages = $profile->clientPackages()
-            ->bought()
-            ->whereNotNull('client_id')
-            ->withSessionCounts()
-            ->oldest('bought_at')
-            ->get()
-            ->filter(fn (ClientPackage $package) => ($package->done_count ?? 0) < $package->sessions_total)
-            // The oldest one first: the one about to end.
-            ->unique('client_id')
-            ->keyBy('client_id');
+        // Under the name in the list: the package still going, "Boxe · 7 di 10"
+        // (the oldest one: the one about to end).
+        $open = OpenPackages::of($profile)->filter(fn (array $item) => $item['recordId'] !== null);
+        $going = $open->unique('recordId')
+            ->mapWithKeys(fn (array $item) => [$item['recordId'] => $item['package']]);
+        // What "Aggiungi seduta" uses up: the oldest one with sessions still to book.
+        $bookable = $open->filter(fn (array $item) => $item['package']->remaining() > 0)
+            ->unique('recordId')
+            ->mapWithKeys(fn (array $item) => [$item['recordId'] => $item['package']]);
 
         return [
             'clients' => array_values($profile->clientRecords()->with('user')->get()
-                ->map(function (TrainerClient $record) use ($packages): array {
-                    $package = $record->user_id === null ? null : $packages->get($record->user_id);
+                ->map(function (TrainerClient $record) use ($going, $bookable): array {
+                    /** @var ClientPackage|null $package */
+                    $package = $going->get($record->id);
+                    /** @var ClientPackage|null $next */
+                    $next = $bookable->get($record->id);
 
                     return [
                         'id' => $record->id,
                         'name' => $record->user->name ?? $record->name,
                         'registered' => $record->isRegistered(),
                         'detail' => $package === null ? null : "{$package->name} · ".($package->done_count ?? 0)." di {$package->sessions_total}",
+                        'package' => $next === null ? null : [
+                            'id' => $next->id,
+                            'name' => $next->name,
+                            'remaining' => $next->remaining(),
+                            'minutes' => $next->minutes,
+                        ],
                     ];
                 })
                 ->sortBy(fn (array $client) => mb_strtolower($client['name']))
@@ -200,6 +209,19 @@ class TrainerCalendarController extends Controller
             'places' => array_values($profile->places()->with(['city', 'gymProfile.city'])->get()
                 ->reject(fn (TrainerPlace $place) => $place->type === PlaceType::Online)
                 ->map(fn (TrainerPlace $place) => ['id' => $place->id, 'label' => $place->label()])
+                ->all()),
+            // "Aggiungi pacchetto": one of these fills the fields.
+            'packages' => array_values($profile->services()
+                ->where('is_active', true)->where('kind', 'package')
+                ->orderBy('sort')
+                ->get()
+                ->map(fn (Service $service) => [
+                    'id' => $service->id,
+                    'name' => $service->displayName(),
+                    'sessions' => $service->package_sessions ?? 1,
+                    'minutes' => $service->minutes,
+                    'priceCents' => $service->price_cents,
+                ])
                 ->all()),
         ];
     }

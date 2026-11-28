@@ -5,6 +5,7 @@ namespace App\Actions\Bookings;
 use App\Enums\BookingActor;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
+use App\Models\ClientPackage;
 use App\Models\Service;
 use App\Models\TrainerClient;
 use App\Models\TrainerPlace;
@@ -28,10 +29,15 @@ use Illuminate\Validation\ValidationException;
  * - With an account: a proposal. The client accepts or declines it
  *   (ClientSessionProposalController); without an answer it lapses when the
  *   session starts.
+ *
+ * "Dal pacchetto": the session uses up one of the client's package, free
+ * (it was paid with the package), as "Il tuo pacchetto" of the client.
  */
 class CreateTrainerSession
 {
     public const OVERLAP = 'A quest’ora hai già un’altra seduta: scegli un altro orario.';
+
+    public const PACKAGE_USED = 'Questo pacchetto non ha più sedute da prenotare.';
 
     public const MIN_MINUTES = 15;
 
@@ -40,10 +46,14 @@ class CreateTrainerSession
     /** PostgreSQL error code of an exclusion constraint (`bookings_no_overlap`). */
     private const EXCLUSION_VIOLATION = '23P01';
 
-    public function handle(TrainerProfile $profile, TrainerClient $record, Service $service, CarbonImmutable $start, int $minutes, ?TrainerPlace $place = null): Booking
+    public function handle(TrainerProfile $profile, TrainerClient $record, Service $service, CarbonImmutable $start, int $minutes, ?TrainerPlace $place = null, ?ClientPackage $package = null): Booking
     {
         if ($record->trainer_profile_id !== $profile->id || $service->trainer_profile_id !== $profile->id) {
             abort(404);
+        }
+
+        if ($package !== null && ! self::packageOf($package, $profile, $record)) {
+            throw ValidationException::withMessages(['client_package_id' => self::PACKAGE_USED]);
         }
 
         if ($service->kind !== 'session' || ! $service->is_active) {
@@ -64,7 +74,7 @@ class CreateTrainerSession
         $trainer = $profile->user;
 
         try {
-            $booking = DB::transaction(function () use ($profile, $record, $service, $start, $end, $blockedUntil, $offApp, $place, $trainer) {
+            $booking = DB::transaction(function () use ($profile, $record, $service, $start, $end, $blockedUntil, $offApp, $place, $trainer, $package) {
                 // As when a client books: one booking at a time for this trainer.
                 TrainerProfile::whereKey($profile->id)->lockForUpdate()->first();
                 $profile->bookings()->overdue()->get()->each(fn (Booking $request) => $request->expire());
@@ -73,14 +83,20 @@ class CreateTrainerSession
                     throw ValidationException::withMessages(['start' => self::OVERLAP]);
                 }
 
+                // Counted inside the lock: two sessions can't both take the last place.
+                if ($package !== null && $package->activeBookings()->count() >= $package->sessions_total) {
+                    throw ValidationException::withMessages(['client_package_id' => self::PACKAGE_USED]);
+                }
+
                 $booking = Booking::create([
                     'client_id' => $record->user_id,
                     'trainer_client_id' => $record->id,
                     'requested_by' => BookingActor::Trainer,
                     'trainer_profile_id' => $profile->id,
                     'service_id' => $service->id,
-                    'service_name' => $service->displayName(),
-                    'price_cents' => $service->price_cents,
+                    'client_package_id' => $package?->id,
+                    'service_name' => $package->name ?? $service->displayName(),
+                    'price_cents' => $package === null ? $service->price_cents : 0,
                     'place_label' => app(CreateBooking::class)->placeLabel($profile, $service->online_only, $place),
                     'starts_at' => $start->utc(),
                     'ends_at' => $end->utc(),
@@ -110,6 +126,15 @@ class CreateTrainerSession
         }
 
         return $booking;
+    }
+
+    /** A package of this trainer, bought, of this person of the list. */
+    private static function packageOf(ClientPackage $package, TrainerProfile $profile, TrainerClient $record): bool
+    {
+        return $package->trainer_profile_id === $profile->id
+            && $package->bought_at !== null
+            && ($package->trainer_client_id === $record->id
+                || ($package->client_id !== null && $package->client_id === $record->user_id));
     }
 
     /**

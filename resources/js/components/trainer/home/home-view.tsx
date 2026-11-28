@@ -44,6 +44,7 @@ export default function HomeView(props: HomeViewProps) {
         week,
         daySessions,
         packages,
+        sessionOptions,
         stats,
         now,
         busyId,
@@ -209,14 +210,22 @@ export default function HomeView(props: HomeViewProps) {
                         onChange={onPeriod}
                     />
                     {isMobile && (
-                        <PackagesBlock packages={packages} variant="tiles" />
+                        <PackagesBlock
+                            packages={packages}
+                            options={sessionOptions}
+                            variant="tiles"
+                        />
                     )}
                 </div>
 
                 {!isMobile && (
                     <div className="flex min-w-0 flex-col gap-8">
                         {requestsBlock}
-                        <PackagesBlock packages={packages} variant="tiles" />
+                        <PackagesBlock
+                            packages={packages}
+                            options={sessionOptions}
+                            variant="tiles"
+                        />
                     </div>
                 )}
             </div>

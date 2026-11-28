@@ -14,6 +14,7 @@ import {
 import { formatDayShort, formatMonthYear, formatTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { TrainerClient } from '@/types';
+import type { PopoverAnchor } from '@/components/trainer/session/panel-shell';
 
 /** The filters of the design: everyone, the active, the new, the inactive. */
 export type ClientGroup = 'all' | 'active' | 'new' | 'inactive';
@@ -46,8 +47,8 @@ type ClientsViewComponentProps = Pick<
     onGroup: (group: ClientGroup) => void;
     search: string;
     onSearch: (search: string) => void;
-    /** "+": "Nuova seduta", with a client of the list or a new one. */
-    onAddSession: (() => void) | null;
+    /** "+": "Nuovo cliente", from the button (desktop: the popover under it). */
+    onAddClient: (anchor: PopoverAnchor) => void;
     /** "Prenota" in the card of a client. */
     onBook: (client: TrainerClient) => void;
     /** "Scrivi": the chat in the Inbox. */
@@ -69,7 +70,7 @@ export default function ClientsView({
     onGroup,
     search,
     onSearch,
-    onAddSession,
+    onAddClient,
     onBook,
     onChat,
 }: ClientsViewComponentProps) {
@@ -120,20 +121,24 @@ export default function ClientsView({
                     </p>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    {onAddSession && (
-                        <button
-                            type="button"
-                            onClick={onAddSession}
-                            aria-label="Aggiungi una seduta"
-                            className="flex size-11 items-center justify-center rounded-full bg-brand text-black outline-none hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                        >
-                            <Plus
-                                aria-hidden="true"
-                                className="size-5.5"
-                                strokeWidth={2.6}
-                            />
-                        </button>
-                    )}
+                    <button
+                        type="button"
+                        onClick={(event) =>
+                            onAddClient({
+                                rect: event.currentTarget.getBoundingClientRect(),
+                                placement: 'below',
+                            })
+                        }
+                        aria-label="Aggiungi un cliente"
+                        title="Aggiungi cliente"
+                        className="flex size-11 items-center justify-center rounded-full bg-brand text-black outline-none hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    >
+                        <Plus
+                            aria-hidden="true"
+                            className="size-5.5"
+                            strokeWidth={2.6}
+                        />
+                    </button>
                     <TrainerHeaderActions bell={false} />
                 </div>
             </header>

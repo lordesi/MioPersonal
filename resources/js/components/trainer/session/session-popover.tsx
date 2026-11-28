@@ -9,6 +9,7 @@ import {
     ClientSection,
     DayPickerPanel,
     NoteSection,
+    PackageSection,
     PanelFooter,
     SessionSections,
     TimePickerPanel,
@@ -84,7 +85,8 @@ export default function SessionPopover({
                         : 'Scegli cliente, giorno e ora'
                 }
             />
-            <ClientSection form={form} />
+            <ClientSection form={form.client} error={form.clientError} />
+            <PackageSection form={form} />
             <WhenSection
                 form={form}
                 picker={picker}
