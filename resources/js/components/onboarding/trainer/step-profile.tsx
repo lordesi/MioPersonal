@@ -1,4 +1,4 @@
-import { Camera, Plus } from 'lucide-react';
+import { Camera, Plus, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ChangeEvent, ReactNode } from 'react';
 import {
@@ -16,6 +16,7 @@ import {
 import SocialAccountsField from '@/components/trainer/profile/social-accounts-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
 type StepProps = {
     draft: TrainerDraft;
@@ -61,16 +62,20 @@ export default function StepProfile({
     name,
     photo,
     username,
+    compact = false,
 }: StepProps & {
-    /** Left out: both (the profile page of the trainer area). */
+    /** Left out: both. */
     part?: 'photo' | 'about';
     /** "Presentazione": the username of a guest, on top. */
     username?: ReactNode;
+    /** "Modifica profilo": the photo with ✕ to remove it, only "Scatta una foto" under it. */
+    compact?: boolean;
 }) {
     const picker = (
         <PhotoPicker
             photo={photo}
             name={name}
+            compact={compact}
             onChange={(file) => update({ photo: file })}
             onRemove={() => update({ photo: null, photoUrl: null })}
         />
@@ -92,18 +97,23 @@ export default function StepProfile({
 /**
  * The round photo of the design (176px, the turquoise "+"), "Scegli dalla
  * galleria" and "Scatta una foto". Sent with the whole registration.
+ * `compact` ("Modifica profilo"): once there is a photo the "+" becomes a
+ * ✕ that removes it; only "Scatta una foto" under it.
  */
 function PhotoPicker({
     photo,
     name,
+    compact,
     onChange,
     onRemove,
 }: {
     photo: string | null;
     name: string;
+    compact: boolean;
     onChange: (file: File | null) => void;
     onRemove: () => void;
 }) {
+    const removable = compact && photo !== null;
     const fileInput = useRef<HTMLInputElement>(null);
     const cameraInput = useRef<HTMLInputElement>(null);
     const choose = () => fileInput.current?.click();
@@ -115,32 +125,50 @@ function PhotoPicker({
 
     return (
         <div className="flex flex-col items-center gap-5 py-2">
-            <button
-                type="button"
-                onClick={choose}
-                aria-label={photo ? 'Cambia la foto' : 'Carica una foto'}
-                className="relative flex size-44 items-center justify-center rounded-full border-[1.5px] border-border-strong text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-                {photo ? (
-                    <img
-                        src={photo}
-                        alt={`Foto profilo di ${name || 'te'}`}
-                        className="size-full rounded-full object-cover"
-                    />
-                ) : (
-                    <Camera
-                        aria-hidden="true"
-                        className="size-15"
-                        strokeWidth={1.5}
-                    />
-                )}
-                <span
-                    aria-hidden="true"
-                    className="absolute right-1.75 bottom-1.75 flex size-11 items-center justify-center rounded-full bg-brand text-black shadow-[0_0_0_4px_var(--background)]"
+            <div className={cn('relative size-44', compact && 'md:size-50')}>
+                <button
+                    type="button"
+                    onClick={choose}
+                    aria-label={photo ? 'Cambia la foto' : 'Carica una foto'}
+                    className="relative flex size-full items-center justify-center rounded-full border-[1.5px] border-border-strong text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
-                    <Plus className="size-5.5" strokeWidth={2.5} />
-                </span>
-            </button>
+                    {photo ? (
+                        <img
+                            src={photo}
+                            alt={`Foto profilo di ${name || 'te'}`}
+                            className="size-full rounded-full object-cover"
+                        />
+                    ) : (
+                        <Camera
+                            aria-hidden="true"
+                            className="size-15"
+                            strokeWidth={1.5}
+                        />
+                    )}
+                    {!removable && (
+                        <span aria-hidden="true" className={badgeClassName}>
+                            <Plus className="size-5.5" strokeWidth={2.5} />
+                        </span>
+                    )}
+                </button>
+                {removable && (
+                    <button
+                        type="button"
+                        onClick={onRemove}
+                        aria-label="Rimuovi la foto"
+                        className={cn(
+                            badgeClassName,
+                            'right-2 bottom-2 outline-none hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                        )}
+                    >
+                        <X
+                            aria-hidden="true"
+                            className="size-5.5"
+                            strokeWidth={2.5}
+                        />
+                    </button>
+                )}
+            </div>
             <input
                 ref={fileInput}
                 type="file"
@@ -157,13 +185,15 @@ function PhotoPicker({
                 onChange={pick}
             />
             <div className="flex flex-wrap justify-center gap-2">
-                <button
-                    type="button"
-                    onClick={choose}
-                    className="h-11 rounded-full border border-input px-5 text-[15px] font-semibold shadow-xs outline-none hover:bg-foreground/6 focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                    Scegli dalla galleria
-                </button>
+                {!compact && (
+                    <button
+                        type="button"
+                        onClick={choose}
+                        className="h-11 rounded-full border border-input px-5 text-[15px] font-semibold shadow-xs outline-none hover:bg-foreground/6 focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        Scegli dalla galleria
+                    </button>
+                )}
                 <button
                     type="button"
                     onClick={() => cameraInput.current?.click()}
@@ -171,7 +201,7 @@ function PhotoPicker({
                 >
                     Scatta una foto
                 </button>
-                {photo && (
+                {photo && !compact && (
                     <button
                         type="button"
                         onClick={onRemove}
@@ -181,12 +211,18 @@ function PhotoPicker({
                     </button>
                 )}
             </div>
-            <p className="text-[13px] text-muted-foreground">
-                JPG o PNG, almeno 400 × 400 px
-            </p>
+            {!compact && (
+                <p className="text-[13px] text-muted-foreground">
+                    JPG o PNG, almeno 400 × 400 px
+                </p>
+            )}
         </div>
     );
 }
+
+/** The turquoise circle on the photo: "+" to add, ✕ to remove. */
+const badgeClassName =
+    'absolute right-1.75 bottom-1.75 flex size-11 items-center justify-center rounded-full bg-brand text-black shadow-[0_0_0_4px_var(--background)]';
 
 /** Headline, bio (at least 60 characters), experience and the socials. */
 function Presentation({ draft, update }: Pick<StepProps, 'draft' | 'update'>) {

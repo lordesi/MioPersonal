@@ -1,13 +1,14 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import TrainerProfileEditController from '@/actions/App/Http/Controllers/TrainerProfileEditController';
+import AccordionSection from '@/components/client/accordion-section';
 import type { TrainerDraft } from '@/components/onboarding/trainer/draft';
 import {
     isCertificationValid,
     isProfileComplete,
     MAX_GOALS,
     needsCity,
-    stepOfField,
+    placeOptions,
     toProfilePayload,
 } from '@/components/onboarding/trainer/draft';
 import StepCertifications from '@/components/onboarding/trainer/step-certifications';
@@ -19,11 +20,7 @@ import StepProfile, {
 import ConfirmDialog from '@/components/shared/confirm-dialog';
 import GalleryPhotos from '@/components/trainer/profile/gallery-photos';
 import type { GalleryPhoto } from '@/components/trainer/profile/gallery-photos';
-import ProfilePreview, {
-    profileChecks,
-} from '@/components/trainer/profile/profile-preview';
 import ProfilePage, {
-    ProfileSection,
     SaveBar,
 } from '@/components/trainer/profile-pages/profile-page';
 import type { GymOption } from '@/components/onboarding/trainer/draft';
@@ -43,8 +40,6 @@ type ProfileProps = {
     /** "Foto della galleria", saved one action at a time. */
     gallery: GalleryPhoto[];
     maxGalleryPhotos: number;
-    /** "Nuovo" (value null) or the stars, in the preview. */
-    rating: { value: number | null; count: number } | null;
 };
 
 export default function Profile({
@@ -55,7 +50,6 @@ export default function Profile({
     gyms,
     gallery,
     maxGalleryPhotos,
-    rating,
 }: ProfileProps) {
     return (
         <>
@@ -63,9 +57,9 @@ export default function Profile({
 
             <ProfilePage
                 title="Modifica profilo"
-                intro="Quello che i clienti vedono di te quando ti cercano. Le modifiche sono subito sul profilo."
+                intro="Quello che vedono i clienti sul tuo profilo pubblico."
             >
-                {draft === null || rating === null ? (
+                {draft === null ? (
                     <p className="text-[15px] text-muted-foreground">
                         Finché il profilo non è approvato lo modifichi dalla{' '}
                         <Link
@@ -85,7 +79,6 @@ export default function Profile({
                         gyms={gyms}
                         gallery={gallery}
                         maxGalleryPhotos={maxGalleryPhotos}
-                        rating={rating}
                     />
                 )}
             </ProfilePage>
@@ -94,11 +87,12 @@ export default function Profile({
 }
 
 /**
- * The four sections on the left (steps 2, 3 and 6 of "Diventa trainer"),
- * the preview with "Salva modifiche" on the right. The fields are saved
- * with one button, public right away; the gallery photos are saved one
- * action at a time. The services are changed from "Servizi". Locked
- * before the approval: everything is shown, nothing can be changed.
+ * The sections of the design "Trainer · Modifica profilo" (steps 2, 3 and 6
+ * of "Diventa trainer"), each with what is chosen under its title, then
+ * "Salva modifiche". The fields are saved with one button, public right
+ * away; the gallery photos are saved one action at a time. The services
+ * are changed from "Servizi". Locked before the approval: everything is
+ * shown, nothing can be changed.
  */
 function ProfileForm({
     saved,
@@ -108,7 +102,6 @@ function ProfileForm({
     gyms,
     gallery,
     maxGalleryPhotos,
-    rating,
 }: {
     saved: Omit<TrainerDraft, 'photo'>;
     locked: boolean;
@@ -117,7 +110,6 @@ function ProfileForm({
     gyms: GymOption[];
     gallery: GalleryPhoto[];
     maxGalleryPhotos: number;
-    rating: { value: number | null; count: number };
 }) {
     const userName = usePage().props.auth?.user?.name ?? '';
     const [draft, setDraft] = useState<TrainerDraft>({
@@ -152,10 +144,23 @@ function ProfileForm({
         (!needsCity(draft) || draft.city !== '') &&
         draft.certifications.every(isCertificationValid);
 
-    const errorsOf = (step: number) =>
-        Object.entries(form.errors as Record<string, string>)
-            .filter(([field]) => stepOfField(field) === step)
-            .map(([, message]) => message);
+    const errors = Object.values(form.errors as Record<string, string>);
+
+    // What is chosen, under the title of each section.
+    const labelOf = (
+        options: { value: string; label: string }[],
+        value: string,
+    ) => options.find((option) => option.value === value)?.label ?? value;
+    const disciplinesSummary = draft.disciplines
+        .map((value) => labelOf(disciplines, value))
+        .join(', ');
+    const placesSummary = [
+        draft.places.map((place) => labelOf(placeOptions, place)).join(', '),
+        draft.city === '' ? '' : labelOf(cities, draft.city),
+    ]
+        .filter(Boolean)
+        .join(' · ');
+    const certifications = draft.certifications.length;
 
     // The button and Enter in a field only open the dialog.
     const askToSave = (event: React.FormEvent) => {
@@ -204,60 +209,105 @@ function ProfileForm({
             <form
                 noValidate
                 onSubmit={askToSave}
-                className="flex flex-col gap-10 md:gap-12"
+                className="flex flex-col gap-7"
             >
+                <StepErrors errors={errors} title="Da sistemare nel profilo:" />
                 {/* Disabled: the browser turns off every field and button inside. */}
                 <fieldset
                     disabled={locked}
-                    className="flex min-w-0 flex-col gap-10 md:gap-12"
+                    className="flex min-w-0 flex-col border-t border-separator"
                 >
-                    <div className="flex flex-col gap-4">
-                        <StepErrors
-                            errors={errorsOf(2)}
-                            title="Da sistemare nel profilo:"
-                        />
+                    <AccordionSection
+                        title="Foto profilo"
+                        summary={photo ? 'Caricata' : 'Nessuna foto'}
+                        defaultOpen
+                    >
                         <StepProfile
+                            part="photo"
+                            compact
                             draft={draft}
                             update={update}
                             name={userName}
                             photo={photo}
                         />
-                    </div>
-                    {/* Its buttons don't submit this form: each action is saved right away. */}
-                    <GalleryPhotos photos={gallery} max={maxGalleryPhotos} />
-                    <div className="flex flex-col gap-4">
-                        <StepErrors
-                            errors={errorsOf(3)}
-                            title="Da sistemare in discipline e luoghi:"
+                    </AccordionSection>
+                    <AccordionSection
+                        title="Foto della galleria"
+                        summary={
+                            gallery.length === 0
+                                ? 'Nessuna foto'
+                                : `${gallery.length} di ${maxGalleryPhotos}`
+                        }
+                        defaultOpen
+                    >
+                        {/* Its buttons don't submit this form: each action is saved right away. */}
+                        <GalleryPhotos
+                            hideTitle
+                            photos={gallery}
+                            max={maxGalleryPhotos}
                         />
+                    </AccordionSection>
+                    <AccordionSection
+                        title="Presentazione"
+                        summary={
+                            draft.headline.trim() || 'Titolo, bio ed esperienza'
+                        }
+                        defaultOpen
+                    >
+                        <StepProfile
+                            part="about"
+                            draft={draft}
+                            update={update}
+                            name={userName}
+                            photo={photo}
+                        />
+                    </AccordionSection>
+                    <AccordionSection
+                        title="Discipline e obiettivi"
+                        summary={disciplinesSummary || 'Nessuna disciplina'}
+                        defaultOpen
+                    >
                         <StepPlaces
+                            part="disciplines"
                             draft={draft}
                             update={update}
                             disciplines={disciplines}
                             cities={cities}
                             gymOptions={gyms}
                         />
-                    </div>
-                    <div className="flex flex-col gap-4">
-                        <StepErrors
-                            errors={errorsOf(6)}
-                            title="Da sistemare nelle certificazioni:"
+                    </AccordionSection>
+                    <AccordionSection
+                        title="Dove alleni"
+                        summary={placesSummary || 'Nessun luogo'}
+                        defaultOpen
+                    >
+                        <StepPlaces
+                            part="places"
+                            draft={draft}
+                            update={update}
+                            disciplines={disciplines}
+                            cities={cities}
+                            gymOptions={gyms}
                         />
-                        <StepCertifications draft={draft} update={update} />
-                    </div>
+                    </AccordionSection>
+                    <AccordionSection
+                        title="Certificazioni"
+                        summary={
+                            certifications === 0
+                                ? 'Nessuna certificazione'
+                                : certifications === 1
+                                  ? '1 certificazione'
+                                  : `${certifications} certificazioni`
+                        }
+                        defaultOpen
+                    >
+                        <StepCertifications
+                            hideTitle
+                            draft={draft}
+                            update={update}
+                        />
+                    </AccordionSection>
                 </fieldset>
-
-                <ProfileSection title="Anteprima">
-                    <ProfilePreview
-                        draft={draft}
-                        userName={userName}
-                        photo={photo}
-                        rating={rating}
-                        disciplines={disciplines}
-                        cities={cities}
-                        checks={profileChecks(draft, photo, gallery.length)}
-                    />
-                </ProfileSection>
 
                 <SaveBar
                     status={status}

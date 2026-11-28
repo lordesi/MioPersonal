@@ -357,6 +357,20 @@ class TrainerProfile extends Model
     }
 
     /**
+     * The public profile with the utm_* that say where the visit comes from,
+     * so Admin · Statistiche shows what works ("Condividi profilo", a badge).
+     */
+    public function shareLink(string $source, string $medium): string
+    {
+        return route('trainers.show', [
+            'slug' => $this->slug,
+            'utm_source' => $source,
+            'utm_medium' => $medium,
+            'utm_campaign' => $this->slug,
+        ]);
+    }
+
+    /**
      * Trains in person in the city (main city, one of the others, or a gym
      * there). The search also shows the online-only trainers in every city:
      * this scope leaves them out, for the city pages given to search engines

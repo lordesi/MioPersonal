@@ -28,12 +28,7 @@ import {
     formatHours,
 } from '@/lib/format';
 import type { HourRange } from '@/lib/hours';
-import {
-    LAST_MINUTE,
-    nextRange,
-    normalizeRanges,
-    rangeLabel,
-} from '@/lib/hours';
+import { nextRange, normalizeRanges, rangeLabel } from '@/lib/hours';
 import { cn } from '@/lib/utils';
 import { register } from '@/routes/trainer';
 import type {
@@ -527,25 +522,23 @@ function HoursSection({
                                             </button>
                                         </span>
                                     ))}
-                                    {!locked &&
-                                        ranges.at(-1)!.end < LAST_MINUTE && (
-                                            <button
-                                                type="button"
-                                                aria-label="Aggiungi una fascia"
-                                                onClick={() =>
-                                                    setEditing({
-                                                        day,
-                                                        index: null,
-                                                        range: nextRange(
-                                                            ranges,
-                                                        ),
-                                                    })
-                                                }
-                                                className="inline-flex h-10 items-center rounded-xl px-3 text-[15px] font-semibold text-brand outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                            >
-                                                + Fascia
-                                            </button>
-                                        )}
+                                    {/* Always next to the ranges, as in the design. */}
+                                    {!locked && (
+                                        <button
+                                            type="button"
+                                            aria-label={`Aggiungi una fascia a ${name.toLowerCase()}`}
+                                            onClick={() =>
+                                                setEditing({
+                                                    day,
+                                                    index: null,
+                                                    range: nextRange(ranges),
+                                                })
+                                            }
+                                            className="inline-flex h-10 items-center rounded-xl px-3 text-[15px] font-semibold text-brand outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        >
+                                            + Fascia
+                                        </button>
+                                    )}
                                 </div>
                             ) : (
                                 <span className="text-[15px] text-muted-foreground">

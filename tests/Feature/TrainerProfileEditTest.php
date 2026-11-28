@@ -78,8 +78,8 @@ class TrainerProfileEditTest extends TestCase
                 ->whereNot('draft.photoUrl', null)
                 ->has('disciplines')
                 ->has('cities')
-                // No reviews yet: "Nuovo" in the preview.
-                ->where('rating', ['value' => null, 'count' => 0])
+                // No preview of the search card any more.
+                ->missing('rating')
             );
     }
 

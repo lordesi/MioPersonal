@@ -28,6 +28,7 @@ import {
 import DarkDialog from '@/components/mp/dark-dialog';
 import { Initials } from '@/components/trainer/ui/bits';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
+import { useShare } from '@/hooks/use-share';
 import { useFeatures } from '@/lib/features';
 import { formatUntilDay } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -43,7 +44,6 @@ import {
     reviews,
     services,
     settings,
-    share,
 } from '@/routes/trainer';
 import { edit as editProfile } from '@/routes/trainer/profile';
 import { update as updateVisibility } from '@/routes/trainer/visibility';
@@ -61,6 +61,8 @@ type ProfileHubProps = {
         name: string;
         avatar: string | null;
         publicUrl: string | null;
+        /** Null until the profile is in the search: nothing to share yet. */
+        shareUrl: string | null;
         /** "Boxe e Functional · Milano". */
         subtitle: string | null;
     };
@@ -90,6 +92,7 @@ export default function ProfileHub({
     const [askLogout, setAskLogout] = useState(false);
     const cleanup = useMobileNavigation();
     const pending = trainerArea?.pendingCount ?? 0;
+    const shareProfile = useShare(me.name, me.shareUrl ?? undefined);
 
     return (
         <>
@@ -190,11 +193,14 @@ export default function ProfileHub({
                                 external
                             />
                         )}
-                        <AreaRow
-                            title="Condividi profilo"
-                            icon={Share2}
-                            href={share.url()}
-                        />
+                        {me.shareUrl && (
+                            // Phones: the share sheet; desktop: the link copied.
+                            <AreaRow
+                                title="Condividi profilo"
+                                icon={Share2}
+                                onClick={() => void shareProfile()}
+                            />
+                        )}
                     </AreaRowGroup>
 
                     <AreaRowGroup title="Account">

@@ -13,6 +13,8 @@ type GalleryPhotosProps = {
     photos: GalleryPhoto[];
     /** TrainerProfile::MAX_GALLERY_PHOTOS */
     max: number;
+    /** The title only for screen readers: a section around it shows it. */
+    hideTitle?: boolean;
 };
 
 /**
@@ -20,7 +22,11 @@ type GalleryPhotosProps = {
  * carousel after the profile photo. Each action (add, delete) is saved right
  * away by TrainerPhotoController, not with "Salva modifiche".
  */
-export default function GalleryPhotos({ photos, max }: GalleryPhotosProps) {
+export default function GalleryPhotos({
+    photos,
+    max,
+    hideTitle = false,
+}: GalleryPhotosProps) {
     const fileInput = useRef<HTMLInputElement>(null);
     const [uploading, setUploading] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
@@ -69,6 +75,7 @@ export default function GalleryPhotos({ photos, max }: GalleryPhotosProps) {
     return (
         <Section
             title="Foto della galleria"
+            hideTitle={hideTitle}
             description="JPG o PNG, almeno 800 × 500 px."
             aside={
                 <Counter>

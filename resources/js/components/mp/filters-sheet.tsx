@@ -3,30 +3,27 @@ import DateSheet, {
     romeToday,
     timeBandOptions,
 } from '@/components/mp/date-sheet';
-import {
-    FilterFooter,
-    FilterGroup,
-    toggleIn,
-} from '@/components/mp/filter-chips';
+import { FilterFooter, FilterGroup } from '@/components/mp/filter-chips';
 import ModalSheet, { ModalSheetBody } from '@/components/mp/modal-sheet';
 import SegmentedControl from '@/components/mp/segmented-control';
 import {
-    modeOptions,
     priceOptions,
     ratingOptions,
 } from '@/components/search/filter-options';
 import { addDays } from '@/lib/calendar';
 import { formatDayShort } from '@/lib/format';
-import { trainingGoals } from '@/lib/goals';
-import type { ActiveFilters, SearchFilters, SearchOption } from '@/lib/search';
+import type { ActiveFilters } from '@/lib/search';
 
-/** The filters of the window: everything but the name, the sort and the page. */
-export type SheetFilters = Omit<ActiveFilters, 'nome' | 'ordina'>;
+/**
+ * The filters of the window: what the search bar doesn't already have
+ * (disciplines, goals, name, city and mode are there), without the sort.
+ */
+export type SheetFilters = Omit<
+    ActiveFilters,
+    'nome' | 'ordina' | 'disciplina' | 'obiettivo' | 'modalita'
+>;
 
 export const emptySheetFilters: SheetFilters = {
-    disciplina: [],
-    obiettivo: [],
-    modalita: null,
     disponibilita: null,
     data: null,
     fascia: null,
@@ -77,23 +74,21 @@ type FiltersSheetProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     filters: SheetFilters;
-    disciplines: SearchOption[];
     /** "Solo preferiti": logged-in clients only. */
     showFavorites: boolean;
-    onApply: (filters: SearchFilters) => void;
+    onApply: (filters: SheetFilters) => void;
 };
 
 /**
  * "Filtri" of the trainer search (design "RicercaSheet" /
- * "DkFiltriFinestra"): the choices stay here until "Applica". First the
- * four groups of the design; under them, the other filters of the page
- * (time of day, mode, at home, goals, favorites), so none is lost.
+ * "DkFiltriFinestra"): the choices stay here until "Applica". Only what
+ * the search bar above doesn't have: when, price, rating, time of day,
+ * at home and favorites.
  */
 export default function FiltersSheet({
     open,
     onOpenChange,
     filters,
-    disciplines,
     showFavorites,
     onApply,
 }: FiltersSheetProps) {
@@ -103,7 +98,6 @@ export default function FiltersSheet({
             {open && (
                 <FiltersForm
                     initial={filters}
-                    disciplines={disciplines}
                     showFavorites={showFavorites}
                     onApply={(next) => {
                         onApply(next);
@@ -117,14 +111,12 @@ export default function FiltersSheet({
 
 function FiltersForm({
     initial,
-    disciplines,
     showFavorites,
     onApply,
 }: {
     initial: SheetFilters;
-    disciplines: SearchOption[];
     showFavorites: boolean;
-    onApply: (filters: SearchFilters) => void;
+    onApply: (filters: SheetFilters) => void;
 }) {
     const [draft, setDraft] = useState(initial);
     const [dateOpen, setDateOpen] = useState(false);
@@ -178,37 +170,6 @@ function FiltersForm({
             className="flex min-h-0 flex-1 flex-col"
         >
             <ModalSheetBody className="flex flex-col gap-5.5">
-                <FilterGroup title="Disciplina" scroll>
-                    <button
-                        type="button"
-                        aria-pressed={draft.disciplina.length === 0}
-                        onClick={() => set({ disciplina: [] })}
-                        className="chip"
-                    >
-                        Tutte
-                    </button>
-                    {disciplines.map((discipline) => (
-                        <button
-                            key={discipline.value}
-                            type="button"
-                            aria-pressed={draft.disciplina.includes(
-                                discipline.value,
-                            )}
-                            onClick={() =>
-                                set({
-                                    disciplina: toggleIn(
-                                        draft.disciplina,
-                                        discipline.value,
-                                    ),
-                                })
-                            }
-                            className="chip"
-                        >
-                            {discipline.label}
-                        </button>
-                    ))}
-                </FilterGroup>
-
                 <FilterGroup title="Quando" scroll>
                     {whenOptions.map((option) => (
                         <button
@@ -277,23 +238,7 @@ function FiltersForm({
                     ))}
                 </FilterGroup>
 
-                <FilterGroup title="Modalità">
-                    {modeOptions.map((option) => {
-                        const value =
-                            option.value === 'tutte' ? null : option.value;
-
-                        return (
-                            <button
-                                key={option.value}
-                                type="button"
-                                aria-pressed={draft.modalita === value}
-                                onClick={() => set({ modalita: value })}
-                                className="chip"
-                            >
-                                {option.label}
-                            </button>
-                        );
-                    })}
+                <FilterGroup title="Luogo">
                     <button
                         type="button"
                         aria-pressed={draft.domicilio === '1'}
@@ -304,27 +249,6 @@ function FiltersForm({
                     >
                         A domicilio
                     </button>
-                </FilterGroup>
-
-                <FilterGroup title="Obiettivi">
-                    {trainingGoals.map((goal) => (
-                        <button
-                            key={goal.value}
-                            type="button"
-                            aria-pressed={draft.obiettivo.includes(goal.value)}
-                            onClick={() =>
-                                set({
-                                    obiettivo: toggleIn(
-                                        draft.obiettivo,
-                                        goal.value,
-                                    ),
-                                })
-                            }
-                            className="chip"
-                        >
-                            {goal.label}
-                        </button>
-                    ))}
                 </FilterGroup>
 
                 {showFavorites && (

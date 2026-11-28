@@ -41,7 +41,14 @@ function wrongYear(certification: Certification): boolean {
  * most 3, checked by the team before approval. A started one needs title,
  * issuer and year; the certificate stays private.
  */
-export default function StepCertifications({ draft, update }: StepProps) {
+export default function StepCertifications({
+    draft,
+    update,
+    hideTitle = false,
+}: StepProps & {
+    /** The title only for screen readers: a section around it shows it. */
+    hideTitle?: boolean;
+}) {
     const certifications = draft.certifications;
 
     const change = (index: number, changes: Partial<Certification>) =>
@@ -54,6 +61,7 @@ export default function StepCertifications({ draft, update }: StepProps) {
     return (
         <div className="flex flex-col gap-8">
             <Section
+                hideTitle={hideTitle}
                 title={
                     <>
                         <span className="md:hidden">Certificazioni</span>

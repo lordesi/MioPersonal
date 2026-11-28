@@ -7,7 +7,6 @@ import {
     Navigation,
     Search,
     Target,
-    Video,
     X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -803,34 +802,50 @@ function DesktopSearch({
             >
                 <div className="flex items-center rounded-full border border-border bg-card p-1.5 shadow-[inset_0_1px_0_0_rgba(237,238,240,0.06),0_16px_40px_rgba(0,0,0,0.5)]">
                     {segments.map((segment) => (
-                        <button
+                        <div
                             key={segment.id}
-                            type="button"
-                            aria-expanded={open === segment.id}
-                            onClick={() =>
-                                setOpen(open === segment.id ? null : segment.id)
-                            }
-                            className={cn(
-                                'flex h-15 min-w-0 flex-1 flex-col justify-center gap-0.5 rounded-full px-5.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                open === segment.id
-                                    ? 'bg-secondary shadow-[0_6px_18px_rgba(0,0,0,0.4)]'
-                                    : 'hover:bg-secondary/60',
-                            )}
+                            className="relative flex min-w-0 flex-1"
                         >
-                            <span className="text-xs font-bold tracking-[0.08em] uppercase">
-                                {segment.label}
-                            </span>
-                            <span
+                            <button
+                                type="button"
+                                aria-expanded={open === segment.id}
+                                onClick={() =>
+                                    setOpen(
+                                        open === segment.id ? null : segment.id,
+                                    )
+                                }
                                 className={cn(
-                                    'truncate text-[15px]',
-                                    segment.empty && open !== segment.id
-                                        ? 'text-muted-foreground'
-                                        : 'text-foreground',
+                                    'flex h-15 min-w-0 flex-1 flex-col justify-center gap-0.5 rounded-full px-5.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                                    open === segment.id
+                                        ? 'bg-secondary shadow-[0_6px_18px_rgba(0,0,0,0.4)]'
+                                        : 'hover:bg-secondary/60',
                                 )}
                             >
-                                {segment.value}
-                            </span>
-                        </button>
+                                <span className="text-xs font-bold tracking-[0.08em] uppercase">
+                                    {segment.label}
+                                </span>
+                                <span
+                                    className={cn(
+                                        'truncate text-[15px]',
+                                        segment.empty && open !== segment.id
+                                            ? 'text-muted-foreground'
+                                            : 'text-foreground',
+                                    )}
+                                >
+                                    {segment.value}
+                                </span>
+                            </button>
+                            {/* "Dove" opens right under its own part of the bar. */}
+                            {segment.id === 'dove' && open === 'dove' && (
+                                // The bar's padding: 6px below the segment.
+                                <DesktopPanel className="top-[calc(100%+18px)] left-0 w-110 p-6">
+                                    <WhereContent
+                                        state={state}
+                                        cities={cities}
+                                    />
+                                </DesktopPanel>
+                            )}
+                        </div>
                     ))}
                     <SubmitButton
                         onClick={() => {
@@ -841,13 +856,8 @@ function DesktopSearch({
                 </div>
 
                 {open === 'cosa' && (
-                    <DesktopPanel className="inset-x-8 grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-7 p-7">
+                    <DesktopPanel className="inset-x-8 p-7">
                         <DesktopWhat state={state} disciplines={disciplines} />
-                    </DesktopPanel>
-                )}
-                {open === 'dove' && (
-                    <DesktopPanel className="left-8 w-110 p-6">
-                        <WhereContent state={state} cities={cities} />
                     </DesktopPanel>
                 )}
                 {open === 'modalita' && (
@@ -917,100 +927,66 @@ function DesktopWhat({
     state: Draft;
     disciplines: SearchOption[];
 }) {
-    const { draft, update, pick, located, text, setText } = state;
+    const { draft, pick, text, setText } = state;
     const matches = whatMatches(text, disciplines);
+    const none = matches.disciplines.length === 0 && matches.goals.length === 0;
 
+    // The field across the top, then disciplines and goals side by side.
     return (
         <>
-            <div>
-                <p className={eyebrow}>Suggerimenti</p>
-                <WhatField text={text} onTextChange={setText} />
-                <div className="mt-2 flex flex-col">
-                    <SuggestionRow
-                        brand
-                        icon={
-                            located.locating ? (
-                                <Spinner className="size-5.5" />
-                            ) : (
-                                <Navigation
-                                    aria-hidden="true"
-                                    className="size-5.5"
+            <WhatField text={text} onTextChange={setText} />
+            {none ? (
+                <p className="mt-4 text-[15px] text-muted-foreground">
+                    Con «Cerca» trovi i trainer con questo nome.
+                </p>
+            ) : (
+                <div className="mt-6 grid grid-cols-2 gap-7">
+                    <div>
+                        <p className={eyebrow}>Discipline</p>
+                        <div className="flex flex-wrap gap-2">
+                            {matches.disciplines.map((option) => (
+                                <Chip
+                                    key={option.value}
+                                    label={option.label}
+                                    pressed={draft.disciplina.includes(
+                                        option.value,
+                                    )}
+                                    onClick={() =>
+                                        pick({
+                                            disciplina: toggle(
+                                                draft.disciplina,
+                                                option.value,
+                                            ),
+                                        })
+                                    }
                                 />
-                            )
-                        }
-                        title="Trainer nelle vicinanze"
-                        subtitle={
-                            draft.city
-                                ? `Vicino a ${draft.city.name}`
-                                : 'Intorno a te'
-                        }
-                        onClick={located.locate}
-                        trailing={null}
-                    />
-                    {located.error && (
-                        <p
-                            role="alert"
-                            className="py-1 text-sm text-destructive"
-                        >
-                            {located.error}
-                        </p>
-                    )}
-                    <SuggestionRow
-                        icon={<Video aria-hidden="true" className="size-5.5" />}
-                        title="Coaching online"
-                        subtitle="Allenati da casa"
-                        selected={draft.modalita === 'online'}
-                        onClick={() =>
-                            update({
-                                modalita:
-                                    draft.modalita === 'online'
-                                        ? null
-                                        : 'online',
-                            })
-                        }
-                    />
-                </div>
-            </div>
-            <div>
-                <p className={eyebrow}>Discipline</p>
-                <div className="flex flex-wrap gap-2">
-                    {matches.disciplines.map((option) => (
-                        <Chip
-                            key={option.value}
-                            label={option.label}
-                            pressed={draft.disciplina.includes(option.value)}
-                            onClick={() =>
-                                pick({
-                                    disciplina: toggle(
-                                        draft.disciplina,
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        <p className={eyebrow}>Obiettivi</p>
+                        <div className="flex flex-wrap gap-2">
+                            {matches.goals.map((option) => (
+                                <Chip
+                                    key={option.value}
+                                    label={option.label}
+                                    pressed={draft.obiettivo.includes(
                                         option.value,
-                                    ),
-                                })
-                            }
-                        />
-                    ))}
+                                    )}
+                                    onClick={() =>
+                                        pick({
+                                            obiettivo: toggle(
+                                                draft.obiettivo,
+                                                option.value,
+                                            ),
+                                        })
+                                    }
+                                />
+                            ))}
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div>
-                <p className={eyebrow}>Obiettivi</p>
-                <div className="flex flex-wrap gap-2">
-                    {matches.goals.map((option) => (
-                        <Chip
-                            key={option.value}
-                            label={option.label}
-                            pressed={draft.obiettivo.includes(option.value)}
-                            onClick={() =>
-                                pick({
-                                    obiettivo: toggle(
-                                        draft.obiettivo,
-                                        option.value,
-                                    ),
-                                })
-                            }
-                        />
-                    ))}
-                </div>
-            </div>
+            )}
         </>
     );
 }

@@ -25,7 +25,8 @@ const roundButton =
  * Phones (design "V1 · Foto a scorrimento"): the photos side by side, a
  * swipe or a tap on the sides changes photo, the dots and "1 / 5" at the
  * bottom; back, share and the heart on top. A tap in the middle opens the
- * photo full screen.
+ * photo full screen. On the iPhone the photo goes up under the clock
+ * (viewport-fit=cover, lib/zoom-lock.ts): the buttons stay under it.
  */
 export function MobileGallery({
     name,
@@ -51,7 +52,7 @@ export function MobileGallery({
     return (
         <section
             aria-label={`Foto di ${name}`}
-            className="relative h-110 overflow-hidden rounded-b-[28px] bg-card md:hidden"
+            className="relative h-[calc(27.5rem+env(safe-area-inset-top))] overflow-hidden rounded-b-[28px] bg-card md:hidden"
         >
             {total > 0 ? (
                 <div
@@ -102,13 +103,13 @@ export function MobileGallery({
                         type="button"
                         aria-label="Foto precedente"
                         onClick={() => go(index - 1)}
-                        className="absolute top-18 bottom-14 left-0 w-[30%] outline-none"
+                        className="absolute top-[calc(4.5rem+env(safe-area-inset-top))] bottom-14 left-0 w-[30%] outline-none"
                     />
                     <button
                         type="button"
                         aria-label="Foto successiva"
                         onClick={() => go(index + 1)}
-                        className="absolute top-18 right-0 bottom-14 w-[30%] outline-none"
+                        className="absolute top-[calc(4.5rem+env(safe-area-inset-top))] right-0 bottom-14 w-[30%] outline-none"
                     />
                     <div className="absolute inset-x-0 bottom-3.5 flex justify-center">
                         {slides.map((slide, position) => (
@@ -140,7 +141,12 @@ export function MobileGallery({
                 </>
             )}
 
-            <div className="absolute inset-x-4 top-3 flex items-center justify-between">
+            {/* Dark behind the clock and the battery, readable on any photo. */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-[calc(5rem+env(safe-area-inset-top))] bg-[linear-gradient(180deg,rgba(0,0,0,0.45)_0%,rgba(0,0,0,0)_100%)]"
+            />
+            <div className="absolute inset-x-4 top-[calc(0.75rem+env(safe-area-inset-top))] flex items-center justify-between">
                 <Link
                     prefetch={hoverPrefetch}
                     href={backHref}

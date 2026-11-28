@@ -495,7 +495,7 @@ export function BookingBar({ booking }: { booking: TrainerBooking }) {
     }
 
     return (
-        <div className="sticky bottom-4 z-30 mx-3 mb-4 flex items-center gap-3 rounded-[22px] bg-background p-2.5 shadow-[inset_0_0_0_1px_#26282c,0_16px_48px_-8px_rgba(0,0,0,0.75)] md:hidden">
+        <div className="sticky bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 mx-3 mb-4 flex items-center gap-3 rounded-[22px] bg-background p-2.5 shadow-[inset_0_0_0_1px_#26282c,0_16px_48px_-8px_rgba(0,0,0,0.75)] md:hidden">
             <span
                 aria-hidden="true"
                 className="flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-card text-brand"

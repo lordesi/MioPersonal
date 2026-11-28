@@ -38,6 +38,11 @@ class TrainerProfileHubController extends Controller
                 ])->filter()->join(' · '),
                 // "miopersonal.it/trainer/giulia-rossi", null until the registration is sent.
                 'publicUrl' => $profile === null ? null : route('trainers.show', $profile->slug),
+                // "Condividi profilo": only once the profile is in the search,
+                // before that the link leads nowhere.
+                'shareUrl' => $profile !== null && $user->trainerProfile()->published()->exists()
+                    ? $profile->shareLink('condividi', 'profilo')
+                    : null,
             ],
             // Null until the registration is sent: no switch to show.
             'visibility' => $profile === null ? null : [

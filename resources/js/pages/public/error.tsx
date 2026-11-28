@@ -8,7 +8,7 @@ import {
     pageTitleClassName,
 } from '@/components/mp/page-bits';
 import { cn } from '@/lib/utils';
-import { dashboard, home } from '@/routes';
+import { home } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
 
 type ErrorStatus = 403 | 419 | 429 | 500 | 503;
@@ -17,7 +17,7 @@ type ErrorStatus = 403 | 419 | 429 | 500 | 503;
 const messages: Record<ErrorStatus, { title: string; text: string }> = {
     403: {
         title: 'Questa pagina non è per il tuo account.',
-        text: 'È riservata a un altro tipo di account. Torna nella tua area o alla home.',
+        text: 'È riservata a un altro tipo di account. Torna alla home: dal menu del tuo account trovi la tua area.',
     },
     419: {
         title: 'La pagina è scaduta.',
@@ -71,14 +71,8 @@ export default function ErrorPage({ status }: { status: ErrorStatus }) {
                             Ricarica la pagina
                         </button>
                     ) : (
-                        // Logged in: the area of the role; guests: login, then the area.
-                        <Link
-                            href={status === 403 ? dashboard() : home()}
-                            className={brandFilledClassName}
-                        >
-                            {status === 403
-                                ? 'Vai alla tua area'
-                                : 'Torna alla home'}
+                        <Link href={home()} className={brandFilledClassName}>
+                            Torna alla home
                         </Link>
                     )}
                     <Link

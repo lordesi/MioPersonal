@@ -1,9 +1,7 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { ChevronLeft } from 'lucide-react';
 import { useId, useState } from 'react';
-import { toast } from 'sonner';
 import {
-    AreaSwitch,
     CountPill,
     areaTitleClassName,
     carbCardClassName,
@@ -13,7 +11,6 @@ import RequestCard from '@/components/trainer/home/request-card';
 import { useRequestAnswer } from '@/components/trainer/home/use-request-answer';
 import { cn } from '@/lib/utils';
 import { profile } from '@/routes/trainer';
-import { autoConfirm as autoConfirmRoute } from '@/routes/trainer/requests';
 import type { TrainerBookingRequest, TrainerHandledRequest } from '@/types';
 
 type RequestsProps = {
@@ -21,23 +18,17 @@ type RequestsProps = {
     requests: TrainerBookingRequest[];
     /** Answered or expired in the last 30 days, the latest on top. */
     handled: TrainerHandledRequest[];
-    /** "Conferma automatica": the new requests are confirmed at once. */
-    autoConfirm: boolean;
 };
 
 type Tab = 'pending' | 'done';
 
 /**
  * "Richieste" (design "Trainer · Richieste · nuovo"): "Da confermare", with
- * Accetta, Rifiuta and the switch of the automatic confirmation, and
- * "Gestite". "Oggi" shows the same requests; the notifications of a new
+ * Accetta and Rifiuta, and "Gestite" ("Conferma automatica" is in
+ * Impostazioni). "Oggi" shows the same requests; the notifications of a new
  * request open this page.
  */
-export default function Requests({
-    requests,
-    handled,
-    autoConfirm,
-}: RequestsProps) {
+export default function Requests({ requests, handled }: RequestsProps) {
     const panelId = useId();
     const [tab, setTab] = useState<Tab>(
         requests.length === 0 && handled.length > 0 ? 'done' : 'pending',
@@ -137,7 +128,6 @@ export default function Requests({
                                     ))}
                                 </div>
                             )}
-                            <AutoConfirmSwitch on={autoConfirm} />
                         </>
                     )}
 
@@ -145,55 +135,6 @@ export default function Requests({
                 </div>
             </div>
         </>
-    );
-}
-
-/** "Conferma automatica": saved at once (TrainerAutoConfirmController). */
-function AutoConfirmSwitch({ on }: { on: boolean }) {
-    const labelId = useId();
-    const noteId = useId();
-    const [saving, setSaving] = useState(false);
-
-    const toggle = () =>
-        router.patch(
-            autoConfirmRoute.url(),
-            { auto_confirm: !on },
-            {
-                preserveScroll: true,
-                only: ['autoConfirm'],
-                onStart: () => setSaving(true),
-                onFinish: () => setSaving(false),
-                onError: () =>
-                    toast.error('Non siamo riusciti a salvare. Riprova.'),
-            },
-        );
-
-    return (
-        <div className="flex min-h-16 items-center gap-3.5 border-b border-separator py-2.5">
-            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <b
-                    id={labelId}
-                    className="text-[17px] leading-5.5 font-semibold"
-                >
-                    Conferma automatica
-                </b>
-                <span
-                    id={noteId}
-                    className="text-[15px] leading-5 text-muted-foreground"
-                >
-                    {on
-                        ? 'Le nuove richieste si confermano da sole.'
-                        : 'Senza risposta in tempo, la richiesta si annulla.'}
-                </span>
-            </span>
-            <AreaSwitch
-                checked={on}
-                onToggle={toggle}
-                disabled={saving}
-                labelledBy={labelId}
-                describedBy={noteId}
-            />
-        </div>
     );
 }
 

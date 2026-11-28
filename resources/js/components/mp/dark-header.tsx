@@ -2,7 +2,6 @@ import { Link, usePage } from '@inertiajs/react';
 import { Menu } from 'lucide-react';
 import AccountCapsuleMenu from '@/components/layout/account-capsule-menu';
 import { BrandMark } from '@/components/layout/brand-logo';
-import NotificationBell from '@/components/layout/notification-bell';
 import CategoryNav from '@/components/mp/category-nav';
 import type { SearchKind } from '@/components/search/search-kind-toggle';
 import {
@@ -14,13 +13,9 @@ import {
 import { hoverPrefetch } from '@/lib/prefetch';
 import { searchUrl } from '@/lib/search';
 import { cn } from '@/lib/utils';
-import { dashboard, home, login } from '@/routes';
+import { home, login } from '@/routes';
 import { show as contactPage } from '@/routes/contact';
 import { register as trainerRegister } from '@/routes/trainer';
-
-/** The outlined pill of the header ("La mia area"). */
-const outlineButton =
-    'inline-flex h-11 items-center rounded-full border border-white/12 bg-card px-4.5 text-[15px] font-semibold text-foreground outline-none hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring';
 
 /** The logo of the dark pages: the mark and the name. */
 export function DarkLogo({ className }: { className?: string }) {
@@ -50,8 +45,9 @@ const SEARCH_PAGES: Record<string, SearchKind> = {
 
 /**
  * Header of the dark pages: the logo, the categories (searches, desktop),
- * "Sei un trainer?" and "Accedi", or the account. It lies on top of the
- * page: on the home, on its photo, with "Accedi" as plain text.
+ * "Sei un trainer?" and "Accedi", or only the photo of the account (its
+ * menu has the area and the notifications). It lies on top of the page: on
+ * the home, on its photo, with "Accedi" as plain text.
  */
 export default function DarkHeader({ className }: { className?: string }) {
     const page = usePage<{ city?: { slug: string } | null }>();
@@ -77,29 +73,9 @@ export default function DarkHeader({ className }: { className?: string }) {
                     />
                 )}
                 <div className="flex items-center gap-2 md:gap-4">
-                    {user && onPhoto ? (
-                        // The home: only the photo, no "La mia area" nor the
-                        // bell (both are in the menu).
-                        <AccountCapsuleMenu variant={variant} plain />
-                    ) : user ? (
-                        <>
-                            <Link
-                                prefetch={hoverPrefetch}
-                                href={dashboard()}
-                                className={cn(
-                                    outlineButton,
-                                    variant === 'client' &&
-                                        'hidden md:inline-flex',
-                                )}
-                            >
-                                La mia area
-                            </Link>
-                            <NotificationBell
-                                tone="dark"
-                                className="text-foreground hover:bg-foreground/10 hover:text-foreground"
-                            />
-                            <AccountCapsuleMenu variant={variant} />
-                        </>
+                    {user ? (
+                        // No "La mia area" nor the bell: both are in the menu.
+                        <AccountCapsuleMenu variant={variant} plain={onPhoto} />
                     ) : (
                         <>
                             <Link

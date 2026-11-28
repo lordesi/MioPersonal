@@ -1,6 +1,11 @@
 import { CalendarRange, ChevronDown } from 'lucide-react';
 import { Fragment, useId, useState } from 'react';
 import { areaSectionTitleClassName } from '@/components/mp/area-bits';
+import {
+    choiceMenuContentClassName,
+    choiceMenuItemClassName,
+    choiceMenuTriggerClassName,
+} from '@/components/mp/choice-menu';
 import RangeSheet from '@/components/trainer/home/range-sheet';
 import {
     DropdownMenu,
@@ -116,14 +121,14 @@ export default function StatsBlock({
                 <DropdownMenu>
                     <DropdownMenuTrigger
                         aria-label={`Periodo: ${label}`}
-                        className="inline-flex h-11 items-center gap-2.5 rounded-[14px] bg-card px-3.5 text-[15px] font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className={choiceMenuTriggerClassName}
                     >
                         {label}
                         <ChevronDown aria-hidden="true" className="size-4.5" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
                         align="end"
-                        className="w-62 rounded-2xl border-0 bg-[#1c1e21] p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
+                        className={choiceMenuContentClassName}
                     >
                         <DropdownMenuRadioGroup
                             value={stats.period}
@@ -149,7 +154,7 @@ export default function StatsBlock({
                                             );
                                         }
                                     }}
-                                    className="h-11 rounded-xl text-[15px] font-semibold data-[state=checked]:bg-brand/12 data-[state=checked]:text-brand"
+                                    className={choiceMenuItemClassName}
                                 >
                                     {period.label}
                                 </DropdownMenuRadioItem>

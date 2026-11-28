@@ -5,12 +5,15 @@
 --}}
 @php
     $zoomLocked = ! \Illuminate\Support\Str::startsWith($page['component'] ?? '', 'public/');
+    // The photo of the trainer profile goes up under the clock of the phone
+    // (EDGE_TO_EDGE in resources/js/lib/zoom-lock.ts).
+    $edgeToEdge = in_array($page['component'] ?? '', ['public/profile'], true);
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['zoom-locked' => $zoomLocked])>
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1{{ $zoomLocked ? ', maximum-scale=1, user-scalable=no' : '' }}">
+        <meta name="viewport" content="width=device-width, initial-scale=1{{ $zoomLocked ? ', maximum-scale=1, user-scalable=no' : '' }}{{ $edgeToEdge ? ', viewport-fit=cover' : '' }}">
 
         {{--
             The colour behind the page, before it is drawn (the areas have no SSR:
