@@ -1,39 +1,23 @@
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import type { ReactNode } from 'react';
-import {
-    SessionDetails,
-    WeekSummary,
-} from '@/components/trainer/area/calendar-side';
-import MonthCalendar from '@/components/trainer/area/month-calendar';
-import DayAgenda from '@/components/trainer/calendar/day-agenda';
-import TimeGrid from '@/components/trainer/calendar/time-grid';
-import type { CalendarViewProps } from '@/components/trainer/calendar/types';
-import ViewMenu from '@/components/trainer/calendar/view-switch';
-import WeekStrip from '@/components/trainer/home/week-strip';
-import { areaTitleClassName } from '@/components/mp/area-bits';
 import TrainerHeaderActions from '@/components/trainer/area/trainer-header-actions';
 import {
-    addDays,
-    mondayOf,
-    monthName,
-    shiftMonth,
-    weekDates,
-} from '@/lib/calendar';
-import { formatDayLong, formatDayNumber } from '@/lib/format';
-import { cn } from '@/lib/utils';
-
-const weekdayLetters = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
-
-/** "2026-11" → "Novembre 2026". */
-function monthTitle(month: string): string {
-    return monthName(month).replace(/^./u, (letter) => letter.toUpperCase());
-}
+    DayStrip,
+    HourRows,
+    PeriodBar,
+    SessionList,
+    SmallMonth,
+    ViewTabs,
+    periodOf,
+} from '@/components/trainer/calendar/calendar-bits';
+import type { CalendarViewProps } from '@/components/trainer/calendar/types';
+import { mondayOf, sessionsLabel, weekDates } from '@/lib/calendar';
+import { formatDayLong } from '@/lib/format';
 
 /**
- * "Calendario" on phones: the title with the view menu and "+" on the right.
- * "Giorno" is the day as rows of one hour; "Settimana" the week strip and
- * two days side by side (design "Settimana A · Due giorni"); "Mese" the
- * month with the sessions of each day (design "Mese A").
+ * "Calendario" on phones (design "Trainer · Calendario · nuovo"): the title
+ * with "+" and the photo, the three views, the period with its arrows.
+ * "Giorno" is the week strip and the day hour by hour, "Settimana" the
+ * sessions day by day, "Mese" the month and the sessions of the chosen day.
+ * Each session opens its details in place.
  */
 export default function CalendarMobile(props: CalendarViewProps) {
     const {
@@ -43,8 +27,8 @@ export default function CalendarMobile(props: CalendarViewProps) {
         minDate,
         maxDate,
         items,
-        sessionOptions,
-        now,
+        monthCounts,
+        canAdd,
         selectedDay,
         selectedId,
         onSelect,
@@ -52,292 +36,174 @@ export default function CalendarMobile(props: CalendarViewProps) {
         onAdd,
         onPickSlot,
         onAddOnDay,
-        draft,
+        context,
     } = props;
     const week = weekDates(mondayOf(selectedDay));
-    const month = focus.slice(0, 7);
+    const period = periodOf(view, selectedDay, focus, minDate, maxDate);
     const dayItems = items
         .filter((item) => item.date === selectedDay)
         .sort((a, b) => a.from - b.from);
-    const selected = items.find((item) => item.id === selectedId) ?? null;
-    const weekDays = week.map((date) => ({
-        date,
-        count: items.filter((item) => item.date === date).length,
-    }));
-    // The chosen day and the next one; on Sunday the Saturday before, so
-    // both days are in the week loaded from the server.
-    const pair =
-        selectedDay === week[6]
-            ? [week[5], week[6]]
-            : [selectedDay, addDays(selectedDay, 1)];
+    const weekCount = items.filter((item) => week.includes(item.date)).length;
+    const toggle = (id: number) => onSelect(selectedId === id ? null : id);
 
     return (
-        <>
-            <header className="flex items-start justify-between gap-3">
-                <h1 className={areaTitleClassName}>Calendario</h1>
+        <div className="flex flex-col">
+            <header className="flex items-start justify-between gap-4">
+                <h1 className="m-0 text-[34px] leading-[1.08] font-bold tracking-[-0.03em]">
+                    Calendario
+                </h1>
                 <div className="flex items-center gap-1.5">
-                    {sessionOptions && (
+                    {canAdd && (
                         <button
                             type="button"
                             onClick={(event) => onAdd(event.currentTarget)}
                             aria-label="Aggiungi una seduta"
-                            className="flex size-11 items-center justify-center rounded-full bg-brand text-black outline-none hover:bg-brand-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                            className="flex size-11 cursor-pointer items-center justify-center rounded-full border-0 bg-[#42D7D9] text-black outline-none hover:bg-[#7FE6E7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#42D7D9]"
                         >
-                            <Plus
+                            <svg
+                                width="22"
+                                height="22"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.6"
+                                strokeLinecap="round"
                                 aria-hidden="true"
-                                className="size-5.5"
-                                strokeWidth={2.6}
-                            />
+                            >
+                                <path d="M12 5v14M5 12h14" />
+                            </svg>
                         </button>
                     )}
                     <TrainerHeaderActions bell={false} />
                 </div>
             </header>
 
-            <ViewMenu
-                view={view}
-                onChange={(next) => show(next, selectedDay)}
-                className="-mt-3"
-            />
+            <div className="mt-5 flex flex-col gap-5">
+                <ViewTabs
+                    view={view}
+                    onChange={(next) => show(next, selectedDay)}
+                />
 
-            {view === 'month' && (
-                <section
-                    aria-label={monthTitle(month)}
-                    className="flex flex-col"
-                >
-                    <PeriodBar
-                        title={monthTitle(month)}
-                        unit="Mese"
-                        gender="m"
-                        canGoBack={`${month}-01` > minDate}
-                        canGoForward={month < maxDate.slice(0, 7)}
-                        onBack={() =>
-                            show('month', `${shiftMonth(month, -1)}-01`)
-                        }
-                        onForward={() =>
-                            show('month', `${shiftMonth(month, 1)}-01`)
-                        }
-                    />
-                    <div className="-mx-1 mt-2">
-                        <MonthCalendar
-                            month={month}
+                <PeriodBar
+                    view={view}
+                    title={period.title}
+                    canGoBack={period.canGoBack}
+                    canGoForward={period.canGoForward}
+                    onBack={() => show(view, period.previous)}
+                    onForward={() => show(view, period.next)}
+                />
+
+                {view === 'day' && (
+                    <div className="flex flex-col gap-5">
+                        <DayStrip
+                            week={week}
                             items={items}
-                            today={today}
                             selectedDay={selectedDay}
-                            onOpenDay={(date) => show('day', date)}
-                            onAddOnDay={sessionOptions ? onAddOnDay : undefined}
-                        />
-                    </div>
-                </section>
-            )}
-
-            {view === 'week' && (
-                <section
-                    aria-label={`${formatDayLong(pair[0])} e ${formatDayLong(pair[1]).toLowerCase()}`}
-                    className="flex flex-col"
-                >
-                    <PeriodBar
-                        title={monthTitle(pair[0].slice(0, 7))}
-                        unit="Giorni"
-                        gender="plural"
-                        canGoBack={pair[0] > minDate}
-                        canGoForward={pair[1] < maxDate}
-                        onBack={() => show('week', addDays(pair[0], -2))}
-                        onForward={() => show('week', addDays(pair[0], 2))}
-                    />
-                    <div className="mt-2 grid grid-cols-7">
-                        {week.map((date, index) => {
-                            const inPair = pair.includes(date);
-                            const isToday = date === today;
-
-                            return (
-                                <div
-                                    key={date}
-                                    className="flex flex-col items-stretch gap-1"
-                                >
-                                    <span
-                                        aria-hidden="true"
-                                        className="text-center text-xs leading-4 text-muted-foreground"
-                                    >
-                                        {weekdayLetters[index]}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        aria-label={`${formatDayLong(date)}${isToday ? ', oggi' : ''}`}
-                                        aria-pressed={inPair}
-                                        disabled={
-                                            date < minDate || date > maxDate
-                                        }
-                                        onClick={() => show('week', date)}
-                                        className={cn(
-                                            'flex h-11 items-center justify-center outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-40',
-                                            inPair && 'bg-white/[0.07]',
-                                            inPair &&
-                                                date === pair[0] &&
-                                                'rounded-l-xl',
-                                            inPair &&
-                                                date === pair[1] &&
-                                                'rounded-r-xl',
-                                        )}
-                                    >
-                                        <span
-                                            className={cn(
-                                                'flex h-11 w-full max-w-10.5 items-center justify-center rounded-xl text-[19px] font-semibold tabular-nums',
-                                                // The chosen day: a turquoise rounded square; today, turquoise digits.
-                                                date === selectedDay
-                                                    ? 'bg-brand text-[#0a0a0a]'
-                                                    : isToday
-                                                      ? 'text-brand'
-                                                      : date < today
-                                                        ? 'text-muted-foreground'
-                                                        : 'text-foreground',
-                                            )}
-                                        >
-                                            {formatDayNumber(date)}
-                                        </span>
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                    <div className="-mx-4 mt-3 pr-4">
-                        <TimeGrid
-                            days={pair}
-                            items={items}
                             today={today}
-                            now={now}
-                            selectedDay={selectedDay}
-                            selectedId={selectedId}
-                            onSelect={(item) => onSelect(item.id)}
-                            onPickSlot={onPickSlot}
-                            draft={draft}
-                            // Down to the tab bar: the header, the strip and the bar are above and below.
-                            height="max(22rem, calc(100dvh - 320px))"
+                            onPick={(date) => show('day', date)}
                         />
-                    </div>
-                </section>
-            )}
-
-            {view === 'day' && (
-                <>
-                    <WeekStrip
-                        week={weekDays}
-                        day={selectedDay}
-                        today={today}
-                        minDate={minDate}
-                        maxDate={maxDate}
-                        onPick={(date) => show('day', date)}
-                    />
-                    <section
-                        aria-label={formatDayLong(selectedDay)}
-                        className="flex flex-col gap-2"
-                    >
-                        <PeriodBar
-                            title={
-                                selectedDay === today
-                                    ? 'Oggi'
-                                    : formatDayLong(selectedDay)
-                            }
-                            unit="Giorno"
-                            gender="m"
-                            canGoBack={selectedDay > minDate}
-                            canGoForward={selectedDay < maxDate}
-                            onBack={() => show('day', addDays(selectedDay, -1))}
-                            onForward={() =>
-                                show('day', addDays(selectedDay, 1))
-                            }
-                            large
-                        />
-                        <DayAgenda
+                        <span className="text-[15px] leading-5 text-muted-foreground">
+                            {sessionsLabel(dayItems.length)}
+                        </span>
+                        <HourRows
                             date={selectedDay}
-                            items={dayItems}
                             today={today}
-                            now={now}
-                            openId={selectedId}
-                            onToggle={(id) =>
-                                onSelect(selectedId === id ? null : id)
-                            }
+                            items={dayItems}
+                            selectedId={selectedId}
+                            onToggle={toggle}
+                            onAddAt={canAdd ? onPickSlot : null}
+                            context={context}
                         />
-                    </section>
-                </>
-            )}
-
-            {selected && view !== 'day' && (
-                <SessionDetails
-                    item={selected}
-                    today={today}
-                    onClose={() => onSelect(null)}
-                />
-            )}
-
-            {view !== 'month' && (
-                <WeekSummary
-                    days={week}
-                    items={items}
-                    selectedDay={selectedDay}
-                />
-            )}
-        </>
-    );
-}
-
-/** The title of the period with the two arrows on the right. */
-function PeriodBar({
-    title,
-    unit,
-    gender,
-    canGoBack,
-    canGoForward,
-    onBack,
-    onForward,
-    large = false,
-}: {
-    title: ReactNode;
-    unit: string;
-    gender: 'm' | 'plural';
-    canGoBack: boolean;
-    canGoForward: boolean;
-    onBack: () => void;
-    onForward: () => void;
-    large?: boolean;
-}) {
-    const [before, after] =
-        gender === 'plural'
-            ? ['precedenti', 'successivi']
-            : ['precedente', 'successivo'];
-    const arrowClassName =
-        'inline-flex size-11 shrink-0 items-center justify-center rounded-full text-foreground outline-none transition-colors hover:bg-white/5 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-40';
-
-    return (
-        <div className="-mr-2 flex items-center gap-1 pt-2">
-            <h2
-                className={cn(
-                    'mr-auto font-semibold',
-                    large
-                        ? 'text-[22px] leading-7 font-bold'
-                        : 'text-[20px] leading-6.25 tracking-[-0.45px]',
+                    </div>
                 )}
-            >
-                {title}
-            </h2>
-            <button
-                type="button"
-                disabled={!canGoBack}
-                onClick={onBack}
-                aria-label={`${unit} ${before}`}
-                className={arrowClassName}
-            >
-                <ChevronLeft aria-hidden="true" className="size-5.5" />
-            </button>
-            <button
-                type="button"
-                disabled={!canGoForward}
-                onClick={onForward}
-                aria-label={`${unit} ${after}`}
-                className={arrowClassName}
-            >
-                <ChevronRight aria-hidden="true" className="size-5.5" />
-            </button>
+
+                {view === 'week' && (
+                    <div className="flex flex-col gap-4">
+                        <span className="text-[15px] leading-5 text-muted-foreground">
+                            {sessionsLabel(weekCount)}
+                        </span>
+                        <div className="flex flex-col gap-5.5">
+                            {week.map((date) => {
+                                const list = items
+                                    .filter((item) => item.date === date)
+                                    .sort((a, b) => a.from - b.from);
+
+                                return (
+                                    <section
+                                        key={date}
+                                        aria-label={formatDayLong(date)}
+                                        className="flex flex-col gap-2"
+                                    >
+                                        <b className="text-base font-bold">
+                                            {formatDayLong(date)}
+                                        </b>
+                                        {list.length > 0 ? (
+                                            <SessionList
+                                                items={list}
+                                                selectedId={selectedId}
+                                                onToggle={toggle}
+                                                context={context}
+                                            />
+                                        ) : (
+                                            canAdd && (
+                                                <button
+                                                    type="button"
+                                                    aria-label={`Aggiungi una seduta ${formatDayLong(date).toLowerCase()}`}
+                                                    disabled={date < today}
+                                                    onClick={(event) =>
+                                                        onAddOnDay(
+                                                            date,
+                                                            event.currentTarget,
+                                                        )
+                                                    }
+                                                    className="h-11 cursor-pointer rounded-[14px] border-0 bg-transparent text-[22px] font-medium text-muted-foreground shadow-[inset_0_0_0_1px_#1C1E21] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#42D7D9] disabled:cursor-default disabled:opacity-40"
+                                                >
+                                                    +
+                                                </button>
+                                            )
+                                        )}
+                                    </section>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {view === 'month' && (
+                    <div className="flex flex-col gap-6">
+                        <SmallMonth
+                            month={focus.slice(0, 7)}
+                            counts={monthCounts}
+                            selectedDay={selectedDay}
+                            today={today}
+                            minDate={minDate}
+                            maxDate={maxDate}
+                            onPick={(date) => show('month', date)}
+                        />
+                        <section
+                            aria-label={formatDayLong(selectedDay)}
+                            className="flex flex-col gap-2.5"
+                        >
+                            <div className="flex items-baseline justify-between">
+                                <h3 className="m-0 text-lg font-bold">
+                                    {formatDayLong(selectedDay)}
+                                </h3>
+                                <span className="text-[13px] leading-4.5 text-muted-foreground">
+                                    {sessionsLabel(dayItems.length)}
+                                </span>
+                            </div>
+                            {dayItems.length > 0 && (
+                                <SessionList
+                                    items={dayItems}
+                                    selectedId={selectedId}
+                                    onToggle={toggle}
+                                    context={context}
+                                />
+                            )}
+                        </section>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

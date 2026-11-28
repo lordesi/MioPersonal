@@ -13,7 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
-/** "Il più prenotato", the numbers of "Servizi e prezzi" and of Admin · Statistiche. */
+/** "Il più prenotato" and the numbers of Admin · Statistiche. */
 class ServiceBookingsTest extends TestCase
 {
     use RefreshDatabase;
@@ -81,19 +81,10 @@ class ServiceBookingsTest extends TestCase
         $this->assertSame(['Seduta singola' => false, 'Calisthenics' => true], $this->badges());
     }
 
-    public function test_the_trainer_and_the_team_see_the_numbers()
+    public function test_the_team_sees_the_numbers()
     {
         $this->confirmed('Seduta singola', 2);
         $this->confirmed('Calisthenics', 3);
-
-        $this->actingAs($this->profile->user)
-            ->get(route('trainer.services'))
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('booked', [
-                    ['label' => 'Calisthenics · 90 min', 'count' => 3],
-                    ['label' => 'Seduta singola · 60 min', 'count' => 2],
-                ])
-            );
 
         $this->actingAs(User::factory()->admin()->create())
             ->get(route('admin.stats'))

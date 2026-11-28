@@ -17,42 +17,32 @@ use Illuminate\Support\Facades\DB;
 final class TrainerDayOverrides
 {
     /**
-     * Every date from `$from` to `$to` gets the ranges of its weekday (0 =
-     * Monday … 6 = Sunday), or none when closed, saved as [[450, 720]]
-     * (WorkingRanges). The days already changed in that period are replaced;
-     * the past ones are deleted.
+     * "Salva modifiche" of "Disponibilità": the days of "Per settimana" and
+     * "Ferie e chiusure" changed on the page. `$days` get their own ranges
+     * ([] = closed), the `$reset` dates go back to the weekly hours; the past
+     * ones are deleted.
      *
-     * @param  array<int|string, array<mixed>>|null  $hours  null = closed
+     * @param  list<array{date: string, hours: array<mixed>, note?: string|null}>  $days
+     * @param  list<string>  $reset
      */
-    public static function save(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $to, ?array $hours, ?string $note): void
+    public static function apply(TrainerProfile $profile, array $days, array $reset): void
     {
-        $rows = [];
         $now = now();
+        $rows = array_map(fn (array $day) => [
+            'trainer_profile_id' => $profile->id,
+            'date' => $day['date'],
+            'hours' => json_encode(WorkingRanges::normalize($day['hours'])),
+            'note' => blank($day['note'] ?? null) ? null : trim((string) $day['note']),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ], $days);
+        $dates = array_values(array_unique([...$reset, ...array_column($days, 'date')]));
 
-        for ($date = $from; $date <= $to; $date = $date->addDay()) {
-            $dayHours = $hours === null ? [] : WorkingRanges::normalize((array) ($hours[$date->dayOfWeekIso - 1] ?? []));
-
-            $rows[] = [
-                'trainer_profile_id' => $profile->id,
-                'date' => $date->toDateString(),
-                'hours' => json_encode($dayHours),
-                'note' => $note === null || trim($note) === '' ? null : trim($note),
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
-        }
-
-        DB::transaction(function () use ($profile, $from, $to, $rows) {
-            self::clear($profile, $from, $to);
+        DB::transaction(function () use ($profile, $rows, $dates) {
+            $profile->dayOverrides()->whereIn('date', $dates)->delete();
             self::deletePast($profile);
             TrainerDayOverride::query()->insert($rows);
         });
-    }
-
-    /** Back to the weekly hours for these days. */
-    public static function clear(TrainerProfile $profile, CarbonImmutable $from, CarbonImmutable $to): void
-    {
-        $profile->dayOverrides()->whereBetween('date', [$from->toDateString(), $to->toDateString()])->delete();
     }
 
     /**

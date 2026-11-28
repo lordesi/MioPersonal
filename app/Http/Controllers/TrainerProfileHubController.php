@@ -53,8 +53,6 @@ class TrainerProfileHubController extends Controller
                 'reviews' => $profile->rating_count,
                 'rating' => $profile->rating(),
             ],
-            // "Le tue statistiche": the numbers of "Oggi", with the same periods.
-            'stats' => $profile === null ? null : TrainerDashboardController::stats($profile, TrainerDashboardController::period($request)),
         ]);
     }
 }

@@ -30,8 +30,8 @@ type TrainerCardProps = {
 
 /**
  * The card of a trainer (design "TrainerCard", Home F): the square photo
- * with the first free slot and the heart, then name and discipline, city and
- * mode, price and rating. The whole card is the link; the heart (guests and
+ * with "Nuovo" (no reviews yet) and the heart, then name and discipline,
+ * city and mode, price, rating and number of reviews. The whole card is the link; the heart (guests and
  * clients only) sits on top of it.
  */
 export default function TrainerCard({
@@ -49,8 +49,14 @@ export default function TrainerCard({
     );
     const price = formatPrice(trainer.priceFromCents);
     const discipline = trainer.disciplines[0];
-    const rating =
-        trainer.rating === null ? 'Nuovo' : `★ ${formatRating(trainer.rating)}`;
+    // No reviews yet: "Nuovo" on the photo, no stars.
+    const isNew = trainer.rating === null;
+    const rating = isNew
+        ? null
+        : `★ ${formatRating(trainer.rating ?? 0)} (${trainer.reviewCount})`;
+    const ratingLabel = isNew
+        ? 'nuovo'
+        : `voto ${formatRating(trainer.rating ?? 0)} su ${trainer.reviewCount === 1 ? '1 recensione' : `${trainer.reviewCount} recensioni`}`;
 
     return (
         <article
@@ -63,7 +69,7 @@ export default function TrainerCard({
             <Link
                 prefetch={hoverPrefetch}
                 href={trainer.href}
-                aria-label={`${trainer.name}, ${trainer.city}, da ${price} a seduta`}
+                aria-label={`${trainer.name}, ${trainer.city}, da ${price} a seduta, ${ratingLabel}`}
                 className="flex flex-col rounded-[28px] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
                 <span className="relative block aspect-square overflow-hidden rounded-[28px] bg-card">
@@ -83,9 +89,16 @@ export default function TrainerCard({
                             {getInitials(trainer.name)}
                         </span>
                     )}
-                    {trainer.nextSlotLabel && (
-                        <span className="absolute top-3 left-3 max-w-[calc(100%-4.5rem)] truncate rounded-full bg-chip-media px-3 py-1.75 text-[13px] leading-4 font-semibold text-black">
-                            Libero {trainer.nextSlotLabel}
+                    {isNew && (
+                        <span
+                            className={cn(
+                                'absolute rounded-full bg-chip-media font-semibold text-black',
+                                small
+                                    ? 'top-2.5 left-2.5 px-2.5 py-1.25 text-xs leading-3.5'
+                                    : 'top-3 left-3 px-3 py-1.75 text-[13px] leading-4',
+                            )}
+                        >
+                            Nuovo
                         </span>
                     )}
                 </span>
@@ -121,8 +134,13 @@ export default function TrainerCard({
                             : 'text-[15px] leading-5',
                     )}
                 >
-                    <b className="font-semibold text-foreground">{price}</b> a
-                    seduta · {rating}
+                    <b className="font-semibold text-foreground">{price}</b>
+                    {/* Small cards on phones: no room, the rating comes first. */}
+                    <span className={cn(small && 'max-lg:hidden')}>
+                        {' '}
+                        a seduta
+                    </span>
+                    {rating && ` · ${rating}`}
                 </span>
             </Link>
 

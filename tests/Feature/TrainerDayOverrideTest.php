@@ -7,12 +7,14 @@ use App\Models\TrainerProfile;
 use App\Support\TrainerSlots;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 /**
- * "Giorni e settimane diverse" of "Disponibilità": a day, a week or the
- * holidays with their own hours (or closed) instead of the weekly ones.
+ * "Per settimana" and "Ferie e chiusure" of "Disponibilità": days with
+ * their own hours (or closed) instead of the weekly ones, saved with the
+ * hours and the rules by "Salva modifiche".
  */
 class TrainerDayOverrideTest extends TestCase
 {
@@ -37,10 +39,36 @@ class TrainerDayOverrideTest extends TestCase
         $this->profile->refresh()->load('workingHours');
     }
 
-    /** @return array<int, list<int>> 7 days with the same hours */
-    private function week(array $hours): array
+    /**
+     * "Salva modifiche": the weekly hours as they are (18:00–20:00 every day)
+     * and the rules, with the changed days.
+     *
+     * @param  array<string, mixed>  $changes
+     */
+    private function save(array $changes): TestResponse
     {
-        return array_fill(0, 7, $hours);
+        return $this->actingAs($this->profile->user)->put(route('trainer.availability.update'), [
+            'hours' => array_fill(0, 7, [['start' => 1080, 'end' => 1200]]),
+            'notice_hours' => 2,
+            'booking_window_days' => 30,
+            'break_minutes' => 0,
+            'max_sessions_per_day' => null,
+            'free_cancellation_hours' => 24,
+            'auto_confirm' => false,
+            ...$changes,
+        ]);
+    }
+
+    /** @return list<array{date: string, hours: list<array{start: int, end: int}>, note: string|null}> */
+    private function closed(string $from, string $to, ?string $note = null): array
+    {
+        $days = [];
+
+        for ($date = CarbonImmutable::parse($from); $date->toDateString() <= $to; $date = $date->addDay()) {
+            $days[] = ['date' => $date->toDateString(), 'hours' => [], 'note' => $note];
+        }
+
+        return $days;
     }
 
     /** @return array<string, list<string>> date => start times in Rome */
@@ -60,9 +88,7 @@ class TrainerDayOverrideTest extends TestCase
 
     public function test_a_closed_day_has_no_slots_and_can_not_be_booked()
     {
-        $this->actingAs($this->profile->user)
-            ->post(route('trainer.availability.overrides.store'), ['from' => '2026-11-11', 'to' => '2026-11-11', 'closed' => true, 'note' => 'Gara'])
-            ->assertSessionHasNoErrors();
+        $this->save(['days' => $this->closed('2026-11-11', '2026-11-11', 'Gara')])->assertSessionHasNoErrors();
 
         $slots = $this->slots();
         $this->assertSame([], $slots['2026-11-11']);
@@ -71,44 +97,35 @@ class TrainerDayOverrideTest extends TestCase
         $this->assertFalse(TrainerSlots::isFree($this->profile->fresh(), CarbonImmutable::parse('2026-11-11 18:00', 'Europe/Rome'), 60));
     }
 
-    public function test_a_week_takes_the_hours_of_each_weekday()
+    public function test_a_day_of_a_week_gets_its_own_hours()
     {
-        // Mornings Monday–Friday, closed at the weekend.
-        $hours = [[8, 9], [8, 9], [8, 9], [8, 9], [8, 9], [], []];
-
-        $this->actingAs($this->profile->user)
-            ->post(route('trainer.availability.overrides.store'), ['from' => '2026-11-16', 'to' => '2026-11-22', 'closed' => false, 'hours' => $hours])
-            ->assertSessionHasNoErrors();
+        $this->save(['days' => [
+            ['date' => '2026-11-16', 'hours' => [['start' => 480, 'end' => 600]], 'note' => null],
+        ]])->assertSessionHasNoErrors();
 
         $slots = $this->slots(21);
         $this->assertSame(['08:00', '09:00'], $slots['2026-11-16']);
-        $this->assertSame([], $slots['2026-11-21']);
-        // The week before and after: the weekly hours.
+        // The other days: the weekly hours.
         $this->assertSame(['18:00', '19:00'], $slots['2026-11-15']);
-        $this->assertSame(['18:00', '19:00'], $slots['2026-11-23']);
+        $this->assertSame(['18:00', '19:00'], $slots['2026-11-17']);
     }
 
     public function test_holidays_close_the_first_free_slot_moves_and_restoring_brings_it_back()
     {
-        $this->actingAs($this->profile->user)
-            ->post(route('trainer.availability.overrides.store'), ['from' => '2026-11-09', 'to' => '2026-11-15', 'closed' => true, 'note' => 'Ferie']);
+        $this->save(['days' => $this->closed('2026-11-09', '2026-11-15', 'Ferie')])->assertSessionHasNoErrors();
 
         $this->assertSame('2026-11-16 18:00', $this->profile->fresh()->next_free_slot_at?->setTimezone('Europe/Rome')->format('Y-m-d H:i'));
 
-        $this->actingAs($this->profile->user)
-            ->delete(route('trainer.availability.overrides.destroy'), ['from' => '2026-11-09', 'to' => '2026-11-15'])
-            ->assertSessionHasNoErrors();
+        $this->save(['reset' => array_column($this->closed('2026-11-09', '2026-11-15'), 'date')])->assertSessionHasNoErrors();
 
         $this->assertSame('2026-11-09 18:00', $this->profile->fresh()->next_free_slot_at?->setTimezone('Europe/Rome')->format('Y-m-d H:i'));
         $this->assertSame(0, $this->profile->dayOverrides()->count());
     }
 
-    public function test_saving_again_replaces_the_days_of_that_period()
+    public function test_saving_again_replaces_only_the_days_sent()
     {
-        $this->actingAs($this->profile->user)
-            ->post(route('trainer.availability.overrides.store'), ['from' => '2026-11-10', 'to' => '2026-11-12', 'closed' => true]);
-        $this->actingAs($this->profile->user)
-            ->post(route('trainer.availability.overrides.store'), ['from' => '2026-11-11', 'to' => '2026-11-11', 'closed' => false, 'hours' => $this->week([10])]);
+        $this->save(['days' => $this->closed('2026-11-10', '2026-11-12')]);
+        $this->save(['days' => [['date' => '2026-11-11', 'hours' => [['start' => 600, 'end' => 660]], 'note' => null]]]);
 
         $slots = $this->slots();
         $this->assertSame([], $slots['2026-11-10']);
@@ -123,10 +140,10 @@ class TrainerDayOverrideTest extends TestCase
             'ends_at' => CarbonImmutable::parse('2026-11-20 19:00', 'Europe/Rome'),
         ]);
 
-        $this->actingAs($this->profile->user)
-            ->post(route('trainer.availability.overrides.store'), ['from' => '2026-11-19', 'to' => '2026-11-22', 'closed' => true, 'note' => 'Ferie']);
-        $this->actingAs($this->profile->user)
-            ->post(route('trainer.availability.overrides.store'), ['from' => '2026-11-25', 'to' => '2026-11-25', 'closed' => false, 'hours' => $this->week([7])]);
+        $this->save(['days' => [
+            ...$this->closed('2026-11-19', '2026-11-22', 'Ferie'),
+            ['date' => '2026-11-25', 'hours' => [['start' => 420, 'end' => 480]], 'note' => null],
+        ]]);
 
         $this->actingAs($this->profile->user)
             ->get(route('trainer.availability'))
@@ -137,22 +154,22 @@ class TrainerDayOverrideTest extends TestCase
                 ->where('overrides.0.to', '2026-11-22')
                 ->where('overrides.0.closed', true)
                 ->where('overrides.0.note', 'Ferie')
-                // Stays valid: the page says so.
                 ->where('overrides.0.bookings', 1)
                 ->where('overrides.1.days.0.hours', [['start' => 420, 'end' => 480]])
                 ->where('overrides.1.bookings', 0)
             );
     }
 
-    public function test_only_valid_periods_and_hours()
+    public function test_only_valid_days_and_hours()
     {
-        $post = fn (array $data) => $this->actingAs($this->profile->user)
-            ->post(route('trainer.availability.overrides.store'), ['closed' => true, ...$data]);
-
-        $post(['from' => '2026-11-08', 'to' => '2026-11-08'])->assertSessionHasErrors('from');
-        $post(['from' => '2026-11-12', 'to' => '2026-11-10'])->assertSessionHasErrors('to');
-        $post(['from' => '2026-11-10', 'to' => '2027-02-15'])->assertSessionHasErrors('to');
-        $post(['from' => '2026-11-10', 'to' => '2026-11-10', 'closed' => false, 'hours' => $this->week([3])])->assertSessionHasErrors('hours.0.0');
+        $this->save(['days' => $this->closed('2026-11-08', '2026-11-08')])->assertSessionHasErrors('days.0.date');
+        $this->save(['days' => $this->closed('2027-11-10', '2027-11-10')])->assertSessionHasErrors('days.0.date');
+        $this->save(['days' => [['date' => '2026-11-10', 'hours' => [['start' => 180, 'end' => 240]], 'note' => null]]])
+            ->assertSessionHasErrors('days.0.hours.0');
+        $this->save(['days' => [...$this->closed('2026-11-10', '2026-11-10'), ...$this->closed('2026-11-10', '2026-11-10')]])
+            ->assertSessionHasErrors('days.0.date');
+        $this->save(['days' => $this->closed('2026-11-10', '2026-11-10', str_repeat('a', 61))])->assertSessionHasErrors('days.0.note');
+        $this->save(['reset' => ['10/11/2026']])->assertSessionHasErrors('reset.0');
 
         $this->assertSame(0, $this->profile->dayOverrides()->count());
     }
@@ -160,7 +177,7 @@ class TrainerDayOverrideTest extends TestCase
     public function test_clients_can_not_change_the_hours()
     {
         $this->actingAs(Booking::factory()->create()->client)
-            ->post(route('trainer.availability.overrides.store'), ['from' => '2026-11-10', 'to' => '2026-11-10', 'closed' => true])
+            ->put(route('trainer.availability.update'), ['hours' => array_fill(0, 7, []), 'days' => $this->closed('2026-11-10', '2026-11-10')])
             ->assertRedirect();
 
         $this->assertSame(0, $this->profile->dayOverrides()->count());

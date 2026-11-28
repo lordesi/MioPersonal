@@ -107,8 +107,9 @@ export default function ReportDialog({
                 <DialogHeader>
                     <DialogTitle>{titles[type]}</DialogTitle>
                     <DialogDescription>
-                        Il nostro team la controlla: chi hai segnalato non saprà
-                        che sei stato tu.
+                        {type === 'review'
+                            ? 'Il nostro team la controlla e, se non rispetta le regole, la toglie dal profilo.'
+                            : 'Il nostro team la controlla: chi hai segnalato non saprà che sei stato tu.'}
                     </DialogDescription>
                 </DialogHeader>
 

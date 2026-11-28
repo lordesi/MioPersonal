@@ -9,7 +9,7 @@ import { router } from '@inertiajs/react';
  * the admin area are still light. The first page gets it from the server
  * (resources/views/app.blade.php, same rule): here it follows the visits.
  */
-export const PAGE_BACKGROUND = { dark: '#0a0a0a', light: '#ffffff' } as const;
+export const PAGE_BACKGROUND = { dark: '#000000', light: '#ffffff' } as const;
 
 export function isLightPage(component: string): boolean {
     return ['gym/', 'admin/', 'dev/'].some((area) =>
@@ -28,6 +28,8 @@ export function setUpPageBackground(): void {
             : PAGE_BACKGROUND.dark;
 
         document.documentElement.style.backgroundColor = color;
+        // Safari on iOS 26 tints the bar at the top with the body's colour.
+        document.body.style.backgroundColor = color;
         document
             .querySelector('meta[name="theme-color"]')
             ?.setAttribute('content', color);

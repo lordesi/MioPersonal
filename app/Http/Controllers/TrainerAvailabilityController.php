@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Http\Requests\TrainerAvailabilityRequest;
-use App\Http\Requests\TrainerDayOverrideRequest;
 use App\Support\TrainerAvailability;
 use App\Support\TrainerDayOverrides;
 use App\Support\TrainerSlots;
@@ -16,10 +15,10 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * "Disponibilità e regole": the working hours ("Orari di base", every week)
- * and booking rules chosen in step 5 of "Diventa trainer", changed at any
- * time, and "Giorni e settimane diverse": a day, a week or the holidays with
- * other hours or closed (TrainerDayOverrides), saved right away.
+ * "Disponibilità": the working hours ("Orari abituali", every week) and
+ * booking rules chosen in step 5 of "Diventa trainer", changed at any time,
+ * and the days with other hours or closed ("Per settimana", "Ferie e
+ * chiusure", TrainerDayOverrides), all saved with "Salva modifiche".
  *
  * Saving does not send the profile back to the team: hours are not checked.
  * Bookings already made stay valid, even outside the new hours.
@@ -49,46 +48,12 @@ class TrainerAvailabilityController extends Controller
         DB::transaction(function () use ($profile, $data) {
             $profile->fill(TrainerAvailability::attributes($data))->save();
             TrainerAvailability::saveHours($profile, $data['hours']);
+            TrainerDayOverrides::apply($profile, $data['days'] ?? [], $data['reset'] ?? []);
         });
 
         // The first free slot shown in the search follows the new hours.
         TrainerSlots::refresh($profile->load('workingHours'));
-
-        return back();
-    }
-
-    /** "Modifica un giorno o una settimana": saved right away. */
-    public function storeOverride(TrainerDayOverrideRequest $request): RedirectResponse
-    {
-        $profile = $this->trainerProfile($request);
-        $closed = $request->boolean('closed');
-
-        TrainerDayOverrides::save(
-            $profile,
-            CarbonImmutable::parse($request->string('from')->value()),
-            CarbonImmutable::parse($request->string('to')->value()),
-            $closed ? null : $request->array('hours'),
-            $request->input('note'),
-        );
-
-        TrainerSlots::refresh($profile->load('workingHours'));
-        Inertia::flash('toast', ['type' => 'success', 'message' => $closed ? 'Giorni chiusi salvati.' : 'Orari salvati.']);
-
-        return back();
-    }
-
-    /** "Ripristina orari di base": the weekly hours again for those days. */
-    public function destroyOverride(Request $request): RedirectResponse
-    {
-        $profile = $this->trainerProfile($request);
-        $data = $request->validate([
-            'from' => ['required', 'date_format:Y-m-d'],
-            'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from'],
-        ]);
-
-        TrainerDayOverrides::clear($profile, CarbonImmutable::parse($data['from']), CarbonImmutable::parse($data['to']));
-        TrainerSlots::refresh($profile->load('workingHours'));
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Tornano gli orari di base.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Disponibilità aggiornata.']);
 
         return back();
     }

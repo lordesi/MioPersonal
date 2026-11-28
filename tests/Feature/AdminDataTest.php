@@ -48,8 +48,9 @@ class AdminDataTest extends TestCase
     public function test_the_search_box_filters_users_by_name_or_email()
     {
         $admin = $this->admin();
-        User::factory()->create(['first_name' => 'Anna', 'last_name' => 'Bianchi']);
-        User::factory()->create(['first_name' => 'Paolo', 'last_name' => 'Verdi']);
+        // Fixed emails: a random one could contain "anna" (hannah@…, joanna@…).
+        User::factory()->create(['first_name' => 'Anna', 'last_name' => 'Bianchi', 'email' => 'a.bianchi@example.com']);
+        User::factory()->create(['first_name' => 'Paolo', 'last_name' => 'Verdi', 'email' => 'p.verdi@example.com']);
 
         $this->actingAs($admin)
             ->get(route('admin.users', ['cerca' => 'anna']))

@@ -62,26 +62,11 @@ class FeaturesOffTest extends TestCase
         $this->post(route('gym.register.store'))->assertNotFound();
     }
 
-    public function test_the_categories_switched_off_say_they_are_coming_soon()
+    public function test_there_are_no_coming_soon_pages_for_the_categories_switched_off()
     {
         foreach (['palestre', 'corsi', 'eventi'] as $kind) {
-            $this->get(route('coming-soon', $kind))
-                ->assertOk()
-                ->assertInertia(fn (Assert $page) => $page
-                    ->component('public/coming-soon')
-                    ->where('kind', $kind)
-                    ->where('seo.index', false));
+            $this->get("/in-arrivo/{$kind}")->assertNotFound();
         }
-
-        $this->get('/in-arrivo/altro')->assertNotFound();
-    }
-
-    public function test_a_category_switched_on_goes_straight_to_its_search()
-    {
-        $this->switchOff(events: true);
-
-        $this->get(route('coming-soon', 'eventi'))->assertRedirect(route('events.search'));
-        $this->get(route('coming-soon', 'palestre'))->assertOk();
     }
 
     public function test_a_client_cannot_take_a_place_nor_save_a_gym()

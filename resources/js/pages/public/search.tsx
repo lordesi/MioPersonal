@@ -1,9 +1,9 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import FiltersSheet, { countFilters } from '@/components/mp/filters-sheet';
+import CardCarousel from '@/components/mp/card-carousel';
 import {
     EmptyResults,
-    ResultsGrid,
     ResultsHeader,
     SortMenu,
     SuggestionsSection,
@@ -13,6 +13,8 @@ import TrainerCard from '@/components/mp/trainer-card';
 import SearchPagination from '@/components/search/search-pagination';
 import TrainerSearchBar from '@/components/search/trainer-search-bar';
 import type { SearchDraft } from '@/components/search/trainer-search-bar';
+import { resultRows } from '@/lib/result-rows';
+import type { ResultRow } from '@/lib/result-rows';
 import { searchUrl } from '@/lib/search';
 import type { ActiveFilters, SearchFilters, SearchOption } from '@/lib/search';
 import type { CityWithCoordinates, SeoData, TrainerSummary } from '@/types';
@@ -76,7 +78,7 @@ type SearchProps = {
 /**
  * The trainer search (designs "Ricerca A" and "Ricerca desktop"): the search
  * "Cosa · Dove · Modalità", "Filtri" and the categories on top, then the
- * cards.
+ * cards in rows that scroll sideways, one per discipline.
  */
 export default function Search({
     city,
@@ -123,11 +125,23 @@ export default function Search({
             draft.city?.slug ?? null,
         );
 
-    /** The cards with the heart (for clients and guests). */
-    const trainerGrid = (list: TrainerSummary[]) => (
-        <ResultsGrid items={list} itemKey={(trainer) => trainer.href}>
-            {(trainer) => <TrainerCard trainer={trainer} />}
-        </ResultsGrid>
+    /** A row of cards with the heart (for clients and guests). */
+    const trainerRow = (row: ResultRow) => (
+        <CardCarousel
+            key={row.title ?? 'all'}
+            title={row.title ?? undefined}
+            subtitle={
+                row.title
+                    ? row.trainers.length === 1
+                        ? '1 trainer'
+                        : `${row.trainers.length} trainer`
+                    : undefined
+            }
+            items={row.trainers}
+            itemKey={(trainer) => trainer.href}
+        >
+            {(trainer) => <TrainerCard trainer={trainer} size="sm" />}
+        </CardCarousel>
     );
 
     const filtersButton = (className: string) => (
@@ -207,7 +221,9 @@ export default function Search({
 
                 {trainers.length > 0 ? (
                     <>
-                        {trainerGrid(trainers)}
+                        <div className="flex flex-col gap-8 md:gap-11">
+                            {resultRows(trainers, place).map(trainerRow)}
+                        </div>
                         <SearchPagination
                             {...pagination}
                             mergeProp="trainers"
@@ -228,7 +244,10 @@ export default function Search({
                                 id="suggestions-title"
                                 title="Profili simili"
                             >
-                                {trainerGrid(suggestions.trainers)}
+                                {trainerRow({
+                                    title: null,
+                                    trainers: suggestions.trainers,
+                                })}
                             </SuggestionsSection>
                         )}
                     </>

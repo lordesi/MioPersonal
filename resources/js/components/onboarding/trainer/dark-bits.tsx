@@ -159,6 +159,7 @@ export function ChipRow<T extends string | number>({
     onToggle,
     isDisabled,
     className,
+    chipClassName,
 }: {
     /** For screen readers, e.g. "Durate". */
     label: string;
@@ -167,6 +168,8 @@ export function ChipRow<T extends string | number>({
     onToggle: (value: T) => void;
     isDisabled?: (value: T) => boolean;
     className?: string;
+    /** In place of the outlined .chip, e.g. the filled pills of the trainer area. */
+    chipClassName?: (on: boolean) => string;
 }) {
     return (
         <div
@@ -181,7 +184,10 @@ export function ChipRow<T extends string | number>({
                     aria-pressed={isOn(option.value)}
                     disabled={isDisabled?.(option.value)}
                     onClick={() => onToggle(option.value)}
-                    className="chip disabled:opacity-40"
+                    className={cn(
+                        chipClassName?.(isOn(option.value)) ?? 'chip',
+                        'disabled:opacity-40',
+                    )}
                 >
                     {option.label}
                 </button>

@@ -17,6 +17,7 @@ import {
 } from '@/components/onboarding/trainer/dark-bits';
 import type {
     DurationPrice,
+    PricePackage,
     Pricing,
     SessionType,
     TrainerDraft,
@@ -495,7 +496,7 @@ function SessionCard({
 }
 
 /** A row for each duration: "1 h" on the left, the price on the right. */
-function PriceRows({
+export function PriceRows({
     prices,
     label,
     onChange,
@@ -661,85 +662,108 @@ function InviteFriends({
                 checked={on}
                 onCheckedChange={switchFriends}
             />
-            {on &&
-                sessions.map((session, index) => {
-                    const name =
-                        session.name.trim() || `Tipo di seduta ${index + 1}`;
-                    const group = groupPrices(session);
-
-                    return (
-                        <div
-                            key={index}
-                            className="flex flex-col gap-2 border-t border-separator pt-3"
-                        >
-                            <span className="text-[15px] leading-5 font-semibold">
-                                {name}
-                            </span>
-                            <ChipRow
-                                label={`Persone al massimo, ${name}`}
-                                options={Array.from(
-                                    { length: MAX_PEOPLE },
-                                    (_, i) => ({
-                                        value: i + 1,
-                                        label:
-                                            i === 0
-                                                ? 'Solo chi prenota'
-                                                : `Fino a ${i + 1}`,
-                                    }),
-                                )}
-                                isOn={(people) => session.maxPeople === people}
-                                onToggle={(maxPeople) =>
-                                    changeSession(index, { maxPeople })
-                                }
-                            />
-                            {group.length > 0 && (
-                                <div className="flex flex-col pt-1">
-                                    {group.map((item) => (
-                                        <div
-                                            key={`${item.people}-${item.minutes}`}
-                                            className="flex min-h-16 items-center justify-between gap-3 border-t border-separator"
-                                        >
-                                            <span className="flex flex-col">
-                                                <span className="text-[17px] font-semibold tabular-nums">
-                                                    {item.people} persone ·{' '}
-                                                    {shortDuration(
-                                                        item.minutes,
-                                                    )}
-                                                </span>
-                                                <span className="text-[13px] leading-4.5 text-muted-foreground">
-                                                    Prezzo totale
-                                                </span>
-                                            </span>
-                                            <EuroField
-                                                aria-label={`${name}: prezzo totale per ${item.people} persone, ${shortDuration(item.minutes)}`}
-                                                value={item.priceCents}
-                                                onChange={(priceCents) =>
-                                                    changeSession(index, {
-                                                        group: [
-                                                            ...group.filter(
-                                                                (other) =>
-                                                                    other.people !==
-                                                                        item.people ||
-                                                                    other.minutes !==
-                                                                        item.minutes,
-                                                            ),
-                                                            {
-                                                                ...item,
-                                                                priceCents,
-                                                            },
-                                                        ],
-                                                    })
-                                                }
-                                                className="w-32"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
+            {on && (
+                <FriendsFields
+                    sessions={sessions}
+                    changeSession={changeSession}
+                />
+            )}
         </div>
+    );
+}
+
+/**
+ * "Invita un amico" on: for every kind of session, how many people at most
+ * and the total price for each number of people and duration.
+ */
+export function FriendsFields({
+    sessions,
+    changeSession,
+    chipClassName,
+}: {
+    sessions: SessionType[];
+    changeSession: (index: number, changes: Partial<SessionType>) => void;
+    chipClassName?: (on: boolean) => string;
+}) {
+    return (
+        <>
+            {sessions.map((session, index) => {
+                const name =
+                    session.name.trim() || `Tipo di seduta ${index + 1}`;
+                const group = groupPrices(session);
+
+                return (
+                    <div
+                        key={index}
+                        className="flex flex-col gap-2 border-t border-separator pt-3"
+                    >
+                        <span className="text-[15px] leading-5 font-semibold">
+                            {name}
+                        </span>
+                        <ChipRow
+                            label={`Persone al massimo, ${name}`}
+                            options={Array.from(
+                                { length: MAX_PEOPLE },
+                                (_, i) => ({
+                                    value: i + 1,
+                                    label:
+                                        i === 0
+                                            ? 'Solo chi prenota'
+                                            : `Fino a ${i + 1}`,
+                                }),
+                            )}
+                            isOn={(people) => session.maxPeople === people}
+                            chipClassName={chipClassName}
+                            onToggle={(maxPeople) =>
+                                changeSession(index, { maxPeople })
+                            }
+                        />
+                        {group.length > 0 && (
+                            <div className="flex flex-col pt-1">
+                                {group.map((item) => (
+                                    <div
+                                        key={`${item.people}-${item.minutes}`}
+                                        className="flex min-h-16 items-center justify-between gap-3 border-t border-separator"
+                                    >
+                                        <span className="flex flex-col">
+                                            <span className="text-[17px] font-semibold tabular-nums">
+                                                {item.people} persone ·{' '}
+                                                {shortDuration(item.minutes)}
+                                            </span>
+                                            <span className="text-[13px] leading-4.5 text-muted-foreground">
+                                                Prezzo totale
+                                            </span>
+                                        </span>
+                                        <EuroField
+                                            aria-label={`${name}: prezzo totale per ${item.people} persone, ${shortDuration(item.minutes)}`}
+                                            value={item.priceCents}
+                                            onChange={(priceCents) =>
+                                                changeSession(index, {
+                                                    group: [
+                                                        ...group.filter(
+                                                            (other) =>
+                                                                other.people !==
+                                                                    item.people ||
+                                                                other.minutes !==
+                                                                    item.minutes,
+                                                        ),
+                                                        {
+                                                            ...item,
+                                                            priceCents,
+                                                        },
+                                                    ],
+                                                })
+                                            }
+                                            className="w-32"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
+        </>
     );
 }
 
@@ -881,74 +905,21 @@ function Packages({
                 </Counter>
             </div>
             {pricing.packages.map((item, index) => (
-                <DarkCard key={index} className="md:p-4">
-                    <div className="flex items-center justify-between gap-3">
-                        <span className="text-[15px] leading-5 font-semibold">
-                            Pacchetto {index + 1}
-                            {item.priceCents
-                                ? ` · ${formatPrice(Math.round(item.priceCents / item.sessions))} a seduta`
-                                : ''}
-                        </span>
-                        <DeleteButton
-                            label={`Elimina il pacchetto ${index + 1}`}
-                            onClick={() =>
-                                change({
-                                    packages: pricing.packages.filter(
-                                        (_, i) => i !== index,
-                                    ),
-                                })
-                            }
-                        />
-                    </div>
-                    <ChipRow
-                        label={`Sedute del pacchetto ${index + 1}`}
-                        options={withCurrent(
-                            PACKAGE_SESSION_OPTIONS,
-                            item.sessions,
-                        )
-                            .filter(
-                                (sessions) =>
-                                    sessions >= PACKAGE_SESSIONS.min &&
-                                    sessions <= PACKAGE_SESSIONS.max,
-                            )
-                            .map((sessions) => ({
-                                value: sessions,
-                                label: `${sessions} sedute`,
-                            }))}
-                        isOn={(sessions) => item.sessions === sessions}
-                        onToggle={(sessions) =>
-                            changePackage(index, { sessions })
-                        }
-                    />
-                    <ChipRow
-                        label={`Durata delle sedute del pacchetto ${index + 1}`}
-                        options={withCurrent(
-                            durations.length > 0 ? durations : [60],
-                            item.minutes,
-                        ).map((minutes) => ({
-                            value: minutes,
-                            label: shortDuration(minutes),
-                        }))}
-                        isOn={(minutes) => item.minutes === minutes}
-                        onToggle={(minutes) =>
-                            changePackage(index, { minutes })
-                        }
-                    />
-                    <div className="flex items-center justify-between gap-3 border-t border-separator pt-3">
-                        <span className="text-[17px] font-semibold">
-                            Prezzo totale
-                        </span>
-                        <EuroField
-                            aria-label={`Prezzo totale del pacchetto ${index + 1}`}
-                            value={item.priceCents}
-                            onChange={(priceCents) =>
-                                changePackage(index, { priceCents })
-                            }
-                            className="w-32"
-                        />
-                    </div>
-                    <PackageSavings item={item} sessions={pricing.sessions} />
-                </DarkCard>
+                <PackageCard
+                    key={index}
+                    item={item}
+                    index={index}
+                    durations={durations}
+                    sessions={pricing.sessions}
+                    onChange={(changes) => changePackage(index, changes)}
+                    onRemove={() =>
+                        change({
+                            packages: pricing.packages.filter(
+                                (_, i) => i !== index,
+                            ),
+                        })
+                    }
+                />
             ))}
             {pricing.packages.length < MAX_PACKAGES && (
                 <AddButton
@@ -973,6 +944,83 @@ function Packages({
                 </AddButton>
             )}
         </div>
+    );
+}
+
+/** A package: sessions, duration, total price and the saving. */
+export function PackageCard({
+    item,
+    index,
+    durations,
+    sessions,
+    onChange,
+    onRemove,
+    className,
+    chipClassName,
+}: {
+    item: PricePackage;
+    index: number;
+    durations: number[];
+    sessions: SessionType[];
+    onChange: (changes: Partial<PricePackage>) => void;
+    onRemove: () => void;
+    className?: string;
+    chipClassName?: (on: boolean) => string;
+}) {
+    return (
+        <DarkCard className={cn('md:p-4', className)}>
+            <div className="flex items-center justify-between gap-3">
+                <span className="text-[15px] leading-5 font-semibold">
+                    Pacchetto {index + 1}
+                    {item.priceCents
+                        ? ` · ${formatPrice(Math.round(item.priceCents / item.sessions))} a seduta`
+                        : ''}
+                </span>
+                <DeleteButton
+                    label={`Elimina il pacchetto ${index + 1}`}
+                    onClick={onRemove}
+                />
+            </div>
+            <ChipRow
+                label={`Sedute del pacchetto ${index + 1}`}
+                options={withCurrent(PACKAGE_SESSION_OPTIONS, item.sessions)
+                    .filter(
+                        (sessions) =>
+                            sessions >= PACKAGE_SESSIONS.min &&
+                            sessions <= PACKAGE_SESSIONS.max,
+                    )
+                    .map((sessions) => ({
+                        value: sessions,
+                        label: `${sessions} sedute`,
+                    }))}
+                isOn={(sessions) => item.sessions === sessions}
+                chipClassName={chipClassName}
+                onToggle={(sessions) => onChange({ sessions })}
+            />
+            <ChipRow
+                label={`Durata delle sedute del pacchetto ${index + 1}`}
+                options={withCurrent(
+                    durations.length > 0 ? durations : [60],
+                    item.minutes,
+                ).map((minutes) => ({
+                    value: minutes,
+                    label: shortDuration(minutes),
+                }))}
+                isOn={(minutes) => item.minutes === minutes}
+                onToggle={(minutes) => onChange({ minutes })}
+                chipClassName={chipClassName}
+            />
+            <div className="flex items-center justify-between gap-3 border-t border-separator pt-3">
+                <span className="text-[17px] font-semibold">Prezzo totale</span>
+                <EuroField
+                    aria-label={`Prezzo totale del pacchetto ${index + 1}`}
+                    value={item.priceCents}
+                    onChange={(priceCents) => onChange({ priceCents })}
+                    className="w-32"
+                />
+            </div>
+            <PackageSavings item={item} sessions={sessions} />
+        </DarkCard>
     );
 }
 

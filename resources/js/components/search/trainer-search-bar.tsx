@@ -174,7 +174,8 @@ type Draft = ReturnType<typeof useDraft>;
 
 /**
  * The search of the trainers (designs "Ricerca A" and "Ricerca desktop").
- * Phones: the pill "Inizia la ricerca", "Filtri" and the categories; the
+ * Phones: the pill "Inizia la ricerca", "Filtri" and the categories (when
+ * more than the trainers are on); the
  * pill opens the panel "Cosa? · Dove · Modalità" on the whole screen.
  * Desktop: the round bar "Cosa · Dove · Modalità · Cerca", each part opens
  * its panel underneath.
@@ -270,7 +271,7 @@ function MobilePanel({
                 />
                 <DialogPrimitive.Close
                     aria-label="Chiudi"
-                    className="flex size-11 shrink-0 items-center justify-center rounded-full border border-white/12 bg-card text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="ml-auto flex size-11 shrink-0 items-center justify-center rounded-full border border-white/12 bg-card text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                     <X aria-hidden="true" className="size-5" />
                 </DialogPrimitive.Close>

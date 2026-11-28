@@ -110,20 +110,3 @@ export function toWeeks(days: AvailabilityDay[]): AvailabilityDay[][] {
 
     return weeks;
 }
-
-/** "Ripeti ogni settimana": "ogni martedì alle 18:00", in Rome time like the slots. */
-export function weeklyLabel(start: string): string {
-    const date = new Date(start);
-    const weekday = new Intl.DateTimeFormat('it-IT', {
-        timeZone: 'Europe/Rome',
-        weekday: 'long',
-    }).format(date);
-    const time = new Intl.DateTimeFormat('it-IT', {
-        timeZone: 'Europe/Rome',
-        hour: '2-digit',
-        minute: '2-digit',
-        hourCycle: 'h23',
-    }).format(date);
-
-    return `ogni ${weekday} alle ${time}`;
-}

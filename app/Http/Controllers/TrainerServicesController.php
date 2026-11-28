@@ -5,9 +5,6 @@ namespace App\Http\Controllers;
 use App\Actions\Trainer\SaveTrainerServices;
 use App\Http\Controllers\Concerns\BuildsTrainerArea;
 use App\Http\Requests\TrainerServicesRequest;
-use App\Models\Service;
-use App\Models\TrainerProfile;
-use App\Support\ServiceBookings;
 use App\Support\TrainerDraft;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,29 +30,7 @@ class TrainerServicesController extends Controller
             'trainerArea' => $this->trainerArea(),
             // null: the registration was never sent, the page links to "Diventa trainer".
             'pricing' => $profile === null ? null : TrainerDraft::pricing($profile),
-            // Separate online prices only for who trains both online and in person.
-            'asksOnlinePrice' => $profile !== null && $profile->trains_online && $profile->trains_in_person,
-            'booked' => $profile === null ? [] : $this->booked($profile),
         ]);
-    }
-
-    /**
-     * "Prenotazioni degli ultimi 90 giorni": "Seduta singola · 60 min" => 12,
-     * the hidden services too (their bookings still count), most first.
-     *
-     * @return list<array{label: string, count: int}>
-     */
-    private function booked(TrainerProfile $profile): array
-    {
-        $counts = ServiceBookings::counts($profile->id);
-
-        return array_values($profile->services()->whereKey(array_keys($counts))->get()
-            ->map(fn (Service $service) => [
-                'label' => "{$service->displayName()} · {$service->minutes} min",
-                'count' => $counts[$service->id],
-            ])
-            ->sortByDesc('count')
-            ->all());
     }
 
     public function update(TrainerServicesRequest $request, SaveTrainerServices $saver): RedirectResponse

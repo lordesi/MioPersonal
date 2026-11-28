@@ -17,12 +17,15 @@
             opening the app or a push notification would show white until the
             JavaScript arrives). Dark like the site; the gym and admin areas are
             light. Same rule as resources/js/lib/page-background.ts.
+            The body too: Safari on iOS 26 ignores theme-color and tints the bar
+            at the top with the body's colour (white from bg-background, since
+            .theme-dark is on an inner element). Outside @layer: it wins over it.
         --}}
         @php
-            $pageBackground = \Illuminate\Support\Str::startsWith($page['component'] ?? '', ['gym/', 'admin/', 'dev/']) ? '#ffffff' : '#0a0a0a';
+            $pageBackground = \Illuminate\Support\Str::startsWith($page['component'] ?? '', ['gym/', 'admin/', 'dev/']) ? '#ffffff' : '#000000';
         @endphp
         <style>
-            html {
+            html, body {
                 background-color: {{ $pageBackground }};
             }
         </style>

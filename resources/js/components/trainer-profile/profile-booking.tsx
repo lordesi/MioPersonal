@@ -12,7 +12,6 @@ import MonthCalendar, {
     monthsBetween,
     romeToday,
 } from '@/components/mp/month-calendar';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
 import type { TrainerBooking } from '@/hooks/use-trainer-booking';
 import {
@@ -21,10 +20,8 @@ import {
     servicePriceLabel,
     totalPriceCents,
     totalPriceLabel,
-    weeklyLabel,
 } from '@/lib/booking';
 import { shiftYearMonth } from '@/lib/calendar';
-import { darkCheckboxClassName } from '@/lib/dark-form';
 import {
     formatDayLong,
     formatDayShort,
@@ -235,8 +232,9 @@ export function ServicesSection({
 
 /**
  * "Giorno e ora": the duration, the month (the days with free times bright,
- * the full ones grey), the free times of the chosen day; then where, how
- * many people and "Ripeti ogni settimana" when they apply.
+ * the full ones grey, the past ones faded, the closed ones crossed out), the
+ * free times of the chosen day; then where and how many people when they
+ * apply.
  */
 export function DayTimeSection({
     booking,
@@ -322,11 +320,17 @@ export function DayTimeSection({
                     day={(day) => {
                         const info = days.get(day);
 
+                        // Past days are only faded; the days the trainer
+                        // does not work (or not bookable yet) crossed out.
+                        if (day < today) {
+                            return { disabled: true, past: true };
+                        }
+
                         if (!info || info.closed) {
                             return {
                                 disabled: true,
-                                past: day < today,
-                                note: info ? ', non disponibile' : undefined,
+                                unavailable: true,
+                                note: ', non disponibile',
                             };
                         }
 
@@ -346,7 +350,6 @@ export function DayTimeSection({
                         disabled: offset >= maxOffset,
                         onClick: () => setOffset(offset + 1),
                     }}
-                    className="md:max-w-130"
                 />
 
                 <div className="flex flex-col gap-2.5 md:gap-3">
@@ -396,26 +399,6 @@ export function DayTimeSection({
                                 </Choice>
                             )}
                         </div>
-                    )}
-
-                    {booking.canRepeat && start && (
-                        <label className="mt-2 flex cursor-pointer items-start gap-3">
-                            <Checkbox
-                                checked={booking.wantsRepeat}
-                                onCheckedChange={(value) =>
-                                    booking.setRepeat(value === true)
-                                }
-                                className={cn(darkCheckboxClassName, 'mt-0.5')}
-                            />
-                            <span className="flex flex-col">
-                                <span className="text-[15px] font-semibold">
-                                    Ripeti ogni settimana
-                                </span>
-                                <span className="text-sm text-muted-foreground">
-                                    {weeklyLabel(start)}
-                                </span>
-                            </span>
-                        </label>
                     )}
                 </div>
 
@@ -583,7 +566,7 @@ export function BookingAside({
 }: {
     booking: TrainerBooking;
     online: 'also' | 'only' | null;
-    /** "Conferma entro 24 ore", "Risponde in genere entro 1 ora". */
+    /** "Risponde in genere entro 1 ora". */
     notes: (string | null)[];
     trainerFirstName: string;
 }) {
@@ -612,7 +595,7 @@ export function BookingAside({
     return (
         <aside
             aria-label={`Prenota con ${trainerFirstName}`}
-            className="sticky top-6 hidden flex-col gap-4.5 rounded-[22px] bg-background p-6 shadow-[inset_0_0_0_1px_var(--border),0_24px_64px_-12px_rgba(0,0,0,0.8)] md:flex"
+            className="sticky top-6 hidden flex-col gap-4.5 rounded-[22px] bg-background p-6 shadow-[0_24px_64px_-12px_rgba(0,0,0,0.8)] md:flex"
         >
             {price && (
                 <span className="text-[28px] leading-8.5 font-bold tabular-nums">

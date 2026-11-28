@@ -20,13 +20,15 @@ class PageBackgroundTest extends TestCase
     {
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('background-color: #0a0a0a;', false)
-            ->assertSee('<meta name="theme-color" content="#0a0a0a">', false);
+            // The body too: Safari on iOS 26 tints the top bar with its colour.
+            ->assertSee('html, body {', false)
+            ->assertSee('background-color: #000000;', false)
+            ->assertSee('<meta name="theme-color" content="#000000">', false);
 
         // The areas have no SSR: dark before the JavaScript arrives.
         $this->actingAs(User::factory()->create())->get(route('client.home'))
             ->assertOk()
-            ->assertSee('background-color: #0a0a0a;', false);
+            ->assertSee('background-color: #000000;', false);
     }
 
     public function test_the_gym_area_is_still_light()
@@ -44,7 +46,7 @@ class PageBackgroundTest extends TestCase
     {
         $manifest = json_decode((string) file_get_contents(public_path('manifest.webmanifest')), true);
 
-        $this->assertSame('#0a0a0a', $manifest['background_color']);
-        $this->assertSame('#0a0a0a', $manifest['theme_color']);
+        $this->assertSame('#000000', $manifest['background_color']);
+        $this->assertSame('#000000', $manifest['theme_color']);
     }
 }
